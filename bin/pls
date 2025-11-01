@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Get the project root (parent of bin/)
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+# Execute tsx from node_modules with the TypeScript file
+exec "$PROJECT_ROOT/node_modules/.bin/tsx" "$SCRIPT_DIR/pls.ts" "$@"
