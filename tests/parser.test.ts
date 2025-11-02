@@ -8,8 +8,14 @@ describe('parseCommands', () => {
   });
 
   it('parses comma-separated tasks', () => {
-    const result = parseCommands('install dependencies, run tests, build project');
-    expect(result).toEqual(['install dependencies', 'run tests', 'build project']);
+    const result = parseCommands(
+      'install dependencies, run tests, build project'
+    );
+    expect(result).toEqual([
+      'install dependencies',
+      'run tests',
+      'build project',
+    ]);
   });
 
   it('strips exclamation marks', () => {
@@ -28,8 +34,14 @@ describe('parseCommands', () => {
   });
 
   it('handles extra whitespace', () => {
-    const result = parseCommands('  install dependencies  ,  run tests  ,  build project  ');
-    expect(result).toEqual(['install dependencies', 'run tests', 'build project']);
+    const result = parseCommands(
+      '  install dependencies  ,  run tests  ,  build project  '
+    );
+    expect(result).toEqual([
+      'install dependencies',
+      'run tests',
+      'build project',
+    ]);
   });
 
   it('filters out empty tasks', () => {
@@ -38,8 +50,14 @@ describe('parseCommands', () => {
   });
 
   it('handles mixed punctuation and whitespace', () => {
-    const result = parseCommands('install dependencies!  , run tests. , build project!.');
-    expect(result).toEqual(['install dependencies', 'run tests', 'build project']);
+    const result = parseCommands(
+      'install dependencies!  , run tests. , build project!.'
+    );
+    expect(result).toEqual([
+      'install dependencies',
+      'run tests',
+      'build project',
+    ]);
   });
 
   it('returns empty array for empty string', () => {

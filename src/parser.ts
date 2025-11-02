@@ -8,10 +8,6 @@
 export function parseCommands(prompt: string): string[] {
   return prompt
     .split(',')
-    .map(task => task
-      .trim()
-      .replace(/[!.]/g, '')
-      .trim()
-    )
-    .filter(task => task.length > 0);
+    .map((task) => task.trim().replace(/[!.]/g, '').trim())
+    .filter((task) => task.length > 0);
 }
