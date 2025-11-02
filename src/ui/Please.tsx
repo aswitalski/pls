@@ -2,6 +2,17 @@ import React from 'react';
 
 import { Welcome } from './Welcome.js';
 
-export const Please = () => {
-  return <Welcome />;
+interface AppInfo {
+  name: string;
+  version: string;
+  description: string;
+  isDev: boolean;
+}
+
+interface PleaseProps {
+  app: AppInfo;
+}
+
+export const Please = ({ app: info }: PleaseProps) => {
+  return <Welcome info={info} />;
 };

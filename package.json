@@ -1,6 +1,6 @@
 {
   "name": "prompt-language-shell",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Your personal command-line concierge. Ask politely, and it gets things done.",
   "type": "module",
   "main": "dist/index.js",
@@ -11,8 +11,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsc && chmod +x dist/index.js",
+    "dev": "tsc && chmod +x dist/index.js && tsc --watch",
+    "prepare": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
