@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname, join, resolve } from 'path';
 import React from 'react';
 import { render } from 'ink';
 
@@ -16,7 +16,10 @@ const packageJsonPath = join(__dirname, '../package.json');
 const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
 
 // Check if running from development (symlinked) or production
-const isDev = process.argv[1]?.includes('/node_modules/.bin/') === false;
+// In dev, package.json is directly in parent dir and src/ exists
+// In production, we're in node_modules and src/ doesn't exist alongside
+const srcPath = join(__dirname, '../src');
+const isDev = existsSync(srcPath);
 
 const appInfo = {
   name: packageJson.name,

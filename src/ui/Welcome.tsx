@@ -18,6 +18,11 @@ export function Welcome({ info: app }: WelcomeProps) {
     .map((line) => line.replace(/\.$/, ''))
     .filter(Boolean);
 
+  // Transform package name: "prompt-language-shell" -> "Prompt Language Shell"
+  const words = app.name
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
+
   return (
     <Box alignSelf="flex-start" marginTop={1}>
       <Box
@@ -41,12 +46,18 @@ export function Welcome({ info: app }: WelcomeProps) {
           </Box>
         </Box>
         <Box marginBottom={1}>
-          <Text color="greenBright">Prompt Language Shell </Text>
-          <Text>interface</Text>
+          {words.map((word, index) => (
+            <React.Fragment key={index}>
+              <Text color="greenBright">{word}</Text>
+              {index < words.length - 1 && <Text> </Text>}
+            </React.Fragment>
+          ))}
         </Box>
         {descriptionLines.map((line, index) => (
           <Box key={index}>
-            <Text dimColor>{line}.</Text>
+            <Text color="whiteBright" dimColor>
+              {line}.
+            </Text>
           </Box>
         ))}
       </Box>

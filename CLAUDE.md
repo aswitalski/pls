@@ -81,17 +81,19 @@ maintain - both now and in the future.
 
 ### Development
 
-After completing each significant change to the codebase, ensure code quality
-by running the following commands in sequence:
+When the user explicitly requests a quality check, run the following commands
+in sequence:
 
 1. **Build**: Verify TypeScript compilation succeeds
 2. **Format**: Apply consistent code formatting
 3. **Lint**: Check for code quality issues
 4. **Test**: Ensure all tests pass
 
-This sequence catches issues early and maintains codebase health. For smaller
-changes during active development, the development mode provides automatic
-recompilation in watch mode.
+Do not run this verification workflow automatically after every change. Only
+run it when the user specifically asks for it. This sequence catches issues
+early and maintains codebase health. For smaller changes during active
+development, the development mode provides automatic recompilation in watch
+mode.
 
 ### Code style
 
