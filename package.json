@@ -1,0 +1,42 @@
+{
+  "name": "prompt-language-shell",
+  "version": "0.0.1",
+  "description": "Your personal command-line concierge. Ask politely, and it gets things done.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "pls": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aswitalski/pls.git"
+  },
+  "keywords": [
+    "shell",
+    "natural",
+    "language",
+    "command line",
+    "assistant",
+    "concierge"
+  ],
+  "author": "Sensei Aleksander Świtalski",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aswitalski/pls/issues"
+  },
+  "homepage": "https://github.com/aswitalski/pls#readme",
+  "dependencies": {
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.6"
+  }
+}
