@@ -15,8 +15,9 @@ A command-line concierge application that takes requests in natural language and
 - ES Modules (import/export syntax)
 - Testing: vitest
 - Code formatting: Prettier
+- Linting: ESLint with strict TypeScript rules
 - Dependencies: chalk (terminal coloring)
-- Dev dependencies: TypeScript, @types/node, vitest, prettier
+- Dev dependencies: TypeScript, @types/node, vitest, prettier, eslint, typescript-eslint
 
 ### Commands
 
@@ -26,6 +27,8 @@ A command-line concierge application that takes requests in natural language and
 - npm run test:watch: Run tests in watch mode
 - npm run format: Format all files with Prettier
 - npm run format:check: Check if files are formatted correctly
+- npm run lint: Lint all files with ESLint
+- npm run lint:fix: Lint and auto-fix issues where possible
 
 ### Code style
 
@@ -34,6 +37,7 @@ A command-line concierge application that takes requests in natural language and
 - Destructure imports when possible
 - Test naming: Use present tense without "should" (e.g., "parses single task" not "should parse single task")
 - Prettier formatting: 80 chars, semicolons, single quotes, trailing commas (es5, multi-line only), always arrow parens, 2 space indent
+- ESLint rules: Strict TypeScript rules, console allowed, unused vars warn (allow if prefixed with \_)
 
 ### Configuration
 
@@ -41,6 +45,8 @@ A command-line concierge application that takes requests in natural language and
 - package.json: "bin": { "pls": "dist/index.js" } registers the CLI command
 - package.json: "files": ["dist"] - only compiled code is published to npm
 - tsconfig.json: Target ES2023, Module ESNext, output dist/ from src/
+- tsconfig.eslint.json: Extended config for linting (includes tests and config files)
 - vitest.config.ts: Test configuration with node environment
 - .prettierrc: Formatting rules
 - .prettierignore: Excludes node_modules, dist, package-lock.json
+- eslint.config.js: Strict TypeScript linting rules with type-checking
