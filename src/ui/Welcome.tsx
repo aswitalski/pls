@@ -33,23 +33,9 @@ export function Welcome({ info: app }: WelcomeProps) {
         marginBottom={1}
         flexDirection="column"
       >
-        <Box flexDirection="column">
-          <Box marginBottom={1} gap={1}>
-            <Text color="whiteBright" dimColor>
-              &gt;
-            </Text>
-            <Text>please</Text>
-            <Text color="whiteBright" dimColor>(</Text>
-            <Text color="greenBright" bold>
-              pls
-            </Text>
-            <Text color="whiteBright" dimColor>)</Text>
-            <Text>do stuff</Text>
-          </Box>
-        </Box>
         <Box marginBottom={1} gap={1}>
           {words.map((word, index) => (
-            <Text color="greenBright" key={index}>
+            <Text color="greenBright" bold key={index}>
               {word}
             </Text>
           ))}
@@ -60,11 +46,25 @@ export function Welcome({ info: app }: WelcomeProps) {
         </Box>
         {descriptionLines.map((line, index) => (
           <Box key={index}>
-            <Text color="whiteBright" dimColor>
+            <Text color="white">
               {line}.
             </Text>
           </Box>
         ))}
+        <Box flexDirection="column" marginTop={1}>
+          <Text color="brightWhite" bold>Usage:</Text>
+          <Box gap={1}>
+            <Text color="whiteBright" dimColor>
+              &gt;
+            </Text>
+            <Box gap={1}>
+              <Text color="greenBright" bold>
+                pls
+              </Text>
+              <Text color="yellow" bold>[describe your request]</Text>
+            </Box>
+          </Box>
+        </Box>
       </Box>
     </Box>
   );
