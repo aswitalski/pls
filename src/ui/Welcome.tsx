@@ -34,24 +34,29 @@ export function Welcome({ info: app }: WelcomeProps) {
         flexDirection="column"
       >
         <Box flexDirection="column">
-          <Box marginBottom={1}>
-            <Text bold>Please... </Text>
-            <Text color="grey">( </Text>
+          <Box marginBottom={1} gap={1}>
+            <Text color="whiteBright" dimColor>
+              &gt;
+            </Text>
+            <Text>please</Text>
+            <Text color="whiteBright" dimColor>(</Text>
             <Text color="greenBright" bold>
               pls
             </Text>
-            <Text> v{app.version}</Text>
-            {app.isDev && <Text color="yellowBright"> dev</Text>}
-            <Text color="grey"> )</Text>
+            <Text color="whiteBright" dimColor>)</Text>
+            <Text>do stuff</Text>
           </Box>
         </Box>
-        <Box marginBottom={1}>
+        <Box marginBottom={1} gap={1}>
           {words.map((word, index) => (
-            <React.Fragment key={index}>
-              <Text color="greenBright">{word}</Text>
-              {index < words.length - 1 && <Text> </Text>}
-            </React.Fragment>
+            <Text color="greenBright" key={index}>
+              {word}
+            </Text>
           ))}
+          <Text color="whiteBright" dimColor>
+            v{app.version}
+          </Text>
+          {app.isDev && <Text color="yellowBright">dev</Text>}
         </Box>
         {descriptionLines.map((line, index) => (
           <Box key={index}>
