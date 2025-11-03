@@ -11,8 +11,8 @@ export interface AnthropicService {
   processCommand(rawCommand: string): Promise<string[]>;
 }
 
-const SYSTEM_PROMPT = readFileSync(
-  join(__dirname, '../config/SYSTEM.md'),
+const PLAN_PROMPT = readFileSync(
+  join(__dirname, '../config/PLAN.md'),
   'utf-8'
 );
 
@@ -29,7 +29,7 @@ export class AnthropicService implements AnthropicService {
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: 200,
-      system: SYSTEM_PROMPT,
+      system: PLAN_PROMPT,
       messages: [
         {
           role: 'user',

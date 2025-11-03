@@ -1,9 +1,48 @@
 ### About
 
-A command-line concierge application that takes requests in natural language
-and performs described tasks. Users can ask politely using the `pls` command
-("please") followed by comma-separated task descriptions and it will execute
-the requested operations showing progress and results in the terminal.
+A professional command-line concierge that users can fully trust with their
+tasks and requests. Like a reliable personal assistant, it receives errands,
+commands, or tasks in natural language and executes them with careful planning
+and attention to detail.
+
+Users interact with the tool using the `pls` command ("please") followed by
+their request. The concierge plans and executes tasks that are logical,
+sequential, and atomic, ensuring each step is performed as expected.
+
+#### Capabilities
+
+The concierge can handle a wide range of operations:
+
+- Filesystem operations: creating, reading, updating, deleting files and
+  directories
+- Resource fetching: downloading files, accessing web content, retrieving data
+  from APIs
+- System integration: executing shell commands, invoking system utilities,
+  using OS-provided scripting interfaces
+- Information retrieval: answering questions, explaining concepts, providing
+  documentation
+- Task orchestration: planning multi-step workflows, coordinating dependent
+  operations, managing complex sequences
+
+#### Philosophy
+
+The tool embodies the principles of a trusted professional concierge:
+
+- Reliability: Tasks are executed exactly as requested, with consistent and
+  predictable behavior
+- Intelligence: Natural language requests are understood and translated into
+  well-planned action sequences
+- Transparency: Progress is communicated clearly, showing what is being done,
+  what succeeded, and what failed
+- Professionalism: Operations are performed efficiently, safely, and with
+  appropriate error handling
+
+#### Audience
+
+While particularly valuable for developers who need to automate command-line
+workflows, the tool is designed for anyone comfortable with terminal interfaces
+who wants to delegate tasks using natural language rather than memorizing
+specific commands and syntax.
 
 ### Look and feel
 

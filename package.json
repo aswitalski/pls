@@ -11,7 +11,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && chmod +x dist/index.js && mkdir -p dist/config && cp src/config/SYSTEM.md dist/config/",
+    "build": "tsc && chmod +x dist/index.js && mkdir -p dist/config && cp src/config/*.md dist/config/",
     "dev": "npm run build && tsc --watch",
     "prepare": "npm run build",
     "test": "vitest run",
