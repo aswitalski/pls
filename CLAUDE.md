@@ -88,6 +88,7 @@ in sequence:
 2. **Format**: Apply consistent code formatting
 3. **Lint**: Check for code quality issues
 4. **Test**: Ensure all tests pass
+5. **Document**: Supplement documentation with essential information
 
 Do not run this verification workflow automatically after every change. Only
 run it when the user specifically asks for it. This sequence catches issues

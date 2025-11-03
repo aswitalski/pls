@@ -2,9 +2,12 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { dirname, join, resolve } from 'path';
+import { dirname, join } from 'path';
 import React from 'react';
-import { render } from 'ink';
+import { render, Text } from 'ink';
+
+import { loadConfig, ConfigError } from './services/config.js';
+import { createAnthropicService } from './services/anthropic.js';
 
 import { Please } from './ui/Please.js';
 
@@ -28,4 +31,30 @@ const appInfo = {
   isDev,
 };
 
-render(<Please app={appInfo} />);
+// Get command from command-line arguments
+const args = process.argv.slice(2);
+const rawCommand = args.join(' ').trim();
+
+// If no command provided, show welcome screen
+if (!rawCommand) {
+  render(<Please app={appInfo} />);
+} else {
+  // Load config and create Claude service
+  try {
+    const config = loadConfig();
+    const claudeService = createAnthropicService(config.claudeApiKey!);
+    render(
+      <Please
+        app={appInfo}
+        command={rawCommand}
+        claudeService={claudeService}
+      />
+    );
+  } catch (error) {
+    if (error instanceof ConfigError) {
+      render(<Text color="red">{error.message}</Text>);
+      process.exit(1);
+    }
+    throw error;
+  }
+}
