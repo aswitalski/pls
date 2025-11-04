@@ -20,7 +20,7 @@ export class AnthropicService implements AnthropicService {
   private client: Anthropic;
   private model: string;
 
-  constructor(apiKey: string, model = 'claude-3-5-haiku-20241022') {
+  constructor(apiKey: string, model = 'claude-haiku-4-5-20251001') {
     this.client = new Anthropic({ apiKey });
     this.model = model;
   }
@@ -68,6 +68,9 @@ export class AnthropicService implements AnthropicService {
   }
 }
 
-export function createAnthropicService(apiKey: string): AnthropicService {
-  return new AnthropicService(apiKey);
+export function createAnthropicService(
+  apiKey: string,
+  model?: string
+): AnthropicService {
+  return new AnthropicService(apiKey, model);
 }

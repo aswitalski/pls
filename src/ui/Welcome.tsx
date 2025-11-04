@@ -24,13 +24,12 @@ export function Welcome({ info: app }: WelcomeProps) {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
 
   return (
-    <Box alignSelf="flex-start" marginTop={1}>
+    <Box alignSelf="flex-start">
       <Box
         borderStyle="round"
         borderColor="green"
         paddingX={3}
         paddingY={1}
-        marginBottom={1}
         flexDirection="column"
       >
         <Box marginBottom={1} gap={1}>

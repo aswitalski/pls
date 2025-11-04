@@ -6,10 +6,16 @@ import { dirname, join } from 'path';
 import React from 'react';
 import { render, Text } from 'ink';
 
-import { loadConfig, ConfigError } from './services/config.js';
+import {
+  loadConfig,
+  ConfigError,
+  configExists,
+  saveConfig,
+} from './services/config.js';
 import { createAnthropicService } from './services/anthropic.js';
 
 import { Please } from './ui/Please.js';
+import { ConfigThenCommand } from './ui/ConfigThenCommand.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,21 +41,52 @@ const appInfo = {
 const args = process.argv.slice(2);
 const rawCommand = args.join(' ').trim();
 
-// If no command provided, show welcome screen
-if (!rawCommand) {
-  render(<Please app={appInfo} />);
-} else {
-  // Load config and create Claude service
+async function runApp() {
+  // Check if config exists, if not run setup
+  if (!configExists()) {
+    if (!rawCommand) {
+      // "pls" for the first time: show welcome box and ask about config below
+      const { waitUntilExit } = render(
+        <Please
+          app={appInfo}
+          showConfigSetup={true}
+          onConfigComplete={({ apiKey, model }) => {
+            saveConfig(apiKey, model);
+          }}
+        />
+      );
+      await waitUntilExit();
+      return;
+    } else {
+      // "pls do stuff" for the first time: ask about config, then continue
+      render(
+        <ConfigThenCommand command={rawCommand} onConfigSave={saveConfig} />
+      );
+      return;
+    }
+  }
+
+  // Try to load and validate config
   try {
     const config = loadConfig();
-    const claudeService = createAnthropicService(config.claudeApiKey!);
-    render(
-      <Please
-        app={appInfo}
-        command={rawCommand}
-        claudeService={claudeService}
-      />
-    );
+
+    if (!rawCommand) {
+      // "pls" when config present: show welcome box
+      render(<Please app={appInfo} />);
+    } else {
+      // "pls do stuff": fetch and show the plan
+      const claudeService = createAnthropicService(
+        config.anthropic.apiKey,
+        config.anthropic.model
+      );
+      render(
+        <Please
+          app={appInfo}
+          command={rawCommand}
+          claudeService={claudeService}
+        />
+      );
+    }
   } catch (error) {
     if (error instanceof ConfigError) {
       render(<Text color="red">{error.message}</Text>);
@@ -58,3 +95,5 @@ if (!rawCommand) {
     throw error;
   }
 }
+
+runApp();

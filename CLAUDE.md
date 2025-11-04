@@ -71,6 +71,25 @@ should follow these principles:
 The goal is to create a terminal experience that feels modern, professional,
 and enjoyable to use - matching the quality users expect from Claude Code.
 
+#### Spacing and layout
+
+Consistent spacing creates breathing room and visual clarity:
+
+- **Command spacing**: Every command starts with one line of space at the top
+  and ends with one line of space at the bottom, creating clear separation from
+  surrounding content.
+- **Section separation**: Distinct sections within the interface have one line
+  of space between them to create visual grouping.
+- **Progressive display**: The command and output history is continually
+  appended, never cleared. Users see everything they've entered and all
+  responses in a continuous, scrollable timeline.
+- **Component responsibility**: Individual components don't add their own outer
+  spacing. Parent components control the layout, ensuring consistent spacing
+  throughout the interface.
+
+These spacing principles keep the interface clean, scannable, and easy to
+follow during long interactive sessions.
+
 ### Implementation
 
 Follow software engineering best practices to create a maintainable,

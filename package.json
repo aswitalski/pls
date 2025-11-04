@@ -1,6 +1,6 @@
 {
   "name": "prompt-language-shell",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Your personal command-line concierge. Ask politely, and it gets things done.",
   "type": "module",
   "main": "dist/index.js",
@@ -42,7 +42,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
     "ink": "^6.4.0",
-    "react": "^19.2.0"
+    "ink-text-input": "^6.0.0",
+    "react": "^19.2.0",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",

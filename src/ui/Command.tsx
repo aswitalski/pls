@@ -59,7 +59,6 @@ export function Command({ rawCommand, claudeService }: CommandProps) {
   return (
     <Box
       alignSelf="flex-start"
-      marginTop={1}
       marginBottom={1}
       flexDirection="column"
     >
