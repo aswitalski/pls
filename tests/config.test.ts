@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mergeConfig } from './config.js';
+import { mergeConfig } from '../src/services/config.js';
 
 describe('mergeConfig', () => {
   it('creates new config when file is empty', () => {

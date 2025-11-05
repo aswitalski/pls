@@ -7,7 +7,7 @@ import {
   getSkillsDirectory,
   loadSkills,
   formatSkillsForPrompt,
-} from './skills.js';
+} from '../src/services/skills.js';
 
 describe('skills service', () => {
   let originalHome: string | undefined;
