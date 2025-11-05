@@ -17,13 +17,16 @@ interface AppInfo {
 
 interface PleaseProps {
   app: AppInfo;
-  command?: string;
+  command: string | null;
   claudeService?: AnthropicService;
   showConfigSetup?: boolean;
-  onConfigComplete?: (config: { apiKey: string; model: string }) => void;
+  onConfigComplete?: (config: {
+    apiKey: string;
+    model: string;
+  }) => AnthropicService | void;
 }
 
-export const Please = ({
+export const PLS = ({
   app: info,
   command,
   claudeService,
@@ -31,13 +34,25 @@ export const Please = ({
   onConfigComplete,
 }: PleaseProps) => {
   const [history, setHistory] = React.useState<React.ReactNode[]>([]);
+  const [service, setService] = React.useState<AnthropicService | undefined>(
+    claudeService
+  );
 
-  // Simple command execution
-  if (command && claudeService) {
+  const handleConfigComplete = (config: { apiKey: string; model: string }) => {
+    if (onConfigComplete) {
+      const result = onConfigComplete(config);
+      if (result) {
+        setService(result);
+      }
+    }
+  };
+
+  // Command execution (with service from props or after config)
+  if (command && service) {
     return (
       <Box marginTop={1} flexDirection="column" gap={1}>
         <History items={history} />
-        <Command rawCommand={command} claudeService={claudeService} />
+        <Command rawCommand={command} claudeService={service} />
       </Box>
     );
   }
@@ -46,10 +61,8 @@ export const Please = ({
   return (
     <Box flexDirection="column" marginY={1} gap={1}>
       <History items={history} />
-      <Welcome info={info} />
-      {showConfigSetup && onConfigComplete && (
-        <ConfigSetup onComplete={onConfigComplete} />
-      )}
+      {!showConfigSetup && <Welcome info={info} />}
+      {showConfigSetup && <ConfigSetup onComplete={handleConfigComplete} />}
     </Box>
   );
 };

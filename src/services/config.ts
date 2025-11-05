@@ -1,25 +1,15 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import YAML from 'yaml';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 export interface AnthropicConfig {
   apiKey: string;
   model?: string;
 }
 
-export interface UIConfig {
-  theme?: string;
-  verbose?: boolean;
-}
-
 export interface Config {
   anthropic: AnthropicConfig;
-  ui?: UIConfig;
 }
 
 export class ConfigError extends Error {
@@ -85,20 +75,6 @@ function validateConfig(parsed: unknown): Config {
   // Optional model
   if (anthropic.model && typeof anthropic.model === 'string') {
     validatedConfig.anthropic.model = anthropic.model;
-  }
-
-  // Optional UI config
-  if (config.ui && typeof config.ui === 'object') {
-    const ui = config.ui as Record<string, unknown>;
-    validatedConfig.ui = {};
-
-    if (ui.theme && typeof ui.theme === 'string') {
-      validatedConfig.ui.theme = ui.theme;
-    }
-
-    if (typeof ui.verbose === 'boolean') {
-      validatedConfig.ui.verbose = ui.verbose;
-    }
   }
 
   return validatedConfig;

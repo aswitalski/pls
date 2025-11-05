@@ -3,7 +3,6 @@
 import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import React from 'react';
 import { render, Text } from 'ink';
 
 import {
@@ -14,8 +13,7 @@ import {
 } from './services/config.js';
 import { createAnthropicService } from './services/anthropic.js';
 
-import { Please } from './ui/Please.js';
-import { ConfigThenCommand } from './ui/ConfigThenCommand.js';
+import { PLS } from './ui/Please.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -42,28 +40,21 @@ const args = process.argv.slice(2);
 const rawCommand = args.join(' ').trim();
 
 async function runApp() {
-  // Check if config exists, if not run setup
+  // First-time setup: config doesn't exist
   if (!configExists()) {
-    if (!rawCommand) {
-      // "pls" for the first time: show welcome box and ask about config below
-      const { waitUntilExit } = render(
-        <Please
-          app={appInfo}
-          showConfigSetup={true}
-          onConfigComplete={({ apiKey, model }) => {
-            saveConfig(apiKey, model);
-          }}
-        />
-      );
-      await waitUntilExit();
-      return;
-    } else {
-      // "pls do stuff" for the first time: ask about config, then continue
-      render(
-        <ConfigThenCommand command={rawCommand} onConfigSave={saveConfig} />
-      );
-      return;
-    }
+    const { waitUntilExit } = render(
+      <PLS
+        app={appInfo}
+        command={rawCommand || null}
+        showConfigSetup={true}
+        onConfigComplete={({ apiKey, model }) => {
+          saveConfig(apiKey, model);
+          return rawCommand ? createAnthropicService(apiKey, model) : undefined;
+        }}
+      />
+    );
+    await waitUntilExit();
+    return;
   }
 
   // Try to load and validate config
@@ -72,7 +63,7 @@ async function runApp() {
 
     if (!rawCommand) {
       // "pls" when config present: show welcome box
-      render(<Please app={appInfo} />);
+      render(<PLS app={appInfo} command={null} />);
     } else {
       // "pls do stuff": fetch and show the plan
       const claudeService = createAnthropicService(
@@ -80,11 +71,7 @@ async function runApp() {
         config.anthropic.model
       );
       render(
-        <Please
-          app={appInfo}
-          command={rawCommand}
-          claudeService={claudeService}
-        />
+        <PLS app={appInfo} command={rawCommand} claudeService={claudeService} />
       );
     }
   } catch (error) {

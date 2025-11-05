@@ -10,15 +10,10 @@ import {
 } from './skills.js';
 
 describe('skills service', () => {
-  let testSkillsDir: string;
   let originalHome: string | undefined;
   let tempHome: string;
 
   beforeEach(() => {
-    // Create a temporary directory for testing
-    testSkillsDir = join(tmpdir(), `pls-skills-test-${Date.now()}`);
-    mkdirSync(testSkillsDir, { recursive: true });
-
     // Mock HOME to point to temp directory
     originalHome = process.env.HOME;
     tempHome = join(tmpdir(), `pls-home-test-${Date.now()}`);
@@ -32,18 +27,14 @@ describe('skills service', () => {
   });
 
   afterEach(() => {
-    // Clean up test directories first
-    if (existsSync(testSkillsDir)) {
-      rmSync(testSkillsDir, { recursive: true, force: true });
-    }
-
-    if (existsSync(tempHome)) {
-      rmSync(tempHome, { recursive: true, force: true });
-    }
-
-    // Restore original HOME
+    // Restore original HOME first
     if (originalHome !== undefined) {
       process.env.HOME = originalHome;
+    }
+
+    // Clean up temp directory
+    if (existsSync(tempHome)) {
+      rmSync(tempHome, { recursive: true, force: true });
     }
   });
 
