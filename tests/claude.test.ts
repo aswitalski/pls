@@ -9,6 +9,14 @@ vi.mock('@anthropic-ai/sdk', () => {
   };
 });
 
+// Mock the skills service
+vi.mock('../src/services/skills.js', () => {
+  return {
+    loadSkills: vi.fn(() => []),
+    formatSkillsForPrompt: vi.fn(() => ''),
+  };
+});
+
 describe('AnthropicService', () => {
   let service: AnthropicService;
   let mockCreate: ReturnType<typeof vi.fn>;
@@ -42,10 +50,10 @@ describe('AnthropicService', () => {
 
       const result = await service.processCommand('change dir to ~');
 
-      expect(result).toEqual(['change directory to the home folder']);
+      expect(result.tasks).toEqual(['change directory to the home folder']);
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: 'claude-3-5-haiku-20241022',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 200,
         })
       );
@@ -65,7 +73,7 @@ describe('AnthropicService', () => {
         'install deps, run tests, deploy'
       );
 
-      expect(result).toEqual(['install dependencies', 'run tests', 'deploy']);
+      expect(result.tasks).toEqual(['install dependencies', 'run tests', 'deploy']);
     });
 
     it('handles JSON array with whitespace', async () => {
@@ -80,7 +88,7 @@ describe('AnthropicService', () => {
 
       const result = await service.processCommand('do task 1 and task 2');
 
-      expect(result).toEqual(['task 1', 'task 2']);
+      expect(result.tasks).toEqual(['task 1', 'task 2']);
     });
 
     it('treats invalid JSON as single task', async () => {
@@ -95,7 +103,7 @@ describe('AnthropicService', () => {
 
       const result = await service.processCommand('some command');
 
-      expect(result).toEqual(['["incomplete array"']);
+      expect(result.tasks).toEqual(['["incomplete array"']);
     });
 
     it('treats non-string array as single task', async () => {
@@ -110,7 +118,7 @@ describe('AnthropicService', () => {
 
       const result = await service.processCommand('some command');
 
-      expect(result).toEqual(['[1, 2, 3]']);
+      expect(result.tasks).toEqual(['[1, 2, 3]']);
     });
 
     it('treats mixed array as single task', async () => {
@@ -125,7 +133,7 @@ describe('AnthropicService', () => {
 
       const result = await service.processCommand('some command');
 
-      expect(result).toEqual(['["string", 123, "another"]']);
+      expect(result.tasks).toEqual(['["string", 123, "another"]']);
     });
 
     it('throws error for non-text response', async () => {
@@ -163,7 +171,7 @@ describe('AnthropicService', () => {
 
       const result = await service.processCommand('ls');
 
-      expect(result).toEqual(['list all files in directory']);
+      expect(result.tasks).toEqual(['list all files in directory']);
     });
 
     it('handles empty array response', async () => {
@@ -178,8 +186,8 @@ describe('AnthropicService', () => {
 
       const result = await service.processCommand('some command');
 
-      // Empty JSON array is treated as single task since it contains no strings
-      expect(result).toEqual(['[]']);
+      // Empty JSON array returns empty array
+      expect(result.tasks).toEqual([]);
     });
   });
 });

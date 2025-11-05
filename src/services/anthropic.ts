@@ -4,11 +4,18 @@ import { dirname, join } from 'path';
 
 import Anthropic from '@anthropic-ai/sdk';
 
+import { loadSkills, formatSkillsForPrompt } from './skills.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+export interface ProcessCommandResult {
+  tasks: string[];
+  systemPrompt?: string;
+}
+
 export interface AnthropicService {
-  processCommand(rawCommand: string): Promise<string[]>;
+  processCommand(rawCommand: string): Promise<ProcessCommandResult>;
 }
 
 const PLAN_PROMPT = readFileSync(
@@ -25,11 +32,16 @@ export class AnthropicService implements AnthropicService {
     this.model = model;
   }
 
-  async processCommand(rawCommand: string): Promise<string[]> {
+  async processCommand(rawCommand: string): Promise<ProcessCommandResult> {
+    // Load skills and augment the planning prompt
+    const skills = loadSkills();
+    const skillsSection = formatSkillsForPrompt(skills);
+    const systemPrompt = PLAN_PROMPT + skillsSection;
+
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: 200,
-      system: PLAN_PROMPT,
+      system: systemPrompt,
       messages: [
         {
           role: 'user',
@@ -45,26 +57,39 @@ export class AnthropicService implements AnthropicService {
 
     const text = content.text.trim();
 
+    let tasks: string[];
+
     // Try to parse as JSON array
     if (text.startsWith('[') && text.endsWith(']')) {
       try {
         const parsed: unknown = JSON.parse(text);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           // Validate all items are strings
           const allStrings = parsed.every((item) => typeof item === 'string');
           if (allStrings) {
-            return parsed.filter(
-              (item): item is string => typeof item === 'string'
+            tasks = parsed.filter(
+              (item): item is string => typeof item === 'string',
             );
+          } else {
+            tasks = [text];
           }
+        } else {
+          tasks = [text];
         }
       } catch {
         // If JSON parsing fails, treat as single task
+        tasks = [text];
       }
+    } else {
+      // Single task
+      tasks = [text];
     }
 
-    // Single task
-    return [text];
+    const isDebug = process.env.DEBUG === 'true';
+    return {
+      tasks,
+      systemPrompt: isDebug ? systemPrompt : undefined,
+    };
   }
 }
 

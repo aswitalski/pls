@@ -1,4 +1,7 @@
-import { AnthropicService } from '../../src/services/anthropic.js';
+import {
+  AnthropicService,
+  ProcessCommandResult,
+} from '../../src/services/anthropic.js';
 
 /**
  * Mock implementation of AnthropicService for testing
@@ -41,12 +44,14 @@ export class AnthropicServiceMock extends AnthropicService {
     this.errorMessage = 'Mock error';
   }
 
-  processCommand(rawCommand: string): Promise<string[]> {
+  processCommand(rawCommand: string): Promise<ProcessCommandResult> {
     if (this.shouldFail) {
       return Promise.reject(new Error(this.errorMessage));
     }
 
     const response = this.responses.get(rawCommand);
-    return Promise.resolve(response ?? this.defaultResponse);
+    return Promise.resolve({
+      tasks: response ?? this.defaultResponse,
+    });
   }
 }

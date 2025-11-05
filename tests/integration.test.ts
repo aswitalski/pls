@@ -16,7 +16,7 @@ describe('Integration Tests', () => {
 
       const result = await mockService.processCommand('change dir to ~');
 
-      expect(result).toEqual(['change directory to the home folder']);
+      expect(result.tasks).toEqual(['change directory to the home folder']);
     });
 
     it('processes abbreviations', async () => {
@@ -24,7 +24,7 @@ describe('Integration Tests', () => {
 
       const result = await mockService.processCommand('install deps');
 
-      expect(result).toEqual(['install dependencies']);
+      expect(result.tasks).toEqual(['install dependencies']);
     });
   });
 
@@ -39,7 +39,7 @@ describe('Integration Tests', () => {
         'install deps, run tests'
       );
 
-      expect(result).toEqual(['install dependencies', 'run tests']);
+      expect(result.tasks).toEqual(['install dependencies', 'run tests']);
     });
 
     it('processes semicolon-separated tasks', async () => {
@@ -52,7 +52,7 @@ describe('Integration Tests', () => {
         'create file; add content'
       );
 
-      expect(result).toEqual(['create a file', 'add content']);
+      expect(result.tasks).toEqual(['create a file', 'add content']);
     });
 
     it('processes and-separated tasks', async () => {
@@ -65,7 +65,7 @@ describe('Integration Tests', () => {
         'build project and deploy'
       );
 
-      expect(result).toEqual(['build the project', 'deploy']);
+      expect(result.tasks).toEqual(['build the project', 'deploy']);
     });
 
     it('processes three tasks', async () => {
@@ -79,7 +79,7 @@ describe('Integration Tests', () => {
         'install deps, run tests, deploy'
       );
 
-      expect(result).toEqual(['install dependencies', 'run tests', 'deploy']);
+      expect(result.tasks).toEqual(['install dependencies', 'run tests', 'deploy']);
     });
   });
 
@@ -107,7 +107,7 @@ describe('Integration Tests', () => {
 
       const result = await mockService.processCommand('unknown command');
 
-      expect(result).toEqual(['default task']);
+      expect(result.tasks).toEqual(['default task']);
     });
 
     it('resets to default state', async () => {
@@ -117,7 +117,7 @@ describe('Integration Tests', () => {
       mockService.reset();
 
       const result = await mockService.processCommand('test');
-      expect(result).toEqual(['mock task']);
+      expect(result.tasks).toEqual(['mock task']);
     });
   });
 });

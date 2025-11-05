@@ -14,6 +14,7 @@ interface CommandProps {
 
 export function Command({ rawCommand, claudeService }: CommandProps) {
   const [processedTasks, setProcessedTasks] = useState<string[]>([]);
+  const [systemPrompt, setSystemPrompt] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -31,7 +32,8 @@ export function Command({ rawCommand, claudeService }: CommandProps) {
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
 
         if (mounted) {
-          setProcessedTasks(result);
+          setProcessedTasks(result.tasks);
+          setSystemPrompt(result.systemPrompt);
           setIsLoading(false);
         }
       } catch (err) {
