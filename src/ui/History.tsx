@@ -1,8 +1,10 @@
-import React from 'react';
 import { Box } from 'ink';
 
+import { ComponentDefinition } from '../types/components.js';
+import { renderComponent } from './renderComponent.js';
+
 interface HistoryProps {
-  items: React.ReactNode[];
+  items: ComponentDefinition[];
 }
 
 export function History({ items }: HistoryProps) {
@@ -13,7 +15,7 @@ export function History({ items }: HistoryProps) {
   return (
     <Box flexDirection="column" gap={1}>
       {items.map((item, index) => (
-        <Box key={index}>{item}</Box>
+        <Box key={`${item.name}-${index}`}>{renderComponent(item)}</Box>
       ))}
     </Box>
   );

@@ -43,6 +43,10 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      // Disable unified-signatures due to ESLint bug with inline object types
+      // The rule crashes with "TypeError: typeParameters.params is not iterable"
+      // when it encounters inline object types in function signatures
+      '@typescript-eslint/unified-signatures': 'off',
     },
   }
 );

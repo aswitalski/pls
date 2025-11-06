@@ -4,35 +4,33 @@ import { dirname, join } from 'path';
 
 import Anthropic from '@anthropic-ai/sdk';
 
+import { AnthropicConfig } from './config.js';
 import { loadSkills, formatSkillsForPrompt } from './skills.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export interface ProcessCommandResult {
+export interface CommandResult {
   tasks: string[];
   systemPrompt?: string;
 }
 
-export interface AnthropicService {
-  processCommand(rawCommand: string): Promise<ProcessCommandResult>;
+export interface LLMService {
+  processCommand(command: string): Promise<CommandResult>;
 }
 
-const PLAN_PROMPT = readFileSync(
-  join(__dirname, '../config/PLAN.md'),
-  'utf-8'
-);
+const PLAN_PROMPT = readFileSync(join(__dirname, '../config/PLAN.md'), 'utf-8');
 
-export class AnthropicService implements AnthropicService {
+export class AnthropicService implements LLMService {
   private client: Anthropic;
   private model: string;
 
-  constructor(apiKey: string, model = 'claude-haiku-4-5-20251001') {
-    this.client = new Anthropic({ apiKey });
+  constructor(key: string, model = 'claude-haiku-4-5-20251001') {
+    this.client = new Anthropic({ apiKey: key });
     this.model = model;
   }
 
-  async processCommand(rawCommand: string): Promise<ProcessCommandResult> {
+  async processCommand(command: string): Promise<CommandResult> {
     // Load skills and augment the planning prompt
     const skills = loadSkills();
     const skillsSection = formatSkillsForPrompt(skills);
@@ -40,12 +38,12 @@ export class AnthropicService implements AnthropicService {
 
     const response = await this.client.messages.create({
       model: this.model,
-      max_tokens: 200,
+      max_tokens: 512,
       system: systemPrompt,
       messages: [
         {
           role: 'user',
-          content: rawCommand,
+          content: command,
         },
       ],
     });
@@ -68,7 +66,7 @@ export class AnthropicService implements AnthropicService {
           const allStrings = parsed.every((item) => typeof item === 'string');
           if (allStrings) {
             tasks = parsed.filter(
-              (item): item is string => typeof item === 'string',
+              (item): item is string => typeof item === 'string'
             );
           } else {
             tasks = [text];
@@ -94,8 +92,7 @@ export class AnthropicService implements AnthropicService {
 }
 
 export function createAnthropicService(
-  apiKey: string,
-  model?: string
+  config: AnthropicConfig
 ): AnthropicService {
-  return new AnthropicService(apiKey, model);
+  return new AnthropicService(config.key, config.model);
 }

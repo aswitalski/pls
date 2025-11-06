@@ -54,7 +54,7 @@ describe('AnthropicService', () => {
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 200,
+          max_tokens: 512,
         })
       );
     });
@@ -73,7 +73,11 @@ describe('AnthropicService', () => {
         'install deps, run tests, deploy'
       );
 
-      expect(result.tasks).toEqual(['install dependencies', 'run tests', 'deploy']);
+      expect(result.tasks).toEqual([
+        'install dependencies',
+        'run tests',
+        'deploy',
+      ]);
     });
 
     it('handles JSON array with whitespace', async () => {

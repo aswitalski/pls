@@ -1,6 +1,6 @@
 import {
   AnthropicService,
-  ProcessCommandResult,
+  CommandResult,
 } from '../../src/services/anthropic.js';
 
 /**
@@ -44,7 +44,7 @@ export class AnthropicServiceMock extends AnthropicService {
     this.errorMessage = 'Mock error';
   }
 
-  processCommand(rawCommand: string): Promise<ProcessCommandResult> {
+  processCommand(rawCommand: string): Promise<CommandResult> {
     if (this.shouldFail) {
       return Promise.reject(new Error(this.errorMessage));
     }

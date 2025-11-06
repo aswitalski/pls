@@ -1,31 +1,50 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { AnthropicService } from '../services/anthropic.js';
+import { CommandProps } from '../types/components.js';
 
 import { Spinner } from './Spinner.js';
 
-const MIN_PROCESSING_TIME = 2000; // purelly for visual effect
+const MIN_PROCESSING_TIME = 2000; // purely for visual effect
 
-interface CommandProps {
-  rawCommand: string;
-  claudeService: AnthropicService;
-}
-
-export function Command({ rawCommand, claudeService }: CommandProps) {
-  const [processedTasks, setProcessedTasks] = useState<string[]>([]);
-  const [systemPrompt, setSystemPrompt] = useState<string | undefined>();
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function Command({
+  command,
+  state,
+  service,
+  tasks,
+  error: errorProp,
+  systemPrompt: systemPromptProp,
+}: CommandProps) {
+  const done = state?.done ?? false;
+  const [processedTasks, setProcessedTasks] = useState<string[]>(tasks || []);
+  const [systemPrompt, setSystemPrompt] = useState<string | undefined>(
+    systemPromptProp
+  );
+  const [error, setError] = useState<string | null>(
+    state?.error || errorProp || null
+  );
+  const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
 
   useEffect(() => {
+    // Skip processing if done (showing historical/final state)
+    if (done) {
+      return;
+    }
+
+    // Skip processing if no service available
+    if (!service) {
+      setError('No service available');
+      setIsLoading(false);
+      return;
+    }
+
     let mounted = true;
 
-    async function process() {
+    async function process(svc: typeof service) {
       const startTime = Date.now();
 
       try {
-        const result = await claudeService.processCommand(rawCommand);
+        const result = await svc!.processCommand(command);
         const elapsed = Date.now() - startTime;
         const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
 
@@ -51,21 +70,17 @@ export function Command({ rawCommand, claudeService }: CommandProps) {
       }
     }
 
-    process();
+    process(service);
 
     return () => {
       mounted = false;
     };
-  }, [rawCommand, claudeService]);
+  }, [command, done, service]);
 
   return (
-    <Box
-      alignSelf="flex-start"
-      marginBottom={1}
-      flexDirection="column"
-    >
+    <Box alignSelf="flex-start" marginBottom={1} flexDirection="column">
       <Box>
-        <Text color="gray">&gt; pls {rawCommand}</Text>
+        <Text color="gray">&gt; pls {command}</Text>
         {isLoading && (
           <>
             <Text> </Text>

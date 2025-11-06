@@ -79,7 +79,11 @@ describe('Integration Tests', () => {
         'install deps, run tests, deploy'
       );
 
-      expect(result.tasks).toEqual(['install dependencies', 'run tests', 'deploy']);
+      expect(result.tasks).toEqual([
+        'install dependencies',
+        'run tests',
+        'deploy',
+      ]);
     });
   });
 

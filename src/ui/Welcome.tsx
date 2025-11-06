@@ -1,18 +1,8 @@
-import React from 'react';
 import { Text, Box } from 'ink';
 
-interface AppInfo {
-  name: string;
-  version: string;
-  description: string;
-  isDev: boolean;
-}
+import { WelcomeProps } from '../types/components.js';
 
-interface WelcomeProps {
-  info: AppInfo;
-}
-
-export function Welcome({ info: app }: WelcomeProps) {
+export function Welcome({ app: app }: WelcomeProps) {
   const descriptionLines = app.description
     .split('. ')
     .map((line) => line.replace(/\.$/, ''))
@@ -24,7 +14,7 @@ export function Welcome({ info: app }: WelcomeProps) {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
 
   return (
-    <Box alignSelf="flex-start">
+    <Box alignSelf="flex-start" marginBottom={1}>
       <Box
         borderStyle="round"
         borderColor="green"
@@ -45,13 +35,13 @@ export function Welcome({ info: app }: WelcomeProps) {
         </Box>
         {descriptionLines.map((line, index) => (
           <Box key={index}>
-            <Text color="white">
-              {line}.
-            </Text>
+            <Text color="white">{line}.</Text>
           </Box>
         ))}
         <Box flexDirection="column" marginTop={1}>
-          <Text color="brightWhite" bold>Usage:</Text>
+          <Text color="brightWhite" bold>
+            Usage:
+          </Text>
           <Box gap={1}>
             <Text color="whiteBright" dimColor>
               &gt;
@@ -60,7 +50,9 @@ export function Welcome({ info: app }: WelcomeProps) {
               <Text color="greenBright" bold>
                 pls
               </Text>
-              <Text color="yellow" bold>[describe your request]</Text>
+              <Text color="yellow" bold>
+                [describe your request]
+              </Text>
             </Box>
           </Box>
         </Box>

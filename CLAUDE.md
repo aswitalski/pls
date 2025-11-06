@@ -137,6 +137,35 @@ testable, and extensible codebase:
 The goal is to build a codebase that is easy to understand, extend, test, and
 maintain - both now and in the future.
 
+### Interface
+
+The application uses a component-based architecture that keeps the main
+interface flexible and extensible:
+
+- **Component history system**: The main interface maintains a list of
+  previously displayed components (like welcome screens, configuration steps,
+  or completed commands) and a single current active component that the user
+  is interacting with. This creates a natural conversation-like flow in the
+  terminal.
+- **Type-safe component definitions**: Each component has a strongly-typed
+  definition that describes what it is, what data it needs, and whether it
+  tracks any internal state. This prevents bugs and makes it clear exactly
+  what information each screen requires.
+- **Stateless and stateful components**: Some screens (like the welcome screen)
+  don't need to track any changing information - they just display static
+  content. Other screens (like configuration or command execution) need to
+  remember where they are in a process. The system handles both cases cleanly.
+- **Separation of state and props**: Configuration data (props) is kept
+  separate from runtime state. This makes it easier to snapshot what a
+  component looked like when it completed, and allows components to be
+  reusable in different contexts.
+- **Shared rendering logic**: A single utility function knows how to display
+  any component type, eliminating duplicate code and making it easy to add new
+  component types in the future.
+
+These design choices make the interface code easier to understand, safer to
+modify, and simpler to extend with new features.
+
 ### Development
 
 When the user explicitly requests a quality check, run the following commands

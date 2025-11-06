@@ -4,12 +4,12 @@ import { mergeConfig } from '../src/services/config.js';
 describe('mergeConfig', () => {
   it('creates new config when file is empty', () => {
     const result = mergeConfig('', 'anthropic', {
-      'api-key': 'sk-ant-test',
+      key: 'sk-ant-test',
       model: 'claude-haiku-4-5-20251001',
     });
 
     expect(result).toContain('anthropic:');
-    expect(result).toContain('  api-key: sk-ant-test');
+    expect(result).toContain('  key: sk-ant-test');
     expect(result).toContain('  model: claude-haiku-4-5-20251001');
   });
 
@@ -19,14 +19,14 @@ describe('mergeConfig', () => {
   verbose: true`;
 
     const result = mergeConfig(existing, 'anthropic', {
-      'api-key': 'sk-ant-test',
+      key: 'sk-ant-test',
       model: 'claude-haiku-4-5-20251001',
     });
 
     expect(result).toContain('ui:');
     expect(result).toContain('  theme: dark');
     expect(result).toContain('anthropic:');
-    expect(result).toContain('  api-key: sk-ant-test');
+    expect(result).toContain('  key: sk-ant-test');
   });
 
   it('sorts sections alphabetically', () => {
@@ -34,7 +34,7 @@ describe('mergeConfig', () => {
   theme: dark`;
 
     const result = mergeConfig(existing, 'anthropic', {
-      'api-key': 'sk-ant-test',
+      key: 'sk-ant-test',
     });
 
     const anthropicIndex = result.indexOf('anthropic:');
@@ -45,15 +45,15 @@ describe('mergeConfig', () => {
 
   it('updates existing section without removing other keys', () => {
     const existing = `anthropic:
-  api-key: sk-ant-old
+  key: sk-ant-old
   custom-setting: value`;
 
     const result = mergeConfig(existing, 'anthropic', {
-      'api-key': 'sk-ant-new',
+      key: 'sk-ant-new',
       model: 'claude-haiku-4-5-20251001',
     });
 
-    expect(result).toContain('api-key: sk-ant-new');
+    expect(result).toContain('key: sk-ant-new');
     expect(result).toContain('model: claude-haiku-4-5-20251001');
     expect(result).toContain('custom-setting: value');
     expect(result).not.toContain('sk-ant-old');
@@ -64,10 +64,10 @@ describe('mergeConfig', () => {
   theme: dark`;
 
     const result = mergeConfig(existing, 'anthropic', {
-      'api-key': 'sk-ant-test',
+      key: 'sk-ant-test',
     });
 
-    expect(result).toMatch(/anthropic:\n {2}api-key:/);
+    expect(result).toMatch(/anthropic:\n {2}key:/);
     expect(result).toMatch(/ui:\n {2}theme:/);
   });
 
@@ -80,7 +80,7 @@ config:
   name: Sensei`;
 
     const result = mergeConfig(existing, 'anthropic', {
-      'api-key': 'sk-ant-test',
+      key: 'sk-ant-test',
     });
 
     const sections = result.match(/^[a-z]+:/gm) || [];
@@ -89,14 +89,14 @@ config:
 
   it('updates key in existing section', () => {
     const existing = `anthropic:
-  api-key: sk-ant-old
+  key: sk-ant-old
   model: old-model`;
 
     const result = mergeConfig(existing, 'anthropic', {
       model: 'new-model',
     });
 
-    expect(result).toContain('api-key: sk-ant-old');
+    expect(result).toContain('key: sk-ant-old');
     expect(result).toContain('model: new-model');
     expect(result).not.toContain('old-model');
   });

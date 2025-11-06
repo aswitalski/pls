@@ -1,6 +1,6 @@
 {
   "name": "prompt-language-shell",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "Your personal command-line concierge. Ask politely, and it gets things done.",
   "type": "module",
   "main": "dist/index.js",
@@ -16,8 +16,8 @@
     "prepare": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --write '**/*.{ts,tsx}'",
+    "format:check": "prettier --check '**/*.{ts,tsx}'",
     "lint": "eslint .",
     "lint:fix": "eslint --fix ."
   },

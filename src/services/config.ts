@@ -4,7 +4,7 @@ import { join } from 'path';
 import YAML from 'yaml';
 
 export interface AnthropicConfig {
-  apiKey: string;
+  key: string;
   model?: string;
 }
 
@@ -48,27 +48,26 @@ function validateConfig(parsed: unknown): Config {
       `\nMissing or invalid 'anthropic' section in ${CONFIG_FILE}\n` +
         'Please add:\n' +
         'anthropic:\n' +
-        '  api-key: sk-ant-...'
+        '  key: sk-ant-...'
     );
   }
 
   const anthropic = config.anthropic as Record<string, unknown>;
 
-  // Support both 'api-key' (kebab-case) and 'apiKey' (camelCase)
-  const apiKey = anthropic['api-key'] || anthropic.apiKey;
+  const key = anthropic['key'];
 
-  if (!apiKey || typeof apiKey !== 'string') {
+  if (!key || typeof key !== 'string') {
     throw new ConfigError(
-      `\nMissing or invalid 'anthropic.api-key' in ${CONFIG_FILE}\n` +
+      `\nMissing or invalid 'anthropic.key' in ${CONFIG_FILE}\n` +
         'Please add your Anthropic API key:\n' +
         'anthropic:\n' +
-        '  api-key: sk-ant-...'
+        '  key: sk-ant-...'
     );
   }
 
   const validatedConfig: Config = {
     anthropic: {
-      apiKey: apiKey,
+      key,
     },
   };
 
@@ -87,7 +86,7 @@ export function loadConfig(): Config {
         'Please create it with your Anthropic API key.\n' +
         'Example:\n\n' +
         'anthropic:\n' +
-        '  api-key: sk-ant-...\n' +
+        '  key: sk-ant-...\n' +
         '  model: claude-haiku-4-5-20251001\n'
     );
   }
@@ -108,14 +107,15 @@ export function configExists(): boolean {
 export function mergeConfig(
   existingContent: string,
   sectionName: string,
-  newValues: Record<string, string>
+  newValues: Record<string, unknown>
 ): string {
   const parsed = existingContent.trim()
-    ? (YAML.parse(existingContent) as Record<string, unknown>) || {}
+    ? (YAML.parse(existingContent) as Record<string, unknown>)
     : {};
 
   // Update or add section
-  const section = (parsed[sectionName] as Record<string, unknown>) || {};
+  const section =
+    (parsed[sectionName] as Record<string, unknown> | undefined) ?? {};
   for (const [key, value] of Object.entries(newValues)) {
     section[key] = value;
   }
@@ -132,15 +132,15 @@ export function mergeConfig(
   return YAML.stringify(sortedConfig);
 }
 
-export function saveConfig(apiKey: string, model: string): void {
+export function saveConfig(
+  section: string,
+  config: Record<string, unknown>
+): void {
   const existingContent = existsSync(CONFIG_FILE)
     ? readFileSync(CONFIG_FILE, 'utf-8')
     : '';
 
-  const newContent = mergeConfig(existingContent, 'anthropic', {
-    'api-key': apiKey,
-    model: model,
-  });
+  const newContent = mergeConfig(existingContent, section, config);
 
   writeFileSync(CONFIG_FILE, newContent, 'utf-8');
 }

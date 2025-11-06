@@ -34,7 +34,7 @@ export function loadSkills(): string[] {
       const filePath = join(skillsDir, file);
       return readFileSync(filePath, 'utf-8');
     });
-  } catch (error) {
+  } catch {
     // Return empty array if there's any error reading the directory
     return [];
   }
