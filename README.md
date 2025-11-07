@@ -10,61 +10,40 @@ npm install -g prompt-language-shell
 
 ## Setup
 
-Before using `pls`, you need to configure your Claude API key:
-
-1. Get your API key from [Anthropic Console](https://console.anthropic.com/)
-2. Create the configuration directory and file:
-
-```bash
-mkdir -p ~/.pls
-echo "CLAUDE_API_KEY=sk-ant-your-api-key-here" > ~/.pls/.env
-```
-
-Replace `sk-ant-your-api-key-here` with your actual API key.
+On first run, `pls` walks you through a quick setup. Your settings will be saved to `~/.plsrc`.
 
 ## Usage
 
-Simply type `pls` followed by your request in natural language:
+Type `pls` followed by your request in natural language:
 
 ```bash
 pls change dir to ~
 ```
 
-The tool will:
-
-- Display your original command
-- Process it to grammatically correct and clarify it
-- Show the interpreted task
-
-Example output:
+Your command will be interpreted and organized into a list of tasks:
 
 ```
 > pls change dir to ~
-  - change directory to the home folder
+  - Change directory to the home folder
 ```
 
-You can provide multiple tasks separated by commas (`,`), semicolons (`;`), or the word "and":
-
-```bash
-pls install deps, run tests and deploy
-```
-
-Example output:
+You can provide multiple requests at once:
 
 ```
 > pls install deps, run tests and deploy
-  - install dependencies
-  - run tests
-  - deploy to server
+  - Install dependencies
+  - Run tests
+  - Deploy to server
 ```
 
 Run `pls` without arguments to see the welcome screen.
 
 ## Configuration
 
-Configuration is stored in `~/.pls/.env`. Currently supported:
+Your configuration is stored in `~/.plsrc` as a YAML file. Supported settings:
 
-- `CLAUDE_API_KEY` - Your Anthropic API key (required)
+- `anthropic.api-key` - Your Anthropic API key
+- `anthropic.model` - The Claude model to use for task planning
 
 ## Development
 
