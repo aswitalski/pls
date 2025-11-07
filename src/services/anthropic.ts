@@ -1,25 +1,18 @@
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
 import Anthropic from '@anthropic-ai/sdk';
 
 import { AnthropicConfig } from './config.js';
 import { loadSkills, formatSkillsForPrompt } from './skills.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { toolRegistry } from './tool-registry.js';
+import type { Task } from '../types/components.js';
 
 export interface CommandResult {
-  tasks: string[];
+  tasks: Task[];
   systemPrompt?: string;
 }
 
 export interface LLMService {
-  processCommand(command: string): Promise<CommandResult>;
+  processWithTool(command: string, toolName: string): Promise<CommandResult>;
 }
-
-const PLAN_PROMPT = readFileSync(join(__dirname, '../config/PLAN.md'), 'utf-8');
 
 export class AnthropicService implements LLMService {
   private client: Anthropic;
@@ -30,16 +23,26 @@ export class AnthropicService implements LLMService {
     this.model = model;
   }
 
-  async processCommand(command: string): Promise<CommandResult> {
-    // Load skills and augment the planning prompt
+  async processWithTool(
+    command: string,
+    toolName: string
+  ): Promise<CommandResult> {
+    // Load tool from registry
+    const tool = toolRegistry.getSchema(toolName);
+    const instructions = toolRegistry.getInstructions(toolName);
+
+    // Load skills and augment the instructions
     const skills = loadSkills();
     const skillsSection = formatSkillsForPrompt(skills);
-    const systemPrompt = PLAN_PROMPT + skillsSection;
+    const systemPrompt = instructions + skillsSection;
 
+    // Call API with tool
     const response = await this.client.messages.create({
       model: this.model,
-      max_tokens: 512,
+      max_tokens: 1024,
       system: systemPrompt,
+      tools: [tool],
+      tool_choice: { type: 'any' },
       messages: [
         {
           role: 'user',
@@ -48,44 +51,40 @@ export class AnthropicService implements LLMService {
       ],
     });
 
+    // Check for truncation
+    if (response.stop_reason === 'max_tokens') {
+      throw new Error(
+        'Response was truncated due to length. Please simplify your request or break it into smaller parts.'
+      );
+    }
+
+    // Validate response structure
+    if (
+      response.content.length === 0 ||
+      response.content[0].type !== 'tool_use'
+    ) {
+      throw new Error('Expected tool_use response from Claude API');
+    }
     const content = response.content[0];
-    if (content.type !== 'text') {
-      throw new Error('Unexpected response type from Claude API');
+
+    // Extract and validate tasks array
+    const input = content.input as { tasks?: Task[] };
+    if (!input.tasks || !Array.isArray(input.tasks)) {
+      throw new Error('Invalid tool response: missing or invalid tasks array');
     }
 
-    const text = content.text.trim();
-
-    let tasks: string[];
-
-    // Try to parse as JSON array
-    if (text.startsWith('[') && text.endsWith(']')) {
-      try {
-        const parsed: unknown = JSON.parse(text);
-        if (Array.isArray(parsed)) {
-          // Validate all items are strings
-          const allStrings = parsed.every((item) => typeof item === 'string');
-          if (allStrings) {
-            tasks = parsed.filter(
-              (item): item is string => typeof item === 'string'
-            );
-          } else {
-            tasks = [text];
-          }
-        } else {
-          tasks = [text];
-        }
-      } catch {
-        // If JSON parsing fails, treat as single task
-        tasks = [text];
+    // Validate each task has required action field
+    input.tasks.forEach((task, i) => {
+      if (!task.action || typeof task.action !== 'string') {
+        throw new Error(
+          `Invalid task at index ${String(i)}: missing or invalid 'action' field`
+        );
       }
-    } else {
-      // Single task
-      tasks = [text];
-    }
+    });
 
     const isDebug = process.env.DEBUG === 'true';
     return {
-      tasks,
+      tasks: input.tasks,
       systemPrompt: isDebug ? systemPrompt : undefined,
     };
   }

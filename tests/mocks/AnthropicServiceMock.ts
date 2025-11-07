@@ -2,32 +2,33 @@ import {
   AnthropicService,
   CommandResult,
 } from '../../src/services/anthropic.js';
+import type { Task } from '../../src/types/components.js';
 
 /**
  * Mock implementation of AnthropicService for testing
  */
 export class AnthropicServiceMock extends AnthropicService {
-  private responses: Map<string, string[]> = new Map();
-  private defaultResponse: string[] = ['mock task'];
+  private responses: Map<string, Task[]> = new Map();
+  private defaultResponse: Task[] = [{ action: 'mock task' }];
   private shouldFail = false;
   private errorMessage = 'Mock error';
 
   /**
    * Set a specific response for a given command
    */
-  setResponse(command: string, tasks: string[]): void {
+  setResponse(command: string, tasks: Task[]): void {
     this.responses.set(command, tasks);
   }
 
   /**
    * Set the default response for commands without specific responses
    */
-  setDefaultResponse(tasks: string[]): void {
+  setDefaultResponse(tasks: Task[]): void {
     this.defaultResponse = tasks;
   }
 
   /**
-   * Make the next processCommand call fail with an error
+   * Make the next processWithTool call fail with an error
    */
   setShouldFail(fail: boolean, message = 'Mock error'): void {
     this.shouldFail = fail;
@@ -39,17 +40,17 @@ export class AnthropicServiceMock extends AnthropicService {
    */
   reset(): void {
     this.responses.clear();
-    this.defaultResponse = ['mock task'];
+    this.defaultResponse = [{ action: 'mock task' }];
     this.shouldFail = false;
     this.errorMessage = 'Mock error';
   }
 
-  processCommand(rawCommand: string): Promise<CommandResult> {
+  processWithTool(command: string, _toolName: string): Promise<CommandResult> {
     if (this.shouldFail) {
       return Promise.reject(new Error(this.errorMessage));
     }
 
-    const response = this.responses.get(rawCommand);
+    const response = this.responses.get(command);
     return Promise.resolve({
       tasks: response ?? this.defaultResponse,
     });

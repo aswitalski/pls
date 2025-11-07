@@ -7,6 +7,13 @@ export interface AppInfo {
   isDev: boolean;
 }
 
+// Structured task definition for tool-based planning
+export interface Task {
+  action: string;
+  type?: string;
+  params?: Record<string, unknown>;
+}
+
 // Props for each component type
 export interface WelcomeProps {
   app: AppInfo;
@@ -23,7 +30,7 @@ export interface CommandProps {
   command: string;
   state?: CommandState;
   service?: AnthropicService;
-  tasks?: string[];
+  tasks?: Task[];
   error?: string;
   systemPrompt?: string;
 }

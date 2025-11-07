@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { CommandProps } from '../types/components.js';
+import { CommandProps, Task } from '../types/components.js';
 
 import { Spinner } from './Spinner.js';
 
-const MIN_PROCESSING_TIME = 2000; // purely for visual effect
+const MIN_PROCESSING_TIME = 1000; // purely for visual effect
 
 export function Command({
   command,
@@ -16,7 +16,7 @@ export function Command({
   systemPrompt: systemPromptProp,
 }: CommandProps) {
   const done = state?.done ?? false;
-  const [processedTasks, setProcessedTasks] = useState<string[]>(tasks || []);
+  const [processedTasks, setProcessedTasks] = useState<Task[]>(tasks || []);
   const [systemPrompt, setSystemPrompt] = useState<string | undefined>(
     systemPromptProp
   );
@@ -44,7 +44,7 @@ export function Command({
       const startTime = Date.now();
 
       try {
-        const result = await svc!.processCommand(command);
+        const result = await svc!.processWithTool(command, 'plan');
         const elapsed = Date.now() - startTime;
         const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
 
@@ -100,7 +100,8 @@ export function Command({
           {processedTasks.map((task, index) => (
             <Box key={index}>
               <Text color="whiteBright">{'  - '}</Text>
-              <Text color="white">{task}</Text>
+              <Text color="white">{task.action}</Text>
+              {task.type && <Text color="gray"> ({task.type})</Text>}
             </Box>
           ))}
         </Box>

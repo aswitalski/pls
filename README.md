@@ -42,8 +42,8 @@ Run `pls` without arguments to see the welcome screen.
 
 Your configuration is stored in `~/.plsrc` as a YAML file. Supported settings:
 
-- `anthropic.api-key` - Your Anthropic API key
-- `anthropic.model` - The Claude model to use for task planning
+- `anthropic.key` - Your API key
+- `anthropic.model` - The model to use
 
 ## Development
 

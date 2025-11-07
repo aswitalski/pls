@@ -65,7 +65,9 @@ async function runApp() {
     // Create service once at app initialization
     const service = createAnthropicService(config.anthropic);
 
-    render(<Main app={app} command={command} service={service} isReady={true} />);
+    render(
+      <Main app={app} command={command} service={service} isReady={true} />
+    );
   } catch (error) {
     if (error instanceof ConfigError) {
       render(<Text color="red">{error.message}</Text>);
