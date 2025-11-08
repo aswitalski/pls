@@ -14,6 +14,7 @@
     "build": "tsc && chmod +x dist/index.js && mkdir -p dist/config && cp src/config/*.md dist/config/",
     "dev": "npm run build && tsc --watch",
     "prepare": "husky",
+    "prepublishOnly": "npm run check",
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write '**/*.{ts,tsx}'",
