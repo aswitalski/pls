@@ -1,6 +1,6 @@
 {
   "name": "prompt-language-shell",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "Your personal command-line concierge. Ask politely, and it gets things done.",
   "type": "module",
   "main": "dist/index.js",
@@ -27,12 +27,14 @@
     "url": "git+https://github.com/aswitalski/pls.git"
   },
   "keywords": [
-    "shell",
-    "natural",
-    "language",
-    "command line",
-    "assistant",
-    "concierge"
+    "command line interface",
+    "developer tools",
+    "interactive shell",
+    "natural language processing",
+    "personal concierge",
+    "prompt language",
+    "task execution",
+    "workflow automation"
   ],
   "author": "Sensei Aleksander Świtalski",
   "license": "ISC",
