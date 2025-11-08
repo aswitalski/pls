@@ -84,6 +84,10 @@ derived from available skills:
    parameters
 3. Present these as concrete options, NOT generic categories
 4. Each option should be something the user can directly select and execute
+5. Format options WITHOUT brackets. Use commas to separate extra information
+   instead. For example:
+   - CORRECT: "Build project Alpha, the legacy version"
+   - WRONG: "Build project Alpha (the legacy version)"
 
 Example:
 - Available skills: "Build Product" (variant A, variant B), "Deploy
@@ -440,7 +444,8 @@ Examples showing proper use of skills and disambiguation:
 - "build" with build skill requiring {PROJECT} parameter (Alpha, Beta, Gamma,
   Delta) → One task: type "define", action "Clarify which project to build",
   params { options: ["Build Alpha", "Build Beta", "Build Gamma", "Build
-  Delta"] }
+  Delta"] }. NOTE: If variants have descriptions, format as "Build Alpha, the
+  legacy version" NOT "Build Alpha (the legacy version)"
 - "build Alpha" with same build skill → Three tasks extracted from skill
   steps: "Navigate to the Alpha project's root directory", "Execute the Alpha
   project generation script", "Compile the Alpha source code"

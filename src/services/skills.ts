@@ -55,6 +55,11 @@ export function formatSkillsForPrompt(skills: string[]): string {
 The following skills define domain-specific workflows. When the user's
 query matches a skill, incorporate the skill's steps into your plan.
 
+**IMPORTANT**: When creating options from skill descriptions, do NOT use
+brackets for additional information. Use commas instead. For example:
+- CORRECT: "Build project Alpha, the legacy version"
+- WRONG: "Build project Alpha (the legacy version)"
+
 `;
 
   const skillsContent = skills.join('\n\n');
