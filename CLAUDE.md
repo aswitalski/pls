@@ -205,6 +205,26 @@ early and maintains codebase health. For smaller changes during active
 development, the development mode provides automatic recompilation in watch
 mode.
 
+#### Commit messages
+
+Follow these guidelines for clear, professional commit messages:
+
+- **Imperative mood**: Write as commands that complete "If applied, this commit
+  will [your message]"
+- **Short and focused**: Aim for up to 40 characters, max 60 characters
+- **No period**: Don't end the subject line with a period
+- **Lowercase after verb**: Start with capital letter, use lowercase for the
+  rest unless proper nouns
+- **Single line only**: Use only the subject line, no body or extra information
+
+Examples:
+- `Execute planned tasks`
+- `Generate execution reports`
+- `Answer information requests`
+- `Enable skill sharing`
+- `Support workspace configs`
+- `Add interactive clarifications`
+
 ### Code style
 
 - Use ES modules (import/export) syntax, not CommonJS (require)
