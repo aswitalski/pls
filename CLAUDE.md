@@ -222,6 +222,10 @@ mode.
   - Destructure imports when possible
 - Test naming: Use present tense without "should" (e.g., "parses single task"
   not "should parse single task")
+- Test utilities: For tests that create temporary directories, always use
+  `safeRemoveDirectory` from `tests/test-utils.ts` for cleanup. This utility
+  handles intermittent ENOTEMPTY errors by retrying operations and gracefully
+  handling failures. Never use `rmSync` directly in test cleanup.
 - Prettier formatting: 80 chars, semicolons, single quotes, trailing commas
   (es5, multi-line only), always arrow parens, 2 space indent
 - ESLint rules: Strict TypeScript rules, console allowed, unused vars warn

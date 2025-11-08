@@ -8,6 +8,7 @@ import {
   loadSkills,
   formatSkillsForPrompt,
 } from '../src/services/skills.js';
+import { safeRemoveDirectory } from './test-utils.js';
 
 describe('skills service', () => {
   let originalHome: string | undefined;
@@ -33,10 +34,8 @@ describe('skills service', () => {
       process.env.HOME = originalHome;
     }
 
-    // Clean up temp directory
-    if (existsSync(tempHome)) {
-      rmSync(tempHome, { recursive: true, force: true });
-    }
+    // Clean up temp directory using safe utility
+    safeRemoveDirectory(tempHome);
   });
 
   describe('getSkillsDirectory', () => {
