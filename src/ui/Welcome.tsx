@@ -1,62 +1,76 @@
-import { Text, Box } from 'ink';
+import { Box, Text } from 'ink';
 
-import { WelcomeProps } from '../types/components.js';
+import { WelcomeProps, AppInfo } from '../types/components.js';
+import { Panel } from './Panel.js';
 
-export function Welcome({ app: app }: WelcomeProps) {
-  const descriptionLines = app.description
-    .split('. ')
-    .map((line) => line.replace(/\.$/, ''))
-    .filter(Boolean);
-
-  // Transform package name: "prompt-language-shell" -> "Prompt Language Shell"
+function Header({ app }: { app: AppInfo }) {
   const words = app.name
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
 
   return (
-    <Box alignSelf="flex-start" marginBottom={1}>
-      <Box
-        borderStyle="round"
-        borderColor="green"
-        paddingX={3}
-        paddingY={1}
-        flexDirection="column"
-      >
-        <Box marginBottom={1} gap={1}>
-          {words.map((word, index) => (
-            <Text color="greenBright" bold key={index}>
-              {word}
-            </Text>
-          ))}
-          <Text color="whiteBright" dimColor>
-            v{app.version}
-          </Text>
-          {app.isDev && <Text color="yellowBright">dev</Text>}
+    <Box marginBottom={1} gap={1}>
+      {words.map((word, index) => (
+        <Text color="greenBright" bold key={index}>
+          {word}
+        </Text>
+      ))}
+      <Text color="whiteBright" dimColor>
+        v{app.version}
+      </Text>
+      {app.isDev && <Text color="yellowBright">dev</Text>}
+    </Box>
+  );
+}
+
+function Description({ description }: { description: string }) {
+  const lines = description
+    .split('. ')
+    .map((line) => line.replace(/\.$/, ''))
+    .filter(Boolean);
+
+  return (
+    <>
+      {lines.map((line, index) => (
+        <Box key={index}>
+          <Text color="white">{line}.</Text>
         </Box>
-        {descriptionLines.map((line, index) => (
-          <Box key={index}>
-            <Text color="white">{line}.</Text>
-          </Box>
-        ))}
-        <Box flexDirection="column" marginTop={1}>
-          <Text color="brightWhite" bold>
-            Usage:
+      ))}
+    </>
+  );
+}
+
+function Usage() {
+  return (
+    <Box flexDirection="column" marginTop={1}>
+      <Text color="brightWhite" bold>
+        Usage:
+      </Text>
+      <Box gap={1}>
+        <Text color="whiteBright" dimColor>
+          &gt;
+        </Text>
+        <Box gap={1}>
+          <Text color="greenBright" bold>
+            pls
           </Text>
-          <Box gap={1}>
-            <Text color="whiteBright" dimColor>
-              &gt;
-            </Text>
-            <Box gap={1}>
-              <Text color="greenBright" bold>
-                pls
-              </Text>
-              <Text color="yellow" bold>
-                [describe your request]
-              </Text>
-            </Box>
-          </Box>
+          <Text color="yellow" bold>
+            [describe your request]
+          </Text>
         </Box>
       </Box>
+    </Box>
+  );
+}
+
+export function Welcome({ app }: WelcomeProps) {
+  return (
+    <Box alignSelf="flex-start" marginBottom={1}>
+      <Panel>
+        <Header app={app} />
+        <Description description={app.description} />
+        <Usage />
+      </Panel>
     </Box>
   );
 }

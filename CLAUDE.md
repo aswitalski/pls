@@ -139,29 +139,51 @@ maintain - both now and in the future.
 
 ### Interface
 
-The application uses a component-based architecture that keeps the main
-interface flexible and extensible:
+The interface architecture emphasizes composition, reusability, and separation
+of concerns. Components are designed as single-purpose, generic modules that
+can be composed together to create more complex screens. This approach keeps
+individual components simple, testable, and reusable across different contexts.
+Rather than creating monolithic, application-specific components, the system
+builds up functionality through composition of smaller, focused pieces. The
+goal is to create a library of generic building blocks that can be combined in
+various ways, making the interface flexible and maintainable.
 
-- **Component history system**: The main interface maintains a list of
-  previously displayed components (like welcome screens, configuration steps,
-  or completed commands) and a single current active component that the user
-  is interacting with. This creates a natural conversation-like flow in the
-  terminal.
+The application uses a component-based architecture with these key principles:
+
+- **Component composition**: Complex screens are built by composing simple,
+  single-purpose components. Each component has one clear responsibility and
+  can be reused or replaced independently. Internal components within a file
+  can be used to further break down functionality into focused pieces.
+- **Generic, reusable building blocks**: Layout components (vertical stacking,
+  bordered containers), input components (multi-step forms), and display
+  components (recursive lists, task displays) are designed to be generic and
+  configurable rather than application-specific. They accept props that control
+  their behavior and appearance, making them suitable for different use cases
+  across the application.
+- **Clean component rendering**: A single component wrapper provides a clean
+  entry point for rendering any component definition. It uses straightforward
+  switch logic and proper destructuring rather than complex conditional syntax,
+  making the code easy to read and maintain.
+- **Timeline-based layout**: The main interface maintains an array of component
+  definitions representing the conversation timeline. Layout components render
+  this array with consistent spacing, creating a natural scrollable flow where
+  both historical and current interactions are visible.
 - **Type-safe component definitions**: Each component has a strongly-typed
-  definition that describes what it is, what data it needs, and whether it
-  tracks any internal state. This prevents bugs and makes it clear exactly
-  what information each screen requires.
-- **Stateless and stateful components**: Some screens (like the welcome screen)
-  don't need to track any changing information - they just display static
-  content. Other screens (like configuration or command execution) need to
-  remember where they are in a process. The system handles both cases cleanly.
+  definition that describes its name, props, and optional state. TypeScript's
+  discriminated unions ensure type safety when working with different component
+  types.
+- **Stateless and stateful components**: Some components are stateless and only
+  need props to render. Others track internal state to manage their lifecycle.
+  Component definitions handle both patterns cleanly through optional state
+  fields.
 - **Separation of state and props**: Configuration data (props) is kept
   separate from runtime state. This makes it easier to snapshot what a
-  component looked like when it completed, and allows components to be
-  reusable in different contexts.
-- **Shared rendering logic**: A single utility function knows how to display
-  any component type, eliminating duplicate code and making it easy to add new
-  component types in the future.
+  component looked like when it completed, and allows components to be reusable
+  in different contexts.
+- **Children as composition mechanism**: Components accept children props,
+  enabling flexible composition. This allows dynamic content to be passed in
+  from the outside rather than being hardcoded within the component,
+  facilitating the composition of nested structures.
 
 These design choices make the interface code easier to understand, safer to
 modify, and simpler to extend with new features.

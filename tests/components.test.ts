@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   ComponentDefinition,
-  ConfigureProps,
+  ConfigProps,
   CommandProps,
-  ConfigureState,
+  BaseState,
   CommandState,
   AppInfo,
 } from '../src/types/components.js';
@@ -31,59 +31,66 @@ describe('Component Types', () => {
     });
   });
 
-  describe('ConfigureDefinition', () => {
-    it('creates valid stateful configure definition', () => {
-      const state: ConfigureState = {
+  describe('ConfigDefinition', () => {
+    it('creates valid stateful config definition', () => {
+      const state: BaseState = {
         done: false,
-        step: 'key',
       };
 
       const def: ComponentDefinition = {
-        name: 'configure',
+        name: 'config',
         state,
         props: {
-          onComplete: () => {},
+          steps: [
+            { description: 'API Key', key: 'apiKey', value: null },
+            { description: 'Model', key: 'model', value: 'default' },
+          ],
+          onFinished: () => {},
         },
       };
 
-      expect(def.name).toBe('configure');
+      expect(def.name).toBe('config');
       expect('state' in def && def.state.done).toBe(false);
-      expect('state' in def && def.state.step).toBe('key');
     });
 
-    it('supports all configure steps', () => {
-      const steps: Array<'key' | 'model' | 'done'> = ['key', 'model', 'done'];
+    it('supports multiple configuration steps', () => {
+      const stepConfigs = [
+        { description: 'Username', key: 'username', value: null },
+        { description: 'Password', key: 'password', value: null },
+        { description: 'Server', key: 'server', value: 'localhost' },
+      ];
 
-      steps.forEach((step) => {
-        const state: ConfigureState = {
-          done: step === 'done',
-          step,
-        };
+      const def: ComponentDefinition = {
+        name: 'config',
+        state: { done: false },
+        props: {
+          steps: stepConfigs,
+        },
+      };
 
-        const def: ComponentDefinition = {
-          name: 'configure',
-          state,
-          props: {},
-        };
-
-        expect('state' in def && def.state.step).toBe(step);
-      });
+      expect(def.props.steps).toHaveLength(3);
+      expect(def.props.steps[0].key).toBe('username');
+      expect(def.props.steps[2].value).toBe('localhost');
     });
 
-    it('supports optional key and model props', () => {
-      const props: ConfigureProps = {
-        key: 'sk-ant-test',
-        model: 'claude-haiku-4-5-20251001',
+    it('supports onFinished callback', () => {
+      const props: ConfigProps = {
+        steps: [
+          { description: 'API Key', key: 'apiKey', value: null },
+          { description: 'Model', key: 'model', value: 'default-model' },
+        ],
+        onFinished: (config) => {
+          expect(config).toBeDefined();
+        },
       };
 
       const def: ComponentDefinition = {
-        name: 'configure',
+        name: 'config',
         state: { done: false },
         props,
       };
 
-      expect(def.props.key).toBe('sk-ant-test');
-      expect(def.props.model).toBe('claude-haiku-4-5-20251001');
+      expect(def.props.onFinished).toBeDefined();
     });
   });
 
@@ -126,12 +133,11 @@ describe('Component Types', () => {
       expect('state' in def && def.state.error).toBe('Test error');
     });
 
-    it('supports optional tasks and error props', () => {
+    it('supports optional error and children props', () => {
       const props: CommandProps = {
         command: 'test',
-        tasks: ['task 1', 'task 2'],
         error: 'Some error',
-        systemPrompt: 'Test prompt',
+        children: 'Test content',
       };
 
       const def: ComponentDefinition = {
@@ -140,9 +146,8 @@ describe('Component Types', () => {
         props,
       };
 
-      expect(def.props.tasks).toEqual(['task 1', 'task 2']);
       expect(def.props.error).toBe('Some error');
-      expect(def.props.systemPrompt).toBe('Test prompt');
+      expect(def.props.children).toBe('Test content');
     });
   });
 
@@ -154,9 +159,11 @@ describe('Component Types', () => {
           props: { app: mockApp },
         },
         {
-          name: 'configure',
+          name: 'config',
           state: { done: false },
-          props: {},
+          props: {
+            steps: [{ description: 'Test', key: 'test', value: null }],
+          },
         },
         {
           name: 'command',
@@ -171,7 +178,7 @@ describe('Component Types', () => {
             expect('state' in def).toBe(false);
             expect(def.props.app).toBeDefined();
             break;
-          case 'configure':
+          case 'config':
             expect('state' in def).toBe(true);
             if ('state' in def) {
               expect(def.state.done).toBeDefined();
@@ -190,18 +197,23 @@ describe('Component Types', () => {
   });
 
   describe('State lifecycle', () => {
-    it('tracks configure component from start to done', () => {
-      const states: ConfigureState[] = [
-        { done: false, step: 'key' },
-        { done: false, step: 'model' },
-        { done: true, step: 'done' },
+    it('tracks config component from start to done', () => {
+      const states: BaseState[] = [
+        { done: false },
+        { done: false },
+        { done: true },
       ];
 
       states.forEach((state, index) => {
         const def: ComponentDefinition = {
-          name: 'configure',
+          name: 'config',
           state,
-          props: {},
+          props: {
+            steps: [
+              { description: 'Step 1', key: 'step1', value: null },
+              { description: 'Step 2', key: 'step2', value: null },
+            ],
+          },
         };
 
         if (index < 2) {

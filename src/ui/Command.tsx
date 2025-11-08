@@ -2,43 +2,104 @@ import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 import type { ReactNode } from 'react';
 
-import { CommandProps, Task, TaskType } from '../types/components.js';
+import { CommandProps } from '../types/components.js';
+import { Task, TaskType } from '../types/components.js';
 
 import { Spinner } from './Spinner.js';
+import { List } from './List.js';
 
 const MIN_PROCESSING_TIME = 1000; // purely for visual effect
 
-function getTaskActionColor(taskType: TaskType): string {
-  return taskType === TaskType.Ignore ? 'yellow' : 'white';
-}
+type ColoredText = { text: string; color: string };
 
-function getTaskTypeColor(taskType: TaskType): string {
-  if (taskType === TaskType.Ignore) return 'red';
-  if (taskType === TaskType.Define) return 'blue';
-  return 'greenBright';
-}
+// Color palette
+const ColorPalette: Record<TaskType, { description: string; type: string }> = {
+  [TaskType.Config]: {
+    description: '#ffffff', // white
+    type: '#5c9ccc', // cyan
+  },
+  [TaskType.Plan]: {
+    description: '#ffffff', // white
+    type: '#cc5c9c', // magenta
+  },
+  [TaskType.Execute]: {
+    description: '#ffffff', // white
+    type: '#4a9a7a', // green
+  },
+  [TaskType.Answer]: {
+    description: '#ffffff', // white
+    type: '#9c5ccc', // purple
+  },
+  [TaskType.Report]: {
+    description: '#ffffff', // white
+    type: '#cc9c5c', // orange
+  },
+  [TaskType.Define]: {
+    description: '#ffffff', // white
+    type: '#cc9c5c', // amber
+  },
+  [TaskType.Ignore]: {
+    description: '#cccc5c', // yellow
+    type: '#cc7a5c', // orange
+  },
+  [TaskType.Select]: {
+    description: '#888888', // grey
+    type: '#5c8cbc', // steel blue
+  },
+};
 
-function shouldDimTaskType(taskType: TaskType): boolean {
-  return taskType !== TaskType.Define;
+function taskToListItem(task: Task) {
+  const colors = ColorPalette[task.type];
+
+  const item: {
+    description: ColoredText;
+    type: ColoredText;
+    children?: {
+      description: ColoredText;
+      type: ColoredText;
+    }[];
+  } = {
+    description: {
+      text: task.action,
+      color: colors.description,
+    },
+    type: {
+      text: task.type,
+      color: colors.type,
+    },
+  };
+
+  // Add children for Define tasks with options
+  if (task.type === TaskType.Define && Array.isArray(task.params?.options)) {
+    const selectColors = ColorPalette[TaskType.Select];
+    item.children = (task.params.options as string[]).map((option) => ({
+      description: {
+        text: String(option),
+        color: selectColors.description,
+      },
+      type: {
+        text: TaskType.Select,
+        color: selectColors.type,
+      },
+    }));
+  }
+
+  return item;
 }
 
 export function Command({
   command,
   state,
   service,
-  tasks,
   error: errorProp,
-  systemPrompt: systemPromptProp,
+  children,
 }: CommandProps) {
   const done = state?.done ?? false;
-  const [processedTasks, setProcessedTasks] = useState<Task[]>(tasks || []);
-  const [systemPrompt, setSystemPrompt] = useState<string | undefined>(
-    systemPromptProp
-  );
   const [error, setError] = useState<string | null>(
     state?.error || errorProp || null
   );
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     // Skip processing if done (showing historical/final state)
@@ -66,8 +127,7 @@ export function Command({
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
 
         if (mounted) {
-          setProcessedTasks(result.tasks);
-          setSystemPrompt(result.systemPrompt);
+          setTasks(result.tasks);
           setIsLoading(false);
         }
       } catch (err) {
@@ -110,42 +170,13 @@ export function Command({
         </Box>
       )}
 
-      {processedTasks.length > 0 && (
-        <Box flexDirection="column">
-          {processedTasks.map((task, index) => (
-            <Box key={index} flexDirection="column">
-              <Box>
-                <Text color="whiteBright">{'  - '}</Text>
-                <Text color={getTaskActionColor(task.type)}>{task.action}</Text>
-                <Text
-                  color={getTaskTypeColor(task.type)}
-                  dimColor={shouldDimTaskType(task.type)}
-                >
-                  {' '}
-                  ({task.type})
-                </Text>
-              </Box>
-              {
-                (task.type === TaskType.Define &&
-                  task.params?.options &&
-                  Array.isArray(task.params.options) && (
-                    <Box flexDirection="column" marginLeft={4}>
-                      {(task.params.options as unknown[]).map(
-                        (option, optIndex) => (
-                          <Box key={optIndex}>
-                            <Text color="whiteBright" dimColor>
-                              - {String(option)}
-                            </Text>
-                          </Box>
-                        )
-                      )}
-                    </Box>
-                  )) as ReactNode
-              }
-            </Box>
-          ))}
+      {!isLoading && tasks.length > 0 && (
+        <Box marginTop={1}>
+          <List items={tasks.map(taskToListItem)} />
         </Box>
       )}
+
+      {children}
     </Box>
   );
 }

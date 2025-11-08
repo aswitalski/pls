@@ -1,3 +1,5 @@
+import React from 'react';
+
 import { AnthropicService } from '../services/anthropic.js';
 
 export interface AppInfo {
@@ -15,6 +17,7 @@ export enum TaskType {
   Report = 'report',
   Define = 'define',
   Ignore = 'ignore',
+  Select = 'select',
 }
 
 // Structured task definition for tool-based planning
@@ -29,20 +32,24 @@ export interface WelcomeProps {
   app: AppInfo;
 }
 
-export interface ConfigureProps {
-  key?: string;
-  model?: string;
-  state?: ConfigureState;
-  onComplete?: (config: { key: string; model: string }) => void;
+export interface ConfigProps<
+  T extends Record<string, string> = Record<string, string>,
+> {
+  steps: Array<{
+    description: string;
+    key: string;
+    value: string | null;
+  }>;
+  state?: BaseState;
+  onFinished?: (config: T) => void;
 }
 
 export interface CommandProps {
   command: string;
   state?: CommandState;
   service?: AnthropicService;
-  tasks?: Task[];
   error?: string;
-  systemPrompt?: string;
+  children?: React.ReactNode;
 }
 
 // Base state interface - all stateful components extend this
@@ -51,10 +58,6 @@ export interface BaseState {
 }
 
 // Component-specific states
-export interface ConfigureState extends BaseState {
-  step?: 'key' | 'model' | 'done';
-}
-
 export interface CommandState extends BaseState {
   isLoading?: boolean;
   error?: string;
@@ -81,11 +84,7 @@ interface StatefulDefinition<
 
 // Specific component definitions
 type WelcomeDefinition = StatelessDefinition<'welcome', WelcomeProps>;
-type ConfigureDefinition = StatefulDefinition<
-  'configure',
-  ConfigureProps,
-  ConfigureState
->;
+type ConfigDefinition = StatefulDefinition<'config', ConfigProps, BaseState>;
 type CommandDefinition = StatefulDefinition<
   'command',
   CommandProps,
@@ -95,5 +94,5 @@ type CommandDefinition = StatefulDefinition<
 // Discriminated union of all component definitions
 export type ComponentDefinition =
   | WelcomeDefinition
-  | ConfigureDefinition
+  | ConfigDefinition
   | CommandDefinition;

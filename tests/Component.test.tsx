@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { renderComponent } from '../src/ui/renderComponent.js';
+import { Component } from '../src/ui/Component.js';
 import { ComponentDefinition, AppInfo } from '../src/types/components.js';
 
-describe('renderComponent', () => {
+describe('Component', () => {
   const mockApp: AppInfo = {
     name: 'test-app',
     version: '1.0.0',
@@ -18,49 +18,57 @@ describe('renderComponent', () => {
       },
     };
 
-    const result = renderComponent(def);
+    const result = <Component def={def} />;
 
     expect(result).toBeDefined();
     expect(result.type).toBeDefined();
     expect(result.props).toBeDefined();
   });
 
-  it('renders configure component without state', () => {
+  it('renders config component without state', () => {
     const def: ComponentDefinition = {
-      name: 'configure',
+      name: 'config',
       state: {
         done: false,
-        step: 'key',
+        currentStepIndex: 0,
       },
       props: {
-        onComplete: () => {},
+        steps: [
+          { description: 'API Key', key: 'apiKey', value: null },
+          { description: 'Model', key: 'model', value: 'default-model' },
+        ],
+        onFinished: () => {},
       },
     };
 
-    const result = renderComponent(def);
+    const result = <Component def={def} />;
 
     expect(result).toBeDefined();
-    expect(result.props.state).toBeDefined();
-    expect(result.props.state.done).toBe(false);
+    expect(result.props.def.state).toBeDefined();
+    expect(result.props.def.state.done).toBe(false);
   });
 
-  it('renders configure component with initial values', () => {
+  it('renders config component with multiple steps', () => {
     const def: ComponentDefinition = {
-      name: 'configure',
+      name: 'config',
       state: {
         done: false,
-        step: 'model',
+        currentStepIndex: 1,
       },
       props: {
-        model: 'claude-haiku-4-5-20251001',
+        steps: [
+          { description: 'Username', key: 'username', value: null },
+          { description: 'Password', key: 'password', value: null },
+          { description: 'Server', key: 'server', value: 'localhost' },
+        ],
       },
     };
 
-    const result = renderComponent(def);
+    const result = <Component def={def} />;
 
     expect(result).toBeDefined();
-    expect(result.props.model).toBe('claude-haiku-4-5-20251001');
-    expect(result.props.state.step).toBe('model');
+    expect(result.props.def.props.steps).toHaveLength(3);
+    expect(result.props.def.state.currentStepIndex).toBe(1);
   });
 
   it('renders command component in loading state', () => {
@@ -75,14 +83,14 @@ describe('renderComponent', () => {
       },
     };
 
-    const result = renderComponent(def);
+    const result = <Component def={def} />;
 
     expect(result).toBeDefined();
-    expect(result.props.command).toBe('test command');
-    expect(result.props.state.isLoading).toBe(true);
+    expect(result.props.def.props.command).toBe('test command');
+    expect(result.props.def.state.isLoading).toBe(true);
   });
 
-  it('renders command component with tasks', () => {
+  it('renders command component with children', () => {
     const def: ComponentDefinition = {
       name: 'command',
       state: {
@@ -91,15 +99,15 @@ describe('renderComponent', () => {
       },
       props: {
         command: 'test command',
-        tasks: ['task 1', 'task 2', 'task 3'],
+        children: 'Some content',
       },
     };
 
-    const result = renderComponent(def);
+    const result = <Component def={def} />;
 
     expect(result).toBeDefined();
-    expect(result.props.tasks).toEqual(['task 1', 'task 2', 'task 3']);
-    expect(result.props.state.done).toBe(true);
+    expect(result.props.def.props.children).toBe('Some content');
+    expect(result.props.def.state.done).toBe(true);
   });
 
   it('renders command component with error', () => {
@@ -116,11 +124,11 @@ describe('renderComponent', () => {
       },
     };
 
-    const result = renderComponent(def);
+    const result = <Component def={def} />;
 
     expect(result).toBeDefined();
-    expect(result.props.error).toBe('Something went wrong');
-    expect(result.props.state.error).toBe('Something went wrong');
+    expect(result.props.def.props.error).toBe('Something went wrong');
+    expect(result.props.def.state.error).toBe('Something went wrong');
   });
 
   it('passes undefined state for stateless components', () => {
@@ -131,11 +139,11 @@ describe('renderComponent', () => {
       },
     };
 
-    const result = renderComponent(def);
+    const result = <Component def={def} />;
 
     // Welcome component doesn't have state, but we verify it doesn't break
     expect(result).toBeDefined();
-    expect('state' in result.props).toBe(false);
+    expect('state' in result.props.def).toBe(false);
   });
 
   it('renders all component types in sequence', () => {
@@ -145,9 +153,11 @@ describe('renderComponent', () => {
         props: { app: mockApp },
       },
       {
-        name: 'configure',
-        state: { done: false, step: 'key' },
-        props: {},
+        name: 'config',
+        state: { done: false, currentStepIndex: 0 },
+        props: {
+          steps: [{ description: 'Test', key: 'test', value: null }],
+        },
       },
       {
         name: 'command',
@@ -156,7 +166,7 @@ describe('renderComponent', () => {
       },
     ];
 
-    const results = definitions.map((def) => renderComponent(def));
+    const results = definitions.map((def) => <Component def={def} />);
 
     expect(results).toHaveLength(3);
     results.forEach((result) => {

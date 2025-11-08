@@ -1,21 +1,21 @@
 import React from 'react';
-import { Box } from 'ink';
 
 import { AnthropicService } from '../services/anthropic.js';
 import { ComponentDefinition, AppInfo } from '../types/components.js';
 
-import { History } from './History.js';
-import { renderComponent } from './renderComponent.js';
+import { Column } from './Column.js';
+
+interface AnthropicConfig extends Record<string, string> {
+  key: string;
+  model: string;
+}
 
 interface MainProps {
   app: AppInfo;
   command: string | null;
   service?: AnthropicService;
   isReady: boolean;
-  onConfigured?: (config: {
-    key: string;
-    model: string;
-  }) => AnthropicService | void;
+  onConfigured?: (config: AnthropicConfig) => AnthropicService | void;
 }
 
 export const Main = ({
@@ -33,7 +33,7 @@ export const Main = ({
   React.useEffect(() => {
     // Initialize history and current component based on props
     if (!isReady) {
-      // Not configured - show welcome in history, configure as current
+      // Not configured - show welcome in history, config as current
       setHistory([
         {
           name: 'welcome',
@@ -42,14 +42,32 @@ export const Main = ({
           },
         },
       ]);
+
+      const configSteps: Array<{
+        description: string;
+        key: string;
+        value: string | null;
+      }> = [
+        { description: 'Anthropic API key', key: 'key', value: null },
+        {
+          description: 'Model',
+          key: 'model',
+          value: 'claude-haiku-4-5-20251001',
+        },
+      ];
+
       setCurrent({
-        name: 'configure',
+        name: 'config',
         state: {
           done: false,
-          step: 'key',
         },
         props: {
-          onComplete: onConfigured,
+          steps: configSteps,
+          onFinished: (config) => {
+            if (onConfigured) {
+              onConfigured(config as AnthropicConfig);
+            }
+          },
         },
       });
     } else if (command && service) {
@@ -74,10 +92,7 @@ export const Main = ({
     }
   }, [isReady, command, service, app, onConfigured]);
 
-  return (
-    <Box marginTop={1} flexDirection="column" gap={1}>
-      <History items={history} />
-      {current && renderComponent(current)}
-    </Box>
-  );
+  const items = [...history, ...(current ? [current] : [])];
+
+  return <Column items={items} />;
 };
