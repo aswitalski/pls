@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
-import type { ReactNode } from 'react';
 
-import { CommandProps } from '../types/components.js';
-import { Task, TaskType } from '../types/components.js';
+import { CommandProps, Task, TaskType } from '../types/components.js';
 
-import { Spinner } from './Spinner.js';
 import { List } from './List.js';
+import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000; // purely for visual effect
 

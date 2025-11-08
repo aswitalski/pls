@@ -1,7 +1,6 @@
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
 import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages';
 

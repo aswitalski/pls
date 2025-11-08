@@ -1,9 +1,10 @@
 import React from 'react';
 
 import { ComponentDefinition } from '../types/components.js';
-import { Welcome } from './Welcome.js';
-import { Config } from './Config.js';
+
 import { Command } from './Command.js';
+import { Config } from './Config.js';
+import { Welcome } from './Welcome.js';
 
 interface ComponentProps {
   def: ComponentDefinition;

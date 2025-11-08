@@ -1,6 +1,7 @@
 import { Box, Text } from 'ink';
 
-import { WelcomeProps, AppInfo } from '../types/components.js';
+import { AppInfo, WelcomeProps } from '../types/components.js';
+
 import { Panel } from './Panel.js';
 
 function Header({ app }: { app: AppInfo }) {

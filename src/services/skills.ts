@@ -1,6 +1,6 @@
-import { readFileSync, readdirSync, existsSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readdirSync, readFileSync } from 'fs';
 import { homedir } from 'os';
+import { join } from 'path';
 
 /**
  * Get the path to the skills directory

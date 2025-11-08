@@ -2,6 +2,7 @@ import React from 'react';
 import { Box } from 'ink';
 
 import { ComponentDefinition } from '../types/components.js';
+
 import { Component } from './Component.js';
 
 interface ColumnProps {

@@ -210,12 +210,16 @@ mode.
 - Use ES modules (import/export) syntax, not CommonJS (require)
 - Entry point at src/index.tsx with #!/usr/bin/env node shebang
 - Use .tsx extension for files with JSX, .ts for plain TypeScript
-- Destructure imports when possible
-- Import grouping: Sort imports into groups separated by empty lines:
-  1. Libraries (react, ink, etc.)
-  2. Utils and helpers
-  3. Services
-  4. UI components
+- Import organization: Follow these rules for clean, maintainable imports:
+  - Group imports into sections separated by empty lines:
+    1. Libraries (Node built-ins, external packages like react, ink, etc.)
+    2. Types (TypeScript type imports)
+    3. Services and helpers (local services, utilities, helpers)
+    4. UI components (local UI components)
+  - Within each group, sort imports alphabetically
+  - Use single import statements for multiple items from the same source
+  - Avoid unused imports
+  - Destructure imports when possible
 - Test naming: Use present tense without "should" (e.g., "parses single task"
   not "should parse single task")
 - Prettier formatting: 80 chars, semicolons, single quotes, trailing commas

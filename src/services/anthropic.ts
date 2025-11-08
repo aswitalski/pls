@@ -1,9 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-import { AnthropicConfig } from './config.js';
-import { loadSkills, formatSkillsForPrompt } from './skills.js';
-import { toolRegistry } from './tool-registry.js';
 import type { Task } from '../types/components.js';
+
+import { AnthropicConfig } from './config.js';
+import { formatSkillsForPrompt, loadSkills } from './skills.js';
+import { toolRegistry } from './tool-registry.js';
 
 export interface CommandResult {
   tasks: Task[];

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import { readFileSync, existsSync } from 'fs';
-import { fileURLToPath } from 'url';
+import { existsSync, readFileSync } from 'fs';
 import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { render, Text } from 'ink';
 
 import {
-  loadConfig,
   ConfigError,
   configExists,
+  loadConfig,
   saveConfig,
 } from './services/config.js';
 import { createAnthropicService } from './services/anthropic.js';

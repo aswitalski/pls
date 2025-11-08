@@ -1,7 +1,8 @@
 import React from 'react';
 
+import { AppInfo, ComponentDefinition } from '../types/components.js';
+
 import { AnthropicService } from '../services/anthropic.js';
-import { ComponentDefinition, AppInfo } from '../types/components.js';
 
 import { Column } from './Column.js';
 
