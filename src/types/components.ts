@@ -7,10 +7,20 @@ export interface AppInfo {
   isDev: boolean;
 }
 
+export enum TaskType {
+  Config = 'config',
+  Plan = 'plan',
+  Execute = 'execute',
+  Answer = 'answer',
+  Report = 'report',
+  Define = 'define',
+  Ignore = 'ignore',
+}
+
 // Structured task definition for tool-based planning
 export interface Task {
   action: string;
-  type?: string;
+  type: TaskType;
   params?: Record<string, unknown>;
 }
 

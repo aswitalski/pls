@@ -1,11 +1,26 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
+import type { ReactNode } from 'react';
 
-import { CommandProps, Task } from '../types/components.js';
+import { CommandProps, Task, TaskType } from '../types/components.js';
 
 import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000; // purely for visual effect
+
+function getTaskActionColor(taskType: TaskType): string {
+  return taskType === TaskType.Ignore ? 'yellow' : 'white';
+}
+
+function getTaskTypeColor(taskType: TaskType): string {
+  if (taskType === TaskType.Ignore) return 'red';
+  if (taskType === TaskType.Define) return 'blue';
+  return 'greenBright';
+}
+
+function shouldDimTaskType(taskType: TaskType): boolean {
+  return taskType !== TaskType.Define;
+}
 
 export function Command({
   command,
@@ -98,10 +113,35 @@ export function Command({
       {processedTasks.length > 0 && (
         <Box flexDirection="column">
           {processedTasks.map((task, index) => (
-            <Box key={index}>
-              <Text color="whiteBright">{'  - '}</Text>
-              <Text color="white">{task.action}</Text>
-              {task.type && <Text color="gray"> ({task.type})</Text>}
+            <Box key={index} flexDirection="column">
+              <Box>
+                <Text color="whiteBright">{'  - '}</Text>
+                <Text color={getTaskActionColor(task.type)}>{task.action}</Text>
+                <Text
+                  color={getTaskTypeColor(task.type)}
+                  dimColor={shouldDimTaskType(task.type)}
+                >
+                  {' '}
+                  ({task.type})
+                </Text>
+              </Box>
+              {
+                (task.type === TaskType.Define &&
+                  task.params?.options &&
+                  Array.isArray(task.params.options) && (
+                    <Box flexDirection="column" marginLeft={4}>
+                      {(task.params.options as unknown[]).map(
+                        (option, optIndex) => (
+                          <Box key={optIndex}>
+                            <Text color="whiteBright" dimColor>
+                              - {String(option)}
+                            </Text>
+                          </Box>
+                        )
+                      )}
+                    </Box>
+                  )) as ReactNode
+              }
             </Box>
           ))}
         </Box>

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AnthropicService } from '../src/services/anthropic.js';
+import { TaskType } from '../src/types/components.js';
 import Anthropic from '@anthropic-ai/sdk';
 
 // Mock the Anthropic SDK
@@ -49,7 +50,7 @@ describe('AnthropicService - Tool-based processing', () => {
               tasks: [
                 {
                   action: 'change directory to the home folder',
-                  type: 'execute',
+                  type: TaskType.Execute,
                   params: { command: 'cd ~' },
                 },
               ],
@@ -64,7 +65,7 @@ describe('AnthropicService - Tool-based processing', () => {
       expect(result.tasks).toEqual([
         {
           action: 'change directory to the home folder',
-          type: 'execute',
+          type: TaskType.Execute,
           params: { command: 'cd ~' },
         },
       ]);
@@ -89,17 +90,17 @@ describe('AnthropicService - Tool-based processing', () => {
               tasks: [
                 {
                   action: 'install dependencies',
-                  type: 'execute',
+                  type: TaskType.Execute,
                   params: { command: 'npm install' },
                 },
                 {
                   action: 'run tests',
-                  type: 'execute',
+                  type: TaskType.Execute,
                   params: { command: 'npm test' },
                 },
                 {
                   action: 'deploy application',
-                  type: 'execute',
+                  type: TaskType.Execute,
                   params: { command: 'npm run deploy' },
                 },
               ],
@@ -117,17 +118,17 @@ describe('AnthropicService - Tool-based processing', () => {
       expect(result.tasks).toEqual([
         {
           action: 'install dependencies',
-          type: 'execute',
+          type: TaskType.Execute,
           params: { command: 'npm install' },
         },
         {
           action: 'run tests',
-          type: 'execute',
+          type: TaskType.Execute,
           params: { command: 'npm test' },
         },
         {
           action: 'deploy application',
-          type: 'execute',
+          type: TaskType.Execute,
           params: { command: 'npm run deploy' },
         },
       ]);
@@ -147,11 +148,11 @@ describe('AnthropicService - Tool-based processing', () => {
                 },
                 {
                   action: 'create directory',
-                  type: 'execute',
+                  type: TaskType.Execute,
                 },
                 {
                   action: 'install package',
-                  type: 'execute',
+                  type: TaskType.Execute,
                   params: { command: 'npm install lodash' },
                 },
               ],
@@ -169,11 +170,11 @@ describe('AnthropicService - Tool-based processing', () => {
         },
         {
           action: 'create directory',
-          type: 'execute',
+          type: TaskType.Execute,
         },
         {
           action: 'install package',
-          type: 'execute',
+          type: TaskType.Execute,
           params: { command: 'npm install lodash' },
         },
       ]);
@@ -190,7 +191,7 @@ describe('AnthropicService - Tool-based processing', () => {
               tasks: [
                 {
                   action: 'fetch API data',
-                  type: 'execute',
+                  type: TaskType.Execute,
                   params: {
                     url: 'https://api.example.com/data',
                     method: 'POST',
@@ -292,6 +293,135 @@ describe('AnthropicService - Tool-based processing', () => {
 
       expect(result.tasks).toEqual([]);
     });
+
+    it('handles define type tasks with options', async () => {
+      mockCreate.mockResolvedValue({
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tool_define',
+            name: 'plan',
+            input: {
+              tasks: [
+                {
+                  action: 'Clarify what action to perform',
+                  type: TaskType.Define,
+                  params: {
+                    options: [
+                      'Deploy application',
+                      'Run linter',
+                      'Generate documentation',
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        stop_reason: 'end_turn',
+      });
+
+      const result = await service.processWithTool('do something', 'plan');
+
+      expect(result.tasks).toEqual([
+        {
+          action: 'Clarify what action to perform',
+          type: TaskType.Define,
+          params: {
+            options: [
+              'Deploy application',
+              'Run linter',
+              'Generate documentation',
+            ],
+          },
+        },
+      ]);
+    });
+
+    it('handles mixed clear and define tasks', async () => {
+      mockCreate.mockResolvedValue({
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tool_mixed',
+            name: 'plan',
+            input: {
+              tasks: [
+                {
+                  action: 'Build the project',
+                  type: TaskType.Execute,
+                },
+                {
+                  action: 'Clarify what action to perform',
+                  type: TaskType.Define,
+                  params: {
+                    options: ['Deploy application', 'Run linter'],
+                  },
+                },
+                {
+                  action: 'Run tests',
+                  type: TaskType.Execute,
+                },
+              ],
+            },
+          },
+        ],
+        stop_reason: 'end_turn',
+      });
+
+      const result = await service.processWithTool(
+        'build project, do something, run tests',
+        'plan'
+      );
+
+      expect(result.tasks).toEqual([
+        {
+          action: 'Build the project',
+          type: TaskType.Execute,
+        },
+        {
+          action: 'Clarify what action to perform',
+          type: TaskType.Define,
+          params: {
+            options: ['Deploy application', 'Run linter'],
+          },
+        },
+        {
+          action: 'Run tests',
+          type: TaskType.Execute,
+        },
+      ]);
+    });
+
+    it('handles ignore type for vague requests', async () => {
+      mockCreate.mockResolvedValue({
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tool_ignore',
+            name: 'plan',
+            input: {
+              tasks: [
+                {
+                  action: "Skip unknown 'do stuff' request",
+                  type: TaskType.Ignore,
+                },
+              ],
+            },
+          },
+        ],
+        stop_reason: 'end_turn',
+      });
+
+      const result = await service.processWithTool('do stuff', 'plan');
+
+      expect(result.tasks).toEqual([
+        {
+          action: "Skip unknown 'do stuff' request",
+          type: TaskType.Ignore,
+        },
+      ]);
+    });
   });
 
   describe('Metadata support', () => {
@@ -306,7 +436,7 @@ describe('AnthropicService - Tool-based processing', () => {
               tasks: [
                 {
                   action: 'install dependencies',
-                  type: 'execute',
+                  type: TaskType.Execute,
                   params: { command: 'npm install' },
                 },
               ],
@@ -367,7 +497,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_bad',
             name: 'plan',
             input: {
-              tasks: [{ type: 'execute' }],
+              tasks: [{ type: TaskType.Execute }],
             },
           },
         ],

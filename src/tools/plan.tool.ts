@@ -21,7 +21,7 @@ export const planTool: Tool = {
             type: {
               type: 'string',
               description:
-                'Type of task: "config" (settings), "plan" (planning), "execute" (shell/programs/finding files), "answer" (questions), "report" (summaries)',
+                'Type of task: "config" (settings), "plan" (planning), "execute" (shell/programs/finding files), "answer" (questions), "report" (summaries), "define" (skill-based disambiguation), "ignore" (too vague)',
             },
             params: {
               type: 'object',

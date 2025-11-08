@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AnthropicServiceMock } from './mocks/AnthropicServiceMock.js';
+import { TaskType } from '../src/types/components.js';
 
 describe('Integration Tests', () => {
   let mockService: AnthropicServiceMock;
@@ -11,7 +12,10 @@ describe('Integration Tests', () => {
   describe('Single task processing', () => {
     it('processes single task command', async () => {
       mockService.setResponse('change dir to ~', [
-        { action: 'Change directory to the home folder', type: 'execute' },
+        {
+          action: 'Change directory to the home folder',
+          type: TaskType.Execute,
+        },
       ]);
 
       const result = await mockService.processWithTool(
@@ -20,19 +24,22 @@ describe('Integration Tests', () => {
       );
 
       expect(result.tasks).toEqual([
-        { action: 'Change directory to the home folder', type: 'execute' },
+        {
+          action: 'Change directory to the home folder',
+          type: TaskType.Execute,
+        },
       ]);
     });
 
     it('processes abbreviations', async () => {
       mockService.setResponse('install deps', [
-        { action: 'Install dependencies', type: 'execute' },
+        { action: 'Install dependencies', type: TaskType.Execute },
       ]);
 
       const result = await mockService.processWithTool('install deps', 'plan');
 
       expect(result.tasks).toEqual([
-        { action: 'Install dependencies', type: 'execute' },
+        { action: 'Install dependencies', type: TaskType.Execute },
       ]);
     });
   });
@@ -40,8 +47,8 @@ describe('Integration Tests', () => {
   describe('Multiple task processing', () => {
     it('processes comma-separated tasks', async () => {
       mockService.setResponse('install deps, run tests', [
-        { action: 'Install dependencies', type: 'execute' },
-        { action: 'Run tests', type: 'execute' },
+        { action: 'Install dependencies', type: TaskType.Execute },
+        { action: 'Run tests', type: TaskType.Execute },
       ]);
 
       const result = await mockService.processWithTool(
@@ -50,15 +57,15 @@ describe('Integration Tests', () => {
       );
 
       expect(result.tasks).toEqual([
-        { action: 'Install dependencies', type: 'execute' },
-        { action: 'Run tests', type: 'execute' },
+        { action: 'Install dependencies', type: TaskType.Execute },
+        { action: 'Run tests', type: TaskType.Execute },
       ]);
     });
 
     it('processes semicolon-separated tasks', async () => {
       mockService.setResponse('create file; add content', [
-        { action: 'Create a file', type: 'execute' },
-        { action: 'Add content', type: 'execute' },
+        { action: 'Create a file', type: TaskType.Execute },
+        { action: 'Add content', type: TaskType.Execute },
       ]);
 
       const result = await mockService.processWithTool(
@@ -67,15 +74,15 @@ describe('Integration Tests', () => {
       );
 
       expect(result.tasks).toEqual([
-        { action: 'Create a file', type: 'execute' },
-        { action: 'Add content', type: 'execute' },
+        { action: 'Create a file', type: TaskType.Execute },
+        { action: 'Add content', type: TaskType.Execute },
       ]);
     });
 
     it('processes and-separated tasks', async () => {
       mockService.setResponse('build project and deploy', [
-        { action: 'Build the project', type: 'execute' },
-        { action: 'Deploy', type: 'execute' },
+        { action: 'Build the project', type: TaskType.Execute },
+        { action: 'Deploy', type: TaskType.Execute },
       ]);
 
       const result = await mockService.processWithTool(
@@ -84,16 +91,16 @@ describe('Integration Tests', () => {
       );
 
       expect(result.tasks).toEqual([
-        { action: 'Build the project', type: 'execute' },
-        { action: 'Deploy', type: 'execute' },
+        { action: 'Build the project', type: TaskType.Execute },
+        { action: 'Deploy', type: TaskType.Execute },
       ]);
     });
 
     it('processes three tasks', async () => {
       mockService.setResponse('install deps, run tests, deploy', [
-        { action: 'Install dependencies', type: 'execute' },
-        { action: 'Run tests', type: 'execute' },
-        { action: 'Deploy', type: 'execute' },
+        { action: 'Install dependencies', type: TaskType.Execute },
+        { action: 'Run tests', type: TaskType.Execute },
+        { action: 'Deploy', type: TaskType.Execute },
       ]);
 
       const result = await mockService.processWithTool(
@@ -102,9 +109,9 @@ describe('Integration Tests', () => {
       );
 
       expect(result.tasks).toEqual([
-        { action: 'Install dependencies', type: 'execute' },
-        { action: 'Run tests', type: 'execute' },
-        { action: 'Deploy', type: 'execute' },
+        { action: 'Install dependencies', type: TaskType.Execute },
+        { action: 'Run tests', type: TaskType.Execute },
+        { action: 'Deploy', type: TaskType.Execute },
       ]);
     });
   });
@@ -147,6 +154,67 @@ describe('Integration Tests', () => {
 
       const result = await mockService.processWithTool('test', 'plan');
       expect(result.tasks).toEqual([{ action: 'mock task' }]);
+    });
+  });
+
+  describe('Define type tasks', () => {
+    it('processes define type with options', async () => {
+      mockService.setResponse('do something', [
+        {
+          action: 'Clarify what action to perform',
+          type: TaskType.Define,
+          params: {
+            options: [
+              'Deploy application',
+              'Run linter',
+              'Generate documentation',
+            ],
+          },
+        },
+      ]);
+
+      const result = await mockService.processWithTool('do something', 'plan');
+
+      expect(result.tasks).toEqual([
+        {
+          action: 'Clarify what action to perform',
+          type: TaskType.Define,
+          params: {
+            options: [
+              'Deploy application',
+              'Run linter',
+              'Generate documentation',
+            ],
+          },
+        },
+      ]);
+    });
+
+    it('processes mixed clear and define tasks', async () => {
+      mockService.setResponse('build, do something, test', [
+        { action: 'Build the project', type: TaskType.Execute },
+        {
+          action: 'Clarify what action to perform',
+          type: TaskType.Define,
+          params: { options: ['Deploy', 'Lint', 'Document'] },
+        },
+        { action: 'Run tests', type: TaskType.Execute },
+      ]);
+
+      const result = await mockService.processWithTool(
+        'build, do something, test',
+        'plan'
+      );
+
+      expect(result.tasks).toEqual([
+        { action: 'Build the project', type: TaskType.Execute },
+        {
+          action: 'Clarify what action to perform',
+          type: TaskType.Define,
+          params: { options: ['Deploy', 'Lint', 'Document'] },
+        },
+        { action: 'Run tests', type: TaskType.Execute },
+      ]);
     });
   });
 });
