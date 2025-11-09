@@ -215,7 +215,14 @@ Follow these guidelines for clear, professional commit messages:
 - **No period**: Don't end the subject line with a period
 - **Lowercase after verb**: Start with capital letter, use lowercase for the
   rest unless proper nouns
-- **Single line only**: Use only the subject line, no body or extra information
+- **Check recent commits**: Before creating a commit message, run `git log
+  --oneline -16` to see recent commits and match the style and format
+  consistently.
+- **Single line only**: Use ONLY the subject line with NO body, NO additional
+  lines, NO bullet points, NO explanations. The commit message must be exactly
+  one line describing what the commit does.
+- **No mtadata**: Do NOT add metadata like "Generated with Claude Code".
+  The commit message is ALWAYS the single-line subject.
 
 Examples:
 - `Execute planned tasks`
