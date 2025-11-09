@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 
 export interface ConfigStep {
@@ -18,11 +18,12 @@ export interface ConfigProps<
   steps: ConfigStep[];
   state?: ConfigState;
   onFinished?: (config: T) => void;
+  onAborted?: () => void;
 }
 
 export function Config<
   T extends Record<string, string> = Record<string, string>,
->({ steps, state, onFinished }: ConfigProps<T>) {
+>({ steps, state, onFinished, onAborted }: ConfigProps<T>) {
   const done = state?.done ?? false;
 
   const [step, setStep] = React.useState<number>(done ? steps.length : 0);
@@ -37,9 +38,30 @@ export function Config<
   });
   const [inputValue, setInputValue] = React.useState('');
 
+  const normalizeValue = (value: string | null | undefined) => {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return value.replace(/\n/g, '').trim();
+  };
+
+  useInput((input, key) => {
+    if (key.escape && !done && step < steps.length) {
+      if (onAborted) {
+        onAborted();
+      }
+    }
+  });
+
   const handleSubmit = (value: string) => {
     const currentStepConfig = steps[step];
-    const finalValue = value.trim() || currentStepConfig.value || '';
+    const finalValue =
+      normalizeValue(value) || normalizeValue(currentStepConfig.value);
+
+    // Don't allow empty value if step has no default (mandatory field)
+    if (!finalValue && !currentStepConfig.value) {
+      return;
+    }
 
     const newValues = { ...values, [currentStepConfig.key]: finalValue };
     setValues(newValues);
@@ -60,8 +82,9 @@ export function Config<
     <Box flexDirection="column" marginLeft={1}>
       {steps.map((stepConfig, index) => {
         const isCurrentStep = index === step && !done;
-        const isCompleted = index < step || done;
-        const shouldShow = isCompleted || isCurrentStep;
+        const isCompleted = index < step;
+        const wasAborted = index === step && done;
+        const shouldShow = isCompleted || isCurrentStep || wasAborted;
 
         if (!shouldShow) {
           return null;
@@ -77,12 +100,17 @@ export function Config<
               <Text>{stepConfig.description}:</Text>
             </Box>
             <Box>
-              <Text color="cyan">&gt; </Text>
+              <Text> </Text>
+              <Text color="#5c8cbc" dimColor={!isCurrentStep}>
+                &gt;
+              </Text>
+              <Text> </Text>
               {isCurrentStep ? (
                 <TextInput
                   value={inputValue}
                   onChange={setInputValue}
                   onSubmit={handleSubmit}
+                  placeholder={stepConfig.value || undefined}
                 />
               ) : (
                 <Text dimColor>{values[stepConfig.key] || ''}</Text>
@@ -91,12 +119,6 @@ export function Config<
           </Box>
         );
       })}
-
-      {step === steps.length && !done && (
-        <Box marginY={1}>
-          <Text color="green">✓ Configuration complete</Text>
-        </Box>
-      )}
     </Box>
   );
 }

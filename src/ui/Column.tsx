@@ -11,7 +11,7 @@ interface ColumnProps {
 
 export const Column: React.FC<ColumnProps> = ({ items }) => {
   return (
-    <Box marginTop={1} flexDirection="column" gap={1}>
+    <Box marginTop={1} marginBottom={1} flexDirection="column" gap={1}>
       {items.map((item, index) => (
         <Box key={index}>
           <Component def={item} />

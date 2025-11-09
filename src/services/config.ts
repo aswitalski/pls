@@ -3,19 +3,22 @@ import { homedir } from 'os';
 import { join } from 'path';
 import YAML from 'yaml';
 
-export interface AnthropicConfig {
+export type AnthropicConfig = {
   key: string;
   model?: string;
-}
+};
 
 export interface Config {
   anthropic: AnthropicConfig;
 }
 
 export class ConfigError extends Error {
-  constructor(message: string) {
+  origin?: Error;
+
+  constructor(message: string, origin?: Error) {
     super(message);
     this.name = 'ConfigError';
+    this.origin = origin;
   }
 }
 
@@ -26,43 +29,28 @@ function parseYamlConfig(content: string): unknown {
     return YAML.parse(content);
   } catch (error) {
     throw new ConfigError(
-      `\nFailed to parse YAML configuration file at ${CONFIG_FILE}\n` +
-        `Error: ${error instanceof Error ? error.message : String(error)}`
+      'Failed to parse configuration file',
+      error instanceof Error ? error : undefined
     );
   }
 }
 
 function validateConfig(parsed: unknown): Config {
   if (!parsed || typeof parsed !== 'object') {
-    throw new ConfigError(
-      `\nInvalid configuration format in ${CONFIG_FILE}\n` +
-        'Expected a YAML object with configuration settings.'
-    );
+    throw new ConfigError('Invalid configuration format');
   }
 
   const config = parsed as Record<string, unknown>;
 
   // Validate anthropic section
   if (!config.anthropic || typeof config.anthropic !== 'object') {
-    throw new ConfigError(
-      `\nMissing or invalid 'anthropic' section in ${CONFIG_FILE}\n` +
-        'Please add:\n' +
-        'anthropic:\n' +
-        '  key: sk-ant-...'
-    );
+    throw new ConfigError('Missing or invalid anthropic configuration');
   }
 
-  const anthropic = config.anthropic as Record<string, unknown>;
-
-  const key = anthropic['key'];
+  const { key, model } = config.anthropic as AnthropicConfig;
 
   if (!key || typeof key !== 'string') {
-    throw new ConfigError(
-      `\nMissing or invalid 'anthropic.key' in ${CONFIG_FILE}\n` +
-        'Please add your Anthropic API key:\n' +
-        'anthropic:\n' +
-        '  key: sk-ant-...'
-    );
+    throw new ConfigError('Missing or invalid API key');
   }
 
   const validatedConfig: Config = {
@@ -72,8 +60,8 @@ function validateConfig(parsed: unknown): Config {
   };
 
   // Optional model
-  if (anthropic.model && typeof anthropic.model === 'string') {
-    validatedConfig.anthropic.model = anthropic.model;
+  if (model && typeof model === 'string') {
+    validatedConfig.anthropic.model = model;
   }
 
   return validatedConfig;
@@ -81,14 +69,7 @@ function validateConfig(parsed: unknown): Config {
 
 export function loadConfig(): Config {
   if (!existsSync(CONFIG_FILE)) {
-    throw new ConfigError(
-      `\nConfiguration file not found at ${CONFIG_FILE}\n\n` +
-        'Please create it with your Anthropic API key.\n' +
-        'Example:\n\n' +
-        'anthropic:\n' +
-        '  key: sk-ant-...\n' +
-        '  model: claude-haiku-4-5-20251001\n'
-    );
+    throw new ConfigError('Configuration not found');
   }
 
   const content = readFileSync(CONFIG_FILE, 'utf-8');
@@ -102,6 +83,15 @@ export function getConfigPath(): string {
 
 export function configExists(): boolean {
   return existsSync(CONFIG_FILE);
+}
+
+export function hasValidConfig(): boolean {
+  try {
+    const config = loadConfig();
+    return !!config.anthropic.key;
+  } catch {
+    return false;
+  }
 }
 
 export function mergeConfig(
@@ -143,4 +133,8 @@ export function saveConfig(
   const newContent = mergeConfig(existingContent, section, config);
 
   writeFileSync(CONFIG_FILE, newContent, 'utf-8');
+}
+
+export function saveAnthropicConfig(config: AnthropicConfig): void {
+  saveConfig('anthropic', config);
 }

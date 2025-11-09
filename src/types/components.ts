@@ -20,6 +20,12 @@ export enum TaskType {
   Select = 'select',
 }
 
+export enum FeedbackType {
+  Succeeded = 'succeeded',
+  Aborted = 'aborted',
+  Failed = 'failed',
+}
+
 // Structured task definition for tool-based planning
 export interface Task {
   action: string;
@@ -42,6 +48,12 @@ export interface ConfigProps<
   }>;
   state?: BaseState;
   onFinished?: (config: T) => void;
+  onAborted?: () => void;
+}
+
+export interface FeedbackProps {
+  type: FeedbackType;
+  message: string;
 }
 
 export interface CommandProps {
@@ -50,6 +62,8 @@ export interface CommandProps {
   service?: AnthropicService;
   error?: string;
   children?: React.ReactNode;
+  onError?: (error: string) => void;
+  onComplete?: () => void;
 }
 
 // Base state interface - all stateful components extend this
@@ -85,6 +99,7 @@ interface StatefulDefinition<
 // Specific component definitions
 type WelcomeDefinition = StatelessDefinition<'welcome', WelcomeProps>;
 type ConfigDefinition = StatefulDefinition<'config', ConfigProps, BaseState>;
+type FeedbackDefinition = StatelessDefinition<'feedback', FeedbackProps>;
 type CommandDefinition = StatefulDefinition<
   'command',
   CommandProps,
@@ -95,4 +110,5 @@ type CommandDefinition = StatefulDefinition<
 export type ComponentDefinition =
   | WelcomeDefinition
   | ConfigDefinition
+  | FeedbackDefinition
   | CommandDefinition;

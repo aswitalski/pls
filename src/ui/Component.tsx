@@ -4,6 +4,7 @@ import { ComponentDefinition } from '../types/components.js';
 
 import { Command } from './Command.js';
 import { Config } from './Config.js';
+import { Feedback } from './Feedback.js';
 import { Welcome } from './Welcome.js';
 
 interface ComponentProps {
@@ -20,6 +21,9 @@ export function Component({ def }: ComponentProps): React.ReactElement {
       const state = def.state;
       return <Config {...props} state={state} />;
     }
+
+    case 'feedback':
+      return <Feedback {...def.props} />;
 
     case 'command': {
       const props = def.props;
