@@ -333,6 +333,7 @@ When creating task definitions, focus on:
   with precise, contextually appropriate alternatives. Use professional, clear
   terminology suitable for technical documentation. Maintain natural, fluent
   English phrasing while preserving the original intent.
+  **Keep action descriptions concise, at most 64 characters.**
 
 - **Type**: Categorize the operation using one of these supported types:
   - `config` - Configuration changes, settings updates
