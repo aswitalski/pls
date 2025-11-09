@@ -6,10 +6,9 @@ import { fileURLToPath } from 'url';
 import { render, Text } from 'ink';
 
 import {
-  ConfigError,
-  configExists,
+  hasValidConfig,
   loadConfig,
-  saveConfig,
+  saveAnthropicConfig,
 } from './services/config.js';
 import { createAnthropicService } from './services/anthropic.js';
 
@@ -40,41 +39,36 @@ const args = process.argv.slice(2);
 const command = args.join(' ').trim() || null;
 
 async function runApp() {
-  // First-time setup: config doesn't exist
-  if (!configExists()) {
-    const { waitUntilExit } = render(
-      <Main
-        app={app}
-        command={command}
-        isReady={false}
-        onConfigured={(config) => {
-          saveConfig('anthropic', config);
-          // Create service once for the session
-          return command ? createAnthropicService(config) : undefined;
-        }}
-      />
-    );
-    await waitUntilExit();
-    return;
-  }
-
-  // Try to load and validate config
-  try {
+  // Happy path: valid config exists
+  if (hasValidConfig()) {
     const config = loadConfig();
-
-    // Create service once at app initialization
     const service = createAnthropicService(config.anthropic);
 
     render(
       <Main app={app} command={command} service={service} isReady={true} />
     );
-  } catch (error) {
-    if (error instanceof ConfigError) {
-      render(<Text color="red">{error.message}</Text>);
-      process.exit(1);
-    }
-    throw error;
+    return;
   }
+
+  // Setup: config doesn't exist or is invalid
+  const { waitUntilExit, unmount } = render(
+    <Main
+      app={app}
+      command={command}
+      isReady={false}
+      onConfigured={(config) => {
+        saveAnthropicConfig(config);
+        if (command) {
+          return createAnthropicService(config);
+        } else {
+          // No command - exit after showing completion message
+          setTimeout(() => unmount(), 100);
+          return undefined;
+        }
+      }}
+    />
+  );
+  await waitUntilExit();
 }
 
 runApp();

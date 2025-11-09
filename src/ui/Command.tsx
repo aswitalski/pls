@@ -92,6 +92,8 @@ export function Command({
   service,
   error: errorProp,
   children,
+  onError,
+  onComplete,
 }: CommandProps) {
   const done = state?.done ?? false;
   const [error, setError] = useState<string | null>(
@@ -130,6 +132,7 @@ export function Command({
           setMessage(result.message);
           setTasks(result.tasks);
           setIsLoading(false);
+          onComplete?.();
         }
       } catch (err) {
         const elapsed = Date.now() - startTime;
@@ -138,10 +141,14 @@ export function Command({
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
 
         if (mounted) {
-          setError(
-            err instanceof Error ? err.message : 'Unknown error occurred'
-          );
+          const errorMessage =
+            err instanceof Error ? err.message : 'Unknown error occurred';
           setIsLoading(false);
+          if (onError) {
+            onError(errorMessage);
+          } else {
+            setError(errorMessage);
+          }
         }
       }
     }
@@ -154,7 +161,7 @@ export function Command({
   }, [command, done, service]);
 
   return (
-    <Box alignSelf="flex-start" marginBottom={1} flexDirection="column">
+    <Box alignSelf="flex-start" flexDirection="column" marginLeft={1}>
       <Box>
         <Text color="gray">&gt; pls {command}</Text>
         {isLoading && (

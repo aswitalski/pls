@@ -66,7 +66,7 @@ function Usage() {
 
 export function Welcome({ app }: WelcomeProps) {
   return (
-    <Box alignSelf="flex-start" marginBottom={1}>
+    <Box alignSelf="flex-start">
       <Panel>
         <Header app={app} />
         <Description description={app.description} />
