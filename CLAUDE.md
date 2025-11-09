@@ -221,7 +221,7 @@ Follow these guidelines for clear, professional commit messages:
 - **Single line only**: Use ONLY the subject line with NO body, NO additional
   lines, NO bullet points, NO explanations. The commit message must be exactly
   one line describing what the commit does.
-- **No mtadata**: Do NOT add metadata like "Generated with Claude Code".
+- **No metadata**: Do NOT add metadata like "Generated with Claude Code".
   The commit message is ALWAYS the single-line subject.
 
 Examples:
