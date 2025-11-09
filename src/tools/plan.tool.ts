@@ -7,6 +7,11 @@ export const planTool: Tool = {
   input_schema: {
     type: 'object',
     properties: {
+      message: {
+        type: 'string',
+        description:
+          'Introductory reply to display before the task list. Must be a single sentence, maximum 64 characters (including the colon at the end). Vary this naturally - try to use a different phrase each time.',
+      },
       tasks: {
         type: 'array',
         description: 'Array of planned tasks to execute',
@@ -33,6 +38,6 @@ export const planTool: Tool = {
         },
       },
     },
-    required: ['tasks'],
+    required: ['message', 'tasks'],
   },
 };

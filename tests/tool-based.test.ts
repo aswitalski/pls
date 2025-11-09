@@ -47,6 +47,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_123',
             name: 'plan',
             input: {
+              message: 'Here is my plan',
               tasks: [
                 {
                   action: 'change directory to the home folder',
@@ -87,6 +88,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_456',
             name: 'plan',
             input: {
+              message: 'Let me help you with that',
               tasks: [
                 {
                   action: 'install dependencies',
@@ -142,6 +144,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_789',
             name: 'plan',
             input: {
+              message: 'I will do these tasks for you',
               tasks: [
                 {
                   action: 'list files',
@@ -188,6 +191,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_complex',
             name: 'plan',
             input: {
+              message: 'Fetching data now',
               tasks: [
                 {
                   action: 'fetch API data',
@@ -252,6 +256,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_bad',
             name: 'plan',
             input: {
+              message: 'Test message',
               // Missing tasks array
             },
           },
@@ -282,6 +287,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_empty',
             name: 'plan',
             input: {
+              message: 'No tasks to perform',
               tasks: [],
             },
           },
@@ -302,6 +308,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_define',
             name: 'plan',
             input: {
+              message: 'I need more information',
               tasks: [
                 {
                   action: 'Clarify what action to perform',
@@ -346,6 +353,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_mixed',
             name: 'plan',
             input: {
+              message: 'Processing your request',
               tasks: [
                 {
                   action: 'Build the project',
@@ -401,6 +409,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_ignore',
             name: 'plan',
             input: {
+              message: 'Cannot process this request',
               tasks: [
                 {
                   action: "Skip unknown 'do stuff' request",
@@ -433,6 +442,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_test',
             name: 'plan',
             input: {
+              message: 'Installing now',
               tasks: [
                 {
                   action: 'install dependencies',
@@ -464,6 +474,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_truncated',
             name: 'plan',
             input: {
+              message: 'Truncated response',
               tasks: [{ action: 'partial task' }],
             },
           },
@@ -497,6 +508,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_bad',
             name: 'plan',
             input: {
+              message: 'Invalid task',
               tasks: [{ type: TaskType.Execute }],
             },
           },
@@ -519,6 +531,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_bad',
             name: 'plan',
             input: {
+              message: 'Bad task format',
               tasks: ['string task'],
             },
           },
@@ -541,6 +554,7 @@ describe('AnthropicService - Tool-based processing', () => {
             id: 'tool_bad',
             name: 'plan',
             input: {
+              message: 'Invalid format',
               tasks: 'not an array',
             },
           },

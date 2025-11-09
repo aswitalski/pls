@@ -4,6 +4,7 @@ import { Box, Text } from 'ink';
 import { CommandProps, Task, TaskType } from '../types/components.js';
 
 import { List } from './List.js';
+import { Separator } from './Separator.js';
 import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000; // purely for visual effect
@@ -97,6 +98,7 @@ export function Command({
     state?.error || errorProp || null
   );
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
+  const [message, setMessage] = useState<string>('');
   const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
@@ -125,6 +127,7 @@ export function Command({
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
 
         if (mounted) {
+          setMessage(result.message);
           setTasks(result.tasks);
           setIsLoading(false);
         }
@@ -169,7 +172,14 @@ export function Command({
       )}
 
       {!isLoading && tasks.length > 0 && (
-        <Box marginTop={1}>
+        <Box marginTop={1} flexDirection="column">
+          {message && (
+            <Box marginBottom={1}>
+              <Text> {message}</Text>
+              <Separator color="#9c5ccc" />
+              <Text color="#9c5ccc">plan</Text>
+            </Box>
+          )}
           <List items={tasks.map(taskToListItem)} />
         </Box>
       )}
