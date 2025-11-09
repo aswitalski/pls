@@ -10,6 +10,7 @@ import type { Task } from '../../src/types/components.js';
 export class AnthropicServiceMock extends AnthropicService {
   private responses: Map<string, Task[]> = new Map();
   private defaultResponse: Task[] = [{ action: 'mock task' }];
+  private defaultMessage = 'Mock response';
   private shouldFail = false;
   private errorMessage = 'Mock error';
 
@@ -52,6 +53,7 @@ export class AnthropicServiceMock extends AnthropicService {
 
     const response = this.responses.get(command);
     return Promise.resolve({
+      message: this.defaultMessage,
       tasks: response ?? this.defaultResponse,
     });
   }

@@ -7,6 +7,7 @@ import { formatSkillsForPrompt, loadSkills } from './skills.js';
 import { toolRegistry } from './tool-registry.js';
 
 export interface CommandResult {
+  message: string;
   tasks: Task[];
   systemPrompt?: string;
 }
@@ -68,8 +69,15 @@ export class AnthropicService implements LLMService {
     }
     const content = response.content[0];
 
-    // Extract and validate tasks array
-    const input = content.input as { tasks?: Task[] };
+    // Extract and validate message and tasks
+    const input = content.input as { message?: string; tasks?: Task[] };
+
+    if (!input.message || typeof input.message !== 'string') {
+      throw new Error(
+        'Invalid tool response: missing or invalid message field'
+      );
+    }
+
     if (!input.tasks || !Array.isArray(input.tasks)) {
       throw new Error('Invalid tool response: missing or invalid tasks array');
     }
@@ -85,6 +93,7 @@ export class AnthropicService implements LLMService {
 
     const isDebug = process.env.DEBUG === 'true';
     return {
+      message: input.message,
       tasks: input.tasks,
       systemPrompt: isDebug ? systemPrompt : undefined,
     };
