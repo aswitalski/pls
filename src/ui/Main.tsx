@@ -5,6 +5,7 @@ import { AppInfo, ComponentDefinition } from '../types/components.js';
 import { AnthropicService } from '../services/anthropic.js';
 
 import { Column } from './Column.js';
+import { ConfigStep } from './Config.js';
 
 interface AnthropicConfig extends Record<string, string> {
   key: string;
@@ -19,6 +20,54 @@ interface MainProps {
   onConfigured?: (config: AnthropicConfig) => AnthropicService | void;
 }
 
+function createWelcomeDefinition(app: AppInfo): ComponentDefinition {
+  return {
+    name: 'welcome',
+    props: { app },
+  };
+}
+
+function createConfigSteps(): ConfigStep[] {
+  return [
+    { description: 'Anthropic API key', key: 'key', value: null },
+    {
+      description: 'Model',
+      key: 'model',
+      value: 'claude-haiku-4-5-20251001',
+    },
+  ];
+}
+
+function createConfigDefinition(
+  onFinished: (config: Record<string, string>) => void
+): ComponentDefinition {
+  return {
+    name: 'config',
+    state: { done: false },
+    props: {
+      steps: createConfigSteps(),
+      onFinished,
+    },
+  };
+}
+
+function createCommandDefinition(
+  command: string,
+  service: AnthropicService
+): ComponentDefinition {
+  return {
+    name: 'command',
+    state: {
+      done: false,
+      isLoading: true,
+    },
+    props: {
+      command,
+      service,
+    },
+  };
+}
+
 export const Main = ({
   app,
   command,
@@ -31,67 +80,33 @@ export const Main = ({
     null
   );
 
+  const handleConfigFinished = React.useCallback(
+    (config: Record<string, string>) =>
+      onConfigured?.(config as AnthropicConfig),
+    [onConfigured]
+  );
+
+  // Initialize configuration flow when not ready
   React.useEffect(() => {
-    // Initialize history and current component based on props
     if (!isReady) {
-      // Not configured - show welcome in history, config as current
-      setHistory([
-        {
-          name: 'welcome',
-          props: {
-            app,
-          },
-        },
-      ]);
-
-      const configSteps: Array<{
-        description: string;
-        key: string;
-        value: string | null;
-      }> = [
-        { description: 'Anthropic API key', key: 'key', value: null },
-        {
-          description: 'Model',
-          key: 'model',
-          value: 'claude-haiku-4-5-20251001',
-        },
-      ];
-
-      setCurrent({
-        name: 'config',
-        state: {
-          done: false,
-        },
-        props: {
-          steps: configSteps,
-          onFinished: (config) => {
-            if (onConfigured) {
-              onConfigured(config as AnthropicConfig);
-            }
-          },
-        },
-      });
-    } else if (command && service) {
-      setCurrent({
-        name: 'command',
-        state: {
-          done: false,
-          isLoading: true,
-        },
-        props: {
-          command,
-          service,
-        },
-      });
-    } else {
-      setCurrent({
-        name: 'welcome',
-        props: {
-          app,
-        },
-      });
+      setHistory([createWelcomeDefinition(app)]);
+      setCurrent(createConfigDefinition(handleConfigFinished));
     }
-  }, [isReady, command, service, app, onConfigured]);
+  }, [isReady, app, handleConfigFinished]);
+
+  // Initialize command execution when ready with a command
+  React.useEffect(() => {
+    if (isReady && command && service) {
+      setCurrent(createCommandDefinition(command, service));
+    }
+  }, [isReady, command, service]);
+
+  // Show welcome screen when ready but no command
+  React.useEffect(() => {
+    if (isReady && !command) {
+      setCurrent(createWelcomeDefinition(app));
+    }
+  }, [isReady, command, app]);
 
   const items = [...history, ...(current ? [current] : [])];
 
