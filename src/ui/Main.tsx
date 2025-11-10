@@ -1,6 +1,10 @@
 import React from 'react';
 
-import { AppInfo, ComponentDefinition } from '../types/components.js';
+import {
+  AppInfo,
+  ComponentDefinition,
+  StatefulComponentDefinition,
+} from '../types/components.js';
 
 import { AnthropicService } from '../services/anthropic.js';
 import { FeedbackType } from '../types/components.js';
@@ -25,9 +29,7 @@ function exit(code: 0 | 1) {
   setTimeout(() => globalThis.process.exit(code), 100);
 }
 
-function markAsDone<T extends ComponentDefinition & { state: object }>(
-  component: T
-): T {
+function markAsDone<T extends StatefulComponentDefinition>(component: T): T {
   return { ...component, state: { ...component.state, done: true } };
 }
 
@@ -124,13 +126,12 @@ export const Main = ({
         setService(service);
       }
       // Move config to history with done state and add success feedback
-      setCurrent((previous) => {
-        if (previous && previous.name === 'config') {
-          addToHistory(
-            markAsDone(previous),
-            createFeedback(FeedbackType.Succeeded, 'Configuration complete')
-          );
-        }
+      setCurrent((current) => {
+        if (!current) return null;
+        addToHistory(
+          markAsDone(current as StatefulComponentDefinition),
+          createFeedback(FeedbackType.Succeeded, 'Configuration complete')
+        );
         return null;
       });
     },
@@ -139,15 +140,13 @@ export const Main = ({
 
   const handleConfigAborted = React.useCallback(() => {
     // Move config to history with done state and add aborted feedback
-    setCurrent((previous) => {
-      if (previous && previous.name === 'config') {
-        addToHistory(
-          markAsDone(previous),
-          createFeedback(FeedbackType.Aborted, 'Configuration aborted by user')
-        );
-        // Exit after showing abort message
-        exit(0);
-      }
+    setCurrent((current) => {
+      addToHistory(
+        markAsDone(current as StatefulComponentDefinition),
+        createFeedback(FeedbackType.Aborted, 'Configuration aborted by user')
+      );
+      // Exit after showing abort message
+      exit(0);
       return null;
     });
   }, [addToHistory]);
@@ -155,19 +154,17 @@ export const Main = ({
   const handleCommandError = React.useCallback(
     (error: string) => {
       // Move command to history with done state and add error feedback
-      setCurrent((previous) => {
-        if (previous && previous.name === 'command') {
-          addToHistory(
-            markAsDone(previous),
-            createFeedback(
-              FeedbackType.Failed,
-              'Unexpected error occurred:',
-              error
-            )
-          );
-          // Exit after showing error
-          exit(1);
-        }
+      setCurrent((current) => {
+        addToHistory(
+          markAsDone(current as StatefulComponentDefinition),
+          createFeedback(
+            FeedbackType.Failed,
+            'Unexpected error occurred:',
+            error
+          )
+        );
+        // Exit after showing error
+        exit(1);
         return null;
       });
     },
@@ -176,24 +173,25 @@ export const Main = ({
 
   const handleCommandComplete = React.useCallback(() => {
     // Move command to history with done state
-    setCurrent((previous) => {
-      if (previous && previous.name === 'command') {
-        addToHistory(markAsDone(previous));
-        // Exit after showing plan
-        exit(0);
-      }
+    setCurrent((current) => {
+      addToHistory(markAsDone(current as StatefulComponentDefinition));
+      // Exit after showing plan
+      exit(0);
       return null;
     });
   }, [addToHistory]);
 
   // Initialize configuration flow when not ready
   React.useEffect(() => {
-    if (!isReady) {
-      setHistory(command ? [] : [createWelcomeDefinition(app)]);
-      setCurrent(
-        createConfigDefinition(handleConfigFinished, handleConfigAborted)
-      );
+    if (isReady) {
+      return;
     }
+    if (!command) {
+      setHistory([createWelcomeDefinition(app)]);
+    }
+    setCurrent(
+      createConfigDefinition(handleConfigFinished, handleConfigAborted)
+    );
   }, [isReady, app, command, handleConfigFinished, handleConfigAborted]);
 
   // Execute command when service and command are available

@@ -247,6 +247,10 @@ Examples:
   - Use single import statements for multiple items from the same source
   - Avoid unused imports
   - Destructure imports when possible
+- Control flow: Reduce nesting by using early returns and guard clauses.
+  Prefer returning early when conditions aren't met rather than wrapping the
+  entire function body in an if statement. This keeps code flat, readable, and
+  easier to follow.
 - Test naming: Use present tense without "should" (e.g., "parses single task"
   not "should parse single task")
 - Test utilities: For tests that create temporary directories, always use
