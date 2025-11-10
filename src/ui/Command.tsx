@@ -3,8 +3,8 @@ import { Box, Text } from 'ink';
 
 import { CommandProps, Task, TaskType } from '../types/components.js';
 
+import { Label } from './Label.js';
 import { List } from './List.js';
-import { Separator } from './Separator.js';
 import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000; // purely for visual effect
@@ -19,7 +19,7 @@ const ColorPalette: Record<TaskType, { description: string; type: string }> = {
   },
   [TaskType.Plan]: {
     description: '#ffffff', // white
-    type: '#cc5c9c', // magenta
+    type: '#5ccccc', // magenta
   },
   [TaskType.Execute]: {
     description: '#ffffff', // white
@@ -182,9 +182,13 @@ export function Command({
         <Box marginTop={1} flexDirection="column">
           {message && (
             <Box marginBottom={1}>
-              <Text> {message}</Text>
-              <Separator color="#9c5ccc" />
-              <Text color="#9c5ccc">plan</Text>
+              <Text> </Text>
+              <Label
+                description={message}
+                descriptionColor={ColorPalette[TaskType.Plan].description}
+                type={TaskType.Plan}
+                typeColor={ColorPalette[TaskType.Plan].type}
+              />
             </Box>
           )}
           <List items={tasks.map(taskToListItem)} />
