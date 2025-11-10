@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import { Separator } from './Separator.js';
+import { Label } from './Label.js';
 
 type ColoredText = { text: string; color: string };
 
@@ -25,9 +25,12 @@ export const List: React.FC<ListProps> = ({ items, level = 0 }) => {
         <Box key={index} flexDirection="column">
           <Box>
             <Text color="whiteBright">{'  - '}</Text>
-            <Text color={item.description.color}>{item.description.text}</Text>
-            <Separator />
-            <Text color={item.type.color}>{item.type.text}</Text>
+            <Label
+              description={item.description.text}
+              descriptionColor={item.description.color}
+              type={item.type.text}
+              typeColor={item.type.color}
+            />
           </Box>
           {item.children && item.children.length > 0 && (
             <List items={item.children} level={level + 1} />
