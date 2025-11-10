@@ -112,3 +112,6 @@ export type ComponentDefinition =
   | ConfigDefinition
   | FeedbackDefinition
   | CommandDefinition;
+
+// Union of all stateful component definitions
+export type StatefulComponentDefinition = ConfigDefinition | CommandDefinition;
