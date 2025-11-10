@@ -22,7 +22,9 @@ export class ConfigError extends Error {
   }
 }
 
-const CONFIG_FILE = join(homedir(), '.plsrc');
+function getConfigFile(): string {
+  return join(homedir(), '.plsrc');
+}
 
 function parseYamlConfig(content: string): unknown {
   try {
@@ -68,21 +70,22 @@ function validateConfig(parsed: unknown): Config {
 }
 
 export function loadConfig(): Config {
-  if (!existsSync(CONFIG_FILE)) {
+  const configFile = getConfigFile();
+  if (!existsSync(configFile)) {
     throw new ConfigError('Configuration not found');
   }
 
-  const content = readFileSync(CONFIG_FILE, 'utf-8');
+  const content = readFileSync(configFile, 'utf-8');
   const parsed = parseYamlConfig(content);
   return validateConfig(parsed);
 }
 
 export function getConfigPath(): string {
-  return CONFIG_FILE;
+  return getConfigFile();
 }
 
 export function configExists(): boolean {
-  return existsSync(CONFIG_FILE);
+  return existsSync(getConfigFile());
 }
 
 export function hasValidConfig(): boolean {
@@ -126,13 +129,14 @@ export function saveConfig(
   section: string,
   config: Record<string, unknown>
 ): void {
-  const existingContent = existsSync(CONFIG_FILE)
-    ? readFileSync(CONFIG_FILE, 'utf-8')
+  const configFile = getConfigFile();
+  const existingContent = existsSync(configFile)
+    ? readFileSync(configFile, 'utf-8')
     : '';
 
   const newContent = mergeConfig(existingContent, section, config);
 
-  writeFileSync(CONFIG_FILE, newContent, 'utf-8');
+  writeFileSync(configFile, newContent, 'utf-8');
 }
 
 export function saveAnthropicConfig(config: AnthropicConfig): void {

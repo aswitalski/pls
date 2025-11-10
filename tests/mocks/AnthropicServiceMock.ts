@@ -3,13 +3,16 @@ import {
   CommandResult,
 } from '../../src/services/anthropic.js';
 import type { Task } from '../../src/types/components.js';
+import { TaskType } from '../../src/types/components.js';
 
 /**
  * Mock implementation of AnthropicService for testing
  */
 export class AnthropicServiceMock extends AnthropicService {
   private responses: Map<string, Task[]> = new Map();
-  private defaultResponse: Task[] = [{ action: 'mock task' }];
+  private defaultResponse: Task[] = [
+    { action: 'mock task', type: TaskType.Execute },
+  ];
   private defaultMessage = 'Mock response';
   private shouldFail = false;
   private errorMessage = 'Mock error';
@@ -41,7 +44,7 @@ export class AnthropicServiceMock extends AnthropicService {
    */
   reset(): void {
     this.responses.clear();
-    this.defaultResponse = [{ action: 'mock task' }];
+    this.defaultResponse = [{ action: 'mock task', type: TaskType.Execute }];
     this.shouldFail = false;
     this.errorMessage = 'Mock error';
   }

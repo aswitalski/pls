@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseCommands } from '../src/parser.js';
 
-describe('parseCommands', () => {
+describe('Parsing commands', () => {
   it('parses single task', () => {
     const result = parseCommands('install dependencies');
     expect(result).toEqual(['install dependencies']);

@@ -16,7 +16,7 @@ describe('Component Types', () => {
     isDev: true,
   };
 
-  describe('WelcomeDefinition', () => {
+  describe('Welcome component definition', () => {
     it('creates valid stateless welcome definition', () => {
       const def: ComponentDefinition = {
         name: 'welcome',
@@ -31,7 +31,7 @@ describe('Component Types', () => {
     });
   });
 
-  describe('ConfigDefinition', () => {
+  describe('Config component definition', () => {
     it('creates valid stateful config definition', () => {
       const state: BaseState = {
         done: false,
@@ -94,7 +94,7 @@ describe('Component Types', () => {
     });
   });
 
-  describe('CommandDefinition', () => {
+  describe('Command component definition', () => {
     it('creates valid stateful command definition', () => {
       const state: CommandState = {
         done: false,
