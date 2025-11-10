@@ -11,7 +11,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && chmod +x dist/index.js && mkdir -p dist/config && cp src/config/*.md dist/config/",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc && chmod +x dist/index.js && mkdir -p dist/config && cp src/config/*.md dist/config/",
     "dev": "npm run build && tsc --watch",
     "prepare": "husky",
     "prepublishOnly": "npm run check",
