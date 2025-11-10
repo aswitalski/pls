@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { AnthropicService } from '../src/services/anthropic.js';
 import { TaskType } from '../src/types/components.js';
 import Anthropic from '@anthropic-ai/sdk';
@@ -24,9 +24,7 @@ describe('AnthropicService - Tool-based processing', () => {
 
   beforeEach(() => {
     mockCreate = vi.fn();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const MockedAnthropic = Anthropic as unknown as vi.Mock;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const MockedAnthropic = Anthropic as unknown as Mock;
     MockedAnthropic.mockImplementation(function (this: unknown) {
       return {
         messages: {

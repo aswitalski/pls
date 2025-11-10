@@ -48,7 +48,7 @@ describe('UI Components', () => {
         },
         {
           name: 'config',
-          state: { done: true, currentStepIndex: 2 },
+          state: { done: true },
           props: {
             steps: [
               { description: 'Username', key: 'username', value: 'testuser' },
@@ -73,7 +73,7 @@ describe('UI Components', () => {
         },
         {
           name: 'config',
-          state: { done: false, currentStepIndex: 0 },
+          state: { done: false },
           props: {
             steps: [{ description: 'API Key', key: 'key', value: null }],
           },
@@ -120,8 +120,8 @@ describe('UI Components', () => {
     it('renders flat list with single item', () => {
       const items = [
         {
-          description: { text: 'Create user account' },
-          type: { text: 'plan' },
+          description: { text: 'Create user account', color: 'white' },
+          type: { text: 'plan', color: 'cyan' },
         },
       ];
 
@@ -137,12 +137,12 @@ describe('UI Components', () => {
     it('renders flat list with multiple items', () => {
       const items = [
         {
-          description: { text: 'Task 1' },
-          type: { text: 'execute' },
+          description: { text: 'Task 1', color: 'white' },
+          type: { text: 'execute', color: 'green' },
         },
         {
-          description: { text: 'Task 2' },
-          type: { text: 'report' },
+          description: { text: 'Task 2', color: 'white' },
+          type: { text: 'report', color: 'orange' },
         },
       ];
 
@@ -156,16 +156,16 @@ describe('UI Components', () => {
     it('renders nested list with children', () => {
       const items = [
         {
-          description: { text: 'Parent task' },
-          type: { text: 'define' },
+          description: { text: 'Parent task', color: 'white' },
+          type: { text: 'define', color: 'amber' },
           children: [
             {
-              description: { text: 'Child option 1' },
-              type: { text: 'option' },
+              description: { text: 'Child option 1', color: 'gray' },
+              type: { text: 'option', color: 'blue' },
             },
             {
-              description: { text: 'Child option 2' },
-              type: { text: 'option' },
+              description: { text: 'Child option 2', color: 'gray' },
+              type: { text: 'option', color: 'blue' },
             },
           ],
         },
@@ -197,16 +197,16 @@ describe('UI Components', () => {
     it('renders deeply nested list with level 2', () => {
       const items = [
         {
-          description: { text: 'Level 0' },
-          type: { text: 'root' },
+          description: { text: 'Level 0', color: 'white' },
+          type: { text: 'root', color: 'cyan' },
           children: [
             {
-              description: { text: 'Level 1' },
-              type: { text: 'child' },
+              description: { text: 'Level 1', color: 'white' },
+              type: { text: 'child', color: 'green' },
               children: [
                 {
-                  description: { text: 'Level 2' },
-                  type: { text: 'grandchild' },
+                  description: { text: 'Level 2', color: 'white' },
+                  type: { text: 'grandchild', color: 'purple' },
                 },
               ],
             },
@@ -225,8 +225,8 @@ describe('UI Components', () => {
     it('supports custom level prop for indentation', () => {
       const items = [
         {
-          description: { text: 'Task' },
-          type: { text: 'plan' },
+          description: { text: 'Task', color: 'white' },
+          type: { text: 'plan', color: 'cyan' },
         },
       ];
 
@@ -243,13 +243,10 @@ describe('UI Components', () => {
         { description: 'Email', key: 'email', value: null },
       ];
 
-      const result = (
-        <Config steps={steps} state={{ done: false, currentStepIndex: 0 }} />
-      );
+      const result = <Config steps={steps} state={{ done: false }} />;
 
       expect(result.props.steps).toHaveLength(2);
-      expect(result.props.state.currentStepIndex).toBe(0);
-      expect(result.props.state.done).toBe(false);
+      expect(result.props.state?.done).toBe(false);
     });
 
     it('renders completed steps with values', () => {
@@ -258,11 +255,9 @@ describe('UI Components', () => {
         { description: 'Email', key: 'email', value: null },
       ];
 
-      const result = (
-        <Config steps={steps} state={{ done: false, currentStepIndex: 1 }} />
-      );
+      const result = <Config steps={steps} state={{ done: false }} />;
 
-      expect(result.props.state.currentStepIndex).toBe(1);
+      expect(result.props.state?.done).toBe(false);
     });
 
     it('shows all steps when done', () => {
@@ -271,12 +266,9 @@ describe('UI Components', () => {
         { description: 'Email', key: 'email', value: null },
       ];
 
-      const result = (
-        <Config steps={steps} state={{ done: true, currentStepIndex: 2 }} />
-      );
+      const result = <Config steps={steps} state={{ done: true }} />;
 
-      expect(result.props.state.done).toBe(true);
-      expect(result.props.state.currentStepIndex).toBe(2);
+      expect(result.props.state?.done).toBe(true);
     });
 
     it('displays default values when provided', () => {
@@ -284,9 +276,7 @@ describe('UI Components', () => {
         { description: 'Server', key: 'server', value: 'localhost' },
       ];
 
-      const result = (
-        <Config steps={steps} state={{ done: false, currentStepIndex: 0 }} />
-      );
+      const result = <Config steps={steps} state={{ done: false }} />;
 
       expect(result.props.steps[0].value).toBe('localhost');
     });
@@ -295,18 +285,14 @@ describe('UI Components', () => {
       const steps = [{ description: 'API Key', key: 'apiKey', value: null }];
 
       // Interactive state
-      const interactive = (
-        <Config steps={steps} state={{ done: false, currentStepIndex: 0 }} />
-      );
+      const interactive = <Config steps={steps} state={{ done: false }} />;
 
-      expect(interactive.props.state.done).toBe(false);
+      expect(interactive.props.state?.done).toBe(false);
 
       // Completed state
-      const completed = (
-        <Config steps={steps} state={{ done: true, currentStepIndex: 1 }} />
-      );
+      const completed = <Config steps={steps} state={{ done: true }} />;
 
-      expect(completed.props.state.done).toBe(true);
+      expect(completed.props.state?.done).toBe(true);
     });
 
     it('supports onFinished callback', () => {
@@ -316,11 +302,7 @@ describe('UI Components', () => {
       };
 
       const result = (
-        <Config
-          steps={steps}
-          state={{ done: false, currentStepIndex: 0 }}
-          onFinished={onFinished}
-        />
+        <Config steps={steps} state={{ done: false }} onFinished={onFinished} />
       );
 
       expect(result.props.onFinished).toBe(onFinished);
