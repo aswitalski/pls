@@ -85,6 +85,19 @@ function createCommandDefinition(
   };
 }
 
+function createFeedback(
+  type: FeedbackType,
+  ...messages: string[]
+): ComponentDefinition {
+  return {
+    name: 'feedback',
+    props: {
+      type,
+      message: messages.join('\n\n'),
+    },
+  };
+}
+
 export const Main = ({
   app,
   command,
@@ -100,6 +113,10 @@ export const Main = ({
     initialService
   );
 
+  const addToHistory = React.useCallback((...items: ComponentDefinition[]) => {
+    setHistory((history) => [...history, ...items]);
+  }, []);
+
   const handleConfigFinished = React.useCallback(
     (config: Record<string, string>) => {
       const service = onConfigured?.(config as AnthropicConfig);
@@ -109,71 +126,53 @@ export const Main = ({
       // Move config to history with done state and add success feedback
       setCurrent((previous) => {
         if (previous && previous.name === 'config') {
-          setHistory((history) => [
-            ...history,
+          addToHistory(
             markAsDone(previous),
-            {
-              name: 'feedback',
-              props: {
-                type: FeedbackType.Succeeded,
-                message: 'Configuration complete',
-              },
-            },
-          ]);
+            createFeedback(FeedbackType.Succeeded, 'Configuration complete')
+          );
         }
         return null;
       });
     },
-    [onConfigured]
+    [onConfigured, addToHistory]
   );
 
   const handleConfigAborted = React.useCallback(() => {
     // Move config to history with done state and add aborted feedback
     setCurrent((previous) => {
       if (previous && previous.name === 'config') {
-        setHistory((history) => [
-          ...history,
+        addToHistory(
           markAsDone(previous),
-          {
-            name: 'feedback',
-            props: {
-              type: FeedbackType.Aborted,
-              message: 'Configuration aborted by user',
-            },
-          },
-        ]);
+          createFeedback(FeedbackType.Aborted, 'Configuration aborted by user')
+        );
         // Exit after showing abort message
         exit(0);
       }
       return null;
     });
-  }, []);
+  }, [addToHistory]);
 
-  const handleCommandError = React.useCallback((error: string) => {
-    // Move command to history with done state and add error feedback
-    setCurrent((previous) => {
-      if (previous && previous.name === 'command') {
-        setHistory((history) => [
-          ...history,
-          markAsDone(previous),
-          {
-            name: 'feedback',
-            props: {
-              type: FeedbackType.Failed,
-              message: `Unexpected error occurred:\n\n ${error}`,
-            },
-          },
-        ]);
-        // Exit after showing error
-        exit(1);
-      }
-      return null;
-    });
-  }, []);
-
-  const addToHistory = React.useCallback((...items: ComponentDefinition[]) => {
-    setHistory((history) => [...history, ...items]);
-  }, []);
+  const handleCommandError = React.useCallback(
+    (error: string) => {
+      // Move command to history with done state and add error feedback
+      setCurrent((previous) => {
+        if (previous && previous.name === 'command') {
+          addToHistory(
+            markAsDone(previous),
+            createFeedback(
+              FeedbackType.Failed,
+              'Unexpected error occurred:',
+              error
+            )
+          );
+          // Exit after showing error
+          exit(1);
+        }
+        return null;
+      });
+    },
+    [addToHistory]
+  );
 
   const handleCommandComplete = React.useCallback(() => {
     // Move command to history with done state
