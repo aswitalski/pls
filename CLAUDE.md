@@ -232,6 +232,26 @@ Examples:
 - `Support workspace configs`
 - `Add interactive clarifications`
 
+#### File renames
+
+When renaming files where only the letter case changes (e.g., `feedback.test.tsx`
+→ `Feedback.test.tsx`), use a two-step rename process to ensure compatibility
+with case-insensitive filesystems like macOS:
+
+```bash
+git mv tests/feedback.test.tsx tests/feedback-temp.test.tsx
+git mv tests/feedback-temp.test.tsx tests/Feedback.test.tsx
+```
+
+This approach ensures:
+- Git properly tracks the case change in its internal tree
+- The rename works correctly when others checkout the commit on both
+  case-sensitive (Linux) and case-insensitive (macOS) filesystems
+- No conflicts or issues for developers who checked out previous versions
+
+For regular renames (different names, not just case), a simple `git mv` is
+sufficient.
+
 ### Code style
 
 - Use ES modules (import/export) syntax, not CommonJS (require)
@@ -251,8 +271,15 @@ Examples:
   Prefer returning early when conditions aren't met rather than wrapping the
   entire function body in an if statement. This keeps code flat, readable, and
   easier to follow.
-- Test naming: Use present tense without "should" (e.g., "parses single task"
-  not "should parse single task")
+- Test naming: Follow these conventions for clear, readable tests:
+  - Use natural language in all `describe` blocks (e.g., "Parsing commands"
+    not "parseCommands", "Loading skills" not "loadSkills")
+  - Use natural language in all `it` blocks with present tense, starting with
+    lowercase (e.g., "parses single task" not "should parse single task")
+  - Test file naming: Component-specific tests should match the component name
+    (e.g., `Command.test.tsx` for testing `Command.tsx`)
+  - Service/utility tests should use descriptive names (e.g., `config.test.ts`
+    for testing configuration service)
 - Test utilities: For tests that create temporary directories, always use
   `safeRemoveDirectory` from `tests/test-utils.ts` for cleanup. This utility
   handles intermittent ENOTEMPTY errors by retrying operations and gracefully

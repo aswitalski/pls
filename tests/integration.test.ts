@@ -6,7 +6,7 @@ describe('Integration Tests', () => {
   let mockService: AnthropicServiceMock;
 
   beforeEach(() => {
-    mockService = new AnthropicServiceMock();
+    mockService = new AnthropicServiceMock('test-key');
   });
 
   describe('Single task processing', () => {
@@ -136,24 +136,32 @@ describe('Integration Tests', () => {
 
   describe('Mock service utilities', () => {
     it('uses default response when no specific response set', async () => {
-      mockService.setDefaultResponse([{ action: 'Default task' }]);
+      mockService.setDefaultResponse([
+        { action: 'Default task', type: TaskType.Execute },
+      ]);
 
       const result = await mockService.processWithTool(
         'unknown command',
         'plan'
       );
 
-      expect(result.tasks).toEqual([{ action: 'Default task' }]);
+      expect(result.tasks).toEqual([
+        { action: 'Default task', type: TaskType.Execute },
+      ]);
     });
 
     it('resets to default state', async () => {
-      mockService.setResponse('test', [{ action: 'Custom response' }]);
+      mockService.setResponse('test', [
+        { action: 'Custom response', type: TaskType.Execute },
+      ]);
       mockService.setShouldFail(true);
 
       mockService.reset();
 
       const result = await mockService.processWithTool('test', 'plan');
-      expect(result.tasks).toEqual([{ action: 'mock task' }]);
+      expect(result.tasks).toEqual([
+        { action: 'mock task', type: TaskType.Execute },
+      ]);
     });
   });
 

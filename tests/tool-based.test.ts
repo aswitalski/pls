@@ -18,7 +18,7 @@ vi.mock('../src/services/skills.js', () => {
   };
 });
 
-describe('AnthropicService - Tool-based processing', () => {
+describe('Anthropic service - Tool-based processing', () => {
   let service: AnthropicService;
   let mockCreate: ReturnType<typeof vi.fn>;
 
@@ -36,7 +36,7 @@ describe('AnthropicService - Tool-based processing', () => {
     service = new AnthropicService('test-api-key');
   });
 
-  describe('processWithTool', () => {
+  describe('Processing with tool', () => {
     it('returns structured tasks for single task', async () => {
       mockCreate.mockResolvedValue({
         content: [

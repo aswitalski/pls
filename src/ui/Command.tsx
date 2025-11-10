@@ -90,15 +90,12 @@ export function Command({
   command,
   state,
   service,
-  error: errorProp,
   children,
   onError,
   onComplete,
 }: CommandProps) {
   const done = state?.done ?? false;
-  const [error, setError] = useState<string | null>(
-    state?.error || errorProp || null
-  );
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
   const [message, setMessage] = useState<string>('');
   const [tasks, setTasks] = useState<Task[]>([]);

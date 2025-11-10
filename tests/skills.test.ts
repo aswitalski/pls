@@ -10,7 +10,7 @@ import {
 } from '../src/services/skills.js';
 import { safeRemoveDirectory } from './test-utils.js';
 
-describe('skills service', () => {
+describe('Skills service', () => {
   let originalHome: string | undefined;
   let tempHome: string;
 
@@ -38,7 +38,7 @@ describe('skills service', () => {
     safeRemoveDirectory(tempHome);
   });
 
-  describe('getSkillsDirectory', () => {
+  describe('Getting skills directory', () => {
     it('returns path to .pls/skills in home directory', () => {
       const skillsDir = getSkillsDirectory();
       expect(skillsDir).toContain('.pls');
@@ -46,7 +46,7 @@ describe('skills service', () => {
     });
   });
 
-  describe('loadSkills', () => {
+  describe('Loading skills', () => {
     it('returns empty array when skills directory does not exist', () => {
       // Remove the skills directory
       const skillsDir = getSkillsDirectory();
@@ -119,7 +119,7 @@ Navigate to the project directory, run the project generation script, run the co
     });
   });
 
-  describe('formatSkillsForPrompt', () => {
+  describe('Formatting skills for prompt', () => {
     it('returns empty string when no skills', () => {
       const formatted = formatSkillsForPrompt([]);
       expect(formatted).toBe('');
