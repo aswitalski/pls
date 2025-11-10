@@ -30,7 +30,6 @@ describe('Component', () => {
       name: 'config',
       state: {
         done: false,
-        currentStepIndex: 0,
       },
       props: {
         steps: [
@@ -53,7 +52,6 @@ describe('Component', () => {
       name: 'config',
       state: {
         done: false,
-        currentStepIndex: 1,
       },
       props: {
         steps: [
@@ -68,7 +66,7 @@ describe('Component', () => {
 
     expect(result).toBeDefined();
     expect(result.props.def.props.steps).toHaveLength(3);
-    expect(result.props.def.state.currentStepIndex).toBe(1);
+    expect(result.props.def.state?.done).toBe(false);
   });
 
   it('renders command component in loading state', () => {
@@ -154,7 +152,7 @@ describe('Component', () => {
       },
       {
         name: 'config',
-        state: { done: false, currentStepIndex: 0 },
+        state: { done: false },
         props: {
           steps: [{ description: 'Test', key: 'test', value: null }],
         },
