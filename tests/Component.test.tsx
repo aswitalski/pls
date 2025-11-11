@@ -144,6 +144,41 @@ describe('Component', () => {
     expect('state' in result.props.def).toBe(false);
   });
 
+  it('renders plan component', () => {
+    const def: ComponentDefinition = {
+      name: 'plan',
+      props: {
+        message: 'Here is the plan',
+        tasks: [
+          { action: 'Install dependencies', type: 'execute' },
+          { action: 'Run tests', type: 'execute' },
+        ],
+      },
+    };
+
+    const result = <Component def={def} />;
+
+    expect(result).toBeDefined();
+    expect(result.props.def.props.tasks).toHaveLength(2);
+    expect(result.props.def.props.message).toBe('Here is the plan');
+  });
+
+  it('renders feedback component', () => {
+    const def: ComponentDefinition = {
+      name: 'feedback',
+      props: {
+        type: 'info',
+        message: 'Configuration complete',
+      },
+    };
+
+    const result = <Component def={def} />;
+
+    expect(result).toBeDefined();
+    expect(result.props.def.props.type).toBe('info');
+    expect(result.props.def.props.message).toBe('Configuration complete');
+  });
+
   it('renders all component types in sequence', () => {
     const definitions: ComponentDefinition[] = [
       {
@@ -162,11 +197,25 @@ describe('Component', () => {
         state: { done: false, isLoading: true },
         props: { command: 'test' },
       },
+      {
+        name: 'plan',
+        props: {
+          message: 'Plan ready',
+          tasks: [{ action: 'Do something', type: 'execute' }],
+        },
+      },
+      {
+        name: 'feedback',
+        props: {
+          type: 'succeeded',
+          message: 'All done',
+        },
+      },
     ];
 
     const results = definitions.map((def) => <Component def={def} />);
 
-    expect(results).toHaveLength(3);
+    expect(results).toHaveLength(5);
     results.forEach((result) => {
       expect(result).toBeDefined();
       expect(result.type).toBeDefined();

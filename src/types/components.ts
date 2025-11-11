@@ -21,6 +21,7 @@ export enum TaskType {
 }
 
 export enum FeedbackType {
+  Info = 'info',
   Succeeded = 'succeeded',
   Aborted = 'aborted',
   Failed = 'failed',
@@ -56,6 +57,11 @@ export interface FeedbackProps {
   message: string;
 }
 
+export interface PlanProps {
+  message?: string;
+  tasks: Task[];
+}
+
 export interface CommandProps {
   command: string;
   state?: CommandState;
@@ -63,7 +69,7 @@ export interface CommandProps {
   error?: string;
   children?: React.ReactNode;
   onError?: (error: string) => void;
-  onComplete?: () => void;
+  onComplete?: (message: string, tasks: Task[]) => void;
 }
 
 // Base state interface - all stateful components extend this
@@ -100,6 +106,7 @@ interface StatefulDefinition<
 type WelcomeDefinition = StatelessDefinition<'welcome', WelcomeProps>;
 type ConfigDefinition = StatefulDefinition<'config', ConfigProps, BaseState>;
 type FeedbackDefinition = StatelessDefinition<'feedback', FeedbackProps>;
+type PlanDefinition = StatelessDefinition<'plan', PlanProps>;
 type CommandDefinition = StatefulDefinition<
   'command',
   CommandProps,
@@ -111,6 +118,7 @@ export type ComponentDefinition =
   | WelcomeDefinition
   | ConfigDefinition
   | FeedbackDefinition
+  | PlanDefinition
   | CommandDefinition;
 
 // Union of all stateful component definitions

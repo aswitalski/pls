@@ -4,29 +4,40 @@ import { FeedbackProps, FeedbackType } from '../types/components.js';
 
 function getSymbol(type: FeedbackType): string {
   return {
+    [FeedbackType.Info]: 'ℹ',
     [FeedbackType.Succeeded]: '✓',
     [FeedbackType.Aborted]: '⊘',
     [FeedbackType.Failed]: '✗',
   }[type];
 }
 
-function getColor(type: FeedbackType): string {
+function getSymbolColor(type: FeedbackType): string {
   return {
+    [FeedbackType.Info]: '#5c9ccc', // cyan
     [FeedbackType.Succeeded]: '#00aa00', // green
     [FeedbackType.Aborted]: '#cc9c5c', // orange
-    [FeedbackType.Failed]: '#aa0000', // red
+    [FeedbackType.Failed]: '#cc5c5c', // red
+  }[type];
+}
+
+function getMessageColor(type: FeedbackType): string {
+  return {
+    [FeedbackType.Info]: '#aaaaaa', // light grey
+    [FeedbackType.Succeeded]: '#00aa00', // green
+    [FeedbackType.Aborted]: '#cc9c5c', // orange
+    [FeedbackType.Failed]: '#cc5c5c', // red
   }[type];
 }
 
 export function Feedback({ type, message }: FeedbackProps) {
-  const color = getColor(type);
+  const symbolColor = getSymbolColor(type);
+  const messageColor = getMessageColor(type);
   const symbol = getSymbol(type);
 
   return (
     <Box marginLeft={1}>
-      <Text color={color}>
-        {symbol} {message}
-      </Text>
+      <Text color={symbolColor}>{symbol} </Text>
+      <Text color={messageColor}>{message}</Text>
     </Box>
   );
 }

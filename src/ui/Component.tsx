@@ -5,6 +5,7 @@ import { ComponentDefinition } from '../types/components.js';
 import { Command } from './Command.js';
 import { Config } from './Config.js';
 import { Feedback } from './Feedback.js';
+import { Plan } from './Plan.js';
 import { Welcome } from './Welcome.js';
 
 interface ComponentProps {
@@ -22,13 +23,16 @@ export function Component({ def }: ComponentProps): React.ReactElement {
       return <Config {...props} state={state} />;
     }
 
-    case 'feedback':
-      return <Feedback {...def.props} />;
-
     case 'command': {
       const props = def.props;
       const state = def.state;
       return <Command {...props} state={state} />;
     }
+
+    case 'plan':
+      return <Plan {...def.props} />;
+
+    case 'feedback':
+      return <Feedback {...def.props} />;
   }
 }

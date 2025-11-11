@@ -1,90 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { CommandProps, Task, TaskType } from '../types/components.js';
+import { CommandProps } from '../types/components.js';
 
-import { Label } from './Label.js';
-import { List } from './List.js';
 import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000; // purely for visual effect
-
-type ColoredText = { text: string; color: string };
-
-// Color palette
-const ColorPalette: Record<TaskType, { description: string; type: string }> = {
-  [TaskType.Config]: {
-    description: '#ffffff', // white
-    type: '#5c9ccc', // cyan
-  },
-  [TaskType.Plan]: {
-    description: '#ffffff', // white
-    type: '#5ccccc', // magenta
-  },
-  [TaskType.Execute]: {
-    description: '#ffffff', // white
-    type: '#4a9a7a', // green
-  },
-  [TaskType.Answer]: {
-    description: '#ffffff', // white
-    type: '#9c5ccc', // purple
-  },
-  [TaskType.Report]: {
-    description: '#ffffff', // white
-    type: '#cc9c5c', // orange
-  },
-  [TaskType.Define]: {
-    description: '#ffffff', // white
-    type: '#cc9c5c', // amber
-  },
-  [TaskType.Ignore]: {
-    description: '#cccc5c', // yellow
-    type: '#cc7a5c', // orange
-  },
-  [TaskType.Select]: {
-    description: '#888888', // grey
-    type: '#5c8cbc', // steel blue
-  },
-};
-
-function taskToListItem(task: Task) {
-  const colors = ColorPalette[task.type];
-
-  const item: {
-    description: ColoredText;
-    type: ColoredText;
-    children?: {
-      description: ColoredText;
-      type: ColoredText;
-    }[];
-  } = {
-    description: {
-      text: task.action,
-      color: colors.description,
-    },
-    type: {
-      text: task.type,
-      color: colors.type,
-    },
-  };
-
-  // Add children for Define tasks with options
-  if (task.type === TaskType.Define && Array.isArray(task.params?.options)) {
-    const selectColors = ColorPalette[TaskType.Select];
-    item.children = (task.params.options as string[]).map((option) => ({
-      description: {
-        text: String(option),
-        color: selectColors.description,
-      },
-      type: {
-        text: TaskType.Select,
-        color: selectColors.type,
-      },
-    }));
-  }
-
-  return item;
-}
 
 export function Command({
   command,
@@ -97,8 +18,6 @@ export function Command({
   const done = state?.done ?? false;
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
-  const [message, setMessage] = useState<string>('');
-  const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     // Skip processing if done (showing historical/final state)
@@ -126,10 +45,8 @@ export function Command({
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
 
         if (mounted) {
-          setMessage(result.message);
-          setTasks(result.tasks);
           setIsLoading(false);
-          onComplete?.();
+          onComplete?.(result.message, result.tasks);
         }
       } catch (err) {
         const elapsed = Date.now() - startTime;
@@ -172,23 +89,6 @@ export function Command({
       {error && (
         <Box marginTop={1}>
           <Text color="red">Error: {error}</Text>
-        </Box>
-      )}
-
-      {!isLoading && tasks.length > 0 && (
-        <Box marginTop={1} flexDirection="column">
-          {message && (
-            <Box marginBottom={1}>
-              <Text> </Text>
-              <Label
-                description={message}
-                descriptionColor={ColorPalette[TaskType.Plan].description}
-                type={TaskType.Plan}
-                typeColor={ColorPalette[TaskType.Plan].type}
-              />
-            </Box>
-          )}
-          <List items={tasks.map(taskToListItem)} />
         </Box>
       )}
 
