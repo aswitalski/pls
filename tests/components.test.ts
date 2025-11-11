@@ -69,9 +69,11 @@ describe('Component Types', () => {
         },
       };
 
-      expect(def.props.steps).toHaveLength(3);
-      expect(def.props.steps[0].key).toBe('username');
-      expect(def.props.steps[2].value).toBe('localhost');
+      if (def.name === ComponentName.Config) {
+        expect(def.props.steps).toHaveLength(3);
+        expect(def.props.steps[0]?.key).toBe('username');
+        expect(def.props.steps[2]?.value).toBe('localhost');
+      }
     });
 
     it('supports onFinished callback', () => {

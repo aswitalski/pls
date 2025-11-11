@@ -1,13 +1,23 @@
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
+import { render } from 'ink-testing-library';
 
-import { Config, ConfigStep } from '../src/ui/Config.js';
+import { Config, ConfigStep, StepType } from '../src/ui/Config.js';
+import { AnthropicModel } from '../src/services/config.js';
 
 describe('Config component interaction flows', () => {
+  const mockValidate = () => true;
+
   describe('Single step config', () => {
     it('renders single step', () => {
       const steps: ConfigStep[] = [
-        { description: 'API Key', key: 'apiKey', value: null },
+        {
+          description: 'API Key',
+          key: 'apiKey',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: false }} />;
@@ -21,13 +31,15 @@ describe('Config component interaction flows', () => {
         {
           description: 'Model',
           key: 'model',
-          value: 'claude-haiku-4-5-20251001',
+          type: StepType.Text,
+          value: AnthropicModel.Haiku,
+          validate: mockValidate,
         },
       ];
 
       const result = <Config steps={steps} state={{ done: false }} />;
 
-      expect(result.props.steps[0].value).toBe('claude-haiku-4-5-20251001');
+      expect(result.props.steps[0].value).toBe(AnthropicModel.Haiku);
     });
 
     it('calls onFinished for single step', () => {
@@ -193,6 +205,88 @@ describe('Config component interaction flows', () => {
       const result = <Config steps={steps} state={{ done: false }} />;
 
       expect(result.props.steps[0].value).toBe('你好世界 🌍');
+    });
+  });
+
+  describe('Completion and abortion behavior', () => {
+    it('completion: calls onFinished with default selection value', () => {
+      const onFinished = vi.fn();
+      const steps: ConfigStep[] = [
+        {
+          description: 'Model',
+          key: 'model',
+          type: StepType.Selection,
+          options: [
+            { label: 'Haiku 4.5', value: AnthropicModel.Haiku },
+            { label: 'Sonnet 4.5', value: AnthropicModel.Sonnet },
+            { label: 'Opus 4.1', value: AnthropicModel.Opus },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config steps={steps} onFinished={onFinished} />
+      );
+
+      // Press enter to accept default (Haiku)
+      stdin.write('\r');
+
+      expect(onFinished).toHaveBeenCalledWith({
+        model: AnthropicModel.Haiku,
+      });
+    });
+
+    it('abortion: calls onAborted when escape is pressed', () => {
+      const onAborted = vi.fn();
+      const steps: ConfigStep[] = [
+        {
+          description: 'API Key',
+          key: 'apiKey',
+          type: StepType.Text,
+          value: null,
+          validate: (val) => val.length > 0,
+        },
+      ];
+
+      const { stdin } = render(<Config steps={steps} onAborted={onAborted} />);
+
+      // Press Escape
+      stdin.write('\x1b'); // ESC
+
+      expect(onAborted).toHaveBeenCalled();
+    });
+
+    it('abortion: preserves selected value from selection step', () => {
+      const onAborted = vi.fn();
+      const steps: ConfigStep[] = [
+        {
+          description: 'Model',
+          key: 'model',
+          type: StepType.Selection,
+          options: [
+            { label: 'Haiku 4.5', value: AnthropicModel.Haiku },
+            { label: 'Sonnet 4.5', value: AnthropicModel.Sonnet },
+            { label: 'Opus 4.1', value: AnthropicModel.Opus },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin, lastFrame } = render(
+        <Config steps={steps} onAborted={onAborted} />
+      );
+
+      // Press Escape immediately (preserves default)
+      stdin.write('\x1b'); // ESC
+
+      expect(onAborted).toHaveBeenCalled();
+
+      // Check that Haiku (default) is visible in the UI
+      const output = lastFrame();
+      expect(output).toContain('Haiku 4.5');
     });
   });
 });

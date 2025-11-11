@@ -4,6 +4,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 import {
+  AnthropicModel,
   mergeConfig,
   configExists,
   loadConfig,
@@ -167,12 +168,12 @@ config:
     it('saves anthropic config to file', () => {
       saveAnthropicConfig({
         key: 'sk-ant-test',
-        model: 'claude-haiku-4-5-20251001',
+        model: AnthropicModel.Haiku,
       });
 
       const config = loadConfig();
       expect(config.anthropic.key).toBe('sk-ant-test');
-      expect(config.anthropic.model).toBe('claude-haiku-4-5-20251001');
+      expect(config.anthropic.model).toBe(AnthropicModel.Haiku);
     });
 
     it('saves anthropic config with only required fields', () => {

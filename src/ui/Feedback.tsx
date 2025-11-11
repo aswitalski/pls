@@ -23,7 +23,7 @@ function getSymbolColor(type: FeedbackType): string {
 function getMessageColor(type: FeedbackType): string {
   return {
     [FeedbackType.Info]: '#aaaaaa', // light grey
-    [FeedbackType.Succeeded]: '#00aa00', // green
+    [FeedbackType.Succeeded]: '#5ccc5c', // green
     [FeedbackType.Aborted]: '#cc9c5c', // orange
     [FeedbackType.Failed]: '#cc5c5c', // red
   }[type];
@@ -35,7 +35,7 @@ export function Feedback({ type, message }: FeedbackProps) {
   const symbol = getSymbol(type);
 
   return (
-    <Box marginLeft={1}>
+    <Box>
       <Text color={symbolColor}>{symbol} </Text>
       <Text color={messageColor}>{message}</Text>
     </Box>
