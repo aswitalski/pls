@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { AnthropicService } from '../services/anthropic.js';
+import { ConfigStep } from '../ui/Config.js';
 
 export interface AppInfo {
   name: string;
@@ -51,11 +52,7 @@ export interface WelcomeProps {
 export interface ConfigProps<
   T extends Record<string, string> = Record<string, string>,
 > {
-  steps: Array<{
-    description: string;
-    key: string;
-    value: string | null;
-  }>;
+  steps: ConfigStep[];
   state?: BaseState;
   onFinished?: (config: T) => void;
   onAborted?: () => void;

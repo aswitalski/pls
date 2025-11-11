@@ -7,7 +7,12 @@ import {
   Task,
 } from '../types/components.js';
 import { AnthropicService } from './anthropic.js';
-import { ConfigStep } from '../ui/Config.js';
+import { ConfigStep, StepType } from '../ui/Config.js';
+import {
+  AnthropicModel,
+  isValidAnthropicApiKey,
+  isValidAnthropicModel,
+} from './config.js';
 
 export function markAsDone<T extends StatefulComponentDefinition>(
   component: T
@@ -24,11 +29,24 @@ export function createWelcomeDefinition(app: AppInfo): ComponentDefinition {
 
 export function createConfigSteps(): ConfigStep[] {
   return [
-    { description: 'Anthropic API key', key: 'key', value: null },
+    {
+      description: 'Anthropic API key',
+      key: 'key',
+      type: StepType.Text,
+      value: null,
+      validate: isValidAnthropicApiKey,
+    },
     {
       description: 'Model',
       key: 'model',
-      value: 'claude-haiku-4-5-20251001',
+      type: StepType.Selection,
+      options: [
+        { label: 'Haiku 4.5', value: AnthropicModel.Haiku },
+        { label: 'Sonnet 4.5', value: AnthropicModel.Sonnet },
+        { label: 'Opus 4.1', value: AnthropicModel.Opus },
+      ],
+      defaultIndex: 0,
+      validate: isValidAnthropicModel,
     },
   ];
 }

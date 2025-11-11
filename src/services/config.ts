@@ -3,6 +3,14 @@ import { homedir } from 'os';
 import { join } from 'path';
 import YAML from 'yaml';
 
+export enum AnthropicModel {
+  Sonnet = 'claude-sonnet-4-5',
+  Haiku = 'claude-haiku-4-5',
+  Opus = 'claude-opus-4-1',
+}
+
+export const SUPPORTED_MODELS = Object.values(AnthropicModel);
+
 export type AnthropicConfig = {
   key: string;
   model?: string;
@@ -61,8 +69,8 @@ function validateConfig(parsed: unknown): Config {
     },
   };
 
-  // Optional model
-  if (model && typeof model === 'string') {
+  // Optional model - only set if valid
+  if (model && typeof model === 'string' && isValidAnthropicModel(model)) {
     validatedConfig.anthropic.model = model;
   }
 
@@ -88,12 +96,16 @@ export function configExists(): boolean {
   return existsSync(getConfigFile());
 }
 
-function isValidAnthropicApiKey(key: string): boolean {
+export function isValidAnthropicApiKey(key: string): boolean {
   // Anthropic API keys format: sk-ant-api03-XXXXX (108 chars total)
   // - Prefix: sk-ant-api03- (13 chars)
   // - Key body: 95 characters (uppercase, lowercase, digits, hyphens, underscores)
   const apiKeyPattern = /^sk-ant-api03-[A-Za-z0-9_-]{95}$/;
   return apiKeyPattern.test(key);
+}
+
+export function isValidAnthropicModel(model: string): boolean {
+  return SUPPORTED_MODELS.includes(model as AnthropicModel);
 }
 
 export function hasValidAnthropicKey(): boolean {
