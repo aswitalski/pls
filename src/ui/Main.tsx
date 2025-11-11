@@ -6,6 +6,7 @@ import {
   ComponentName,
   StatefulComponentDefinition,
   Task,
+  TaskType,
 } from '../types/components.js';
 
 import {
@@ -98,22 +99,61 @@ export const Main = ({ app, command }: MainProps) => {
     [addToTimeline]
   );
 
-  const handleCommandComplete = React.useCallback(
-    (message: string, tasks: Task[]) => {
+  const handlePlanSelectionConfirmed = React.useCallback(
+    (selectedIndex: number, updatedTasks: Task[]) => {
       setQueue((currentQueue) => {
         if (currentQueue.length === 0) return currentQueue;
         const [first] = currentQueue;
-        if (first.name === ComponentName.Command) {
-          addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
-            createPlanDefinition(message, tasks)
-          );
+        if (first.name === ComponentName.Plan) {
+          // Mark plan as done and add it to timeline
+          addToTimeline(markAsDone(first as StatefulComponentDefinition));
         }
+        // Exit after selection is confirmed
         exitApp(0);
         return [];
       });
     },
     [addToTimeline]
+  );
+
+  const handleCommandComplete = React.useCallback(
+    (message: string, tasks: Task[]) => {
+      setQueue((currentQueue) => {
+        if (currentQueue.length === 0) return currentQueue;
+        const [first] = currentQueue;
+
+        // Check if tasks contain a Define task that requires user interaction
+        const hasDefineTask = tasks.some(
+          (task) => task.type === TaskType.Define
+        );
+
+        if (first.name === ComponentName.Command) {
+          const planDefinition = createPlanDefinition(
+            message,
+            tasks,
+            hasDefineTask ? handlePlanSelectionConfirmed : undefined
+          );
+
+          if (hasDefineTask) {
+            // Don't exit - keep the plan in the queue for interaction
+            addToTimeline(markAsDone(first as StatefulComponentDefinition));
+            return [planDefinition];
+          } else {
+            // No define task - add plan to timeline and exit
+            addToTimeline(
+              markAsDone(first as StatefulComponentDefinition),
+              planDefinition
+            );
+            exitApp(0);
+            return [];
+          }
+        }
+
+        exitApp(0);
+        return [];
+      });
+    },
+    [addToTimeline, handlePlanSelectionConfirmed]
   );
 
   const handleConfigFinished = React.useCallback(

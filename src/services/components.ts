@@ -94,14 +94,22 @@ export function createCommandDefinition(
 
 export function createPlanDefinition(
   message: string,
-  tasks: Task[]
+  tasks: Task[],
+  onSelectionConfirmed?: (selectedIndex: number, tasks: Task[]) => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Plan,
+    state: {
+      done: false,
+      highlightedIndex: null,
+      currentDefineGroupIndex: 0,
+      completedSelections: [],
+    },
     props: {
       message,
       tasks,
+      onSelectionConfirmed,
     },
   };
 }
