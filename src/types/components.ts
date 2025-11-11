@@ -28,6 +28,7 @@ export enum TaskType {
   Define = 'define',
   Ignore = 'ignore',
   Select = 'select',
+  Discard = 'discard',
 }
 
 export enum FeedbackType {
@@ -70,6 +71,14 @@ export interface MessageProps {
 export interface PlanProps {
   message?: string;
   tasks: Task[];
+  state?: PlanState;
+  onSelectionConfirmed?: (selectedIndex: number, tasks: Task[]) => void;
+}
+
+export interface PlanState extends BaseState {
+  highlightedIndex: number | null;
+  currentDefineGroupIndex: number;
+  completedSelections: number[];
 }
 
 export interface CommandProps {
@@ -132,7 +141,11 @@ type MessageDefinition = StatelessDefinition<
   ComponentName.Message,
   MessageProps
 >;
-type PlanDefinition = StatelessDefinition<ComponentName.Plan, PlanProps>;
+type PlanDefinition = StatefulDefinition<
+  ComponentName.Plan,
+  PlanProps,
+  PlanState
+>;
 type CommandDefinition = StatefulDefinition<
   ComponentName.Command,
   CommandProps,
@@ -149,4 +162,7 @@ export type ComponentDefinition =
   | CommandDefinition;
 
 // Union of all stateful component definitions
-export type StatefulComponentDefinition = ConfigDefinition | CommandDefinition;
+export type StatefulComponentDefinition =
+  | ConfigDefinition
+  | CommandDefinition
+  | PlanDefinition;

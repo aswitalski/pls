@@ -1,11 +1,18 @@
-import { Box, Text } from 'ink';
+import { useEffect, useState } from 'react';
+import { Box, Text, useInput } from 'ink';
 
-import { Task, TaskType } from '../types/components.js';
+import { PlanProps, Task, TaskType } from '../types/components.js';
 
 import { Label } from './Label.js';
 import { List } from './List.js';
 
-const ColorPalette: Record<TaskType, { description: string; type: string }> = {
+const ColorPalette: Record<
+  TaskType,
+  {
+    description: string;
+    type: string;
+  }
+> = {
   [TaskType.Config]: {
     description: '#ffffff', // white
     type: '#5c9ccc', // cyan
@@ -38,9 +45,17 @@ const ColorPalette: Record<TaskType, { description: string; type: string }> = {
     description: '#888888', // grey
     type: '#5c8cbc', // steel blue
   },
+  [TaskType.Discard]: {
+    description: '#666666', // dark grey
+    type: '#a85c3f', // dark orange
+  },
 };
 
-function taskToListItem(task: Task) {
+function taskToListItem(
+  task: Task,
+  highlightedChildIndex: number | null = null,
+  isDefineTaskWithoutSelection: boolean = false
+) {
   const item: {
     description: { text: string; color: string };
     type: { text: string; color: string };
@@ -48,6 +63,7 @@ function taskToListItem(task: Task) {
       description: { text: string; color: string };
       type: { text: string; color: string };
     }[];
+    marker?: string;
   } = {
     description: {
       text: task.action,
@@ -57,30 +73,174 @@ function taskToListItem(task: Task) {
     children: [],
   };
 
+  // Mark define tasks with right arrow when no selection has been made
+  if (isDefineTaskWithoutSelection) {
+    item.marker = '  → ';
+  }
+
   // Add children for Define tasks with options
   if (task.type === TaskType.Define && Array.isArray(task.params?.options)) {
-    const selectColors = ColorPalette[TaskType.Select];
-    item.children = (task.params.options as string[]).map((option) => ({
-      description: {
-        text: String(option),
-        color: selectColors.description,
-      },
-      type: {
-        text: TaskType.Select,
-        color: selectColors.type,
-      },
-    }));
+    item.children = (task.params.options as string[]).map((option, index) => {
+      // Determine the type based on selection state
+      let childType = TaskType.Select;
+      if (highlightedChildIndex !== null) {
+        // A selection was made - mark others as discarded
+        childType =
+          index === highlightedChildIndex ? TaskType.Execute : TaskType.Discard;
+      }
+
+      const colors = ColorPalette[childType];
+      return {
+        description: {
+          text: String(option),
+          color: colors.description,
+          highlightedColor: ColorPalette[TaskType.Plan].description,
+        },
+        type: {
+          text: childType,
+          color: colors.type,
+          highlightedColor: ColorPalette[TaskType.Plan].type,
+        },
+      };
+    });
   }
 
   return item;
 }
 
-export interface PlanProps {
-  message?: string;
-  tasks: Task[];
-}
+export function Plan({
+  message,
+  tasks,
+  state,
+  onSelectionConfirmed,
+}: PlanProps) {
+  const [highlightedIndex, setHighlightedIndex] = useState<number | null>(
+    state?.highlightedIndex ?? null
+  );
+  const [currentDefineGroupIndex, setCurrentDefineGroupIndex] =
+    useState<number>(state?.currentDefineGroupIndex ?? 0);
+  const [completedSelections, setCompletedSelections] = useState<number[]>(
+    state?.completedSelections ?? []
+  );
+  const [isDone, setIsDone] = useState<boolean>(state?.done ?? false);
 
-export function Plan({ message, tasks }: PlanProps) {
+  // Find all Define tasks
+  const defineTaskIndices = tasks
+    .map((t, idx) => (t.type === TaskType.Define ? idx : -1))
+    .filter((idx) => idx !== -1);
+
+  // Get the current active define task
+  const currentDefineTaskIndex =
+    defineTaskIndices[currentDefineGroupIndex] ?? -1;
+  const defineTask =
+    currentDefineTaskIndex >= 0 ? tasks[currentDefineTaskIndex] : null;
+  const optionsCount = Array.isArray(defineTask?.params?.options)
+    ? (defineTask.params.options as string[]).length
+    : 0;
+
+  const hasMoreGroups = currentDefineGroupIndex < defineTaskIndices.length - 1;
+
+  useInput(
+    (input, key) => {
+      // Don't handle input if already done or no define task
+      if (isDone || !defineTask) {
+        return;
+      }
+
+      if (key.downArrow) {
+        setHighlightedIndex((prev) => {
+          if (prev === null) {
+            return 0; // Select first
+          }
+          return (prev + 1) % optionsCount; // Wrap around
+        });
+      } else if (key.upArrow) {
+        setHighlightedIndex((prev) => {
+          if (prev === null) {
+            return optionsCount - 1; // Select last
+          }
+          return (prev - 1 + optionsCount) % optionsCount; // Wrap around
+        });
+      } else if (key.return && highlightedIndex !== null) {
+        // Record the selection for this group
+        const newCompletedSelections = [...completedSelections];
+        newCompletedSelections[currentDefineGroupIndex] = highlightedIndex;
+        setCompletedSelections(newCompletedSelections);
+
+        if (hasMoreGroups) {
+          // Advance to next group
+          setCurrentDefineGroupIndex(currentDefineGroupIndex + 1);
+          setHighlightedIndex(null);
+        } else {
+          // Last group - mark as done to show the selection
+          setIsDone(true);
+          setHighlightedIndex(null); // Clear highlight to show Execute color
+          if (state) {
+            state.done = true;
+          }
+
+          // Update all tasks and notify parent
+          const updatedTasks = tasks.map((task, idx) => {
+            if (defineTaskIndices.includes(idx)) {
+              return { ...task, type: TaskType.Execute };
+            }
+            return task;
+          });
+
+          onSelectionConfirmed?.(highlightedIndex, updatedTasks);
+        }
+      }
+    },
+    { isActive: !isDone && defineTask !== null }
+  );
+
+  // Sync state back to state object
+  useEffect(() => {
+    if (state) {
+      state.highlightedIndex = highlightedIndex;
+      state.currentDefineGroupIndex = currentDefineGroupIndex;
+      state.completedSelections = completedSelections;
+      state.done = isDone;
+    }
+  }, [
+    highlightedIndex,
+    currentDefineGroupIndex,
+    completedSelections,
+    isDone,
+    state,
+  ]);
+
+  const listItems = tasks.map((task, idx) => {
+    // Find which define group this task belongs to (if any)
+    const defineGroupIndex = defineTaskIndices.indexOf(idx);
+    const isDefineTask = defineGroupIndex !== -1;
+
+    // Determine child selection state
+    let childIndex: number | null = null;
+    if (isDefineTask) {
+      if (defineGroupIndex < currentDefineGroupIndex) {
+        // Previously completed group - show the selection
+        childIndex = completedSelections[defineGroupIndex] ?? null;
+      } else if (defineGroupIndex === currentDefineGroupIndex) {
+        // Current active group - show live navigation unless done
+        if (isDone) {
+          // If done, show the completed selection for this group too
+          childIndex = completedSelections[defineGroupIndex] ?? null;
+        } else {
+          childIndex = null;
+        }
+      }
+    }
+
+    // Show arrow on current active define task when no child is highlighted
+    const isDefineWithoutSelection =
+      isDefineTask &&
+      defineGroupIndex === currentDefineGroupIndex &&
+      highlightedIndex === null;
+
+    return taskToListItem(task, childIndex, isDefineWithoutSelection);
+  });
+
   return (
     <Box flexDirection="column">
       {message && (
@@ -93,7 +253,11 @@ export function Plan({ message, tasks }: PlanProps) {
           />
         </Box>
       )}
-      <List items={tasks.map(taskToListItem)} />
+      <List
+        items={listItems}
+        highlightedIndex={currentDefineTaskIndex >= 0 ? highlightedIndex : null}
+        highlightedParentIndex={currentDefineTaskIndex}
+      />
     </Box>
   );
 }
