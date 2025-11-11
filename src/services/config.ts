@@ -88,10 +88,20 @@ export function configExists(): boolean {
   return existsSync(getConfigFile());
 }
 
-export function hasValidConfig(): boolean {
+function isValidAnthropicApiKey(key: string): boolean {
+  // Anthropic API keys format: sk-ant-api03-XXXXX (108 chars total)
+  // - Prefix: sk-ant-api03- (13 chars)
+  // - Key body: 95 characters (uppercase, lowercase, digits, hyphens, underscores)
+  const apiKeyPattern = /^sk-ant-api03-[A-Za-z0-9_-]{95}$/;
+  return apiKeyPattern.test(key);
+}
+
+export function hasValidAnthropicKey(): boolean {
   try {
     const config = loadConfig();
-    return !!config.anthropic.key;
+    return (
+      !!config.anthropic.key && isValidAnthropicApiKey(config.anthropic.key)
+    );
   } catch {
     return false;
   }

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { render, Text } from 'ink';
 
 import {
-  hasValidConfig,
+  hasValidAnthropicKey,
   loadConfig,
   saveAnthropicConfig,
 } from './services/config.js';
@@ -40,7 +40,7 @@ const command = args.join(' ').trim() || null;
 
 async function runApp() {
   // Happy path: valid config exists
-  if (hasValidConfig()) {
+  if (hasValidAnthropicKey()) {
     const config = loadConfig();
     const service = createAnthropicService(config.anthropic);
 
