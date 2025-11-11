@@ -18,8 +18,8 @@ export const Column: React.FC<ColumnProps> = ({ items }) => {
       flexDirection="column"
       gap={1}
     >
-      {items.map((item, index) => (
-        <Box key={index}>
+      {items.map((item) => (
+        <Box key={item.id}>
           <Component def={item} />
         </Box>
       ))}

@@ -97,6 +97,7 @@ export interface CommandState extends BaseState {
 
 // For components without state tracking
 interface StatelessDefinition<ComponentName extends string, ComponentProps> {
+  id: string;
   name: ComponentName;
   props: ComponentProps;
 }
@@ -107,6 +108,7 @@ interface StatefulDefinition<
   ComponentProps,
   ComponentState extends BaseState,
 > {
+  id: string;
   name: ComponentName;
   state: ComponentState;
   props: ComponentProps;
