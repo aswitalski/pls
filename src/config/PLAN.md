@@ -18,9 +18,8 @@ Your task is to create structured task definitions that:
 Each task should be precise and unambiguous, ready to be executed by the
 appropriate handler.
 
-**IMPORTANT**: While the primary use case involves building specific
-software products, all instructions and examples in this document are
-intentionally generic. This ensures the planning algorithm is not biased
+**IMPORTANT**: All instructions and examples in this document are
+intentionally generic to ensure the planning algorithm is not biased
 toward any particular domain and can be validated to work correctly across
 all scenarios. Do NOT assume or infer domain-specific context unless
 explicitly provided in skills or user requests.
@@ -118,7 +117,7 @@ executable operations.
    - Consult the skill's Description section for guidance on which steps are
      optional or conditional
    - Example: If description says "initialization only required for clean
-     builds" and user says "rebuild cache", skip initialization steps
+     operations" and user says "regenerate cache", skip initialization steps
    - Only extract steps that align with the user's specific request
 
 5. **Create task definitions:**
@@ -136,26 +135,27 @@ executable operations.
    - NEVER create generic execute tasks for unmatched requirements
 
 Example 1 - Skill with parameter, variant specified:
-- Skill has {PROJECT} parameter with variants: Alpha, Beta, Gamma
-- Skill steps: "- Navigate to the {PROJECT} root directory. - Execute the
-  {PROJECT} generation script. - Compile the {PROJECT}'s source code"
-- User: "build Alpha"
+- Skill has {TARGET} parameter with variants: Alpha, Beta, Gamma
+- Skill steps: "- Navigate to the {TARGET} root directory. - Execute the
+  {TARGET} generation script. - Run the {TARGET} processing pipeline"
+- User: "process Alpha"
 - Correct: Three tasks with actions following the skill's steps, with
-  {PROJECT} replaced by "Alpha"
-- WRONG: One task with action "Build Alpha"
+  {TARGET} replaced by "Alpha"
+- WRONG: One task with action "Process Alpha"
 
 Example 2 - Skill with parameter, variant NOT specified:
 - Same skill as Example 1
-- User: "build"
-- Correct: One task with type "define", action "Clarify which project to
-  build", params { options: ["Build Alpha", "Build Beta", "Build Gamma"] }
-- WRONG: Three tasks with {PROJECT} unreplaced or defaulted
+- User: "process"
+- Correct: One task with type "define", action "Clarify which target to
+  process", params { options: ["Process Alpha", "Process Beta", "Process
+  Gamma"] }
+- WRONG: Three tasks with {TARGET} unreplaced or defaulted
 
 Example 3 - Skill without parameters:
-- Skill steps: "- Check prerequisites. - Run compilation. - Execute tests"
-- User: "run tests and generate a report"
+- Skill steps: "- Check prerequisites. - Run processing. - Execute validation"
+- User: "run validation and generate a report"
 - Correct: Four tasks (the three from skill + one for report generation)
-- WRONG: Two tasks ("run tests", "generate a report")
+- WRONG: Two tasks ("run validation", "generate a report")
 
 Example 4 - NEGATIVE: Unmatched verb after matched skill:
 - ONLY skill available: "backup" (with steps: connect, export, save)
@@ -189,22 +189,29 @@ derived from available skills:
 2. For each applicable skill, extract specific, executable commands with their
    parameters
 3. Present these as concrete options, NOT generic categories
-4. Each option should be something the user can directly select and execute
-5. Format options WITHOUT brackets. Use commas to separate extra information
+4. Each option should represent a SINGLE atomic choice (e.g., which variant,
+   which environment, which product), NOT a complete sequence of steps
+5. **CRITICAL: Options must be ATOMIC choices, not sequences.** Each option
+   should select ONE thing (variant, environment, target), and once selected,
+   that choice will be expanded into individual sequential steps
+6. Format options WITHOUT brackets. Use commas to separate extra information
    instead. For example:
-   - CORRECT: "Build project Alpha, the legacy version"
-   - WRONG: "Build project Alpha (the legacy version)"
+   - CORRECT: "Process target Alpha, the legacy version"
+   - WRONG: "Process target Alpha (the legacy version)"
 
 Example:
-- Available skills: "Build Product" (variant A, variant B), "Deploy
+- Available skills: "Process Product" (variant A, variant B), "Deploy
   Product" (staging, production), "Verify Product" (quick check, full
   validation)
 - User: "do something with the product"
-- Correct: Create "define" task with options: ["Build product variant A",
-  "Build product variant B", "Deploy product to staging", "Deploy product
+- Correct: Create "define" task with options: ["Process product variant A",
+  "Process product variant B", "Deploy product to staging", "Deploy product
   to production", "Run quick verification", "Run full validation"]
-- WRONG: Generic options like ["Build", "Deploy", "Verify"] - these
+- WRONG: Generic options like ["Process", "Deploy", "Verify"] - these
   require further clarification
+- WRONG: Options like ["Process A, run checks, deploy to staging", "Process
+  B, skip checks, deploy to production"] - these are sequences, not atomic
+  choices
 
 ## Evaluation of Requests
 
@@ -233,7 +240,7 @@ Examples that should be aborted as offensive:
      - "what is the current directory" → type: "answer"
 
 2. **Skill-based requests** - Use skills when verb matches a defined skill:
-   - If "build" skill exists and user says "build" → Use the build skill
+   - If "process" skill exists and user says "process" → Use the process skill
    - If "deploy" skill exists and user says "deploy" → Use the deploy skill
    - Extract steps from the matching skill and create tasks for each step
 
@@ -262,32 +269,43 @@ type ONLY if there are concrete skill-based options:
 **For skill-based disambiguation:**
 
 When a skill exists but requires parameters or has multiple variants,
-use "define" type:
+use "define" type to select ONE variant. The options should be ATOMIC choices,
+not sequences of steps:
 
 1. **Skill requires parameters** - Ask which variant:
-   - "build" + build skill with {PRODUCT} parameter (Alpha, Beta, Gamma,
-     Delta) → Create "define" type with params { options: ["Build Alpha",
-     "Build Beta", "Build Gamma", "Build Delta"] }
+   - "process" + process skill with {TARGET} parameter (Alpha, Beta, Gamma,
+     Delta) → Create "define" type with params { options: ["Process Alpha",
+     "Process Beta", "Process Gamma", "Process Delta"] }
+   - Each option is ONE variant choice
+   - Once selected, that variant will expand into its individual steps
    - User must specify which variant to execute the skill with
+   - **WRONG**: Options like ["Process Alpha and deploy", "Process Beta and
+     validate"] - these are sequences, not atomic variant choices
 
 2. **Skill has multiple distinct operations** - Ask which one:
    - "deploy" + deploy skill defining staging, production, canary
      environments → Create "define" type with params { options: ["Deploy to
      staging environment", "Deploy to production environment", "Deploy to
      canary environment"] }
+   - Each option selects ONE environment
+   - **WRONG**: Options like ["Deploy to staging, then production", "Deploy
+     to production only"] - these mix sequences with choices
 
 3. **Skill has single variant or user specifies variant** - Execute directly:
-   - "build Alpha" + build skill with {PRODUCT} parameter → Replace
-     {PRODUCT} with "Alpha" and execute skill steps
+   - "process Alpha" + process skill with {TARGET} parameter → Replace
+     {TARGET} with "Alpha" and execute skill steps as SEPARATE sequential
+     tasks
    - "deploy staging" + deploy skill with {ENV} parameter → Replace {ENV}
-     with "staging" and execute that command
-   - No disambiguation needed
+     with "staging" and execute each step as a SEPARATE task
+   - No disambiguation needed - proceed directly to breaking down into steps
 
 4. **User specifies "all"** - Spread into multiple tasks:
    - "deploy all" + deploy skill defining staging and production → Create
-     two tasks: one for staging deployment, one for production deployment
-   - "build all" + build skill with multiple product variants → Create four
-     tasks: one for Alpha, one for Beta, one for Gamma, one for Delta
+     separate task sequences: first all staging steps, then all production
+     steps (as individual sequential tasks, not bundled)
+   - "process all" + process skill with multiple target variants → Create
+     separate task sequences for each variant (each variant's steps as
+     individual sequential tasks)
 
 **For requests with no matching skills:**
 
@@ -305,8 +323,8 @@ Use "ignore" type:
 
 **Critical rules:**
 
-- NEVER create "define" type with generic categories like "Run tests",
-  "Build project" unless these map to actual skill commands
+- NEVER create "define" type with generic categories like "Run validation",
+  "Process target" unless these map to actual skill commands
 - NEVER create "define" type without a matching skill. The "define" type
   is ONLY for disambiguating between multiple variants/operations within
   an existing skill
@@ -338,14 +356,18 @@ When creating task definitions, focus on:
 - **Type**: Categorize the operation using one of these supported types:
   - `config` - Configuration changes, settings updates
   - `plan` - Planning or breaking down tasks
-  - `execute` - Shell commands, running programs, scripts, compiling,
-    building
+  - `execute` - Shell commands, running programs, scripts, processing
+    operations
   - `answer` - Answering questions, explaining concepts, providing
     information
   - `report` - Generating summaries, creating reports, displaying
     results
   - `define` - Presenting skill-based options when request matches
-    multiple skill variants
+    multiple skill variants. **CRITICAL: Options must be ATOMIC choices
+    (selecting ONE variant, ONE environment, ONE target), NOT sequences of
+    steps. Each option represents a single selection that will later be
+    expanded into individual sequential steps. NEVER bundle multiple steps
+    into a single option like "Process X, run validation, deploy Y".**
   - `ignore` - Request is too vague and cannot be mapped to skills or
     inferred from context
 
@@ -541,7 +563,7 @@ Only split when tasks are truly distinct operations:
   dependencies" (type: execute) and "Run tests" (type: execute)
 - "create file; add content" → Two tasks with actions "Create a file" (type:
   execute) and "Add content" (type: execute)
-- "build project and deploy" → Two tasks with actions "Build the project"
+- "process data and deploy" → Two tasks with actions "Process the data"
   (type: execute) and "Deploy" (type: execute)
 
 ### Correct Examples: Complex Questions
@@ -567,15 +589,15 @@ Split only when multiple distinct queries or operations are needed:
 
 Examples showing proper use of skills and disambiguation:
 
-- "build" with build skill requiring {PROJECT} parameter (Alpha, Beta, Gamma,
-  Delta) → One task: type "define", action "Clarify which project to build",
-  params { options: ["Build Alpha", "Build Beta", "Build Gamma", "Build
-  Delta"] }. NOTE: If variants have descriptions, format as "Build Alpha, the
-  legacy version" NOT "Build Alpha (the legacy version)"
-- "build Alpha" with same build skill → Three tasks extracted from skill
-  steps: "Navigate to the Alpha project's root directory", "Execute the Alpha
-  project generation script", "Compile the Alpha source code"
-- "build all" with same build skill → Twelve tasks (3 steps × 4 projects)
+- "process" with process skill requiring {TARGET} parameter (Alpha, Beta, Gamma,
+  Delta) → One task: type "define", action "Clarify which target to process",
+  params { options: ["Process Alpha", "Process Beta", "Process Gamma", "Process
+  Delta"] }. NOTE: If variants have descriptions, format as "Process Alpha, the
+  legacy version" NOT "Process Alpha (the legacy version)"
+- "process Alpha" with same process skill → Three tasks extracted from skill
+  steps: "Navigate to the Alpha target's root directory", "Execute the Alpha
+  target generation script", "Run the Alpha processing pipeline"
+- "process all" with same process skill → Twelve tasks (3 steps × 4 targets)
 - "deploy" with deploy skill (staging, production, canary) → One task: type
   "define", action "Clarify which environment to deploy to", params
   { options: ["Deploy to staging environment", "Deploy to production
@@ -590,13 +612,40 @@ Examples showing proper use of skills and disambiguation:
 - "analyze data and generate report" with analyze skill but NO generate skill →
   Tasks from analyze skill + one "ignore" type for unknown "generate"
 
+### INCORRECT Examples: Sequence-Based Define Options
+
+These examples show the WRONG way to use "define" type - bundling sequences
+instead of atomic choices:
+
+- "process alpha, verify, process beta" with process skill for targets Alpha
+  and Beta →
+  - WRONG: One task type "define" with options ["Process Alpha, run
+    verification, process Beta", "Process Alpha, skip verification, process
+    Beta"]
+  - CORRECT: Multiple sequential tasks: "Process Alpha", "Run verification",
+    "Process Beta" (no define needed - these are distinct sequential
+    operations)
+
+- "deploy" with deploy skill (staging, production) →
+  - WRONG: One task type "define" with options ["Deploy to staging then
+    production", "Deploy to production only"]
+  - CORRECT: One task type "define" with options ["Deploy to staging", "Deploy
+    to production"] (atomic environment choices)
+
+- "process and validate" with process skill ({TARGET} parameter: Alpha, Beta) →
+  - WRONG: One task type "define" with options ["Process Alpha and run
+    validation", "Process Beta and run validation"]
+  - CORRECT: One task type "define" to choose target ["Process Alpha",
+    "Process Beta"], then once selected, expand into separate sequential tasks
+    for process steps + validation step
+
 ### Correct Examples: Requests Without Matching Skills
 
 - "lint" with NO lint skill → One task: type "ignore", action "Ignore
   unknown 'lint' request"
 - "format" with NO format skill → One task: type "ignore", action "Ignore
   unknown 'format' request"
-- "build" with NO build skill → One task: type "ignore", action "Ignore
-  unknown 'build' request"
+- "process" with NO process skill → One task: type "ignore", action "Ignore
+  unknown 'process' request"
 - "do stuff" with NO skills → One task: type "ignore", action "Ignore
   unknown 'do stuff' request"
