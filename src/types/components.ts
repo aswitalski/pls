@@ -9,6 +9,15 @@ export interface AppInfo {
   isDev: boolean;
 }
 
+export enum ComponentName {
+  Welcome = 'welcome',
+  Config = 'config',
+  Feedback = 'feedback',
+  Message = 'message',
+  Plan = 'plan',
+  Command = 'command',
+}
+
 export enum TaskType {
   Config = 'config',
   Plan = 'plan',
@@ -107,13 +116,26 @@ interface StatefulDefinition<
 }
 
 // Specific component definitions
-type WelcomeDefinition = StatelessDefinition<'welcome', WelcomeProps>;
-type ConfigDefinition = StatefulDefinition<'config', ConfigProps, BaseState>;
-type FeedbackDefinition = StatelessDefinition<'feedback', FeedbackProps>;
-type MessageDefinition = StatelessDefinition<'message', MessageProps>;
-type PlanDefinition = StatelessDefinition<'plan', PlanProps>;
+type WelcomeDefinition = StatelessDefinition<
+  ComponentName.Welcome,
+  WelcomeProps
+>;
+type ConfigDefinition = StatefulDefinition<
+  ComponentName.Config,
+  ConfigProps,
+  BaseState
+>;
+type FeedbackDefinition = StatelessDefinition<
+  ComponentName.Feedback,
+  FeedbackProps
+>;
+type MessageDefinition = StatelessDefinition<
+  ComponentName.Message,
+  MessageProps
+>;
+type PlanDefinition = StatelessDefinition<ComponentName.Plan, PlanProps>;
 type CommandDefinition = StatefulDefinition<
-  'command',
+  ComponentName.Command,
   CommandProps,
   CommandState
 >;
