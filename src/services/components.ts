@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   AppInfo,
   ComponentDefinition,
@@ -22,6 +24,7 @@ export function markAsDone<T extends StatefulComponentDefinition>(
 
 export function createWelcomeDefinition(app: AppInfo): ComponentDefinition {
   return {
+    id: randomUUID(),
     name: ComponentName.Welcome,
     props: { app },
   };
@@ -56,6 +59,7 @@ export function createConfigDefinition(
   onAborted: () => void
 ): ComponentDefinition {
   return {
+    id: randomUUID(),
     name: ComponentName.Config,
     state: { done: false },
     props: {
@@ -73,6 +77,7 @@ export function createCommandDefinition(
   onComplete: (message: string, tasks: Task[]) => void
 ): ComponentDefinition {
   return {
+    id: randomUUID(),
     name: ComponentName.Command,
     state: {
       done: false,
@@ -92,6 +97,7 @@ export function createPlanDefinition(
   tasks: Task[]
 ): ComponentDefinition {
   return {
+    id: randomUUID(),
     name: ComponentName.Plan,
     props: {
       message,
@@ -105,6 +111,7 @@ export function createFeedback(
   ...messages: string[]
 ): ComponentDefinition {
   return {
+    id: randomUUID(),
     name: ComponentName.Feedback,
     props: {
       type,
@@ -115,6 +122,7 @@ export function createFeedback(
 
 export function createMessage(text: string): ComponentDefinition {
   return {
+    id: randomUUID(),
     name: ComponentName.Message,
     props: {
       text,
