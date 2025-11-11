@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { Component } from '../src/ui/Component.js';
-import { ComponentDefinition, AppInfo } from '../src/types/components.js';
+import {
+  ComponentDefinition,
+  ComponentName,
+  AppInfo,
+  FeedbackType,
+  TaskType,
+} from '../src/types/components.js';
 
 describe('Component', () => {
   const mockApp: AppInfo = {
@@ -12,7 +18,7 @@ describe('Component', () => {
 
   it('renders welcome component', () => {
     const def: ComponentDefinition = {
-      name: 'welcome',
+      name: ComponentName.Welcome,
       props: {
         app: mockApp,
       },
@@ -27,7 +33,7 @@ describe('Component', () => {
 
   it('renders config component without state', () => {
     const def: ComponentDefinition = {
-      name: 'config',
+      name: ComponentName.Config,
       state: {
         done: false,
       },
@@ -49,7 +55,7 @@ describe('Component', () => {
 
   it('renders config component with multiple steps', () => {
     const def: ComponentDefinition = {
-      name: 'config',
+      name: ComponentName.Config,
       state: {
         done: false,
       },
@@ -71,7 +77,7 @@ describe('Component', () => {
 
   it('renders command component in loading state', () => {
     const def: ComponentDefinition = {
-      name: 'command',
+      name: ComponentName.Command,
       state: {
         done: false,
         isLoading: true,
@@ -90,7 +96,7 @@ describe('Component', () => {
 
   it('renders command component with children', () => {
     const def: ComponentDefinition = {
-      name: 'command',
+      name: ComponentName.Command,
       state: {
         done: true,
         isLoading: false,
@@ -110,7 +116,7 @@ describe('Component', () => {
 
   it('renders command component with error', () => {
     const def: ComponentDefinition = {
-      name: 'command',
+      name: ComponentName.Command,
       state: {
         done: true,
         isLoading: false,
@@ -131,7 +137,7 @@ describe('Component', () => {
 
   it('passes undefined state for stateless components', () => {
     const def: ComponentDefinition = {
-      name: 'welcome',
+      name: ComponentName.Welcome,
       props: {
         app: mockApp,
       },
@@ -146,12 +152,12 @@ describe('Component', () => {
 
   it('renders plan component', () => {
     const def: ComponentDefinition = {
-      name: 'plan',
+      name: ComponentName.Plan,
       props: {
         message: 'Here is the plan',
         tasks: [
-          { action: 'Install dependencies', type: 'execute' },
-          { action: 'Run tests', type: 'execute' },
+          { action: 'Install dependencies', type: TaskType.Execute },
+          { action: 'Run tests', type: TaskType.Execute },
         ],
       },
     };
@@ -165,9 +171,9 @@ describe('Component', () => {
 
   it('renders feedback component', () => {
     const def: ComponentDefinition = {
-      name: 'feedback',
+      name: ComponentName.Feedback,
       props: {
-        type: 'info',
+        type: FeedbackType.Info,
         message: 'Configuration complete',
       },
     };
@@ -175,39 +181,39 @@ describe('Component', () => {
     const result = <Component def={def} />;
 
     expect(result).toBeDefined();
-    expect(result.props.def.props.type).toBe('info');
+    expect(result.props.def.props.type).toBe(FeedbackType.Info);
     expect(result.props.def.props.message).toBe('Configuration complete');
   });
 
   it('renders all component types in sequence', () => {
     const definitions: ComponentDefinition[] = [
       {
-        name: 'welcome',
+        name: ComponentName.Welcome,
         props: { app: mockApp },
       },
       {
-        name: 'config',
+        name: ComponentName.Config,
         state: { done: false },
         props: {
           steps: [{ description: 'Test', key: 'test', value: null }],
         },
       },
       {
-        name: 'command',
+        name: ComponentName.Command,
         state: { done: false, isLoading: true },
         props: { command: 'test' },
       },
       {
-        name: 'plan',
+        name: ComponentName.Plan,
         props: {
           message: 'Plan ready',
-          tasks: [{ action: 'Do something', type: 'execute' }],
+          tasks: [{ action: 'Do something', type: TaskType.Execute }],
         },
       },
       {
-        name: 'feedback',
+        name: ComponentName.Feedback,
         props: {
-          type: 'succeeded',
+          type: FeedbackType.Succeeded,
           message: 'All done',
         },
       },

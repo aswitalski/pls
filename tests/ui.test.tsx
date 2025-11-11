@@ -6,7 +6,11 @@ import { Panel } from '../src/ui/Panel.js';
 import { List } from '../src/ui/List.js';
 import { Config } from '../src/ui/Config.js';
 import { Welcome } from '../src/ui/Welcome.js';
-import { ComponentDefinition, AppInfo } from '../src/types/components.js';
+import {
+  ComponentDefinition,
+  ComponentName,
+  AppInfo,
+} from '../src/types/components.js';
 
 describe('UI Components', () => {
   const mockApp: AppInfo = {
@@ -28,7 +32,7 @@ describe('UI Components', () => {
     it('renders column with single welcome component', () => {
       const items: ComponentDefinition[] = [
         {
-          name: 'welcome',
+          name: ComponentName.Welcome,
           props: { app: mockApp },
         },
       ];
@@ -37,17 +41,17 @@ describe('UI Components', () => {
 
       expect(result).toBeDefined();
       expect(result.props.items).toHaveLength(1);
-      expect(result.props.items[0].name).toBe('welcome');
+      expect(result.props.items[0].name).toBe(ComponentName.Welcome);
     });
 
     it('renders column with multiple components in timeline', () => {
       const items: ComponentDefinition[] = [
         {
-          name: 'welcome',
+          name: ComponentName.Welcome,
           props: { app: mockApp },
         },
         {
-          name: 'config',
+          name: ComponentName.Config,
           state: { done: true },
           props: {
             steps: [
@@ -61,18 +65,18 @@ describe('UI Components', () => {
       const result = <Column items={items} />;
 
       expect(result.props.items).toHaveLength(2);
-      expect(result.props.items[0].name).toBe('welcome');
-      expect(result.props.items[1].name).toBe('config');
+      expect(result.props.items[0].name).toBe(ComponentName.Welcome);
+      expect(result.props.items[1].name).toBe(ComponentName.Config);
     });
 
     it('renders column with active and timeline components', () => {
       const items: ComponentDefinition[] = [
         {
-          name: 'welcome',
+          name: ComponentName.Welcome,
           props: { app: mockApp },
         },
         {
-          name: 'config',
+          name: ComponentName.Config,
           state: { done: false },
           props: {
             steps: [{ description: 'API Key', key: 'key', value: null }],
@@ -131,7 +135,7 @@ describe('UI Components', () => {
       expect(result.props.items[0].description.text).toBe(
         'Create user account'
       );
-      expect(result.props.items[0].type.text).toBe('plan');
+      expect(result.props.items[0].type.text).toBe(ComponentName.Plan);
     });
 
     it('renders flat list with multiple items', () => {

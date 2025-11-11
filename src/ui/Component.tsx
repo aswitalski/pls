@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { ComponentDefinition } from '../types/components.js';
+import { ComponentDefinition, ComponentName } from '../types/components.js';
 
 import { Command } from './Command.js';
 import { Config } from './Config.js';
@@ -15,28 +15,28 @@ interface ComponentProps {
 
 export function Component({ def }: ComponentProps): React.ReactElement {
   switch (def.name) {
-    case 'welcome':
+    case ComponentName.Welcome:
       return <Welcome {...def.props} />;
 
-    case 'config': {
+    case ComponentName.Config: {
       const props = def.props;
       const state = def.state;
       return <Config {...props} state={state} />;
     }
 
-    case 'command': {
+    case ComponentName.Command: {
       const props = def.props;
       const state = def.state;
       return <Command {...props} state={state} />;
     }
 
-    case 'plan':
+    case ComponentName.Plan:
       return <Plan {...def.props} />;
 
-    case 'feedback':
+    case ComponentName.Feedback:
       return <Feedback {...def.props} />;
 
-    case 'message':
+    case ComponentName.Message:
       return <Message {...def.props} />;
   }
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ComponentDefinition,
+  ComponentName,
   ConfigProps,
   CommandProps,
   BaseState,
@@ -19,13 +20,13 @@ describe('Component Types', () => {
   describe('Welcome component definition', () => {
     it('creates valid stateless welcome definition', () => {
       const def: ComponentDefinition = {
-        name: 'welcome',
+        name: ComponentName.Welcome,
         props: {
           app: mockApp,
         },
       };
 
-      expect(def.name).toBe('welcome');
+      expect(def.name).toBe(ComponentName.Welcome);
       expect(def.props.app).toBe(mockApp);
       expect('state' in def).toBe(false);
     });
@@ -38,7 +39,7 @@ describe('Component Types', () => {
       };
 
       const def: ComponentDefinition = {
-        name: 'config',
+        name: ComponentName.Config,
         state,
         props: {
           steps: [
@@ -49,7 +50,7 @@ describe('Component Types', () => {
         },
       };
 
-      expect(def.name).toBe('config');
+      expect(def.name).toBe(ComponentName.Config);
       expect('state' in def && def.state.done).toBe(false);
     });
 
@@ -61,7 +62,7 @@ describe('Component Types', () => {
       ];
 
       const def: ComponentDefinition = {
-        name: 'config',
+        name: ComponentName.Config,
         state: { done: false },
         props: {
           steps: stepConfigs,
@@ -85,7 +86,7 @@ describe('Component Types', () => {
       };
 
       const def: ComponentDefinition = {
-        name: 'config',
+        name: ComponentName.Config,
         state: { done: false },
         props,
       };
@@ -102,14 +103,14 @@ describe('Component Types', () => {
       };
 
       const def: ComponentDefinition = {
-        name: 'command',
+        name: ComponentName.Command,
         state,
         props: {
           command: 'test command',
         },
       };
 
-      expect(def.name).toBe('command');
+      expect(def.name).toBe(ComponentName.Command);
       expect('state' in def && def.state.done).toBe(false);
       expect('state' in def && def.state.isLoading).toBe(true);
       expect(def.props.command).toBe('test command');
@@ -123,7 +124,7 @@ describe('Component Types', () => {
       };
 
       const def: ComponentDefinition = {
-        name: 'command',
+        name: ComponentName.Command,
         state,
         props: {
           command: 'failing command',
@@ -141,7 +142,7 @@ describe('Component Types', () => {
       };
 
       const def: ComponentDefinition = {
-        name: 'command',
+        name: ComponentName.Command,
         state: { done: false },
         props,
       };
@@ -155,18 +156,18 @@ describe('Component Types', () => {
     it('correctly discriminates between component types', () => {
       const definitions: ComponentDefinition[] = [
         {
-          name: 'welcome',
+          name: ComponentName.Welcome,
           props: { app: mockApp },
         },
         {
-          name: 'config',
+          name: ComponentName.Config,
           state: { done: false },
           props: {
             steps: [{ description: 'Test', key: 'test', value: null }],
           },
         },
         {
-          name: 'command',
+          name: ComponentName.Command,
           state: { done: false },
           props: { command: 'test' },
         },
@@ -174,17 +175,17 @@ describe('Component Types', () => {
 
       definitions.forEach((def) => {
         switch (def.name) {
-          case 'welcome':
+          case ComponentName.Welcome:
             expect('state' in def).toBe(false);
             expect(def.props.app).toBeDefined();
             break;
-          case 'config':
+          case ComponentName.Config:
             expect('state' in def).toBe(true);
             if ('state' in def) {
               expect(def.state.done).toBeDefined();
             }
             break;
-          case 'command':
+          case ComponentName.Command:
             expect('state' in def).toBe(true);
             if ('state' in def) {
               expect(def.state.done).toBeDefined();
@@ -206,7 +207,7 @@ describe('Component Types', () => {
 
       states.forEach((state, index) => {
         const def: ComponentDefinition = {
-          name: 'config',
+          name: ComponentName.Config,
           state,
           props: {
             steps: [
@@ -236,13 +237,13 @@ describe('Component Types', () => {
       };
 
       const loadingDef: ComponentDefinition = {
-        name: 'command',
+        name: ComponentName.Command,
         state: loadingState,
         props: { command: 'test' },
       };
 
       const completedDef: ComponentDefinition = {
-        name: 'command',
+        name: ComponentName.Command,
         state: completedState,
         props: { command: 'test' },
       };

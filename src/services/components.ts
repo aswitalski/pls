@@ -1,6 +1,7 @@
 import {
   AppInfo,
   ComponentDefinition,
+  ComponentName,
   FeedbackType,
   StatefulComponentDefinition,
   Task,
@@ -16,7 +17,7 @@ export function markAsDone<T extends StatefulComponentDefinition>(
 
 export function createWelcomeDefinition(app: AppInfo): ComponentDefinition {
   return {
-    name: 'welcome',
+    name: ComponentName.Welcome,
     props: { app },
   };
 }
@@ -37,7 +38,7 @@ export function createConfigDefinition(
   onAborted: () => void
 ): ComponentDefinition {
   return {
-    name: 'config',
+    name: ComponentName.Config,
     state: { done: false },
     props: {
       steps: createConfigSteps(),
@@ -54,7 +55,7 @@ export function createCommandDefinition(
   onComplete: (message: string, tasks: Task[]) => void
 ): ComponentDefinition {
   return {
-    name: 'command',
+    name: ComponentName.Command,
     state: {
       done: false,
       isLoading: true,
@@ -73,7 +74,7 @@ export function createPlanDefinition(
   tasks: Task[]
 ): ComponentDefinition {
   return {
-    name: 'plan',
+    name: ComponentName.Plan,
     props: {
       message,
       tasks,
@@ -86,7 +87,7 @@ export function createFeedback(
   ...messages: string[]
 ): ComponentDefinition {
   return {
-    name: 'feedback',
+    name: ComponentName.Feedback,
     props: {
       type,
       message: messages.join('\n\n'),
@@ -96,7 +97,7 @@ export function createFeedback(
 
 export function createMessage(text: string): ComponentDefinition {
   return {
-    name: 'message',
+    name: ComponentName.Message,
     props: {
       text,
     },

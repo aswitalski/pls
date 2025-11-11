@@ -3,6 +3,7 @@ import React from 'react';
 import {
   AppInfo,
   ComponentDefinition,
+  ComponentName,
   StatefulComponentDefinition,
   Task,
 } from '../types/components.js';
@@ -80,7 +81,7 @@ export const Main = ({ app, command }: MainProps) => {
       setQueue((currentQueue) => {
         if (currentQueue.length === 0) return currentQueue;
         const [first] = currentQueue;
-        if (first.name === 'command') {
+        if (first.name === ComponentName.Command) {
           addToTimeline(
             markAsDone(first as StatefulComponentDefinition),
             createFeedback(
@@ -102,7 +103,7 @@ export const Main = ({ app, command }: MainProps) => {
       setQueue((currentQueue) => {
         if (currentQueue.length === 0) return currentQueue;
         const [first] = currentQueue;
-        if (first.name === 'command') {
+        if (first.name === ComponentName.Command) {
           addToTimeline(
             markAsDone(first as StatefulComponentDefinition),
             createPlanDefinition(message, tasks)
@@ -126,7 +127,7 @@ export const Main = ({ app, command }: MainProps) => {
       setQueue((currentQueue) => {
         if (currentQueue.length === 0) return currentQueue;
         const [first, ...rest] = currentQueue;
-        if (first.name === 'config') {
+        if (first.name === ComponentName.Config) {
           addToTimeline(
             markAsDone(first as StatefulComponentDefinition),
             createFeedback(FeedbackType.Succeeded, 'Configuration complete')
@@ -158,7 +159,7 @@ export const Main = ({ app, command }: MainProps) => {
     setQueue((currentQueue) => {
       if (currentQueue.length === 0) return currentQueue;
       const [first] = currentQueue;
-      if (first.name === 'config') {
+      if (first.name === ComponentName.Config) {
         addToTimeline(
           markAsDone(first as StatefulComponentDefinition),
           createFeedback(FeedbackType.Aborted, 'Configuration aborted by user')
