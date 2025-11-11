@@ -4,6 +4,7 @@ import {
   AppInfo,
   ComponentDefinition,
   StatefulComponentDefinition,
+  Task,
 } from '../types/components.js';
 
 import { AnthropicService } from '../services/anthropic.js';
@@ -70,7 +71,7 @@ function createCommandDefinition(
   command: string,
   service: AnthropicService,
   onError: (error: string) => void,
-  onComplete: () => void
+  onComplete: (message: string, tasks: Task[]) => void
 ): ComponentDefinition {
   return {
     name: 'command',
@@ -83,6 +84,19 @@ function createCommandDefinition(
       service,
       onError,
       onComplete,
+    },
+  };
+}
+
+function createPlanDefinition(
+  message: string,
+  tasks: Task[]
+): ComponentDefinition {
+  return {
+    name: 'plan',
+    props: {
+      message,
+      tasks,
     },
   };
 }
@@ -171,27 +185,50 @@ export const Main = ({
     [addToHistory]
   );
 
-  const handleCommandComplete = React.useCallback(() => {
-    // Move command to history with done state
-    setCurrent((current) => {
-      addToHistory(markAsDone(current as StatefulComponentDefinition));
-      // Exit after showing plan
-      exit(0);
-      return null;
-    });
-  }, [addToHistory]);
+  const handleCommandComplete = React.useCallback(
+    (message: string, tasks: Task[]) => {
+      // Move command to history with done state and add plan
+      setCurrent((current) => {
+        addToHistory(
+          markAsDone(current as StatefulComponentDefinition),
+          createPlanDefinition(message, tasks)
+        );
+        // Exit after showing plan
+        exit(0);
+        return null;
+      });
+    },
+    [addToHistory]
+  );
 
   // Initialize configuration flow when not ready
   React.useEffect(() => {
     if (isReady) {
       return;
     }
-    if (!command) {
-      setHistory([createWelcomeDefinition(app)]);
-    }
-    setCurrent(
-      createConfigDefinition(handleConfigFinished, handleConfigAborted)
-    );
+    setHistory((prevHistory) => {
+      // Only initialize if history is empty
+      if (prevHistory.length > 0) {
+        return prevHistory;
+      }
+      if (!command) {
+        return [createWelcomeDefinition(app)];
+      } else {
+        return [
+          createFeedback(
+            FeedbackType.Info,
+            'Before I can help with your request, I need to configure a few things:'
+          ),
+        ];
+      }
+    });
+    setCurrent((prevCurrent) => {
+      // Only set config if no current component
+      if (prevCurrent) {
+        return prevCurrent;
+      }
+      return createConfigDefinition(handleConfigFinished, handleConfigAborted);
+    });
   }, [isReady, app, command, handleConfigFinished, handleConfigAborted]);
 
   // Execute command when service and command are available
