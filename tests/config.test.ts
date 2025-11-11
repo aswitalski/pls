@@ -10,6 +10,7 @@ import {
   saveConfig,
   saveAnthropicConfig,
   ConfigError,
+  getConfigurationRequiredMessage,
 } from '../src/services/config.js';
 import { safeRemoveDirectory } from './test-utils.js';
 
@@ -199,6 +200,49 @@ config:
     it('is instance of Error', () => {
       const error = new ConfigError('Test error');
       expect(error instanceof Error).toBe(true);
+    });
+  });
+
+  describe('Configuration messages', () => {
+    it('returns messages ending with period', () => {
+      expect(getConfigurationRequiredMessage().endsWith('.')).toBe(true);
+      expect(getConfigurationRequiredMessage(true).endsWith('.')).toBe(true);
+    });
+
+    it('returns one of predefined immediate setup messages', () => {
+      const messages = new Set<string>();
+      for (let i = 0; i < 50; i++) {
+        messages.add(getConfigurationRequiredMessage());
+      }
+
+      expect(messages.size).toBeGreaterThan(1);
+      expect(messages.size).toBeLessThanOrEqual(6);
+    });
+
+    it('returns one of predefined future setup messages', () => {
+      const messages = new Set<string>();
+      for (let i = 0; i < 50; i++) {
+        messages.add(getConfigurationRequiredMessage(true));
+      }
+
+      expect(messages.size).toBeGreaterThan(1);
+      expect(messages.size).toBeLessThanOrEqual(6);
+    });
+
+    it('returns different messages for immediate vs future setup', () => {
+      const immediateMessages = new Set<string>();
+      const futureMessages = new Set<string>();
+
+      for (let i = 0; i < 50; i++) {
+        immediateMessages.add(getConfigurationRequiredMessage());
+        futureMessages.add(getConfigurationRequiredMessage(true));
+      }
+
+      const intersection = new Set(
+        [...immediateMessages].filter((msg) => futureMessages.has(msg))
+      );
+
+      expect(intersection.size).toBe(0);
     });
   });
 });

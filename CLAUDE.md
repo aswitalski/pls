@@ -80,7 +80,7 @@ Consistent spacing creates breathing room and visual clarity:
   surrounding content.
 - **Section separation**: Distinct sections within the interface have one line
   of space between them to create visual grouping.
-- **Progressive display**: The command and output history is continually
+- **Progressive display**: The command and output timeline is continually
   appended, never cleared. Users see everything they've entered and all
   responses in a continuous, scrollable timeline.
 - **Component responsibility**: Individual components don't add their own outer
@@ -164,10 +164,14 @@ The application uses a component-based architecture with these key principles:
   entry point for rendering any component definition. It uses straightforward
   switch logic and proper destructuring rather than complex conditional syntax,
   making the code easy to read and maintain.
+- **Queue-based execution**: The main interface uses a queue to manage
+  component execution flow. Components are processed sequentially - stateless
+  components auto-complete and move to the timeline immediately, while stateful
+  components wait for user interaction or async operations before completing.
 - **Timeline-based layout**: The main interface maintains an array of component
   definitions representing the conversation timeline. Layout components render
   this array with consistent spacing, creating a natural scrollable flow where
-  both historical and current interactions are visible.
+  both completed and current interactions are visible.
 - **Type-safe component definitions**: Each component has a strongly-typed
   definition that describes its name, props, and optional state. TypeScript's
   discriminated unions ensure type safety when working with different component

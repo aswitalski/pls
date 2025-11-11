@@ -75,7 +75,7 @@ export function Command({
   }, [command, done, service]);
 
   return (
-    <Box alignSelf="flex-start" flexDirection="column" marginLeft={1}>
+    <Box alignSelf="flex-start" flexDirection="column">
       <Box>
         <Text color="gray">&gt; pls {command}</Text>
         {isLoading && (
