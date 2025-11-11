@@ -40,7 +40,7 @@ describe('UI Components', () => {
       expect(result.props.items[0].name).toBe('welcome');
     });
 
-    it('renders column with multiple components in history', () => {
+    it('renders column with multiple components in timeline', () => {
       const items: ComponentDefinition[] = [
         {
           name: 'welcome',
@@ -65,7 +65,7 @@ describe('UI Components', () => {
       expect(result.props.items[1].name).toBe('config');
     });
 
-    it('renders column with active and historical components', () => {
+    it('renders column with active and timeline components', () => {
       const items: ComponentDefinition[] = [
         {
           name: 'welcome',

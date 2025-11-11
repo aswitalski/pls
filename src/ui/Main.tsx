@@ -7,11 +7,30 @@ import {
   Task,
 } from '../types/components.js';
 
-import { AnthropicService } from '../services/anthropic.js';
+import {
+  AnthropicService,
+  createAnthropicService,
+} from '../services/anthropic.js';
 import { FeedbackType } from '../types/components.js';
+import {
+  getConfigurationRequiredMessage,
+  hasValidAnthropicKey,
+  loadConfig,
+  saveAnthropicConfig,
+} from '../services/config.js';
+import {
+  createCommandDefinition,
+  createConfigDefinition,
+  createFeedback,
+  createMessage,
+  createPlanDefinition,
+  createWelcomeDefinition,
+  isStateless,
+  markAsDone,
+} from '../services/components.js';
+import { exitApp } from '../services/process.js';
 
 import { Column } from './Column.js';
-import { ConfigStep } from './Config.js';
 
 interface AnthropicConfig extends Record<string, string> {
   key: string;
@@ -21,238 +40,175 @@ interface AnthropicConfig extends Record<string, string> {
 interface MainProps {
   app: AppInfo;
   command: string | null;
-  service?: AnthropicService;
-  isReady: boolean;
-  onConfigured?: (config: AnthropicConfig) => AnthropicService | void;
 }
 
-function exit(code: 0 | 1) {
-  setTimeout(() => globalThis.process.exit(code), 100);
-}
+export const Main = ({ app, command }: MainProps) => {
+  // Initialize service from existing config if available
+  const [service, setService] = React.useState<AnthropicService | null>(() => {
+    if (hasValidAnthropicKey()) {
+      const config = loadConfig();
+      return createAnthropicService(config.anthropic);
+    }
+    return null;
+  });
 
-function markAsDone<T extends StatefulComponentDefinition>(component: T): T {
-  return { ...component, state: { ...component.state, done: true } };
-}
+  const [timeline, setTimeline] = React.useState<ComponentDefinition[]>([]);
+  const [queue, setQueue] = React.useState<ComponentDefinition[]>([]);
 
-function createWelcomeDefinition(app: AppInfo): ComponentDefinition {
-  return {
-    name: 'welcome',
-    props: { app },
-  };
-}
-
-function createConfigSteps(): ConfigStep[] {
-  return [
-    { description: 'Anthropic API key', key: 'key', value: null },
-    {
-      description: 'Model',
-      key: 'model',
-      value: 'claude-haiku-4-5-20251001',
-    },
-  ];
-}
-
-function createConfigDefinition(
-  onFinished: (config: Record<string, string>) => void,
-  onAborted: () => void
-): ComponentDefinition {
-  return {
-    name: 'config',
-    state: { done: false },
-    props: {
-      steps: createConfigSteps(),
-      onFinished,
-      onAborted,
-    },
-  };
-}
-
-function createCommandDefinition(
-  command: string,
-  service: AnthropicService,
-  onError: (error: string) => void,
-  onComplete: (message: string, tasks: Task[]) => void
-): ComponentDefinition {
-  return {
-    name: 'command',
-    state: {
-      done: false,
-      isLoading: true,
-    },
-    props: {
-      command,
-      service,
-      onError,
-      onComplete,
-    },
-  };
-}
-
-function createPlanDefinition(
-  message: string,
-  tasks: Task[]
-): ComponentDefinition {
-  return {
-    name: 'plan',
-    props: {
-      message,
-      tasks,
-    },
-  };
-}
-
-function createFeedback(
-  type: FeedbackType,
-  ...messages: string[]
-): ComponentDefinition {
-  return {
-    name: 'feedback',
-    props: {
-      type,
-      message: messages.join('\n\n'),
-    },
-  };
-}
-
-export const Main = ({
-  app,
-  command,
-  service: initialService,
-  isReady,
-  onConfigured,
-}: MainProps) => {
-  const [history, setHistory] = React.useState<ComponentDefinition[]>([]);
-  const [current, setCurrent] = React.useState<ComponentDefinition | null>(
-    null
-  );
-  const [service, setService] = React.useState<AnthropicService | undefined>(
-    initialService
-  );
-
-  const addToHistory = React.useCallback((...items: ComponentDefinition[]) => {
-    setHistory((history) => [...history, ...items]);
+  const addToTimeline = React.useCallback((...items: ComponentDefinition[]) => {
+    setTimeline((timeline) => [...timeline, ...items]);
   }, []);
 
-  const handleConfigFinished = React.useCallback(
-    (config: Record<string, string>) => {
-      const service = onConfigured?.(config as AnthropicConfig);
-      if (service) {
-        setService(service);
-      }
-      // Move config to history with done state and add success feedback
-      setCurrent((current) => {
-        if (!current) return null;
-        addToHistory(
-          markAsDone(current as StatefulComponentDefinition),
-          createFeedback(FeedbackType.Succeeded, 'Configuration complete')
-        );
-        return null;
-      });
-    },
-    [onConfigured, addToHistory]
-  );
+  const processNextInQueue = React.useCallback(() => {
+    setQueue((currentQueue) => {
+      if (currentQueue.length === 0) return currentQueue;
 
-  const handleConfigAborted = React.useCallback(() => {
-    // Move config to history with done state and add aborted feedback
-    setCurrent((current) => {
-      addToHistory(
-        markAsDone(current as StatefulComponentDefinition),
-        createFeedback(FeedbackType.Aborted, 'Configuration aborted by user')
-      );
-      // Exit after showing abort message
-      exit(0);
-      return null;
+      const [first, ...rest] = currentQueue;
+
+      // Stateless components auto-complete immediately
+      if (isStateless(first)) {
+        addToTimeline(first);
+        return rest;
+      }
+
+      return currentQueue;
     });
-  }, [addToHistory]);
+  }, [addToTimeline]);
 
   const handleCommandError = React.useCallback(
     (error: string) => {
-      // Move command to history with done state and add error feedback
-      setCurrent((current) => {
-        addToHistory(
-          markAsDone(current as StatefulComponentDefinition),
-          createFeedback(
-            FeedbackType.Failed,
-            'Unexpected error occurred:',
-            error
-          )
-        );
-        // Exit after showing error
-        exit(1);
-        return null;
+      setQueue((currentQueue) => {
+        if (currentQueue.length === 0) return currentQueue;
+        const [first] = currentQueue;
+        if (first.name === 'command') {
+          addToTimeline(
+            markAsDone(first as StatefulComponentDefinition),
+            createFeedback(
+              FeedbackType.Failed,
+              'Unexpected error occurred:',
+              error
+            )
+          );
+        }
+        exitApp(1);
+        return [];
       });
     },
-    [addToHistory]
+    [addToTimeline]
   );
 
   const handleCommandComplete = React.useCallback(
     (message: string, tasks: Task[]) => {
-      // Move command to history with done state and add plan
-      setCurrent((current) => {
-        addToHistory(
-          markAsDone(current as StatefulComponentDefinition),
-          createPlanDefinition(message, tasks)
-        );
-        // Exit after showing plan
-        exit(0);
-        return null;
+      setQueue((currentQueue) => {
+        if (currentQueue.length === 0) return currentQueue;
+        const [first] = currentQueue;
+        if (first.name === 'command') {
+          addToTimeline(
+            markAsDone(first as StatefulComponentDefinition),
+            createPlanDefinition(message, tasks)
+          );
+        }
+        exitApp(0);
+        return [];
       });
     },
-    [addToHistory]
+    [addToTimeline]
   );
 
-  // Initialize configuration flow when not ready
-  React.useEffect(() => {
-    if (isReady) {
-      return;
-    }
-    setHistory((prevHistory) => {
-      // Only initialize if history is empty
-      if (prevHistory.length > 0) {
-        return prevHistory;
-      }
-      if (!command) {
-        return [createWelcomeDefinition(app)];
-      } else {
-        return [
-          createFeedback(
-            FeedbackType.Info,
-            'Before I can help with your request, I need to configure a few things:'
-          ),
-        ];
-      }
-    });
-    setCurrent((prevCurrent) => {
-      // Only set config if no current component
-      if (prevCurrent) {
-        return prevCurrent;
-      }
-      return createConfigDefinition(handleConfigFinished, handleConfigAborted);
-    });
-  }, [isReady, app, command, handleConfigFinished, handleConfigAborted]);
+  const handleConfigFinished = React.useCallback(
+    (config: Record<string, string>) => {
+      const anthropicConfig = config as AnthropicConfig;
+      saveAnthropicConfig(anthropicConfig);
+      const newService = createAnthropicService(anthropicConfig);
+      setService(newService);
 
-  // Execute command when service and command are available
+      // Complete config component and add command if present
+      setQueue((currentQueue) => {
+        if (currentQueue.length === 0) return currentQueue;
+        const [first, ...rest] = currentQueue;
+        if (first.name === 'config') {
+          addToTimeline(
+            markAsDone(first as StatefulComponentDefinition),
+            createFeedback(FeedbackType.Succeeded, 'Configuration complete')
+          );
+        }
+
+        // Add command to queue if we have one
+        if (command) {
+          return [
+            ...rest,
+            createCommandDefinition(
+              command,
+              newService,
+              handleCommandError,
+              handleCommandComplete
+            ),
+          ];
+        }
+
+        // No command - exit after showing completion message
+        exitApp(0);
+        return rest;
+      });
+    },
+    [addToTimeline, command, handleCommandError, handleCommandComplete]
+  );
+
+  const handleConfigAborted = React.useCallback(() => {
+    setQueue((currentQueue) => {
+      if (currentQueue.length === 0) return currentQueue;
+      const [first] = currentQueue;
+      if (first.name === 'config') {
+        addToTimeline(
+          markAsDone(first as StatefulComponentDefinition),
+          createFeedback(FeedbackType.Aborted, 'Configuration aborted by user')
+        );
+      }
+      exitApp(0);
+      return [];
+    });
+  }, [addToTimeline]);
+
+  // Initialize queue on mount
   React.useEffect(() => {
-    if (command && service) {
-      setCurrent(
+    const hasConfig = !!service;
+
+    if (command && hasConfig) {
+      // With command + valid config: [Command]
+      setQueue([
         createCommandDefinition(
           command,
           service,
           handleCommandError,
           handleCommandComplete
-        )
-      );
+        ),
+      ]);
+    } else if (command && !hasConfig) {
+      // With command + no config: [Message, Config] (Command added after config)
+      setQueue([
+        createMessage(getConfigurationRequiredMessage()),
+        createConfigDefinition(handleConfigFinished, handleConfigAborted),
+      ]);
+    } else if (!command && hasConfig) {
+      // No command + valid config: [Welcome]
+      setQueue([createWelcomeDefinition(app)]);
+    } else {
+      // No command + no config: [Welcome, Message, Config]
+      setQueue([
+        createWelcomeDefinition(app),
+        createMessage(getConfigurationRequiredMessage(true)),
+        createConfigDefinition(handleConfigFinished, handleConfigAborted),
+      ]);
     }
-  }, [command, service, handleCommandError, handleCommandComplete]);
+  }, []); // Only run on mount
 
-  // Show welcome screen when ready but no command
+  // Process queue whenever it changes
   React.useEffect(() => {
-    if (isReady && !command) {
-      setCurrent(createWelcomeDefinition(app));
-    }
-  }, [isReady, command, app]);
+    processNextInQueue();
+  }, [queue, processNextInQueue]);
 
-  const items = [...history, ...(current ? [current] : [])];
+  const current = queue.length > 0 ? queue[0] : null;
+  const items = [...timeline, ...(current ? [current] : [])];
 
   return <Column items={items} />;
 };

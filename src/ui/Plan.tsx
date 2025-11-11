@@ -82,10 +82,9 @@ export interface PlanProps {
 
 export function Plan({ message, tasks }: PlanProps) {
   return (
-    <Box marginLeft={1} flexDirection="column">
+    <Box flexDirection="column">
       {message && (
         <Box marginBottom={1}>
-          <Text> </Text>
           <Label
             description={message}
             descriptionColor={ColorPalette[TaskType.Plan].description}

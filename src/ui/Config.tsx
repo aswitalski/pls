@@ -79,7 +79,7 @@ export function Config<
   };
 
   return (
-    <Box flexDirection="column" marginLeft={1}>
+    <Box flexDirection="column">
       {steps.map((stepConfig, index) => {
         const isCurrentStep = index === step && !done;
         const isCompleted = index < step;

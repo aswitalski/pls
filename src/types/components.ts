@@ -57,6 +57,10 @@ export interface FeedbackProps {
   message: string;
 }
 
+export interface MessageProps {
+  text: string;
+}
+
 export interface PlanProps {
   message?: string;
   tasks: Task[];
@@ -106,6 +110,7 @@ interface StatefulDefinition<
 type WelcomeDefinition = StatelessDefinition<'welcome', WelcomeProps>;
 type ConfigDefinition = StatefulDefinition<'config', ConfigProps, BaseState>;
 type FeedbackDefinition = StatelessDefinition<'feedback', FeedbackProps>;
+type MessageDefinition = StatelessDefinition<'message', MessageProps>;
 type PlanDefinition = StatelessDefinition<'plan', PlanProps>;
 type CommandDefinition = StatefulDefinition<
   'command',
@@ -118,6 +123,7 @@ export type ComponentDefinition =
   | WelcomeDefinition
   | ConfigDefinition
   | FeedbackDefinition
+  | MessageDefinition
   | PlanDefinition
   | CommandDefinition;
 

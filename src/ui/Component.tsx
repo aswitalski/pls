@@ -5,6 +5,7 @@ import { ComponentDefinition } from '../types/components.js';
 import { Command } from './Command.js';
 import { Config } from './Config.js';
 import { Feedback } from './Feedback.js';
+import { Message } from './Message.js';
 import { Plan } from './Plan.js';
 import { Welcome } from './Welcome.js';
 
@@ -34,5 +35,8 @@ export function Component({ def }: ComponentProps): React.ReactElement {
 
     case 'feedback':
       return <Feedback {...def.props} />;
+
+    case 'message':
+      return <Message {...def.props} />;
   }
 }
