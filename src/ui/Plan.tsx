@@ -186,15 +186,34 @@ export function Plan({
             state.done = true;
           }
 
-          // Update all tasks and notify parent
-          const updatedTasks = tasks.map((task, idx) => {
-            if (defineTaskIndices.includes(idx)) {
-              return { ...task, type: TaskType.Execute };
+          // Build refined task list with only selected options (no discarded or ignored ones)
+          const refinedTasks: Task[] = [];
+
+          tasks.forEach((task, idx) => {
+            const defineGroupIndex = defineTaskIndices.indexOf(idx);
+
+            if (
+              defineGroupIndex !== -1 &&
+              Array.isArray(task.params?.options)
+            ) {
+              // This is a Define task - only include the selected option
+              const options = task.params.options as string[];
+              const selectedIndex = newCompletedSelections[defineGroupIndex];
+
+              refinedTasks.push({
+                action: String(options[selectedIndex]),
+                type: TaskType.Execute,
+              });
+            } else if (
+              task.type !== TaskType.Ignore &&
+              task.type !== TaskType.Discard
+            ) {
+              // Regular task - keep as is, but skip Ignore and Discard tasks
+              refinedTasks.push(task);
             }
-            return task;
           });
 
-          onSelectionConfirmed?.(highlightedIndex, updatedTasks);
+          onSelectionConfirmed?.(refinedTasks);
         }
       }
     },
@@ -239,11 +258,12 @@ export function Plan({
       }
     }
 
-    // Show arrow on current active define task when no child is highlighted
+    // Show arrow on current active define task when no child is highlighted and not done
     const isDefineWithoutSelection =
       isDefineTask &&
       defineGroupIndex === currentDefineGroupIndex &&
-      highlightedIndex === null;
+      highlightedIndex === null &&
+      !isDone;
 
     return taskToListItem(task, childIndex, isDefineWithoutSelection);
   });

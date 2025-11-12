@@ -8,6 +8,7 @@ import { Config } from './Config.js';
 import { Feedback } from './Feedback.js';
 import { Message } from './Message.js';
 import { Plan } from './Plan.js';
+import { Refinement } from './Refinement.js';
 import { Welcome } from './Welcome.js';
 
 interface ComponentProps {
@@ -39,5 +40,11 @@ export function Component({ def }: ComponentProps): React.ReactElement {
 
     case ComponentName.Message:
       return <Message {...def.props} />;
+
+    case ComponentName.Refinement: {
+      const props = def.props;
+      const state = def.state;
+      return <Refinement {...props} state={state} />;
+    }
   }
 }

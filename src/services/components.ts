@@ -21,6 +21,18 @@ export function markAsDone<T extends StatefulComponentDefinition>(
   return { ...component, state: { ...component.state, done: true } };
 }
 
+export function getRefiningMessage(): string {
+  const messages = [
+    'Let me work out the specifics for you.',
+    "I'll figure out the concrete steps.",
+    'Let me break this down into tasks.',
+    "I'll plan out the details.",
+    'Let me arrange the steps.',
+    "I'll prepare everything you need.",
+  ];
+  return messages[Math.floor(Math.random() * messages.length)];
+}
+
 export function createWelcomeDefinition(app: App): ComponentDefinition {
   return {
     id: randomUUID(),
@@ -97,7 +109,7 @@ export function createPlanDefinition(
   message: string,
   tasks: Task[],
   onAborted: () => void,
-  onSelectionConfirmed?: (selectedIndex: number, tasks: Task[]) => void
+  onSelectionConfirmed?: (tasks: Task[]) => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),
@@ -137,6 +149,21 @@ export function createMessage(text: string): ComponentDefinition {
     name: ComponentName.Message,
     props: {
       text,
+    },
+  };
+}
+
+export function createRefinement(
+  text: string,
+  onAborted: () => void
+): ComponentDefinition {
+  return {
+    id: randomUUID(),
+    name: ComponentName.Refinement,
+    state: { done: false },
+    props: {
+      text,
+      onAborted,
     },
   };
 }
