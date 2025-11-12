@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
 import React from 'react';
+import { describe, expect, it } from 'vitest';
+
+import { FeedbackType } from '../src/types/types.js';
 
 import { Feedback } from '../src/ui/Feedback.js';
-import { FeedbackType } from '../src/types/components.js';
 
 describe('Feedback component', () => {
   describe('Success feedback', () => {

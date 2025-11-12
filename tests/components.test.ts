@@ -1,16 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import {
-  ComponentDefinition,
-  ComponentName,
-  ConfigProps,
-  CommandProps,
   BaseState,
+  CommandProps,
   CommandState,
-  AppInfo,
+  ComponentDefinition,
+  ConfigProps,
 } from '../src/types/components.js';
+import { App, ComponentName } from '../src/types/types.js';
 
 describe('Component Types', () => {
-  const mockApp: AppInfo = {
+  const mockApp: App = {
     name: 'test-app',
     version: '1.0.0',
     description: 'Test application',

@@ -1,13 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
-import { join } from 'path';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
+import { join } from 'path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  formatSkillsForPrompt,
   getSkillsDirectory,
   loadSkills,
-  formatSkillsForPrompt,
 } from '../src/services/skills.js';
+
 import { safeRemoveDirectory } from './test-utils.js';
 
 describe('Skills service', () => {

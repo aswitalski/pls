@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render } from 'ink-testing-library';
+import { describe, expect, it, vi } from 'vitest';
+
+import { AnthropicModel } from '../src/services/config.js';
 
 import { Config, ConfigStep, StepType } from '../src/ui/Config.js';
-import { AnthropicModel } from '../src/services/config.js';
 
 describe('Config component interaction flows', () => {
   const mockValidate = () => true;

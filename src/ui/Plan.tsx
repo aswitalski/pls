@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 
-import { PlanProps, Task, TaskType } from '../types/components.js';
+import { PlanProps } from '../types/components.js';
+import { Task, TaskType } from '../types/types.js';
 
 import { Label } from './Label.js';
 import { List } from './List.js';

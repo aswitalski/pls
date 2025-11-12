@@ -1,12 +1,14 @@
 import { render } from 'ink-testing-library';
 import { describe, expect, it } from 'vitest';
 
+import { FeedbackType } from '../src/types/types.js';
+
 import {
   createFeedback,
   createMessage,
   createWelcomeDefinition,
 } from '../src/services/components.js';
-import { FeedbackType } from '../src/types/components.js';
+
 import { Column } from '../src/ui/Column.js';
 
 describe('Column rendering optimization', () => {

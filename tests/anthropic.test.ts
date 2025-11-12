@@ -1,12 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdirSync } from 'fs';
-import { join } from 'path';
 import { tmpdir } from 'os';
+import { join } from 'path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
-  saveAnthropicConfig,
   hasValidAnthropicKey,
+  saveAnthropicConfig,
 } from '../src/services/config.js';
+
 import { safeRemoveDirectory } from './test-utils.js';
 
 describe('Anthropic API key validation', () => {

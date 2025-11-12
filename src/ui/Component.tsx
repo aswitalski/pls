@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { ComponentDefinition, ComponentName } from '../types/components.js';
+import { ComponentDefinition } from '../types/components.js';
+import { ComponentName } from '../types/types.js';
 
 import { Command } from './Command.js';
 import { Config } from './Config.js';

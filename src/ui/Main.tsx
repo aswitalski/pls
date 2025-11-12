@@ -1,19 +1,21 @@
 import React from 'react';
 
 import {
-  AppInfo,
   ComponentDefinition,
-  ComponentName,
   StatefulComponentDefinition,
+} from '../types/components.js';
+import {
+  App,
+  ComponentName,
+  FeedbackType,
   Task,
   TaskType,
-} from '../types/components.js';
+} from '../types/types.js';
 
 import {
   AnthropicService,
   createAnthropicService,
 } from '../services/anthropic.js';
-import { FeedbackType } from '../types/components.js';
 import {
   getConfigurationRequiredMessage,
   hasValidAnthropicKey,
@@ -40,7 +42,7 @@ interface AnthropicConfig extends Record<string, string> {
 }
 
 interface MainProps {
-  app: AppInfo;
+  app: App;
   command: string | null;
 }
 
