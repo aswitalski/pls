@@ -27,8 +27,10 @@ import {
   createConfigDefinition,
   createFeedback,
   createMessage,
+  createRefinement,
   createPlanDefinition,
   createWelcomeDefinition,
+  getRefiningMessage,
   isStateless,
   markAsDone,
 } from '../services/components.js';
@@ -101,19 +103,127 @@ export const Main = ({ app, command }: MainProps) => {
     [addToTimeline]
   );
 
-  const handlePlanSelectionConfirmed = React.useCallback(() => {
-    setQueue((currentQueue) => {
-      if (currentQueue.length === 0) return currentQueue;
-      const [first] = currentQueue;
-      if (first.name === ComponentName.Plan) {
-        // Mark plan as done and add it to timeline
-        addToTimeline(markAsDone(first as StatefulComponentDefinition));
+  const handleAborted = React.useCallback(
+    (operationName: string) => {
+      setQueue((currentQueue) => {
+        if (currentQueue.length === 0) return currentQueue;
+        const [first] = currentQueue;
+        if (!isStateless(first)) {
+          addToTimeline(
+            markAsDone(first as StatefulComponentDefinition),
+            createFeedback(
+              FeedbackType.Aborted,
+              `${operationName} was aborted by user`
+            )
+          );
+        }
+        exitApp(0);
+        return [];
+      });
+    },
+    [addToTimeline]
+  );
+
+  const handleConfigAborted = React.useCallback(() => {
+    handleAborted('Configuration');
+  }, [handleAborted]);
+
+  const handlePlanAborted = React.useCallback(() => {
+    handleAborted('Task selection');
+  }, [handleAborted]);
+
+  const handleCommandAborted = React.useCallback(() => {
+    handleAborted('Request');
+  }, [handleAborted]);
+
+  const handleRefinementAborted = React.useCallback(() => {
+    handleAborted('Plan refinement');
+  }, [handleAborted]);
+
+  const handlePlanSelectionConfirmed = React.useCallback(
+    async (selectedTasks: Task[]) => {
+      // Mark current plan as done and add refinement to queue
+      let refinementDef: StatefulComponentDefinition | null = null;
+
+      refinementDef = createRefinement(
+        getRefiningMessage(),
+        handleRefinementAborted
+      ) as StatefulComponentDefinition;
+
+      setQueue((currentQueue) => {
+        if (currentQueue.length === 0) return currentQueue;
+        const [first] = currentQueue;
+        if (first.name === ComponentName.Plan) {
+          addToTimeline(markAsDone(first as StatefulComponentDefinition));
+        }
+        // Add refinement to queue so it becomes the active component
+        return [refinementDef!];
+      });
+
+      // Process refined command in background
+      try {
+        const refinedCommand = selectedTasks
+          .map((task) => {
+            const action = task.action.toLowerCase().replace(/,/g, ' -');
+            const type = task.type || 'execute';
+            return `${action} (type: ${type})`;
+          })
+          .join(', ');
+
+        const result = await service!.processWithTool(refinedCommand, 'plan');
+
+        // Mark refinement as done and move to timeline
+        setQueue((currentQueue) => {
+          if (
+            currentQueue.length > 0 &&
+            currentQueue[0].id === refinementDef!.id
+          ) {
+            addToTimeline(
+              markAsDone(currentQueue[0] as StatefulComponentDefinition)
+            );
+          }
+          return [];
+        });
+
+        // Show final execution plan
+        const planDefinition = createPlanDefinition(
+          result.message,
+          result.tasks,
+          handlePlanAborted,
+          undefined
+        );
+
+        addToTimeline(planDefinition);
+        exitApp(0);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error occurred';
+
+        // Mark refinement as done and move to timeline before showing error
+        setQueue((currentQueue) => {
+          if (
+            currentQueue.length > 0 &&
+            currentQueue[0].id === refinementDef!.id
+          ) {
+            addToTimeline(
+              markAsDone(currentQueue[0] as StatefulComponentDefinition)
+            );
+          }
+          return [];
+        });
+
+        addToTimeline(
+          createFeedback(
+            FeedbackType.Failed,
+            'Unexpected error occurred:',
+            errorMessage
+          )
+        );
+        exitApp(1);
       }
-      // Exit after selection is confirmed
-      exitApp(0);
-      return [];
-    });
-  }, [addToTimeline]);
+    },
+    [addToTimeline, service, handleRefinementAborted]
+  );
 
   const handleCommandComplete = React.useCallback(
     (message: string, tasks: Task[]) => {
@@ -195,39 +305,6 @@ export const Main = ({ app, command }: MainProps) => {
     },
     [addToTimeline, command, handleCommandError, handleCommandComplete]
   );
-
-  const handleAborted = React.useCallback(
-    (operationName: string) => {
-      setQueue((currentQueue) => {
-        if (currentQueue.length === 0) return currentQueue;
-        const [first] = currentQueue;
-        if (!isStateless(first)) {
-          addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
-            createFeedback(
-              FeedbackType.Aborted,
-              `${operationName} was aborted by user`
-            )
-          );
-        }
-        exitApp(0);
-        return [];
-      });
-    },
-    [addToTimeline]
-  );
-
-  const handleConfigAborted = React.useCallback(() => {
-    handleAborted('Configuration');
-  }, [handleAborted]);
-
-  const handlePlanAborted = React.useCallback(() => {
-    handleAborted('Task selection');
-  }, [handleAborted]);
-
-  const handleCommandAborted = React.useCallback(() => {
-    handleAborted('Request');
-  }, [handleAborted]);
 
   // Initialize queue on mount
   React.useEffect(() => {

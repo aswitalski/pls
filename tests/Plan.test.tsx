@@ -3,7 +3,7 @@ import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PlanState } from '../src/types/components.js';
-import { TaskType } from '../src/types/types.js';
+import { Task, TaskType } from '../src/types/types.js';
 
 import { Plan } from '../src/ui/Plan.js';
 
@@ -149,10 +149,9 @@ describe('Plan component', () => {
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
       expect(onSelectionConfirmed).toHaveBeenCalledWith(
-        0,
         expect.arrayContaining([
           expect.objectContaining({
-            action: 'Choose deployment',
+            action: 'Production',
             type: TaskType.Execute,
           }),
         ])
@@ -375,9 +374,9 @@ describe('Plan component', () => {
       expect(output).toContain(TaskType.Discard);
 
       expect(onSelectionConfirmed).toHaveBeenCalledWith(
-        1,
         expect.arrayContaining([
           expect.objectContaining({
+            action: 'Staging',
             type: TaskType.Execute,
           }),
         ])
@@ -660,14 +659,13 @@ describe('Plan component', () => {
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
       expect(onSelectionConfirmed).toHaveBeenCalledWith(
-        0,
         expect.arrayContaining([
           expect.objectContaining({
-            action: 'Choose target',
+            action: 'Alpha',
             type: TaskType.Execute,
           }),
           expect.objectContaining({
-            action: 'Choose environment',
+            action: 'Development',
             type: TaskType.Execute,
           }),
         ])
@@ -826,14 +824,13 @@ describe('Plan component', () => {
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
       expect(onSelectionConfirmed).toHaveBeenCalledWith(
-        0,
         expect.arrayContaining([
           expect.objectContaining({
             action: 'Build project',
             type: TaskType.Execute,
           }),
           expect.objectContaining({
-            action: 'Choose target',
+            action: 'Alpha',
             type: TaskType.Execute,
           }),
           expect.objectContaining({
@@ -841,7 +838,7 @@ describe('Plan component', () => {
             type: TaskType.Execute,
           }),
           expect.objectContaining({
-            action: 'Choose environment',
+            action: 'Development',
             type: TaskType.Execute,
           }),
           expect.objectContaining({
@@ -996,6 +993,144 @@ describe('Plan component', () => {
 
       stdin.write(Escape);
       expect(onAborted).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Filtering ignored and discarded tasks', () => {
+    it('excludes Ignore tasks from refined task list', async () => {
+      const onSelectionConfirmed = vi.fn();
+      const state: PlanState = {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+
+      const { stdin } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          tasks={[
+            { action: 'Build project', type: TaskType.Execute },
+            {
+              action: 'Choose environment',
+              type: TaskType.Define,
+              params: { options: ['Development', 'Production'] },
+            },
+            { action: 'Skip this step', type: TaskType.Ignore },
+            { action: 'Deploy', type: TaskType.Execute },
+          ]}
+          onSelectionConfirmed={onSelectionConfirmed}
+        />
+      );
+
+      // Highlight first option
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      // Confirm selection
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      // Verify the callback was called
+      expect(onSelectionConfirmed).toHaveBeenCalled();
+
+      const callArgs = onSelectionConfirmed.mock.calls[0][0];
+
+      // Verify it contains the expected tasks
+      expect(callArgs).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            action: 'Build project',
+            type: TaskType.Execute,
+          }),
+          expect.objectContaining({
+            action: 'Development',
+            type: TaskType.Execute,
+          }),
+          expect.objectContaining({
+            action: 'Deploy',
+            type: TaskType.Execute,
+          }),
+        ])
+      );
+
+      // Verify array length is 3 (not 4 - Ignore task excluded)
+      expect(callArgs).toHaveLength(3);
+
+      // Verify Ignore task is NOT included
+      const hasIgnoreTask = callArgs.some(
+        (task: Task) => task.type === TaskType.Ignore
+      );
+      expect(hasIgnoreTask).toBe(false);
+    });
+
+    it('excludes Discard tasks from refined task list', async () => {
+      const onSelectionConfirmed = vi.fn();
+      const state: PlanState = {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+
+      const { stdin } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          tasks={[
+            { action: 'Build project', type: TaskType.Execute },
+            {
+              action: 'Choose target',
+              type: TaskType.Define,
+              params: { options: ['Alpha', 'Beta'] },
+            },
+            { action: 'Old implementation', type: TaskType.Discard },
+            { action: 'Deploy', type: TaskType.Execute },
+          ]}
+          onSelectionConfirmed={onSelectionConfirmed}
+        />
+      );
+
+      // Highlight first option
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      // Confirm selection
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      // Verify the callback was called
+      expect(onSelectionConfirmed).toHaveBeenCalled();
+
+      const callArgs = onSelectionConfirmed.mock.calls[0][0];
+
+      // Verify it contains the expected tasks
+      expect(callArgs).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            action: 'Build project',
+            type: TaskType.Execute,
+          }),
+          expect.objectContaining({
+            action: 'Alpha',
+            type: TaskType.Execute,
+          }),
+          expect.objectContaining({
+            action: 'Deploy',
+            type: TaskType.Execute,
+          }),
+        ])
+      );
+
+      // Verify array length is 3 (not 4 - Discard task excluded)
+      expect(callArgs).toHaveLength(3);
+
+      // Verify Discard task is NOT included
+      const hasDiscardTask = callArgs.some(
+        (task: Task) => task.type === TaskType.Discard
+      );
+      expect(hasDiscardTask).toBe(false);
     });
   });
 });

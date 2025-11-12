@@ -8,10 +8,11 @@ export interface App {
 export enum ComponentName {
   Welcome = 'welcome',
   Config = 'config',
-  Feedback = 'feedback',
   Message = 'message',
-  Plan = 'plan',
   Command = 'command',
+  Plan = 'plan',
+  Refinement = 'refinement',
+  Feedback = 'feedback',
 }
 
 export enum TaskType {

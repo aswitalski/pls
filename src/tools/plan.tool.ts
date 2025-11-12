@@ -3,7 +3,7 @@ import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages';
 export const planTool: Tool = {
   name: 'plan',
   description:
-    'Plan and structure tasks from a user command. Break down the request into clear, actionable steps with type information and parameters.',
+    'Plan and structure tasks from a user command. Break down the request into clear, actionable steps with type information and parameters. When refining previously selected tasks, the input will be formatted as lowercase actions with types in brackets, e.g., "install the python development environment (type: execute), explain how virtual environments work (type: answer)".',
   input_schema: {
     type: 'object',
     properties: {

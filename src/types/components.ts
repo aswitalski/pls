@@ -29,11 +29,17 @@ export interface MessageProps {
   text: string;
 }
 
+export interface RefinementProps {
+  text: string;
+  state?: BaseState;
+  onAborted: () => void;
+}
+
 export interface PlanProps {
   message?: string;
   tasks: Task[];
   state?: PlanState;
-  onSelectionConfirmed?: (selectedIndex: number, tasks: Task[]) => void;
+  onSelectionConfirmed?: (tasks: Task[]) => void;
   onAborted: () => void;
 }
 
@@ -104,6 +110,11 @@ type MessageDefinition = StatelessDefinition<
   ComponentName.Message,
   MessageProps
 >;
+type RefinementDefinition = StatefulDefinition<
+  ComponentName.Refinement,
+  RefinementProps,
+  BaseState
+>;
 type PlanDefinition = StatefulDefinition<
   ComponentName.Plan,
   PlanProps,
@@ -121,11 +132,13 @@ export type ComponentDefinition =
   | ConfigDefinition
   | FeedbackDefinition
   | MessageDefinition
+  | RefinementDefinition
   | PlanDefinition
   | CommandDefinition;
 
 // Union of all stateful component definitions
 export type StatefulComponentDefinition =
   | ConfigDefinition
+  | RefinementDefinition
   | CommandDefinition
   | PlanDefinition;

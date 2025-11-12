@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  createRefinement,
+  getRefiningMessage,
+} from '../src/services/components.js';
+import {
   BaseState,
   CommandProps,
   CommandState,
@@ -336,6 +340,41 @@ describe('Component Types', () => {
         false
       );
       expect('state' in completedDef && completedDef.state.done).toBe(true);
+    });
+  });
+
+  describe('Refinement component definition', () => {
+    it('creates valid stateful refinement definition', () => {
+      const onAborted = vi.fn();
+      const def = createRefinement('Processing request', onAborted);
+
+      expect(def.name).toBe(ComponentName.Refinement);
+      expect('state' in def && def.state.done).toBe(false);
+      if (def.name === ComponentName.Refinement) {
+        expect(def.props.text).toBe('Processing request');
+        expect(def.props.onAborted).toBe(onAborted);
+      }
+    });
+  });
+
+  describe('getRefiningMessage', () => {
+    const expectedMessages = [
+      'Let me work out the specifics for you.',
+      "I'll figure out the concrete steps.",
+      'Let me break this down into tasks.',
+      "I'll plan out the details.",
+      'Let me arrange the steps.',
+      "I'll prepare everything you need.",
+    ];
+
+    it('returns one of the expected messages', () => {
+      const message = getRefiningMessage();
+      expect(expectedMessages).toContain(message);
+    });
+
+    it('returns a string ending with a period', () => {
+      const message = getRefiningMessage();
+      expect(message).toMatch(/\.$/);
     });
   });
 });
