@@ -1,9 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render } from 'ink-testing-library';
+import { describe, expect, it, vi } from 'vitest';
+
+import { PlanState } from '../src/types/components.js';
+import { TaskType } from '../src/types/types.js';
 
 import { Plan } from '../src/ui/Plan.js';
-import { TaskType, PlanState } from '../src/types/components.js';
 
 // Keyboard input constants
 const ArrowDown = '\x1B[B';

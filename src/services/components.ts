@@ -1,20 +1,19 @@
 import { randomUUID } from 'node:crypto';
 
 import {
-  AppInfo,
   ComponentDefinition,
-  ComponentName,
-  FeedbackType,
   StatefulComponentDefinition,
-  Task,
 } from '../types/components.js';
+import { App, ComponentName, FeedbackType, Task } from '../types/types.js';
+
 import { AnthropicService } from './anthropic.js';
-import { ConfigStep, StepType } from '../ui/Config.js';
 import {
   AnthropicModel,
   isValidAnthropicApiKey,
   isValidAnthropicModel,
 } from './config.js';
+
+import { ConfigStep, StepType } from '../ui/Config.js';
 
 export function markAsDone<T extends StatefulComponentDefinition>(
   component: T
@@ -22,7 +21,7 @@ export function markAsDone<T extends StatefulComponentDefinition>(
   return { ...component, state: { ...component.state, done: true } };
 }
 
-export function createWelcomeDefinition(app: AppInfo): ComponentDefinition {
+export function createWelcomeDefinition(app: App): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Welcome,

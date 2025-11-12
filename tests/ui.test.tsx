@@ -1,19 +1,17 @@
-import { describe, it, expect } from 'vitest';
 import React from 'react';
+import { describe, expect, it } from 'vitest';
+
+import { ComponentDefinition } from '../src/types/components.js';
+import { App, ComponentName } from '../src/types/types.js';
 
 import { Column } from '../src/ui/Column.js';
-import { Panel } from '../src/ui/Panel.js';
-import { List } from '../src/ui/List.js';
 import { Config } from '../src/ui/Config.js';
+import { List } from '../src/ui/List.js';
+import { Panel } from '../src/ui/Panel.js';
 import { Welcome } from '../src/ui/Welcome.js';
-import {
-  ComponentDefinition,
-  ComponentName,
-  AppInfo,
-} from '../src/types/components.js';
 
 describe('UI Components', () => {
-  const mockApp: AppInfo = {
+  const mockApp: App = {
     name: 'test-app',
     version: '1.0.0',
     description: 'Test application. For testing purposes.',

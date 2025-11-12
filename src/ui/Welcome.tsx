@@ -1,10 +1,11 @@
 import { Box, Text } from 'ink';
 
-import { AppInfo, WelcomeProps } from '../types/components.js';
+import { WelcomeProps } from '../types/components.js';
+import { App } from '../types/types.js';
 
 import { Panel } from './Panel.js';
 
-function Header({ app }: { app: AppInfo }) {
+function Header({ app }: { app: App }) {
   const words = app.name
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1));

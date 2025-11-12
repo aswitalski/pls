@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { AnthropicService } from '../src/services/anthropic.js';
-import { TaskType } from '../src/types/components.js';
 import Anthropic from '@anthropic-ai/sdk';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+
+import { TaskType } from '../src/types/types.js';
+
+import { AnthropicService } from '../src/services/anthropic.js';
 
 // Mock the Anthropic SDK
 vi.mock('@anthropic-ai/sdk', () => {

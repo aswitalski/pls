@@ -1,9 +1,10 @@
+import type { Task } from '../../src/types/types.js';
+import { TaskType } from '../../src/types/types.js';
+
 import {
   AnthropicService,
   CommandResult,
 } from '../../src/services/anthropic.js';
-import type { Task } from '../../src/types/components.js';
-import { TaskType } from '../../src/types/components.js';
 
 /**
  * Mock implementation of AnthropicService for testing

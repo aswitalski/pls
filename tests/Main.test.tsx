@@ -1,11 +1,12 @@
-import { describe, it, expect } from 'vitest';
 import React from 'react';
+import { describe, expect, it } from 'vitest';
+
+import { App } from '../src/types/types.js';
 
 import { Main } from '../src/ui/Main.js';
-import { AppInfo } from '../src/types/components.js';
 
 describe('Main component queue-based architecture', () => {
-  const mockApp: AppInfo = {
+  const mockApp: App = {
     name: 'test-app',
     version: '1.0.0',
     description: 'Test application',

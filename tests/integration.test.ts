@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { TaskType } from '../src/types/types.js';
+
 import { AnthropicServiceMock } from './mocks/AnthropicServiceMock.js';
-import { TaskType } from '../src/types/components.js';
 
 describe('Integration Tests', () => {
   let mockService: AnthropicServiceMock;

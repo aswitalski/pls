@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { parseCommands } from '../src/parser.js';
 
 describe('Parsing commands', () => {

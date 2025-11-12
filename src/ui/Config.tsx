@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Text, useInput, useFocus } from 'ink';
+import { Box, Text, useFocus, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 
 export enum StepType {

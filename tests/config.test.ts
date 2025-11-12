@@ -1,18 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdirSync } from 'fs';
-import { join } from 'path';
 import { tmpdir } from 'os';
+import { join } from 'path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   AnthropicModel,
-  mergeConfig,
-  configExists,
-  loadConfig,
-  saveConfig,
-  saveAnthropicConfig,
   ConfigError,
+  configExists,
   getConfigurationRequiredMessage,
+  loadConfig,
+  mergeConfig,
+  saveAnthropicConfig,
+  saveConfig,
 } from '../src/services/config.js';
+
 import { safeRemoveDirectory } from './test-utils.js';
 
 describe('Configuration management', () => {

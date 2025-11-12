@@ -1,15 +1,17 @@
-import { describe, it, expect } from 'vitest';
-import { Component } from '../src/ui/Component.js';
+import { describe, expect, it } from 'vitest';
+
+import { ComponentDefinition } from '../src/types/components.js';
 import {
-  ComponentDefinition,
+  App,
   ComponentName,
-  AppInfo,
   FeedbackType,
   TaskType,
-} from '../src/types/components.js';
+} from '../src/types/types.js';
+
+import { Component } from '../src/ui/Component.js';
 
 describe('Component', () => {
-  const mockApp: AppInfo = {
+  const mockApp: App = {
     name: 'test-app',
     version: '1.0.0',
     description: 'Test application',
