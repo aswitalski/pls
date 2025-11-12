@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { ComponentDefinition } from '../src/types/components.js';
 import {
@@ -187,6 +187,39 @@ describe('Component', () => {
     expect(result.props.def.props.message).toBe('Configuration complete');
   });
 
+  it('renders message component', () => {
+    const def: ComponentDefinition = {
+      name: ComponentName.Message,
+      props: {
+        text: 'Processing your request',
+      },
+    };
+
+    const result = <Component def={def} />;
+
+    expect(result).toBeDefined();
+    expect(result.props.def.props.text).toBe('Processing your request');
+  });
+
+  it('renders refinement component', () => {
+    const onAborted = vi.fn();
+    const def: ComponentDefinition = {
+      name: ComponentName.Refinement,
+      state: { done: false },
+      props: {
+        text: 'Loading data',
+        onAborted,
+      },
+    };
+
+    const result = <Component def={def} />;
+
+    expect(result).toBeDefined();
+    expect(result.props.def.props.text).toBe('Loading data');
+    expect(result.props.def.props.onAborted).toBe(onAborted);
+    expect(result.props.def.state.done).toBe(false);
+  });
+
   it('renders all component types in sequence', () => {
     const definitions: ComponentDefinition[] = [
       {
@@ -219,11 +252,25 @@ describe('Component', () => {
           message: 'All done',
         },
       },
+      {
+        name: ComponentName.Message,
+        props: {
+          text: 'Simple message',
+        },
+      },
+      {
+        name: ComponentName.Refinement,
+        state: { done: false },
+        props: {
+          text: 'Loading',
+          onAborted: vi.fn(),
+        },
+      },
     ];
 
     const results = definitions.map((def) => <Component def={def} />);
 
-    expect(results).toHaveLength(5);
+    expect(results).toHaveLength(7);
     results.forEach((result) => {
       expect(result).toBeDefined();
       expect(result.type).toBeDefined();
