@@ -114,6 +114,7 @@ export function Plan({
   tasks,
   state,
   onSelectionConfirmed,
+  onAborted,
 }: PlanProps) {
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(
     state?.highlightedIndex ?? null
@@ -145,6 +146,11 @@ export function Plan({
     (input, key) => {
       // Don't handle input if already done or no define task
       if (isDone || !defineTask) {
+        return;
+      }
+
+      if (key.escape) {
+        onAborted();
         return;
       }
 

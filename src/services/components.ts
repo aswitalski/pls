@@ -73,7 +73,8 @@ export function createCommandDefinition(
   command: string,
   service: AnthropicService,
   onError: (error: string) => void,
-  onComplete: (message: string, tasks: Task[]) => void
+  onComplete: (message: string, tasks: Task[]) => void,
+  onAborted: () => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),
@@ -87,6 +88,7 @@ export function createCommandDefinition(
       service,
       onError,
       onComplete,
+      onAborted,
     },
   };
 }
@@ -94,6 +96,7 @@ export function createCommandDefinition(
 export function createPlanDefinition(
   message: string,
   tasks: Task[],
+  onAborted: () => void,
   onSelectionConfirmed?: (selectedIndex: number, tasks: Task[]) => void
 ): ComponentDefinition {
   return {
@@ -109,6 +112,7 @@ export function createPlanDefinition(
       message,
       tasks,
       onSelectionConfirmed,
+      onAborted,
     },
   };
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useInput } from 'ink';
 
 import { CommandProps } from '../types/components.js';
 
@@ -14,10 +14,21 @@ export function Command({
   children,
   onError,
   onComplete,
+  onAborted,
 }: CommandProps) {
   const done = state?.done ?? false;
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
+
+  useInput(
+    (input, key) => {
+      if (key.escape && isLoading && !done) {
+        setIsLoading(false);
+        onAborted();
+      }
+    },
+    { isActive: isLoading && !done }
+  );
 
   useEffect(() => {
     // Skip processing if done (showing historical/final state)

@@ -34,6 +34,7 @@ export interface PlanProps {
   tasks: Task[];
   state?: PlanState;
   onSelectionConfirmed?: (selectedIndex: number, tasks: Task[]) => void;
+  onAborted: () => void;
 }
 
 export interface PlanState extends BaseState {
@@ -50,6 +51,7 @@ export interface CommandProps {
   children?: React.ReactNode;
   onError?: (error: string) => void;
   onComplete?: (message: string, tasks: Task[]) => void;
+  onAborted: () => void;
 }
 
 // Base state interface - all stateful components extend this

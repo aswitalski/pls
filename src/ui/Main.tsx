@@ -101,22 +101,19 @@ export const Main = ({ app, command }: MainProps) => {
     [addToTimeline]
   );
 
-  const handlePlanSelectionConfirmed = React.useCallback(
-    (selectedIndex: number, updatedTasks: Task[]) => {
-      setQueue((currentQueue) => {
-        if (currentQueue.length === 0) return currentQueue;
-        const [first] = currentQueue;
-        if (first.name === ComponentName.Plan) {
-          // Mark plan as done and add it to timeline
-          addToTimeline(markAsDone(first as StatefulComponentDefinition));
-        }
-        // Exit after selection is confirmed
-        exitApp(0);
-        return [];
-      });
-    },
-    [addToTimeline]
-  );
+  const handlePlanSelectionConfirmed = React.useCallback(() => {
+    setQueue((currentQueue) => {
+      if (currentQueue.length === 0) return currentQueue;
+      const [first] = currentQueue;
+      if (first.name === ComponentName.Plan) {
+        // Mark plan as done and add it to timeline
+        addToTimeline(markAsDone(first as StatefulComponentDefinition));
+      }
+      // Exit after selection is confirmed
+      exitApp(0);
+      return [];
+    });
+  }, [addToTimeline]);
 
   const handleCommandComplete = React.useCallback(
     (message: string, tasks: Task[]) => {
@@ -133,6 +130,7 @@ export const Main = ({ app, command }: MainProps) => {
           const planDefinition = createPlanDefinition(
             message,
             tasks,
+            handlePlanAborted,
             hasDefineTask ? handlePlanSelectionConfirmed : undefined
           );
 
@@ -184,7 +182,8 @@ export const Main = ({ app, command }: MainProps) => {
               command,
               newService,
               handleCommandError,
-              handleCommandComplete
+              handleCommandComplete,
+              handleCommandAborted
             ),
           ];
         }
@@ -197,20 +196,38 @@ export const Main = ({ app, command }: MainProps) => {
     [addToTimeline, command, handleCommandError, handleCommandComplete]
   );
 
+  const handleAborted = React.useCallback(
+    (operationName: string) => {
+      setQueue((currentQueue) => {
+        if (currentQueue.length === 0) return currentQueue;
+        const [first] = currentQueue;
+        if (!isStateless(first)) {
+          addToTimeline(
+            markAsDone(first as StatefulComponentDefinition),
+            createFeedback(
+              FeedbackType.Aborted,
+              `${operationName} was aborted by user`
+            )
+          );
+        }
+        exitApp(0);
+        return [];
+      });
+    },
+    [addToTimeline]
+  );
+
   const handleConfigAborted = React.useCallback(() => {
-    setQueue((currentQueue) => {
-      if (currentQueue.length === 0) return currentQueue;
-      const [first] = currentQueue;
-      if (first.name === ComponentName.Config) {
-        addToTimeline(
-          markAsDone(first as StatefulComponentDefinition),
-          createFeedback(FeedbackType.Aborted, 'Configuration aborted by user')
-        );
-      }
-      exitApp(0);
-      return [];
-    });
-  }, [addToTimeline]);
+    handleAborted('Configuration');
+  }, [handleAborted]);
+
+  const handlePlanAborted = React.useCallback(() => {
+    handleAborted('Task selection');
+  }, [handleAborted]);
+
+  const handleCommandAborted = React.useCallback(() => {
+    handleAborted('Request');
+  }, [handleAborted]);
 
   // Initialize queue on mount
   React.useEffect(() => {
@@ -223,7 +240,8 @@ export const Main = ({ app, command }: MainProps) => {
           command,
           service,
           handleCommandError,
-          handleCommandComplete
+          handleCommandComplete,
+          handleCommandAborted
         ),
       ]);
     } else if (command && !hasConfig) {
