@@ -11,7 +11,11 @@ import { Plan } from '../src/ui/Plan.js';
 const ArrowDown = '\x1B[B';
 const ArrowUp = '\x1B[A';
 const Enter = '\r';
+const Escape = '\x1B';
 const WaitTime = 40;
+
+// Mock onAborted function for all tests
+const mockOnAborted = vi.fn();
 
 describe('Plan component', () => {
   describe('Interactive behavior', () => {
@@ -24,6 +28,7 @@ describe('Plan component', () => {
       };
       const { lastFrame } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -49,6 +54,7 @@ describe('Plan component', () => {
       };
       const { lastFrame } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -75,6 +81,7 @@ describe('Plan component', () => {
       };
       const { lastFrame, stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -116,6 +123,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -162,6 +170,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -195,6 +204,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -232,6 +242,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -270,6 +281,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -300,6 +312,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             { action: 'Install dependencies', type: TaskType.Execute },
@@ -328,6 +341,7 @@ describe('Plan component', () => {
 
       const { lastFrame, stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -381,6 +395,7 @@ describe('Plan component', () => {
       };
       const { lastFrame } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -413,6 +428,7 @@ describe('Plan component', () => {
       };
       const { lastFrame } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -445,6 +461,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -490,6 +507,7 @@ describe('Plan component', () => {
 
       const { lastFrame, stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -533,6 +551,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -569,6 +588,7 @@ describe('Plan component', () => {
 
       const { lastFrame, stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -607,6 +627,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -663,6 +684,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -709,6 +731,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -768,6 +791,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             { action: 'Build project', type: TaskType.Execute },
@@ -838,6 +862,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
+          onAborted={mockOnAborted}
           state={state}
           tasks={[
             {
@@ -889,6 +914,88 @@ describe('Plan component', () => {
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
       expect(state.highlightedIndex).toBe(0);
+    });
+  });
+
+  describe('Abort handling', () => {
+    it('calls onAborted when Esc is pressed during selection', () => {
+      const onAborted = vi.fn();
+      const state: PlanState = {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+
+      const { stdin } = render(
+        <Plan
+          onAborted={onAborted}
+          state={state}
+          tasks={[
+            {
+              action: 'Choose deployment',
+              type: TaskType.Define,
+              params: { options: ['Production', 'Staging'] },
+            },
+          ]}
+        />
+      );
+
+      stdin.write(Escape);
+      expect(onAborted).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not call onAborted when Esc is pressed after done', () => {
+      const onAborted = vi.fn();
+      const state: PlanState = {
+        done: true,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+
+      const { stdin } = render(
+        <Plan
+          onAborted={onAborted}
+          state={state}
+          tasks={[
+            {
+              action: 'Choose deployment',
+              type: TaskType.Define,
+              params: { options: ['Production', 'Staging'] },
+            },
+          ]}
+        />
+      );
+
+      stdin.write(Escape);
+      expect(onAborted).not.toHaveBeenCalled();
+    });
+
+    it('does not call onAborted when there is no define task', () => {
+      const onAborted = vi.fn();
+      const state: PlanState = {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+
+      const { stdin } = render(
+        <Plan
+          onAborted={onAborted}
+          state={state}
+          tasks={[
+            {
+              action: 'Deploy application',
+              type: TaskType.Execute,
+            },
+          ]}
+        />
+      );
+
+      stdin.write(Escape);
+      expect(onAborted).not.toHaveBeenCalled();
     });
   });
 });
