@@ -211,6 +211,21 @@ mode.
 
 #### Commit messages
 
+Before creating a commit, ensure code quality:
+
+1. **Organize imports**: Ensure all imports follow the import organization rules
+   (libraries, types, services, UI components - each group alphabetically
+   sorted)
+2. **Format code**: Run `npm run format` to apply consistent formatting across
+   all files
+3. **Update tests**: Ensure that tests were added or amended to align with
+   changes in the code. All tests must pass before committing.
+
+When asked to commit changes, suggest 4 different commit message options that
+follow the guidelines below. Present them clearly so the user can choose which
+one best describes the changes. After the user selects, proceed with the
+commit.
+
 Follow these guidelines for clear, professional commit messages:
 
 - **Imperative mood**: Write as commands that complete "If applied, this commit
@@ -219,13 +234,16 @@ Follow these guidelines for clear, professional commit messages:
 - **No period**: Don't end the subject line with a period
 - **Lowercase after verb**: Start with capital letter, use lowercase for the
   rest unless proper nouns
+- **Natural language**: Use clear, natural language that describes what the
+  change does. Avoid excessive technical jargon unless it's the clearest way to
+  express the change. Write for humans, not machines.
 - **Check recent commits**: Before creating a commit message, run `git log
   --oneline -16` to see recent commits and match the style and format
   consistently.
 - **Single line only**: Use ONLY the subject line with NO body, NO additional
   lines, NO bullet points, NO explanations. The commit message must be exactly
   one line describing what the commit does.
-- **No mtadata**: Do NOT add metadata like "Generated with Claude Code".
+- **No metadata**: Do NOT add metadata like "Generated with Claude Code".
   The commit message is ALWAYS the single-line subject.
 
 Examples:
