@@ -3,9 +3,9 @@ import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Command } from '../src/ui/Command.js';
+import { Keys } from './test-utils.js';
 
-// Keyboard input constants
-const Escape = '\x1B';
+const { Escape } = Keys;
 
 // Mock onAborted function for all tests
 const mockOnAborted = vi.fn();

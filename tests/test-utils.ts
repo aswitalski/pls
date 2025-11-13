@@ -1,6 +1,22 @@
 import { existsSync, rmSync } from 'fs';
 
 /**
+ * Test input key constants for stdin.write()
+ *
+ * These constants represent ANSI escape sequences and special keys
+ * used in terminal interactions during testing.
+ */
+export const Keys = {
+  Enter: '\r',
+  Tab: '\t',
+  Escape: '\x1B',
+  ArrowUp: '\x1B[A',
+  ArrowDown: '\x1B[B',
+  ArrowLeft: '\x1B[D',
+  ArrowRight: '\x1B[C',
+} as const;
+
+/**
  * Safely removes a directory with retry logic and error handling.
  *
  * This utility addresses intermittent ENOTEMPTY errors that can occur when

@@ -6,12 +6,10 @@ import { PlanState } from '../src/types/components.js';
 import { Task, TaskType } from '../src/types/types.js';
 
 import { Plan } from '../src/ui/Plan.js';
+import { Keys } from './test-utils.js';
 
-// Keyboard input constants
-const ArrowDown = '\x1B[B';
-const ArrowUp = '\x1B[A';
-const Enter = '\r';
-const Escape = '\x1B';
+// Destructure for readability
+const { ArrowDown, ArrowUp, Enter, Escape } = Keys;
 const WaitTime = 40;
 
 // Mock onAborted function for all tests

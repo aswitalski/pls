@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AnthropicModel } from '../src/services/config.js';
 
 import { Config, ConfigStep, StepType } from '../src/ui/Config.js';
+import { Keys } from './test-utils.js';
 
 describe('Config component interaction flows', () => {
   const mockValidate = () => true;
@@ -232,7 +233,7 @@ describe('Config component interaction flows', () => {
       );
 
       // Press enter to accept default (Haiku)
-      stdin.write('\r');
+      stdin.write(Keys.Enter);
 
       expect(onFinished).toHaveBeenCalledWith({
         model: AnthropicModel.Haiku,
@@ -254,7 +255,7 @@ describe('Config component interaction flows', () => {
       const { stdin } = render(<Config steps={steps} onAborted={onAborted} />);
 
       // Press Escape
-      stdin.write('\x1b'); // ESC
+      stdin.write(Keys.Escape);
 
       expect(onAborted).toHaveBeenCalled();
     });
@@ -281,7 +282,7 @@ describe('Config component interaction flows', () => {
       );
 
       // Press Escape immediately (preserves default)
-      stdin.write('\x1b'); // ESC
+      stdin.write(Keys.Escape);
 
       expect(onAborted).toHaveBeenCalled();
 

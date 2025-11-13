@@ -3,6 +3,7 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Refinement } from '../src/ui/Refinement.js';
+import { Keys } from './test-utils.js';
 
 describe('Refinement', () => {
   const mockOnAborted = vi.fn();
@@ -55,7 +56,7 @@ describe('Refinement', () => {
       />
     );
 
-    stdin.write('\x1B'); // Escape key
+    stdin.write(Keys.Escape);
 
     expect(onAborted).toHaveBeenCalledTimes(1);
   });
@@ -70,7 +71,7 @@ describe('Refinement', () => {
       />
     );
 
-    stdin.write('\x1B'); // Escape key
+    stdin.write(Keys.Escape);
 
     expect(onAborted).not.toHaveBeenCalled();
   });
