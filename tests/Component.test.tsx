@@ -17,6 +17,7 @@ describe('Component', () => {
     version: '1.0.0',
     description: 'Test application',
     isDev: false,
+    isDebug: false,
   };
 
   it('renders welcome component', () => {
@@ -28,7 +29,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} />;
+    const result = <Component def={def} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.type).toBeDefined();
@@ -63,7 +64,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} />;
+    const result = <Component def={def} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.state).toBeDefined();
@@ -104,7 +105,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} />;
+    const result = <Component def={def} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.steps).toHaveLength(3);
@@ -125,7 +126,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} />;
+    const result = <Component def={def} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.command).toBe('test command');
@@ -147,7 +148,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} />;
+    const result = <Component def={def} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.children).toBe('Some content');
@@ -170,7 +171,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} />;
+    const result = <Component def={def} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.error).toBe('Something went wrong');
@@ -186,7 +187,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} />;
+    const result = <Component def={def} debug={false} />;
 
     // Welcome component doesn't have state, but we verify it doesn't break
     expect(result).toBeDefined();
@@ -213,7 +214,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} />;
+    const result = <Component def={def} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.tasks).toHaveLength(2);
@@ -230,7 +231,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} />;
+    const result = <Component def={def} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.type).toBe(FeedbackType.Info);
@@ -246,7 +247,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} />;
+    const result = <Component def={def} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.text).toBe('Processing your request');
@@ -264,7 +265,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} />;
+    const result = <Component def={def} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.text).toBe('Loading data');
@@ -342,7 +343,9 @@ describe('Component', () => {
       },
     ];
 
-    const results = definitions.map((def) => <Component def={def} />);
+    const results = definitions.map((def) => (
+      <Component def={def} debug={false} />
+    ));
 
     expect(results).toHaveLength(7);
     results.forEach((result) => {

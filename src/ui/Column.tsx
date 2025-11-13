@@ -7,9 +7,10 @@ import { Component } from './Component.js';
 
 interface ColumnProps {
   items: ComponentDefinition[];
+  debug: boolean;
 }
 
-export const Column: React.FC<ColumnProps> = ({ items }) => {
+export const Column: React.FC<ColumnProps> = ({ items, debug }) => {
   return (
     <Box
       marginTop={1}
@@ -20,7 +21,7 @@ export const Column: React.FC<ColumnProps> = ({ items }) => {
     >
       {items.map((item) => (
         <Box key={item.id}>
-          <Component def={item} />
+          <Component def={item} debug={debug} />
         </Box>
       ))}
     </Box>

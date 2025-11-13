@@ -11,6 +11,7 @@ describe('Main component queue-based architecture', () => {
     version: '1.0.0',
     description: 'Test application',
     isDev: false,
+    isDebug: false,
   };
 
   describe('Queue initialization', () => {
@@ -53,6 +54,7 @@ describe('Main component queue-based architecture', () => {
         version: '2.0.0',
         description: 'Custom description',
         isDev: true,
+        isDebug: false,
       };
 
       const result = <Main app={customApp} command={null} />;
@@ -73,6 +75,17 @@ describe('Main component queue-based architecture', () => {
 
       expect(devResult.props.app.isDev).toBe(true);
       expect(prodResult.props.app.isDev).toBe(false);
+    });
+
+    it('handles debug mode flag', () => {
+      const debugApp = { ...mockApp, isDebug: true };
+      const normalApp = { ...mockApp, isDebug: false };
+
+      const debugResult = <Main app={debugApp} command={null} />;
+      const normalResult = <Main app={normalApp} command={null} />;
+
+      expect(debugResult.props.app.isDebug).toBe(true);
+      expect(normalResult.props.app.isDebug).toBe(false);
     });
   });
 });

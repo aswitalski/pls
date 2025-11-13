@@ -13,9 +13,10 @@ import { Welcome } from './Welcome.js';
 
 interface ComponentProps {
   def: ComponentDefinition;
+  debug: boolean;
 }
 
-export function Component({ def }: ComponentProps): React.ReactElement {
+export function Component({ def, debug }: ComponentProps): React.ReactElement {
   switch (def.name) {
     case ComponentName.Welcome:
       return <Welcome {...def.props} />;
@@ -33,7 +34,7 @@ export function Component({ def }: ComponentProps): React.ReactElement {
     }
 
     case ComponentName.Plan:
-      return <Plan {...def.props} />;
+      return <Plan {...def.props} debug={debug} />;
 
     case ComponentName.Feedback:
       return <Feedback {...def.props} />;

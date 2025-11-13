@@ -22,6 +22,7 @@ describe('Column rendering optimization', () => {
       version: '1.0.0',
       description: 'Test application',
       isDev: false,
+      isDebug: false,
     };
 
     const component1 = createWelcomeDefinition(app);
@@ -55,6 +56,7 @@ describe('Column rendering optimization', () => {
       version: '1.0.0',
       description: 'Test application',
       isDev: false,
+      isDebug: false,
     };
 
     const components = [
@@ -84,6 +86,7 @@ describe('Column rendering optimization', () => {
       version: '1.0.0',
       description: 'Test application',
       isDev: false,
+      isDebug: false,
     };
 
     const component1 = createWelcomeDefinition(app);
@@ -91,15 +94,19 @@ describe('Column rendering optimization', () => {
     const component3 = createMessage('Message 2');
 
     // Render with 1 item
-    const { rerender, lastFrame } = render(<Column items={[component1]} />);
+    const { rerender, lastFrame } = render(
+      <Column items={[component1]} debug={false} />
+    );
     const frame1 = lastFrame();
 
     // Add second item
-    rerender(<Column items={[component1, component2]} />);
+    rerender(<Column items={[component1, component2]} debug={false} />);
     const frame2 = lastFrame();
 
     // Add third item
-    rerender(<Column items={[component1, component2, component3]} />);
+    rerender(
+      <Column items={[component1, component2, component3]} debug={false} />
+    );
     const frame3 = lastFrame();
 
     // All frames should contain content (basic smoke test)
@@ -117,7 +124,9 @@ describe('Column rendering optimization', () => {
     const message1 = createMessage('First');
     const message2 = createMessage('Second');
 
-    const { lastFrame } = render(<Column items={[message1, message2]} />);
+    const { lastFrame } = render(
+      <Column items={[message1, message2]} debug={false} />
+    );
 
     // This is a basic test to ensure the component renders
     // React keys are internal, but we can verify IDs are unique
@@ -131,7 +140,9 @@ describe('Column rendering optimization', () => {
     const message2 = createMessage('Second');
 
     // Render the actual Column component
-    const { lastFrame } = render(<Column items={[message1, message2]} />);
+    const { lastFrame } = render(
+      <Column items={[message1, message2]} debug={false} />
+    );
 
     // Basic smoke test - component renders
     expect(lastFrame()).toBeTruthy();

@@ -11,6 +11,7 @@ interface ListItem {
   children?: ListItem[];
   highlighted?: boolean;
   marker?: string;
+  markerColor?: string;
 }
 
 interface ListProps {
@@ -18,6 +19,7 @@ interface ListProps {
   level?: number;
   highlightedIndex?: number | null;
   highlightedParentIndex?: number | null;
+  showType?: boolean;
 }
 
 export const List: React.FC<ListProps> = ({
@@ -25,6 +27,7 @@ export const List: React.FC<ListProps> = ({
   level = 0,
   highlightedIndex = null,
   highlightedParentIndex = null,
+  showType = false,
 }) => {
   const marginLeft = level > 0 ? 4 : 0;
 
@@ -49,15 +52,23 @@ export const List: React.FC<ListProps> = ({
             ? item.type.highlightedColor
             : item.type.color;
 
+        // Use highlighted type color for arrow markers when highlighted
+        const markerColor =
+          item.markerColor ||
+          (isHighlighted && item.type.highlightedColor
+            ? item.type.highlightedColor
+            : 'whiteBright');
+
         return (
           <Box key={index} flexDirection="column">
             <Box>
-              <Text color="whiteBright">{marker}</Text>
+              <Text color={markerColor}>{marker}</Text>
               <Label
                 description={item.description.text}
                 descriptionColor={descriptionColor}
                 type={item.type.text}
                 typeColor={typeColor}
+                showType={showType}
               />
             </Box>
             {item.children && item.children.length > 0 && (
@@ -67,6 +78,7 @@ export const List: React.FC<ListProps> = ({
                 highlightedIndex={
                   shouldHighlightChildren ? highlightedIndex : null
                 }
+                showType={showType}
               />
             )}
           </Box>

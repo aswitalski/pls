@@ -7,6 +7,7 @@ interface LabelProps {
   descriptionColor: string;
   type: string;
   typeColor: string;
+  showType?: boolean;
 }
 
 export function Label({
@@ -14,12 +15,17 @@ export function Label({
   descriptionColor,
   type,
   typeColor,
+  showType = false,
 }: LabelProps) {
   return (
     <Box>
       <Text color={descriptionColor}>{description}</Text>
-      <Separator />
-      <Text color={typeColor}>{type}</Text>
+      {showType && (
+        <>
+          <Separator />
+          <Text color={typeColor}>{type}</Text>
+        </>
+      )}
     </Box>
   );
 }

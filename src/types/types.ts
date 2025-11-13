@@ -3,6 +3,7 @@ export interface App {
   version: string;
   description: string;
   isDev: boolean;
+  isDebug: boolean;
 }
 
 export enum ComponentName {

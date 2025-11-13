@@ -16,11 +16,12 @@ describe('UI Components', () => {
     version: '1.0.0',
     description: 'Test application. For testing purposes.',
     isDev: false,
+    isDebug: false,
   };
 
   describe('Column', () => {
     it('renders empty column', () => {
-      const result = <Column items={[]} />;
+      const result = <Column items={[]} debug={false} />;
 
       expect(result).toBeDefined();
       expect(result.type).toBe(Column);
@@ -36,7 +37,7 @@ describe('UI Components', () => {
         },
       ];
 
-      const result = <Column items={items} />;
+      const result = <Column items={items} debug={false} />;
 
       expect(result).toBeDefined();
       expect(result.props.items).toHaveLength(1);
@@ -75,7 +76,7 @@ describe('UI Components', () => {
         },
       ];
 
-      const result = <Column items={items} />;
+      const result = <Column items={items} debug={false} />;
 
       expect(result.props.items).toHaveLength(2);
       expect(result.props.items[0].name).toBe(ComponentName.Welcome);
@@ -107,7 +108,7 @@ describe('UI Components', () => {
         },
       ];
 
-      const result = <Column items={items} />;
+      const result = <Column items={items} debug={false} />;
 
       expect(result.props.items).toHaveLength(2);
       expect(result.props.items[1].state.done).toBe(false);
@@ -408,6 +409,7 @@ describe('UI Components', () => {
         version: '2.0.0',
         description: 'Custom application. Very cool.',
         isDev: true,
+        isDebug: false,
       };
 
       const result = <Welcome app={customApp} />;
@@ -434,6 +436,7 @@ describe('UI Components', () => {
         version: '1.0.0',
         description: 'First sentence. Second sentence. Third sentence.',
         isDev: false,
+        isDebug: false,
       };
 
       const result = <Welcome app={multiSentenceApp} />;

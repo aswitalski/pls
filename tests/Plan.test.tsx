@@ -350,6 +350,7 @@ describe('Plan component', () => {
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
+          debug={true}
         />
       );
 
@@ -1131,6 +1132,179 @@ describe('Plan component', () => {
         (task: Task) => task.type === TaskType.Discard
       );
       expect(hasDiscardTask).toBe(false);
+    });
+  });
+
+  describe('Debug mode', () => {
+    it('shows action types when debug is true', () => {
+      const state: PlanState = {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const { lastFrame } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          tasks={[
+            { action: 'Build project', type: TaskType.Execute },
+            { action: 'Run tests', type: TaskType.Execute },
+          ]}
+          debug={true}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toContain('execute');
+    });
+
+    it('hides action types when debug is false', () => {
+      const state: PlanState = {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const { lastFrame } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          tasks={[
+            { action: 'Build project', type: TaskType.Execute },
+            { action: 'Run tests', type: TaskType.Execute },
+          ]}
+          debug={false}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).not.toContain('execute');
+    });
+
+    it('hides action types by default when debug prop is omitted', () => {
+      const state: PlanState = {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const { lastFrame } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          tasks={[
+            { action: 'Build project', type: TaskType.Execute },
+            { action: 'Run tests', type: TaskType.Execute },
+          ]}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).not.toContain('execute');
+    });
+
+    it('shows action types for all task types when debug is true', () => {
+      const state: PlanState = {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const { lastFrame } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          tasks={[
+            { action: 'Build project', type: TaskType.Execute },
+            { action: 'Generate plan', type: TaskType.Plan },
+            { action: 'Get information', type: TaskType.Answer },
+            { action: 'Configure settings', type: TaskType.Config },
+          ]}
+          debug={true}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toContain('execute');
+      expect(output).toContain('plan');
+      expect(output).toContain('answer');
+      expect(output).toContain('config');
+    });
+
+    it('shows action types for define task children when debug is true', () => {
+      const state: PlanState = {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const { lastFrame } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          tasks={[
+            {
+              action: 'Choose deployment',
+              type: TaskType.Define,
+              params: { options: ['Production', 'Staging'] },
+            },
+          ]}
+          debug={true}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toContain('define');
+      expect(output).toContain('select');
+    });
+
+    it('shows plan type in message when debug is true', () => {
+      const state: PlanState = {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const { lastFrame } = render(
+        <Plan
+          message="Review changes"
+          onAborted={mockOnAborted}
+          state={state}
+          tasks={[{ action: 'Build project', type: TaskType.Execute }]}
+          debug={true}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toContain('Review changes');
+      expect(output).toContain('›');
+      expect(output).toContain('plan');
+    });
+
+    it('hides plan type in message when debug is false', () => {
+      const state: PlanState = {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const { lastFrame } = render(
+        <Plan
+          message="Review changes"
+          onAborted={mockOnAborted}
+          state={state}
+          tasks={[{ action: 'Build project', type: TaskType.Execute }]}
+          debug={false}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toBeTruthy();
+      expect(output).toContain('Review changes');
+      // When debug is false, separator and type should not appear
+      const hasTypeIndicator = output!.includes('Review changes ›');
+      expect(hasTypeIndicator).toBe(false);
     });
   });
 });

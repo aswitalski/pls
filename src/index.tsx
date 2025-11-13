@@ -25,6 +25,7 @@ const app = {
   version: packageJson.version,
   description: packageJson.description,
   isDev,
+  isDebug: false,
 };
 
 // Get command from command-line arguments

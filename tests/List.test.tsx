@@ -1,4 +1,5 @@
 import React from 'react';
+import { render } from 'ink-testing-library';
 import { describe, expect, it } from 'vitest';
 
 import { List } from '../src/ui/List.js';
@@ -50,6 +51,34 @@ describe('UI component edge cases', () => {
 
       expect(result.props.items[0].description.text).toContain('→');
       expect(result.props.items[0].description.text).toContain('🚀');
+    });
+
+    it('hides types by default and shows when specified', () => {
+      const items = [
+        {
+          description: { text: 'Task', color: 'white' },
+          type: { text: 'execute', color: 'green' },
+        },
+      ];
+
+      const { lastFrame: lastFrameDefault } = render(<List items={items} />);
+      const { lastFrame: lastFrameFalse } = render(
+        <List items={items} showType={false} />
+      );
+      const { lastFrame: lastFrameTrue } = render(
+        <List items={items} showType={true} />
+      );
+
+      const outputDefault = lastFrameDefault();
+      const outputFalse = lastFrameFalse();
+      const outputTrue = lastFrameTrue();
+
+      // Default should hide types (false)
+      expect(outputDefault).not.toContain('execute');
+      // Explicit false should hide types
+      expect(outputFalse).not.toContain('execute');
+      // Explicit true should show types
+      expect(outputTrue).toContain('execute');
     });
   });
 });

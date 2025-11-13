@@ -9,9 +9,11 @@ import {
   configExists,
   getConfigurationRequiredMessage,
   loadConfig,
+  loadDebugSetting,
   mergeConfig,
   saveAnthropicConfig,
   saveConfig,
+  saveDebugSetting,
 } from '../src/services/config.js';
 
 import { safeRemoveDirectory } from './test-utils.js';
@@ -245,6 +247,72 @@ config:
       );
 
       expect(intersection.size).toBe(0);
+    });
+  });
+
+  describe('Debug setting', () => {
+    it('returns false when no config exists', () => {
+      expect(loadDebugSetting()).toBe(false);
+    });
+
+    it('returns false when config exists but no debug setting', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' });
+      expect(loadDebugSetting()).toBe(false);
+    });
+
+    it('saves debug setting to settings section', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' });
+      saveDebugSetting(true);
+
+      const config = loadConfig();
+      expect(config.settings?.debug).toBe(true);
+    });
+
+    it('loads saved debug setting', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' });
+      saveDebugSetting(true);
+      expect(loadDebugSetting()).toBe(true);
+
+      saveDebugSetting(false);
+      expect(loadDebugSetting()).toBe(false);
+    });
+
+    it('preserves anthropic config when saving debug setting', () => {
+      saveAnthropicConfig({
+        key: 'sk-ant-test',
+        model: AnthropicModel.Sonnet,
+      });
+      saveDebugSetting(true);
+
+      const config = loadConfig();
+      expect(config.anthropic.key).toBe('sk-ant-test');
+      expect(config.anthropic.model).toBe(AnthropicModel.Sonnet);
+      expect(config.settings?.debug).toBe(true);
+    });
+
+    it('preserves debug setting when saving anthropic config', () => {
+      saveDebugSetting(true);
+      saveAnthropicConfig({
+        key: 'sk-ant-test',
+        model: AnthropicModel.Haiku,
+      });
+
+      const config = loadConfig();
+      expect(config.settings?.debug).toBe(true);
+      expect(config.anthropic.key).toBe('sk-ant-test');
+      expect(config.anthropic.model).toBe(AnthropicModel.Haiku);
+    });
+
+    it('updates debug setting', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' });
+      saveDebugSetting(true);
+      expect(loadDebugSetting()).toBe(true);
+
+      saveDebugSetting(false);
+      expect(loadDebugSetting()).toBe(false);
+
+      saveDebugSetting(true);
+      expect(loadDebugSetting()).toBe(true);
     });
   });
 });
