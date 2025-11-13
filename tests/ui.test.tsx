@@ -5,7 +5,7 @@ import { ComponentDefinition } from '../src/types/components.js';
 import { App, ComponentName } from '../src/types/types.js';
 
 import { Column } from '../src/ui/Column.js';
-import { Config } from '../src/ui/Config.js';
+import { Config, ConfigStep, StepType } from '../src/ui/Config.js';
 import { List } from '../src/ui/List.js';
 import { Panel } from '../src/ui/Panel.js';
 import { Welcome } from '../src/ui/Welcome.js';
@@ -30,6 +30,7 @@ describe('UI Components', () => {
     it('renders column with single welcome component', () => {
       const items: ComponentDefinition[] = [
         {
+          id: 'test-welcome-1',
           name: ComponentName.Welcome,
           props: { app: mockApp },
         },
@@ -45,16 +46,30 @@ describe('UI Components', () => {
     it('renders column with multiple components in timeline', () => {
       const items: ComponentDefinition[] = [
         {
+          id: 'test-welcome-2',
           name: ComponentName.Welcome,
           props: { app: mockApp },
         },
         {
+          id: 'test-config-1',
           name: ComponentName.Config,
           state: { done: true },
           props: {
             steps: [
-              { description: 'Username', key: 'username', value: 'testuser' },
-              { description: 'Password', key: 'password', value: 'pass123' },
+              {
+                description: 'Username',
+                key: 'username',
+                type: StepType.Text,
+                value: 'testuser',
+                validate: () => true,
+              },
+              {
+                description: 'Password',
+                key: 'password',
+                type: StepType.Text,
+                value: 'pass123',
+                validate: () => true,
+              },
             ],
           },
         },
@@ -70,14 +85,24 @@ describe('UI Components', () => {
     it('renders column with active and timeline components', () => {
       const items: ComponentDefinition[] = [
         {
+          id: 'test-welcome-3',
           name: ComponentName.Welcome,
           props: { app: mockApp },
         },
         {
+          id: 'test-config-2',
           name: ComponentName.Config,
           state: { done: false },
           props: {
-            steps: [{ description: 'API Key', key: 'key', value: null }],
+            steps: [
+              {
+                description: 'API Key',
+                key: 'key',
+                type: StepType.Text,
+                value: null,
+                validate: () => true,
+              },
+            ],
           },
         },
       ];
@@ -240,9 +265,21 @@ describe('UI Components', () => {
 
   describe('Config', () => {
     it('renders first step when not started', () => {
-      const steps = [
-        { description: 'Username', key: 'username', value: null },
-        { description: 'Email', key: 'email', value: null },
+      const steps: ConfigStep[] = [
+        {
+          description: 'Username',
+          key: 'username',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+        {
+          description: 'Email',
+          key: 'email',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: false }} />;
@@ -252,9 +289,21 @@ describe('UI Components', () => {
     });
 
     it('renders completed steps with values', () => {
-      const steps = [
-        { description: 'Username', key: 'username', value: null },
-        { description: 'Email', key: 'email', value: null },
+      const steps: ConfigStep[] = [
+        {
+          description: 'Username',
+          key: 'username',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+        {
+          description: 'Email',
+          key: 'email',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: false }} />;
@@ -263,9 +312,21 @@ describe('UI Components', () => {
     });
 
     it('shows all steps when done', () => {
-      const steps = [
-        { description: 'Username', key: 'username', value: null },
-        { description: 'Email', key: 'email', value: null },
+      const steps: ConfigStep[] = [
+        {
+          description: 'Username',
+          key: 'username',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+        {
+          description: 'Email',
+          key: 'email',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: true }} />;
@@ -274,8 +335,14 @@ describe('UI Components', () => {
     });
 
     it('displays default values when provided', () => {
-      const steps = [
-        { description: 'Server', key: 'server', value: 'localhost' },
+      const steps: ConfigStep[] = [
+        {
+          description: 'Server',
+          key: 'server',
+          type: StepType.Text,
+          value: 'localhost',
+          validate: () => true,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: false }} />;
@@ -284,7 +351,15 @@ describe('UI Components', () => {
     });
 
     it('transitions from interactive to completed state', () => {
-      const steps = [{ description: 'API Key', key: 'apiKey', value: null }];
+      const steps: ConfigStep[] = [
+        {
+          description: 'API Key',
+          key: 'apiKey',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+      ];
 
       // Interactive state
       const interactive = <Config steps={steps} state={{ done: false }} />;
@@ -298,7 +373,15 @@ describe('UI Components', () => {
     });
 
     it('supports onFinished callback', () => {
-      const steps = [{ description: 'Test', key: 'test', value: null }];
+      const steps: ConfigStep[] = [
+        {
+          description: 'Test',
+          key: 'test',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+      ];
       const onFinished = (config: Record<string, string>) => {
         expect(config).toBeDefined();
       };
@@ -320,7 +403,7 @@ describe('UI Components', () => {
     });
 
     it('renders with different app info', () => {
-      const customApp: AppInfo = {
+      const customApp: App = {
         name: 'my-custom-app',
         version: '2.0.0',
         description: 'Custom application. Very cool.',
@@ -346,7 +429,7 @@ describe('UI Components', () => {
     });
 
     it('renders with multi-sentence description', () => {
-      const multiSentenceApp: AppInfo = {
+      const multiSentenceApp: App = {
         name: 'test',
         version: '1.0.0',
         description: 'First sentence. Second sentence. Third sentence.',
