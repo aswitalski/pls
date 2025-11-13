@@ -3,6 +3,7 @@ import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Confirm } from '../src/ui/Confirm.js';
+import { Keys } from './test-utils.js';
 
 describe('Confirm component', () => {
   describe('Rendering', () => {
@@ -47,7 +48,7 @@ describe('Confirm component', () => {
         />
       );
 
-      stdin.write('\r'); // Enter key
+      stdin.write(Keys.Enter);
 
       expect(onConfirmed).toHaveBeenCalledOnce();
     });
@@ -62,9 +63,9 @@ describe('Confirm component', () => {
         />
       );
 
-      stdin.write('\t'); // Tab to switch to No
+      stdin.write(Keys.Tab);
       await new Promise((resolve) => setTimeout(resolve, 50)); // Wait for state update
-      stdin.write('\r'); // Enter key
+      stdin.write(Keys.Enter);
 
       expect(onCancelled).toHaveBeenCalledOnce();
     });
@@ -75,9 +76,9 @@ describe('Confirm component', () => {
       );
 
       // Initially Yes is selected
-      stdin.write('\t'); // Now No is selected
-      stdin.write('\t'); // Back to Yes
-      stdin.write('\t'); // No again
+      stdin.write(Keys.Tab); // Now No is selected
+      stdin.write(Keys.Tab); // Back to Yes
+      stdin.write(Keys.Tab); // No again
 
       // Verify it toggles (output would show different highlighting)
       // This is a smoke test - actual highlighting is visual
@@ -95,7 +96,7 @@ describe('Confirm component', () => {
         />
       );
 
-      stdin.write('\r'); // Enter key
+      stdin.write(Keys.Enter);
 
       expect(onConfirmed).not.toHaveBeenCalled();
     });
@@ -153,7 +154,7 @@ describe('Confirm component', () => {
       );
 
       // Should not crash
-      stdin.write('\r');
+      stdin.write(Keys.Enter);
       expect(true).toBe(true);
     });
 
@@ -161,8 +162,8 @@ describe('Confirm component', () => {
       const { stdin } = render(<Confirm message="Continue?" />);
 
       // Should not crash
-      stdin.write('\t');
-      stdin.write('\r');
+      stdin.write(Keys.Tab);
+      stdin.write(Keys.Enter);
       expect(true).toBe(true);
     });
   });
