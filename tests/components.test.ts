@@ -20,6 +20,7 @@ describe('Component Types', () => {
     version: '1.0.0',
     description: 'Test application',
     isDev: true,
+    isDebug: false,
   };
 
   describe('Welcome component definition', () => {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useInput } from 'ink';
 
 import {
   ComponentDefinition,
@@ -20,7 +21,9 @@ import {
   getConfigurationRequiredMessage,
   hasValidAnthropicKey,
   loadConfig,
+  loadDebugSetting,
   saveAnthropicConfig,
+  saveDebugSetting,
 } from '../services/config.js';
 import {
   createCommandDefinition,
@@ -60,6 +63,23 @@ export const Main = ({ app, command }: MainProps) => {
 
   const [timeline, setTimeline] = React.useState<ComponentDefinition[]>([]);
   const [queue, setQueue] = React.useState<ComponentDefinition[]>([]);
+  const [isDebug, setIsDebug] = React.useState<boolean>(() =>
+    loadDebugSetting()
+  );
+
+  // Handle Shift+Tab to toggle debug mode
+  useInput(
+    (input, key) => {
+      if (key.shift && key.tab) {
+        setIsDebug((prev) => {
+          const newValue = !prev;
+          saveDebugSetting(newValue);
+          return newValue;
+        });
+      }
+    },
+    { isActive: true }
+  );
 
   const addToTimeline = React.useCallback((...items: ComponentDefinition[]) => {
     setTimeline((timeline) => [...timeline, ...items]);
@@ -348,5 +368,5 @@ export const Main = ({ app, command }: MainProps) => {
   const current = queue.length > 0 ? queue[0] : null;
   const items = [...timeline, ...(current ? [current] : [])];
 
-  return <Column items={items} />;
+  return <Column items={items} debug={isDebug} />;
 };

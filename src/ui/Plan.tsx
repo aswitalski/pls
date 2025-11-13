@@ -65,6 +65,7 @@ function taskToListItem(
       type: { text: string; color: string };
     }[];
     marker?: string;
+    markerColor?: string;
   } = {
     description: {
       text: task.action,
@@ -77,6 +78,7 @@ function taskToListItem(
   // Mark define tasks with right arrow when no selection has been made
   if (isDefineTaskWithoutSelection) {
     item.marker = '  → ';
+    item.markerColor = ColorPalette[TaskType.Plan].type;
   }
 
   // Add children for Define tasks with options
@@ -113,6 +115,7 @@ export function Plan({
   message,
   tasks,
   state,
+  debug = false,
   onSelectionConfirmed,
   onAborted,
 }: PlanProps) {
@@ -277,6 +280,7 @@ export function Plan({
             descriptionColor={ColorPalette[TaskType.Plan].description}
             type={TaskType.Plan}
             typeColor={ColorPalette[TaskType.Plan].type}
+            showType={debug}
           />
         </Box>
       )}
@@ -284,6 +288,7 @@ export function Plan({
         items={listItems}
         highlightedIndex={currentDefineTaskIndex >= 0 ? highlightedIndex : null}
         highlightedParentIndex={currentDefineTaskIndex}
+        showType={debug}
       />
     </Box>
   );

@@ -16,8 +16,13 @@ export type AnthropicConfig = {
   model?: string;
 };
 
+export type SettingsConfig = {
+  debug?: boolean;
+};
+
 export interface Config {
   anthropic: AnthropicConfig;
+  settings?: SettingsConfig;
 }
 
 export class ConfigError extends Error {
@@ -72,6 +77,16 @@ function validateConfig(parsed: unknown): Config {
   // Optional model - only set if valid
   if (model && typeof model === 'string' && isValidAnthropicModel(model)) {
     validatedConfig.anthropic.model = model;
+  }
+
+  // Optional settings section
+  if (config.settings && typeof config.settings === 'object') {
+    const settings = config.settings as Record<string, unknown>;
+    validatedConfig.settings = {};
+
+    if ('debug' in settings && typeof settings.debug === 'boolean') {
+      validatedConfig.settings.debug = settings.debug;
+    }
   }
 
   return validatedConfig;
@@ -163,6 +178,19 @@ export function saveConfig(
 
 export function saveAnthropicConfig(config: AnthropicConfig): void {
   saveConfig('anthropic', config);
+}
+
+export function saveDebugSetting(debug: boolean): void {
+  saveConfig('settings', { debug });
+}
+
+export function loadDebugSetting(): boolean {
+  try {
+    const config = loadConfig();
+    return config.settings?.debug ?? false;
+  } catch {
+    return false;
+  }
 }
 
 /**
