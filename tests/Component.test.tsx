@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { ComponentDefinition } from '../src/types/components.js';
 import {
@@ -9,6 +9,7 @@ import {
 } from '../src/types/types.js';
 
 import { Component } from '../src/ui/Component.js';
+import { StepType } from '../src/ui/Config.js';
 
 describe('Component', () => {
   const mockApp: App = {
@@ -20,6 +21,7 @@ describe('Component', () => {
 
   it('renders welcome component', () => {
     const def: ComponentDefinition = {
+      id: 'test-welcome-1',
       name: ComponentName.Welcome,
       props: {
         app: mockApp,
@@ -35,14 +37,27 @@ describe('Component', () => {
 
   it('renders config component without state', () => {
     const def: ComponentDefinition = {
+      id: 'test-config-1',
       name: ComponentName.Config,
       state: {
         done: false,
       },
       props: {
         steps: [
-          { description: 'API Key', key: 'apiKey', value: null },
-          { description: 'Model', key: 'model', value: 'default-model' },
+          {
+            description: 'API Key',
+            key: 'apiKey',
+            type: StepType.Text,
+            value: null,
+            validate: () => true,
+          },
+          {
+            description: 'Model',
+            key: 'model',
+            type: StepType.Text,
+            value: 'default-model',
+            validate: () => true,
+          },
         ],
         onFinished: () => {},
       },
@@ -57,15 +72,34 @@ describe('Component', () => {
 
   it('renders config component with multiple steps', () => {
     const def: ComponentDefinition = {
+      id: 'test-config-2',
       name: ComponentName.Config,
       state: {
         done: false,
       },
       props: {
         steps: [
-          { description: 'Username', key: 'username', value: null },
-          { description: 'Password', key: 'password', value: null },
-          { description: 'Server', key: 'server', value: 'localhost' },
+          {
+            description: 'Username',
+            key: 'username',
+            type: StepType.Text,
+            value: null,
+            validate: () => true,
+          },
+          {
+            description: 'Password',
+            key: 'password',
+            type: StepType.Text,
+            value: null,
+            validate: () => true,
+          },
+          {
+            description: 'Server',
+            key: 'server',
+            type: StepType.Text,
+            value: 'localhost',
+            validate: () => true,
+          },
         ],
       },
     };
@@ -79,6 +113,7 @@ describe('Component', () => {
 
   it('renders command component in loading state', () => {
     const def: ComponentDefinition = {
+      id: 'test-command-1',
       name: ComponentName.Command,
       state: {
         done: false,
@@ -86,6 +121,7 @@ describe('Component', () => {
       },
       props: {
         command: 'test command',
+        onAborted: vi.fn(),
       },
     };
 
@@ -98,6 +134,7 @@ describe('Component', () => {
 
   it('renders command component with children', () => {
     const def: ComponentDefinition = {
+      id: 'test-command-2',
       name: ComponentName.Command,
       state: {
         done: true,
@@ -106,6 +143,7 @@ describe('Component', () => {
       props: {
         command: 'test command',
         children: 'Some content',
+        onAborted: vi.fn(),
       },
     };
 
@@ -118,6 +156,7 @@ describe('Component', () => {
 
   it('renders command component with error', () => {
     const def: ComponentDefinition = {
+      id: 'test-command-3',
       name: ComponentName.Command,
       state: {
         done: true,
@@ -127,6 +166,7 @@ describe('Component', () => {
       props: {
         command: 'failing command',
         error: 'Something went wrong',
+        onAborted: vi.fn(),
       },
     };
 
@@ -139,6 +179,7 @@ describe('Component', () => {
 
   it('passes undefined state for stateless components', () => {
     const def: ComponentDefinition = {
+      id: 'test-welcome-2',
       name: ComponentName.Welcome,
       props: {
         app: mockApp,
@@ -154,13 +195,21 @@ describe('Component', () => {
 
   it('renders plan component', () => {
     const def: ComponentDefinition = {
+      id: 'test-plan-1',
       name: ComponentName.Plan,
+      state: {
+        done: false,
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      },
       props: {
         message: 'Here is the plan',
         tasks: [
           { action: 'Install dependencies', type: TaskType.Execute },
           { action: 'Run tests', type: TaskType.Execute },
         ],
+        onAborted: vi.fn(),
       },
     };
 
@@ -173,6 +222,7 @@ describe('Component', () => {
 
   it('renders feedback component', () => {
     const def: ComponentDefinition = {
+      id: 'test-feedback-1',
       name: ComponentName.Feedback,
       props: {
         type: FeedbackType.Info,
@@ -190,29 +240,49 @@ describe('Component', () => {
   it('renders all component types in sequence', () => {
     const definitions: ComponentDefinition[] = [
       {
+        id: 'test-welcome-3',
         name: ComponentName.Welcome,
         props: { app: mockApp },
       },
       {
+        id: 'test-config-3',
         name: ComponentName.Config,
         state: { done: false },
         props: {
-          steps: [{ description: 'Test', key: 'test', value: null }],
+          steps: [
+            {
+              description: 'Test',
+              key: 'test',
+              type: StepType.Text,
+              value: null,
+              validate: () => true,
+            },
+          ],
         },
       },
       {
+        id: 'test-command-4',
         name: ComponentName.Command,
         state: { done: false, isLoading: true },
-        props: { command: 'test' },
+        props: { command: 'test', onAborted: vi.fn() },
       },
       {
+        id: 'test-plan-2',
         name: ComponentName.Plan,
+        state: {
+          done: false,
+          highlightedIndex: null,
+          currentDefineGroupIndex: 0,
+          completedSelections: [],
+        },
         props: {
           message: 'Plan ready',
           tasks: [{ action: 'Do something', type: TaskType.Execute }],
+          onAborted: vi.fn(),
         },
       },
       {
+        id: 'test-feedback-2',
         name: ComponentName.Feedback,
         props: {
           type: FeedbackType.Succeeded,

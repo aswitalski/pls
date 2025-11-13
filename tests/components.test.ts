@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   BaseState,
@@ -8,6 +8,7 @@ import {
   ConfigProps,
 } from '../src/types/components.js';
 import { App, ComponentName } from '../src/types/types.js';
+import { ConfigStep, StepType } from '../src/ui/Config.js';
 
 describe('Component Types', () => {
   const mockApp: App = {
@@ -20,6 +21,7 @@ describe('Component Types', () => {
   describe('Welcome component definition', () => {
     it('creates valid stateless welcome definition', () => {
       const def: ComponentDefinition = {
+        id: 'test-welcome-1',
         name: ComponentName.Welcome,
         props: {
           app: mockApp,
@@ -39,12 +41,25 @@ describe('Component Types', () => {
       };
 
       const def: ComponentDefinition = {
+        id: 'test-config-1',
         name: ComponentName.Config,
         state,
         props: {
           steps: [
-            { description: 'API Key', key: 'apiKey', value: null },
-            { description: 'Model', key: 'model', value: 'default' },
+            {
+              description: 'API Key',
+              key: 'apiKey',
+              type: StepType.Text,
+              value: null,
+              validate: () => true,
+            },
+            {
+              description: 'Model',
+              key: 'model',
+              type: StepType.Text,
+              value: 'default',
+              validate: () => true,
+            },
           ],
           onFinished: () => {},
         },
@@ -55,13 +70,32 @@ describe('Component Types', () => {
     });
 
     it('supports multiple configuration steps', () => {
-      const stepConfigs = [
-        { description: 'Username', key: 'username', value: null },
-        { description: 'Password', key: 'password', value: null },
-        { description: 'Server', key: 'server', value: 'localhost' },
+      const stepConfigs: ConfigStep[] = [
+        {
+          description: 'Username',
+          key: 'username',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+        {
+          description: 'Password',
+          key: 'password',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+        {
+          description: 'Server',
+          key: 'server',
+          type: StepType.Text,
+          value: 'localhost',
+          validate: () => true,
+        },
       ];
 
       const def: ComponentDefinition = {
+        id: 'test-config-2',
         name: ComponentName.Config,
         state: { done: false },
         props: {
@@ -69,18 +103,30 @@ describe('Component Types', () => {
         },
       };
 
-      if (def.name === ComponentName.Config) {
-        expect(def.props.steps).toHaveLength(3);
-        expect(def.props.steps[0]?.key).toBe('username');
-        expect(def.props.steps[2]?.value).toBe('localhost');
+      expect(def.props.steps).toHaveLength(3);
+      expect(def.props.steps[0]?.key).toBe('username');
+      if (def.props.steps[2]?.type === StepType.Text) {
+        expect(def.props.steps[2].value).toBe('localhost');
       }
     });
 
     it('supports onFinished callback', () => {
       const props: ConfigProps = {
         steps: [
-          { description: 'API Key', key: 'apiKey', value: null },
-          { description: 'Model', key: 'model', value: 'default-model' },
+          {
+            description: 'API Key',
+            key: 'apiKey',
+            type: StepType.Text,
+            value: null,
+            validate: () => true,
+          },
+          {
+            description: 'Model',
+            key: 'model',
+            type: StepType.Text,
+            value: 'default-model',
+            validate: () => true,
+          },
         ],
         onFinished: (config) => {
           expect(config).toBeDefined();
@@ -88,6 +134,7 @@ describe('Component Types', () => {
       };
 
       const def: ComponentDefinition = {
+        id: 'test-config-3',
         name: ComponentName.Config,
         state: { done: false },
         props,
@@ -105,10 +152,12 @@ describe('Component Types', () => {
       };
 
       const def: ComponentDefinition = {
+        id: 'test-command-1',
         name: ComponentName.Command,
         state,
         props: {
           command: 'test command',
+          onAborted: vi.fn(),
         },
       };
 
@@ -126,10 +175,12 @@ describe('Component Types', () => {
       };
 
       const def: ComponentDefinition = {
+        id: 'test-command-2',
         name: ComponentName.Command,
         state,
         props: {
           command: 'failing command',
+          onAborted: vi.fn(),
         },
       };
 
@@ -141,9 +192,11 @@ describe('Component Types', () => {
         command: 'test',
         error: 'Some error',
         children: 'Test content',
+        onAborted: vi.fn(),
       };
 
       const def: ComponentDefinition = {
+        id: 'test-command-3',
         name: ComponentName.Command,
         state: { done: false },
         props,
@@ -158,20 +211,31 @@ describe('Component Types', () => {
     it('correctly discriminates between component types', () => {
       const definitions: ComponentDefinition[] = [
         {
+          id: 'test-welcome-2',
           name: ComponentName.Welcome,
           props: { app: mockApp },
         },
         {
+          id: 'test-config-4',
           name: ComponentName.Config,
           state: { done: false },
           props: {
-            steps: [{ description: 'Test', key: 'test', value: null }],
+            steps: [
+              {
+                description: 'Test',
+                key: 'test',
+                type: StepType.Text,
+                value: null,
+                validate: () => true,
+              },
+            ],
           },
         },
         {
+          id: 'test-command-4',
           name: ComponentName.Command,
           state: { done: false },
-          props: { command: 'test' },
+          props: { command: 'test', onAborted: vi.fn() },
         },
       ];
 
@@ -209,12 +273,25 @@ describe('Component Types', () => {
 
       states.forEach((state, index) => {
         const def: ComponentDefinition = {
+          id: `test-config-lifecycle-${String(index)}`,
           name: ComponentName.Config,
           state,
           props: {
             steps: [
-              { description: 'Step 1', key: 'step1', value: null },
-              { description: 'Step 2', key: 'step2', value: null },
+              {
+                description: 'Step 1',
+                key: 'step1',
+                type: StepType.Text,
+                value: null,
+                validate: () => true,
+              },
+              {
+                description: 'Step 2',
+                key: 'step2',
+                type: StepType.Text,
+                value: null,
+                validate: () => true,
+              },
             ],
           },
         };
@@ -239,15 +316,17 @@ describe('Component Types', () => {
       };
 
       const loadingDef: ComponentDefinition = {
+        id: 'test-command-loading',
         name: ComponentName.Command,
         state: loadingState,
-        props: { command: 'test' },
+        props: { command: 'test', onAborted: vi.fn() },
       };
 
       const completedDef: ComponentDefinition = {
+        id: 'test-command-completed',
         name: ComponentName.Command,
         state: completedState,
-        props: { command: 'test' },
+        props: { command: 'test', onAborted: vi.fn() },
       };
 
       expect('state' in loadingDef && loadingDef.state.isLoading).toBe(true);

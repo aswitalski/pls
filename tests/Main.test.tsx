@@ -48,7 +48,7 @@ describe('Main component queue-based architecture', () => {
 
   describe('App info handling', () => {
     it('passes app info correctly', () => {
-      const customApp: AppInfo = {
+      const customApp: App = {
         name: 'custom-app',
         version: '2.0.0',
         description: 'Custom description',
