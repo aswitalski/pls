@@ -12,6 +12,7 @@ import {
   isValidAnthropicApiKey,
   isValidAnthropicModel,
 } from './config.js';
+import { getConfirmationMessage } from './messages.js';
 
 import { ConfigStep, StepType } from '../ui/Config.js';
 
@@ -164,6 +165,22 @@ export function createRefinement(
     props: {
       text,
       onAborted,
+    },
+  };
+}
+
+export function createConfirmDefinition(
+  onConfirmed: () => void,
+  onCancelled: () => void
+): ComponentDefinition {
+  return {
+    id: randomUUID(),
+    name: ComponentName.Confirm,
+    state: { done: false },
+    props: {
+      message: getConfirmationMessage(),
+      onConfirmed,
+      onCancelled,
     },
   };
 }

@@ -114,4 +114,40 @@ describe('Main component queue-based architecture', () => {
       exitSpy.mockRestore();
     });
   });
+
+  describe('Confirmation flow', () => {
+    it('shows confirmation after plan without Define tasks', async () => {
+      const componentsModule = await import('../src/services/components.js');
+      const anthropicModule = await import('../src/services/anthropic.js');
+
+      // Mock service that returns a plan without Define tasks
+      const mockService = {
+        processWithTool: vi.fn().mockResolvedValue({
+          message: 'Execute these tasks',
+          tasks: [
+            { action: 'Task 1', type: 'execute' },
+            { action: 'Task 2', type: 'execute' },
+          ],
+        }),
+      };
+
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+        mockService as any
+      );
+
+      // Spy on createConfirmDefinition to verify it's called
+      const confirmSpy = vi.spyOn(componentsModule, 'createConfirmDefinition');
+
+      render(<Main app={mockApp} command="test task" />);
+
+      // Wait for async processing (Command MIN_PROCESSING_TIME + buffer)
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      // Verify createConfirmDefinition was called
+      expect(confirmSpy).toHaveBeenCalled();
+
+      // Cleanup
+      vi.restoreAllMocks();
+    });
+  });
 });

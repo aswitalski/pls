@@ -212,6 +212,44 @@ describe('Component Types', () => {
     });
   });
 
+  describe('Confirm component definition', () => {
+    it('creates valid stateful confirm definition', () => {
+      const state: BaseState = {
+        done: false,
+      };
+
+      const def: ComponentDefinition = {
+        id: 'test-confirm-1',
+        name: ComponentName.Confirm,
+        state,
+        props: {
+          message: 'Should I execute this plan?',
+          onConfirmed: () => {},
+          onCancelled: () => {},
+        },
+      };
+
+      expect(def.name).toBe(ComponentName.Confirm);
+      expect('state' in def && def.state.done).toBe(false);
+      expect(def.props.message).toBe('Should I execute this plan?');
+    });
+
+    it('supports optional callbacks', () => {
+      const def: ComponentDefinition = {
+        id: 'test-confirm-2',
+        name: ComponentName.Confirm,
+        state: { done: false },
+        props: {
+          message: 'Continue?',
+        },
+      };
+
+      expect(def.props.message).toBe('Continue?');
+      expect(def.props.onConfirmed).toBeUndefined();
+      expect(def.props.onCancelled).toBeUndefined();
+    });
+  });
+
   describe('Type discrimination', () => {
     it('correctly discriminates between component types', () => {
       const definitions: ComponentDefinition[] = [
