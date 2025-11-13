@@ -45,6 +45,12 @@ Your configuration is stored in `~/.plsrc` as a YAML file. Supported settings:
 - `anthropic.key` - Your API key
 - `anthropic.model` - The model to use
 
+## Skills
+
+You can extend `pls` with custom workflows by creating markdown files in `~/.pls/skills/`. Skills define domain-specific operations, parameters, and steps that guide both planning and execution of tasks.
+
+Your skills are referenced when planning requests, enabling `pls` to understand specific workflows, create and execute structured plans tailored to your environment.
+
 ## Development
 
 See [CLAUDE.md](./CLAUDE.md) for development guidelines and architecture.
