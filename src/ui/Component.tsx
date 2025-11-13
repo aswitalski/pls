@@ -4,6 +4,7 @@ import { ComponentDefinition } from '../types/components.js';
 import { ComponentName } from '../types/types.js';
 
 import { Command } from './Command.js';
+import { Confirm } from './Confirm.js';
 import { Config } from './Config.js';
 import { Feedback } from './Feedback.js';
 import { Message } from './Message.js';
@@ -46,6 +47,12 @@ export function Component({ def, debug }: ComponentProps): React.ReactElement {
       const props = def.props;
       const state = def.state;
       return <Refinement {...props} state={state} />;
+    }
+
+    case ComponentName.Confirm: {
+      const props = def.props;
+      const state = def.state;
+      return <Confirm {...props} state={state} />;
     }
   }
 }
