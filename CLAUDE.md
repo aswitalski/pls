@@ -137,6 +137,35 @@ testable, and extensible codebase:
 The goal is to build a codebase that is easy to understand, extend, test, and
 maintain - both now and in the future.
 
+#### Tool System Architecture
+
+The application uses a tool registry pattern to manage AI-powered capabilities.
+Each tool has a schema (Anthropic SDK tool definition with input validation)
+and instruction file path containing the AI prompt. Tools register in
+`tool-registry.ts` as singletons. Instruction files (markdown in `src/config/`)
+are copied to `dist/config/` during build. This separation keeps prompts
+maintainable and allows dynamic loading at runtime.
+
+#### Skills System
+
+Users extend the application with domain-specific workflows through skills.
+Skills are markdown files stored in `~/.pls/skills/` that describe operations,
+parameters, and steps. The skills service loads them dynamically at runtime and
+concatenates their content into tool instructions as an "Available Skills"
+section. This allows users to teach the app about project-specific commands
+without modifying code. Missing skills directory fails gracefully.
+
+#### Component Lifecycle
+
+The main interface uses a queue-based execution model with two arrays: queue
+(pending components) and timeline (completed components). The first item in
+queue is active. Stateless components move to timeline immediately; stateful
+components wait for user interaction or async completion. Components signal
+completion via callbacks (onFinished, onComplete), which mark them as done and
+move them to timeline. BaseState interface requires `done: boolean` for
+lifecycle tracking. Factory functions in `services/components.ts` create
+properly-typed component definitions with unique IDs.
+
 ### Interface
 
 The interface architecture emphasizes composition, reusability, and separation
