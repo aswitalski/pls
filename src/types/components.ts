@@ -29,6 +29,17 @@ export interface MessageProps {
   text: string;
 }
 
+export interface ConfirmProps {
+  message: string;
+  state?: ConfirmState;
+  onConfirmed?: () => void;
+  onCancelled?: () => void;
+}
+
+export interface ConfirmState extends BaseState {
+  confirmed?: boolean;
+}
+
 export interface RefinementProps {
   text: string;
   state?: BaseState;
@@ -126,6 +137,11 @@ type CommandDefinition = StatefulDefinition<
   CommandProps,
   CommandState
 >;
+type ConfirmDefinition = StatefulDefinition<
+  ComponentName.Confirm,
+  ConfirmProps,
+  ConfirmState
+>;
 
 // Discriminated union of all component definitions
 export type ComponentDefinition =
@@ -135,11 +151,13 @@ export type ComponentDefinition =
   | MessageDefinition
   | RefinementDefinition
   | PlanDefinition
-  | CommandDefinition;
+  | CommandDefinition
+  | ConfirmDefinition;
 
 // Union of all stateful component definitions
 export type StatefulComponentDefinition =
   | ConfigDefinition
   | RefinementDefinition
   | CommandDefinition
-  | PlanDefinition;
+  | PlanDefinition
+  | ConfirmDefinition;

@@ -14,6 +14,7 @@ export enum ComponentName {
   Plan = 'plan',
   Refinement = 'refinement',
   Feedback = 'feedback',
+  Confirm = 'confirm',
 }
 
 export enum TaskType {

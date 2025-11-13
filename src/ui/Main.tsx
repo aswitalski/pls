@@ -27,6 +27,7 @@ import {
 } from '../services/config.js';
 import {
   createCommandDefinition,
+  createConfirmDefinition,
   createConfigDefinition,
   createFeedback,
   createMessage,
@@ -67,7 +68,8 @@ export const Main = ({ app, command }: MainProps) => {
     loadDebugSetting()
   );
 
-  // Handle Shift+Tab to toggle debug mode
+  // Top-level Shift+Tab handler for debug mode toggle
+  // Child components must ignore Shift+Tab to prevent conflicts
   useInput(
     (input, key) => {
       if (key.shift && key.tab) {
@@ -160,6 +162,33 @@ export const Main = ({ app, command }: MainProps) => {
     handleAborted('Plan refinement');
   }, [handleAborted]);
 
+  const handleExecutionConfirmed = React.useCallback(() => {
+    setQueue((currentQueue) => {
+      if (currentQueue.length === 0) return currentQueue;
+      const [first] = currentQueue;
+      if (first.name === ComponentName.Confirm) {
+        addToTimeline(markAsDone(first as StatefulComponentDefinition));
+      }
+      exitApp(0);
+      return [];
+    });
+  }, [addToTimeline]);
+
+  const handleExecutionCancelled = React.useCallback(() => {
+    setQueue((currentQueue) => {
+      if (currentQueue.length === 0) return currentQueue;
+      const [first] = currentQueue;
+      if (first.name === ComponentName.Confirm) {
+        addToTimeline(
+          markAsDone(first as StatefulComponentDefinition),
+          createFeedback(FeedbackType.Aborted, 'Execution cancelled')
+        );
+      }
+      exitApp(0);
+      return [];
+    });
+  }, [addToTimeline]);
+
   const handlePlanSelectionConfirmed = React.useCallback(
     async (selectedTasks: Task[]) => {
       // Mark current plan as done and add refinement to queue
@@ -205,7 +234,7 @@ export const Main = ({ app, command }: MainProps) => {
           return [];
         });
 
-        // Show final execution plan
+        // Show final execution plan with confirmation
         const planDefinition = createPlanDefinition(
           result.message,
           result.tasks,
@@ -213,8 +242,13 @@ export const Main = ({ app, command }: MainProps) => {
           undefined
         );
 
+        const confirmDefinition = createConfirmDefinition(
+          handleExecutionConfirmed,
+          handleExecutionCancelled
+        );
+
         addToTimeline(planDefinition);
-        exitApp(0);
+        setQueue([confirmDefinition]);
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error occurred';
@@ -269,13 +303,16 @@ export const Main = ({ app, command }: MainProps) => {
             addToTimeline(markAsDone(first as StatefulComponentDefinition));
             return [planDefinition];
           } else {
-            // No define task - add plan to timeline and exit
+            // No define task - show plan and confirmation
+            const confirmDefinition = createConfirmDefinition(
+              handleExecutionConfirmed,
+              handleExecutionCancelled
+            );
             addToTimeline(
               markAsDone(first as StatefulComponentDefinition),
               planDefinition
             );
-            exitApp(0);
-            return [];
+            return [confirmDefinition];
           }
         }
 
@@ -283,7 +320,12 @@ export const Main = ({ app, command }: MainProps) => {
         return [];
       });
     },
-    [addToTimeline, handlePlanSelectionConfirmed]
+    [
+      addToTimeline,
+      handlePlanSelectionConfirmed,
+      handleExecutionConfirmed,
+      handleExecutionCancelled,
+    ]
   );
 
   const handleConfigFinished = React.useCallback(
