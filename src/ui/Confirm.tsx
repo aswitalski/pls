@@ -1,8 +1,6 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
 
-import { Panel } from './Panel.js';
-
 export interface ConfirmProps {
   message: string;
   state?: ConfirmState;
@@ -28,7 +26,15 @@ export function Confirm({
     (input, key) => {
       if (done) return;
 
-      if (key.tab) {
+      if (key.escape) {
+        // First Escape: highlight "No"
+        if (selectedIndex === 0) {
+          setSelectedIndex(1);
+        } else {
+          // Second Escape: cancel
+          onCancelled?.();
+        }
+      } else if (key.tab) {
         // Toggle between Yes (0) and No (1)
         setSelectedIndex((prev) => (prev === 0 ? 1 : 0));
       } else if (key.return) {
@@ -49,24 +55,29 @@ export function Confirm({
   ];
 
   return (
-    <Box alignSelf="flex-start">
-      <Panel>
-        <Box flexDirection="column" gap={1}>
-          <Text color="white">{message}</Text>
-          <Box>
-            {options.map((option, index) => {
-              const isSelected = index === selectedIndex;
-              return (
-                <Box key={option.value} marginRight={2}>
-                  <Text dimColor={!isSelected || done} bold={isSelected}>
-                    {option.label}
-                  </Text>
-                </Box>
-              );
-            })}
-          </Box>
+    <Box flexDirection="column">
+      <Box>
+        <Text>{message}</Text>
+      </Box>
+      <Box>
+        <Text> </Text>
+        <Text color="#5c8cbc" dimColor={done}>
+          &gt;
+        </Text>
+        <Text> </Text>
+        <Box>
+          {options.map((option, index) => {
+            const isSelected = index === selectedIndex;
+            return (
+              <Box key={option.value} marginRight={2}>
+                <Text dimColor={!isSelected || done} bold={isSelected}>
+                  {option.label}
+                </Text>
+              </Box>
+            );
+          })}
         </Box>
-      </Panel>
+      </Box>
     </Box>
   );
 }

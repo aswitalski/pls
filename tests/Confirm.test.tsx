@@ -100,6 +100,45 @@ describe('Confirm component', () => {
 
       expect(onConfirmed).not.toHaveBeenCalled();
     });
+
+    it('first Escape highlights No, second Escape cancels', async () => {
+      const onCancelled = vi.fn();
+      const { stdin } = render(
+        <Confirm
+          message="Continue?"
+          onConfirmed={() => {}}
+          onCancelled={onCancelled}
+        />
+      );
+
+      // First Escape - should highlight No
+      stdin.write(Keys.Escape);
+      await new Promise((resolve) => setTimeout(resolve, 50)); // Wait for state update
+
+      // Second Escape - should call onCancelled
+      stdin.write(Keys.Escape);
+
+      expect(onCancelled).toHaveBeenCalledOnce();
+    });
+
+    it('Escape when No is selected calls onCancelled immediately', async () => {
+      const onCancelled = vi.fn();
+      const { stdin } = render(
+        <Confirm
+          message="Continue?"
+          onConfirmed={() => {}}
+          onCancelled={onCancelled}
+        />
+      );
+
+      // Tab to No
+      stdin.write(Keys.Tab);
+      await new Promise((resolve) => setTimeout(resolve, 50)); // Wait for state update
+      // Then Escape - should call onCancelled
+      stdin.write(Keys.Escape);
+
+      expect(onCancelled).toHaveBeenCalledOnce();
+    });
   });
 
   describe('State', () => {
