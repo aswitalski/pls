@@ -1,5 +1,6 @@
 import React from 'react';
-import { describe, expect, it } from 'vitest';
+import { render } from 'ink-testing-library';
+import { describe, expect, it, vi } from 'vitest';
 
 import { App } from '../src/types/types.js';
 
@@ -86,6 +87,31 @@ describe('Main component queue-based architecture', () => {
 
       expect(debugResult.props.app.isDebug).toBe(true);
       expect(normalResult.props.app.isDebug).toBe(false);
+    });
+  });
+
+  describe('Exit behavior', () => {
+    it('exits after showing welcome screen with no command', async () => {
+      // Import the module to spy on
+      const processModule = await import('../src/services/process.js');
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      const { lastFrame } = render(<Main app={mockApp} command={null} />);
+
+      // Wait for effects to run
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Should have rendered the welcome screen
+      const output = lastFrame();
+      expect(output).toBeTruthy();
+
+      // Should have called exitApp(0)
+      expect(exitSpy).toHaveBeenCalledWith(0);
+
+      // Cleanup
+      exitSpy.mockRestore();
     });
   });
 });

@@ -365,6 +365,13 @@ export const Main = ({ app, command }: MainProps) => {
     processNextInQueue();
   }, [queue, processNextInQueue]);
 
+  // Exit when queue is empty and timeline has content (all stateless components done)
+  React.useEffect(() => {
+    if (queue.length === 0 && timeline.length > 0) {
+      exitApp(0);
+    }
+  }, [queue, timeline]);
+
   const current = queue.length > 0 ? queue[0] : null;
   const items = [...timeline, ...(current ? [current] : [])];
 
