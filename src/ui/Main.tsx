@@ -135,7 +135,7 @@ export const Main = ({ app, command }: MainProps) => {
             markAsDone(first as StatefulComponentDefinition),
             createFeedback(
               FeedbackType.Aborted,
-              `${operationName} was aborted by user`
+              `I've cancelled the ${operationName.toLowerCase()}`
             )
           );
         }
@@ -181,7 +181,7 @@ export const Main = ({ app, command }: MainProps) => {
       if (first.name === ComponentName.Confirm) {
         addToTimeline(
           markAsDone(first as StatefulComponentDefinition),
-          createFeedback(FeedbackType.Aborted, 'Execution cancelled')
+          createFeedback(FeedbackType.Aborted, "I've cancelled execution")
         );
       }
       exitApp(0);
