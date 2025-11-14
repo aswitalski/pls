@@ -1,6 +1,8 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
 
+import { Colors } from '../types/colors.js';
+
 export interface ConfirmProps {
   message: string;
   state?: ConfirmState;
@@ -46,8 +48,8 @@ export function Confirm({
   );
 
   const options = [
-    { label: 'Yes', value: 'yes', color: '#4a9a7a' }, // green (execute)
-    { label: 'No', value: 'no', color: '#a85c3f' }, // dark orange (discard)
+    { label: 'Yes', value: 'yes', color: Colors.Action.Execute },
+    { label: 'No', value: 'no', color: Colors.Action.Discard },
   ];
 
   if (done) {
@@ -70,7 +72,7 @@ export function Confirm({
         <Text>{message}</Text>
       </Box>
       <Box>
-        <Text color="#5c8cbc">&gt;</Text>
+        <Text color={Colors.Action.Select}>&gt;</Text>
         <Text> </Text>
         <Box>
           {options.map((option, index) => {

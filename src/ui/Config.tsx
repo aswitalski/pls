@@ -2,6 +2,8 @@ import React from 'react';
 import { Box, Text, useFocus, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 
+import { Colors } from '../types/colors.js';
+
 export enum StepType {
   Text = 'text',
   Selection = 'selection',
@@ -97,7 +99,7 @@ function TextStep({
   // When validation fails, show colored text
   if (validationFailed) {
     return (
-      <Text color="#cc5c5c">
+      <Text color={Colors.Status.Error}>
         {inputValue || placeholder}
         {isFocused && <Text inverse> </Text>}
       </Text>
@@ -352,7 +354,7 @@ export function Config<
             </Box>
             <Box>
               <Text> </Text>
-              <Text color="#5c8cbc" dimColor={!isCurrentStep}>
+              <Text color={Colors.Action.Select} dimColor={!isCurrentStep}>
                 &gt;
               </Text>
               <Text> </Text>
