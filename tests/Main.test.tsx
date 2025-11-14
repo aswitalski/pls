@@ -152,7 +152,7 @@ describe('Main component queue-based architecture', () => {
   });
 
   describe('Abort messages', () => {
-    it('shows "Execution cancelled" when aborting plan confirmation', async () => {
+    it('shows "I\'ve cancelled execution" when aborting plan confirmation', async () => {
       const anthropicModule = await import('../src/services/anthropic.js');
       const processModule = await import('../src/services/process.js');
       const { Keys } = await import('./test-utils.js');
@@ -191,14 +191,14 @@ describe('Main component queue-based architecture', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const output = lastFrame();
-      expect(output).toContain('Execution cancelled');
+      expect(output).toContain("I've cancelled execution");
 
       // Cleanup
       exitSpy.mockRestore();
       vi.restoreAllMocks();
     });
 
-    it('shows "aborted by user" when aborting plan navigation', async () => {
+    it('shows "I\'ve cancelled the task selection" when aborting plan navigation', async () => {
       const anthropicModule = await import('../src/services/anthropic.js');
       const processModule = await import('../src/services/process.js');
       const { Keys } = await import('./test-utils.js');
@@ -240,7 +240,7 @@ describe('Main component queue-based architecture', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const output = lastFrame();
-      expect(output).toContain('aborted by user');
+      expect(output).toContain("I've cancelled the task selection");
 
       // Cleanup
       exitSpy.mockRestore();
