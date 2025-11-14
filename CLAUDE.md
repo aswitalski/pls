@@ -53,6 +53,10 @@ should follow these principles:
 - **Color scheme**: Use a carefully selected palette that enhances readability
   and provides clear visual hierarchy. Primary actions in green, warnings in
   yellow, errors in red, secondary information in muted colors.
+- **Timeline colors**: In the conversation timeline, concierge output appears
+  in white (default terminal color), while user prompts and choices appear with
+  a gray chevron prefix (e.g., "> Yes") to visually distinguish user actions
+  from system responses.
 - **Progress indication**: Show clear, real-time feedback for long-running
   operations using spinners, progress bars, or status indicators similar to
   Claude Code's approach.
