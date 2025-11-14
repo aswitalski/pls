@@ -150,4 +150,101 @@ describe('Main component queue-based architecture', () => {
       vi.restoreAllMocks();
     });
   });
+
+  describe('Abort messages', () => {
+    it('shows "Execution cancelled" when aborting plan confirmation', async () => {
+      const anthropicModule = await import('../src/services/anthropic.js');
+      const processModule = await import('../src/services/process.js');
+      const { Keys } = await import('./test-utils.js');
+
+      // Mock exitApp to prevent process.exit
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      // Mock service that returns a plan without Define tasks
+      const mockService = {
+        processWithTool: vi.fn().mockResolvedValue({
+          message: 'Execute these tasks',
+          tasks: [
+            { action: 'Task 1', type: 'execute' },
+            { action: 'Task 2', type: 'execute' },
+          ],
+        }),
+      };
+
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+        mockService as any
+      );
+
+      const { lastFrame, stdin } = render(
+        <Main app={mockApp} command="test task" />
+      );
+
+      // Wait for confirmation to appear
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      // Press Escape to abort
+      stdin.write(Keys.Escape);
+
+      // Wait for state update
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const output = lastFrame();
+      expect(output).toContain('Execution cancelled');
+
+      // Cleanup
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    });
+
+    it('shows "aborted by user" when aborting plan navigation', async () => {
+      const anthropicModule = await import('../src/services/anthropic.js');
+      const processModule = await import('../src/services/process.js');
+      const { Keys } = await import('./test-utils.js');
+
+      // Mock exitApp to prevent process.exit
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      // Mock service that returns a plan with Define tasks
+      const mockService = {
+        processWithTool: vi.fn().mockResolvedValue({
+          message: 'Choose an option',
+          tasks: [
+            {
+              action: 'Select environment',
+              type: 'define',
+              params: { options: ['Dev', 'Prod'] },
+            },
+          ],
+        }),
+      };
+
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+        mockService as any
+      );
+
+      const { lastFrame, stdin } = render(
+        <Main app={mockApp} command="test task" />
+      );
+
+      // Wait for plan to appear
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      // Press Escape to abort
+      stdin.write(Keys.Escape);
+
+      // Wait for state update
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const output = lastFrame();
+      expect(output).toContain('aborted by user');
+
+      // Cleanup
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    });
+  });
 });

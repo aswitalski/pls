@@ -1,56 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 
+import { TaskColors } from '../types/colors.js';
 import { PlanProps } from '../types/components.js';
 import { Task, TaskType } from '../types/types.js';
 
 import { Label } from './Label.js';
 import { List } from './List.js';
-
-const ColorPalette: Record<
-  TaskType,
-  {
-    description: string;
-    type: string;
-  }
-> = {
-  [TaskType.Config]: {
-    description: '#ffffff', // white
-    type: '#5c9ccc', // cyan
-  },
-  [TaskType.Plan]: {
-    description: '#ffffff', // white
-    type: '#5ccccc', // magenta
-  },
-  [TaskType.Execute]: {
-    description: '#ffffff', // white
-    type: '#4a9a7a', // green
-  },
-  [TaskType.Answer]: {
-    description: '#ffffff', // white
-    type: '#9c5ccc', // purple
-  },
-  [TaskType.Report]: {
-    description: '#ffffff', // white
-    type: '#cc9c5c', // orange
-  },
-  [TaskType.Define]: {
-    description: '#ffffff', // white
-    type: '#cc9c5c', // amber
-  },
-  [TaskType.Ignore]: {
-    description: '#cccc5c', // yellow
-    type: '#cc7a5c', // orange
-  },
-  [TaskType.Select]: {
-    description: '#888888', // grey
-    type: '#5c8cbc', // steel blue
-  },
-  [TaskType.Discard]: {
-    description: '#666666', // dark grey
-    type: '#a85c3f', // dark orange
-  },
-};
 
 function taskToListItem(
   task: Task,
@@ -69,16 +25,16 @@ function taskToListItem(
   } = {
     description: {
       text: task.action,
-      color: ColorPalette[task.type].description,
+      color: TaskColors[task.type].description,
     },
-    type: { text: task.type, color: ColorPalette[task.type].type },
+    type: { text: task.type, color: TaskColors[task.type].type },
     children: [],
   };
 
   // Mark define tasks with right arrow when no selection has been made
   if (isDefineTaskWithoutSelection) {
     item.marker = '  → ';
-    item.markerColor = ColorPalette[TaskType.Plan].type;
+    item.markerColor = TaskColors[TaskType.Plan].type;
   }
 
   // Add children for Define tasks with options
@@ -92,17 +48,17 @@ function taskToListItem(
           index === highlightedChildIndex ? TaskType.Execute : TaskType.Discard;
       }
 
-      const colors = ColorPalette[childType];
+      const colors = TaskColors[childType];
       return {
         description: {
           text: String(option),
           color: colors.description,
-          highlightedColor: ColorPalette[TaskType.Plan].description,
+          highlightedColor: TaskColors[TaskType.Plan].description,
         },
         type: {
           text: childType,
           color: colors.type,
-          highlightedColor: ColorPalette[TaskType.Plan].type,
+          highlightedColor: TaskColors[TaskType.Plan].type,
         },
       };
     });
@@ -277,9 +233,9 @@ export function Plan({
         <Box marginBottom={1}>
           <Label
             description={message}
-            descriptionColor={ColorPalette[TaskType.Plan].description}
+            descriptionColor={TaskColors[TaskType.Plan].description}
             type={TaskType.Plan}
-            typeColor={ColorPalette[TaskType.Plan].type}
+            typeColor={TaskColors[TaskType.Plan].type}
             showType={debug}
           />
         </Box>
