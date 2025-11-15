@@ -1,6 +1,6 @@
 {
   "name": "prompt-language-shell",
-  "version": "0.3.8",
+  "version": "0.4.0",
   "description": "Your personal command-line concierge. Ask politely, and it gets things done.",
   "type": "module",
   "main": "dist/index.js",
@@ -46,22 +46,22 @@
   },
   "homepage": "https://github.com/aswitalski/pls#readme",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.68.0",
-    "ink": "^6.4.0",
+    "@anthropic-ai/sdk": "^0.69.0",
+    "ink": "^6.5.0",
     "ink-text-input": "^6.0.0",
     "react": "^19.2.0",
     "yaml": "^2.8.1"
   },
   "devDependencies": {
-    "@types/node": "^20.10.6",
-    "@types/react": "^19.2.2",
-    "@vitest/coverage-v8": "^4.0.8",
-    "eslint": "^9.17.0",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@vitest/coverage-v8": "^4.0.9",
+    "eslint": "^9.39.1",
     "husky": "^9.1.7",
     "ink-testing-library": "^4.0.0",
     "prettier": "^3.6.2",
-    "typescript": "^5.3.3",
-    "typescript-eslint": "^8.19.1",
-    "vitest": "^4.0.5"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vitest": "^4.0.9"
   }
 }
