@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  createRefinement,
-  getRefiningMessage,
-} from '../src/services/components.js';
+import { createRefinement } from '../src/services/components.js';
 import {
   BaseState,
   CommandProps,
@@ -393,27 +390,6 @@ describe('Component Types', () => {
         expect(def.props.text).toBe('Processing request');
         expect(def.props.onAborted).toBe(onAborted);
       }
-    });
-  });
-
-  describe('getRefiningMessage', () => {
-    const expectedMessages = [
-      'Let me work out the specifics for you.',
-      "I'll figure out the concrete steps.",
-      'Let me break this down into tasks.',
-      "I'll plan out the details.",
-      'Let me arrange the steps.',
-      "I'll prepare everything you need.",
-    ];
-
-    it('returns one of the expected messages', () => {
-      const message = getRefiningMessage();
-      expect(expectedMessages).toContain(message);
-    });
-
-    it('returns a string ending with a period', () => {
-      const message = getRefiningMessage();
-      expect(message).toMatch(/\.$/);
     });
   });
 });

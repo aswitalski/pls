@@ -346,6 +346,16 @@ sufficient.
   `safeRemoveDirectory` from `tests/test-utils.ts` for cleanup. This utility
   handles intermittent ENOTEMPTY errors by retrying operations and gracefully
   handling failures. Never use `rmSync` directly in test cleanup.
+- Message dictionaries: Use PascalCase for keys in message dictionaries (e.g.,
+  `FeedbackMessages.ConfigurationComplete`, `FeedbackMessages.UnexpectedError`)
+  while using camelCase for message generator functions (e.g.,
+  `getCancellationMessage()`, `getRefiningMessage()`). This convention
+  distinguishes static message constants from dynamic message generators.
+- Example messages: In documentation and instruction files, user messages
+  typically appear in lowercase (e.g., "list your skills", "show apple stock")
+  reflecting natural command-line usage, while concierge responses use standard
+  sentence capitalization (e.g., "Here are my capabilities:", "I've cancelled
+  the execution").
 - Prettier formatting: 80 chars, semicolons, single quotes, trailing commas
   (es5, multi-line only), always arrow parens, 2 space indent
 - ESLint rules: Strict TypeScript rules, console allowed, unused vars warn

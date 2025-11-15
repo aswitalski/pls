@@ -22,18 +22,6 @@ export function markAsDone<T extends StatefulComponentDefinition>(
   return { ...component, state: { ...component.state, done: true } };
 }
 
-export function getRefiningMessage(): string {
-  const messages = [
-    'Let me work out the specifics for you.',
-    "I'll figure out the concrete steps.",
-    'Let me break this down into tasks.',
-    "I'll plan out the details.",
-    'Let me arrange the steps.',
-    "I'll prepare everything you need.",
-  ];
-  return messages[Math.floor(Math.random() * messages.length)];
-}
-
 export function createWelcomeDefinition(app: App): ComponentDefinition {
   return {
     id: randomUUID(),

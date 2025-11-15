@@ -152,7 +152,7 @@ describe('Main component queue-based architecture', () => {
   });
 
   describe('Abort messages', () => {
-    it('shows "I\'ve cancelled execution" when aborting plan confirmation', async () => {
+    it('shows cancellation message when aborting plan confirmation', async () => {
       const anthropicModule = await import('../src/services/anthropic.js');
       const processModule = await import('../src/services/process.js');
       const { Keys } = await import('./test-utils.js');
@@ -191,14 +191,17 @@ describe('Main component queue-based architecture', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const output = lastFrame();
-      expect(output).toContain("I've cancelled execution");
+      expect(output).toMatch(
+        /(I've cancelled the|I've aborted the|The.*was cancelled|The.*has been aborted)/
+      );
+      expect(output).toContain('execution');
 
       // Cleanup
       exitSpy.mockRestore();
       vi.restoreAllMocks();
     });
 
-    it('shows "I\'ve cancelled the task selection" when aborting plan navigation', async () => {
+    it('shows cancellation message when aborting plan navigation', async () => {
       const anthropicModule = await import('../src/services/anthropic.js');
       const processModule = await import('../src/services/process.js');
       const { Keys } = await import('./test-utils.js');
@@ -240,14 +243,17 @@ describe('Main component queue-based architecture', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const output = lastFrame();
-      expect(output).toContain("I've cancelled the task selection");
+      expect(output).toMatch(
+        /(I've cancelled the|I've aborted the|The.*was cancelled|The.*has been aborted)/
+      );
+      expect(output).toContain('task selection');
 
       // Cleanup
       exitSpy.mockRestore();
       vi.restoreAllMocks();
     });
 
-    it('shows "I\'ve cancelled introspection" when aborting introspect-only plan', async () => {
+    it('shows cancellation message when aborting introspect-only plan', async () => {
       const anthropicModule = await import('../src/services/anthropic.js');
       const processModule = await import('../src/services/process.js');
       const { Keys } = await import('./test-utils.js');
@@ -286,7 +292,10 @@ describe('Main component queue-based architecture', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const output = lastFrame();
-      expect(output).toContain("I've cancelled introspection");
+      expect(output).toMatch(
+        /(I've cancelled the|I've aborted the|The.*was cancelled|The.*has been aborted)/
+      );
+      expect(output).toContain('introspection');
 
       // Cleanup
       exitSpy.mockRestore();
