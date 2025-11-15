@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages';
 
-import { toolRegistry } from '../src/services/tool-registry.js';
+import { toolRegistry } from '../../src/services/tool-registry.js';
 
 describe('Tool registry', () => {
   const registry = toolRegistry;

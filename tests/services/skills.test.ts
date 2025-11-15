@@ -7,9 +7,9 @@ import {
   formatSkillsForPrompt,
   getSkillsDirectory,
   loadSkills,
-} from '../src/services/skills.js';
+} from '../../src/services/skills.js';
 
-import { safeRemoveDirectory } from './test-utils.js';
+import { safeRemoveDirectory } from '../test-utils.js';
 
 describe('Skills service', () => {
   let originalHome: string | undefined;

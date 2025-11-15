@@ -14,9 +14,9 @@ import {
   saveAnthropicConfig,
   saveConfig,
   saveDebugSetting,
-} from '../src/services/config.js';
+} from '../../src/services/config.js';
 
-import { safeRemoveDirectory } from './test-utils.js';
+import { safeRemoveDirectory } from '../test-utils.js';
 
 describe('Configuration management', () => {
   let originalHome: string | undefined;

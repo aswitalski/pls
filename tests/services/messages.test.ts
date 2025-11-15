@@ -5,7 +5,7 @@ import {
   getCancellationMessage,
   getConfirmationMessage,
   getRefiningMessage,
-} from '../src/services/messages.js';
+} from '../../src/services/messages.js';
 
 describe('Message functions', () => {
   describe('getConfirmationMessage', () => {

@@ -2,8 +2,8 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Command } from '../src/ui/Command.js';
-import { Keys } from './test-utils.js';
+import { Command } from '../../src/ui/Command.js';
+import { Keys } from '../test-utils.js';
 
 const { Escape } = Keys;
 

@@ -2,11 +2,11 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { PlanState } from '../src/types/components.js';
-import { Task, TaskType } from '../src/types/types.js';
+import { PlanState } from '../../src/types/components.js';
+import { Task, TaskType } from '../../src/types/types.js';
 
-import { Plan } from '../src/ui/Plan.js';
-import { Keys } from './test-utils.js';
+import { Plan } from '../../src/ui/Plan.js';
+import { Keys } from '../test-utils.js';
 
 // Destructure for readability
 const { ArrowDown, ArrowUp, Enter, Escape } = Keys;

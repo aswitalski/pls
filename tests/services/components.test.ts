@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { createRefinement } from '../src/services/components.js';
+import { createRefinement } from '../../src/services/components.js';
 import {
   BaseState,
   CommandProps,
   CommandState,
   ComponentDefinition,
   ConfigProps,
-} from '../src/types/components.js';
-import { App, ComponentName } from '../src/types/types.js';
-import { ConfigStep, StepType } from '../src/ui/Config.js';
+} from '../../src/types/components.js';
+import { App, ComponentName } from '../../src/types/types.js';
+import { ConfigStep, StepType } from '../../src/ui/Config.js';
 
 describe('Component Types', () => {
   const mockApp: App = {

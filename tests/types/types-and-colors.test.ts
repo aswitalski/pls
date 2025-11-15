@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { Colors, FeedbackColors, TaskColors } from '../src/types/colors.js';
-import { TaskType } from '../src/types/types.js';
+import { Colors, FeedbackColors, TaskColors } from '../../src/types/colors.js';
+import { TaskType } from '../../src/types/types.js';
 
 describe('TaskType enum', () => {
   it('includes Introspect type', () => {

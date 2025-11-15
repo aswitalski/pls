@@ -2,8 +2,8 @@ import { render } from 'ink-testing-library';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Refinement } from '../src/ui/Refinement.js';
-import { Keys } from './test-utils.js';
+import { Refinement } from '../../src/ui/Refinement.js';
+import { Keys } from '../test-utils.js';
 
 describe('Refinement', () => {
   const mockOnAborted = vi.fn();
