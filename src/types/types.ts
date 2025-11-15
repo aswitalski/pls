@@ -22,6 +22,7 @@ export enum TaskType {
   Plan = 'plan',
   Execute = 'execute',
   Answer = 'answer',
+  Introspect = 'introspect',
   Report = 'report',
   Define = 'define',
   Ignore = 'ignore',

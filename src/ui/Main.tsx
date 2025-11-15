@@ -68,6 +68,12 @@ export const Main = ({ app, command }: MainProps) => {
     loadDebugSetting()
   );
 
+  // Use ref to track latest timeline for callbacks
+  const timelineRef = React.useRef<ComponentDefinition[]>(timeline);
+  React.useEffect(() => {
+    timelineRef.current = timeline;
+  }, [timeline]);
+
   // Top-level Shift+Tab handler for debug mode toggle
   // Child components must ignore Shift+Tab to prevent conflicts
   useInput(
@@ -154,6 +160,19 @@ export const Main = ({ app, command }: MainProps) => {
     handleAborted('Task selection');
   }, [handleAborted]);
 
+  const createPlanAbortHandler = React.useCallback(
+    (tasks: Task[]) => {
+      const allIntrospect = tasks.every(
+        (task) => task.type === TaskType.Introspect
+      );
+      if (allIntrospect) {
+        return () => handleAborted('Introspection');
+      }
+      return handlePlanAborted;
+    },
+    [handleAborted, handlePlanAborted]
+  );
+
   const handleCommandAborted = React.useCallback(() => {
     handleAborted('Request');
   }, [handleAborted]);
@@ -179,9 +198,34 @@ export const Main = ({ app, command }: MainProps) => {
       if (currentQueue.length === 0) return currentQueue;
       const [first] = currentQueue;
       if (first.name === ComponentName.Confirm) {
+        // Find the most recent Plan in timeline to check task types
+        const currentTimeline = timelineRef.current;
+        const lastPlanIndex = [...currentTimeline]
+          .reverse()
+          .findIndex((item) => item.name === ComponentName.Plan);
+        const lastPlan =
+          lastPlanIndex >= 0
+            ? currentTimeline[currentTimeline.length - 1 - lastPlanIndex]
+            : null;
+
+        const allIntrospect =
+          lastPlan &&
+          lastPlan.name === ComponentName.Plan &&
+          'props' in lastPlan &&
+          lastPlan.props &&
+          'tasks' in lastPlan.props &&
+          Array.isArray(lastPlan.props.tasks) &&
+          (lastPlan.props.tasks as Task[]).every(
+            (task) => task.type === TaskType.Introspect
+          );
+
+        const message = allIntrospect
+          ? "I've cancelled introspection"
+          : "I've cancelled execution";
+
         addToTimeline(
           markAsDone(first as StatefulComponentDefinition),
-          createFeedback(FeedbackType.Aborted, "I've cancelled execution")
+          createFeedback(FeedbackType.Aborted, message)
         );
       }
       exitApp(0);
@@ -238,7 +282,7 @@ export const Main = ({ app, command }: MainProps) => {
         const planDefinition = createPlanDefinition(
           result.message,
           result.tasks,
-          handlePlanAborted,
+          createPlanAbortHandler(result.tasks),
           undefined
         );
 
@@ -276,7 +320,14 @@ export const Main = ({ app, command }: MainProps) => {
         exitApp(1);
       }
     },
-    [addToTimeline, service, handleRefinementAborted]
+    [
+      addToTimeline,
+      service,
+      handleRefinementAborted,
+      createPlanAbortHandler,
+      handleExecutionConfirmed,
+      handleExecutionCancelled,
+    ]
   );
 
   const handleCommandComplete = React.useCallback(
@@ -294,7 +345,7 @@ export const Main = ({ app, command }: MainProps) => {
           const planDefinition = createPlanDefinition(
             message,
             tasks,
-            handlePlanAborted,
+            createPlanAbortHandler(tasks),
             hasDefineTask ? handlePlanSelectionConfirmed : undefined
           );
 
@@ -322,6 +373,7 @@ export const Main = ({ app, command }: MainProps) => {
     },
     [
       addToTimeline,
+      createPlanAbortHandler,
       handlePlanSelectionConfirmed,
       handleExecutionConfirmed,
       handleExecutionCancelled,
