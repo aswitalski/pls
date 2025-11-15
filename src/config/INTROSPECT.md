@@ -38,14 +38,18 @@ Every response MUST include an introductory message before the capability list.
 - The message introduces the capabilities that follow
 - ALWAYS end the message with a colon (:)
 - Match the tone to the request (professional, helpful, clear)
+- **NEVER repeat keywords** - If the message uses "skills", the task action
+  must use different words like "capabilities" or "operations". If the message
+  uses "capabilities", the action must use "skills" or other alternatives.
+  Avoid redundancy between the message and task descriptions.
 
 **Correct examples:**
-- "here are my capabilities:"
-- "i can help with these operations:"
-- "here's what i can do:"
-- "these are my available skills:"
-- "i'm capable of:"
-- "my skills include:"
+- "Here are my capabilities:" (then use "skills" or "operations" in actions)
+- "I can help with these operations:" (then use "capabilities" or "skills")
+- "Here's what I can do:" (then use "capabilities", "skills", or "operations")
+- "These are my available skills:" (then use "capabilities" or "operations")
+- "Here's an overview of my capabilities:" (then use "skills" or "purposes")
+- "Here's what I can help you with:" (then use "skills" or "capabilities")
 
 ## Capabilities Structure
 

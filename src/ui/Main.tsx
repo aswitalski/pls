@@ -26,6 +26,11 @@ import {
   saveDebugSetting,
 } from '../services/config.js';
 import {
+  FeedbackMessages,
+  getCancellationMessage,
+  getRefiningMessage,
+} from '../services/messages.js';
+import {
   createCommandDefinition,
   createConfirmDefinition,
   createConfigDefinition,
@@ -34,7 +39,6 @@ import {
   createRefinement,
   createPlanDefinition,
   createWelcomeDefinition,
-  getRefiningMessage,
   isStateless,
   markAsDone,
 } from '../services/components.js';
@@ -119,7 +123,7 @@ export const Main = ({ app, command }: MainProps) => {
             markAsDone(first as StatefulComponentDefinition),
             createFeedback(
               FeedbackType.Failed,
-              'Unexpected error occurred:',
+              FeedbackMessages.UnexpectedError,
               error
             )
           );
@@ -141,7 +145,7 @@ export const Main = ({ app, command }: MainProps) => {
             markAsDone(first as StatefulComponentDefinition),
             createFeedback(
               FeedbackType.Aborted,
-              `I've cancelled the ${operationName.toLowerCase()}`
+              getCancellationMessage(operationName)
             )
           );
         }
@@ -219,13 +223,14 @@ export const Main = ({ app, command }: MainProps) => {
             (task) => task.type === TaskType.Introspect
           );
 
-        const message = allIntrospect
-          ? "I've cancelled introspection"
-          : "I've cancelled execution";
+        const operation = allIntrospect ? 'introspection' : 'execution';
 
         addToTimeline(
           markAsDone(first as StatefulComponentDefinition),
-          createFeedback(FeedbackType.Aborted, message)
+          createFeedback(
+            FeedbackType.Aborted,
+            getCancellationMessage(operation)
+          )
         );
       }
       exitApp(0);
@@ -313,7 +318,7 @@ export const Main = ({ app, command }: MainProps) => {
         addToTimeline(
           createFeedback(
             FeedbackType.Failed,
-            'Unexpected error occurred:',
+            FeedbackMessages.UnexpectedError,
             errorMessage
           )
         );
@@ -394,7 +399,10 @@ export const Main = ({ app, command }: MainProps) => {
         if (first.name === ComponentName.Config) {
           addToTimeline(
             markAsDone(first as StatefulComponentDefinition),
-            createFeedback(FeedbackType.Succeeded, 'Configuration complete')
+            createFeedback(
+              FeedbackType.Succeeded,
+              FeedbackMessages.ConfigurationComplete
+            )
           );
         }
 
