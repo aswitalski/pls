@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { ComponentDefinition } from '../src/types/components.js';
+import { ComponentDefinition } from '../../src/types/components.js';
 import {
   App,
   ComponentName,
   FeedbackType,
   TaskType,
-} from '../src/types/types.js';
+} from '../../src/types/types.js';
 
-import { Component } from '../src/ui/Component.js';
-import { StepType } from '../src/ui/Config.js';
+import { Component } from '../../src/ui/Component.js';
+import { StepType } from '../../src/ui/Config.js';
 
 describe('Component', () => {
   const mockApp: App = {

@@ -6,9 +6,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   hasValidAnthropicKey,
   saveAnthropicConfig,
-} from '../src/services/config.js';
+} from '../../src/services/config.js';
 
-import { safeRemoveDirectory } from './test-utils.js';
+import { safeRemoveDirectory } from '../test-utils.js';
 
 describe('Anthropic API key validation', () => {
   let originalHome: string | undefined;

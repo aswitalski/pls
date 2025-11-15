@@ -1,15 +1,15 @@
 import { render } from 'ink-testing-library';
 import { describe, expect, it } from 'vitest';
 
-import { FeedbackType } from '../src/types/types.js';
+import { FeedbackType } from '../../src/types/types.js';
 
 import {
   createFeedback,
   createMessage,
   createWelcomeDefinition,
-} from '../src/services/components.js';
+} from '../../src/services/components.js';
 
-import { Column } from '../src/ui/Column.js';
+import { Column } from '../../src/ui/Column.js';
 
 describe('Column rendering optimization', () => {
   it('uses stable IDs that prevent unnecessary re-renders', () => {

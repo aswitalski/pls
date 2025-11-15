@@ -2,10 +2,10 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { AnthropicModel } from '../src/services/config.js';
+import { AnthropicModel } from '../../src/services/config.js';
 
-import { Config, ConfigStep, StepType } from '../src/ui/Config.js';
-import { Keys } from './test-utils.js';
+import { Config, ConfigStep, StepType } from '../../src/ui/Config.js';
+import { Keys } from '../test-utils.js';
 
 describe('Config component interaction flows', () => {
   const mockValidate = () => true;
@@ -47,7 +47,13 @@ describe('Config component interaction flows', () => {
     it('calls onFinished for single step', () => {
       const onFinished = vi.fn();
       const steps: ConfigStep[] = [
-        { description: 'Username', key: 'username', value: null },
+        {
+          description: 'Username',
+          key: 'username',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
       ];
 
       const result = (
@@ -61,9 +67,27 @@ describe('Config component interaction flows', () => {
   describe('Multi-step config', () => {
     it('renders multiple steps', () => {
       const steps: ConfigStep[] = [
-        { description: 'Username', key: 'username', value: null },
-        { description: 'Password', key: 'password', value: null },
-        { description: 'Email', key: 'email', value: null },
+        {
+          description: 'Username',
+          key: 'username',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
+        {
+          description: 'Password',
+          key: 'password',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
+        {
+          description: 'Email',
+          key: 'email',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: false }} />;
@@ -73,13 +97,27 @@ describe('Config component interaction flows', () => {
 
     it('renders steps with mixed default values', () => {
       const steps: ConfigStep[] = [
-        { description: 'API Key', key: 'apiKey', value: null },
+        {
+          description: 'API Key',
+          key: 'apiKey',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
         {
           description: 'Model',
           key: 'model',
+          type: StepType.Text,
           value: 'claude-haiku-4-5-20251001',
+          validate: mockValidate,
         },
-        { description: 'Max Tokens', key: 'maxTokens', value: '1024' },
+        {
+          description: 'Max Tokens',
+          key: 'maxTokens',
+          type: StepType.Text,
+          value: '1024',
+          validate: mockValidate,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: false }} />;
@@ -92,8 +130,20 @@ describe('Config component interaction flows', () => {
     it('calls onFinished after last step', () => {
       const onFinished = vi.fn();
       const steps: ConfigStep[] = [
-        { description: 'Step 1', key: 'step1', value: null },
-        { description: 'Step 2', key: 'step2', value: null },
+        {
+          description: 'Step 1',
+          key: 'step1',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
+        {
+          description: 'Step 2',
+          key: 'step2',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
       ];
 
       const result = (
@@ -108,7 +158,13 @@ describe('Config component interaction flows', () => {
     it('accepts onAborted callback', () => {
       const onAborted = vi.fn();
       const steps: ConfigStep[] = [
-        { description: 'Test', key: 'test', value: null },
+        {
+          description: 'Test',
+          key: 'test',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
       ];
 
       const result = (
@@ -120,7 +176,13 @@ describe('Config component interaction flows', () => {
 
     it('works without onAborted callback', () => {
       const steps: ConfigStep[] = [
-        { description: 'Test', key: 'test', value: null },
+        {
+          description: 'Test',
+          key: 'test',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: false }} />;
@@ -132,7 +194,13 @@ describe('Config component interaction flows', () => {
   describe('Completed state', () => {
     it('renders completed single step config', () => {
       const steps: ConfigStep[] = [
-        { description: 'API Key', key: 'apiKey', value: 'sk-ant-test' },
+        {
+          description: 'API Key',
+          key: 'apiKey',
+          type: StepType.Text,
+          value: 'sk-ant-test',
+          validate: mockValidate,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: true }} />;
@@ -142,9 +210,27 @@ describe('Config component interaction flows', () => {
 
     it('renders completed multi-step config', () => {
       const steps: ConfigStep[] = [
-        { description: 'Username', key: 'username', value: 'testuser' },
-        { description: 'Password', key: 'password', value: 'testpass' },
-        { description: 'Email', key: 'email', value: 'test@example.com' },
+        {
+          description: 'Username',
+          key: 'username',
+          type: StepType.Text,
+          value: 'testuser',
+          validate: mockValidate,
+        },
+        {
+          description: 'Password',
+          key: 'password',
+          type: StepType.Text,
+          value: 'testpass',
+          validate: mockValidate,
+        },
+        {
+          description: 'Email',
+          key: 'email',
+          type: StepType.Text,
+          value: 'test@example.com',
+          validate: mockValidate,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: true }} />;
@@ -157,7 +243,13 @@ describe('Config component interaction flows', () => {
   describe('Optional callbacks', () => {
     it('works without onFinished', () => {
       const steps: ConfigStep[] = [
-        { description: 'Test', key: 'test', value: null },
+        {
+          description: 'Test',
+          key: 'test',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: false }} />;
@@ -169,7 +261,13 @@ describe('Config component interaction flows', () => {
       const onFinished = vi.fn();
       const onAborted = vi.fn();
       const steps: ConfigStep[] = [
-        { description: 'Test', key: 'test', value: null },
+        {
+          description: 'Test',
+          key: 'test',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
       ];
 
       const result = (
@@ -189,8 +287,20 @@ describe('Config component interaction flows', () => {
   describe('Edge cases', () => {
     it('handles steps with special characters in descriptions', () => {
       const steps: ConfigStep[] = [
-        { description: 'API Key (required)', key: 'apiKey', value: null },
-        { description: 'Model [optional]', key: 'model', value: null },
+        {
+          description: 'API Key (required)',
+          key: 'apiKey',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
+        {
+          description: 'Model [optional]',
+          key: 'model',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: false }} />;
@@ -201,7 +311,13 @@ describe('Config component interaction flows', () => {
 
     it('handles unicode characters in values', () => {
       const steps: ConfigStep[] = [
-        { description: 'Name', key: 'name', value: '你好世界 🌍' },
+        {
+          description: 'Name',
+          key: 'name',
+          type: StepType.Text,
+          value: '你好世界 🌍',
+          validate: mockValidate,
+        },
       ];
 
       const result = <Config steps={steps} state={{ done: false }} />;
