@@ -227,4 +227,140 @@ describe('Integration Tests', () => {
       ]);
     });
   });
+
+  describe('Introspect type tasks', () => {
+    it('processes introspection request', async () => {
+      mockService.setResponse('list your skills', [
+        {
+          action: 'List available capabilities',
+          type: TaskType.Introspect,
+        },
+      ]);
+
+      const result = await mockService.processWithTool(
+        'list your skills',
+        'plan'
+      );
+
+      expect(result.tasks).toEqual([
+        {
+          action: 'List available capabilities',
+          type: TaskType.Introspect,
+        },
+      ]);
+    });
+
+    it('processes introspection with filter', async () => {
+      mockService.setResponse('list skills for deployment', [
+        {
+          action: 'List deployment skills',
+          type: TaskType.Introspect,
+          params: { filter: 'deployment' },
+        },
+      ]);
+
+      const result = await mockService.processWithTool(
+        'list skills for deployment',
+        'plan'
+      );
+
+      expect(result.tasks).toEqual([
+        {
+          action: 'List deployment skills',
+          type: TaskType.Introspect,
+          params: { filter: 'deployment' },
+        },
+      ]);
+    });
+
+    it('processes "what can you do" query', async () => {
+      mockService.setResponse('what can you do', [
+        {
+          action: 'Show available capabilities',
+          type: TaskType.Introspect,
+        },
+      ]);
+
+      const result = await mockService.processWithTool(
+        'what can you do',
+        'plan'
+      );
+
+      expect(result.tasks).toEqual([
+        {
+          action: 'Show available capabilities',
+          type: TaskType.Introspect,
+        },
+      ]);
+    });
+
+    it('processes introspect execution with capabilities', async () => {
+      mockService.setResponse('execute introspection', [
+        {
+          action: 'PLAN: Break down requests into actionable steps',
+          type: TaskType.Introspect,
+        },
+        {
+          action: 'INTROSPECT: List and describe capabilities',
+          type: TaskType.Introspect,
+        },
+        {
+          action: 'ANSWER: Explain concepts and provide information',
+          type: TaskType.Introspect,
+        },
+        {
+          action: 'EXECUTE: Run shell commands and programs',
+          type: TaskType.Introspect,
+        },
+      ]);
+
+      const result = await mockService.processWithTool(
+        'execute introspection',
+        'introspect'
+      );
+
+      expect(result.tasks).toHaveLength(4);
+      expect(result.tasks[0].type).toBe(TaskType.Introspect);
+      expect(result.tasks[0].action).toContain('PLAN');
+      expect(result.tasks[1].action).toContain('INTROSPECT');
+      expect(result.tasks[2].action).toContain('ANSWER');
+      expect(result.tasks[3].action).toContain('EXECUTE');
+    });
+
+    it('processes "flex" synonym for introspection', async () => {
+      mockService.setResponse('flex', [
+        {
+          action: 'Show available capabilities',
+          type: TaskType.Introspect,
+        },
+      ]);
+
+      const result = await mockService.processWithTool('flex', 'plan');
+
+      expect(result.tasks).toEqual([
+        {
+          action: 'Show available capabilities',
+          type: TaskType.Introspect,
+        },
+      ]);
+    });
+
+    it('processes "show off" synonym for introspection', async () => {
+      mockService.setResponse('show off', [
+        {
+          action: 'Display capabilities and skills',
+          type: TaskType.Introspect,
+        },
+      ]);
+
+      const result = await mockService.processWithTool('show off', 'plan');
+
+      expect(result.tasks).toEqual([
+        {
+          action: 'Display capabilities and skills',
+          type: TaskType.Introspect,
+        },
+      ]);
+    });
+  });
 });

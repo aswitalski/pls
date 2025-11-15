@@ -150,6 +150,13 @@ and instruction file path containing the AI prompt. Tools register in
 are copied to `dist/config/` during build. This separation keeps prompts
 maintainable and allows dynamic loading at runtime.
 
+**Instruction file conventions:**
+- Use natural language descriptions in examples, not JSON snippets
+- Focus on explaining the expected behavior and output structure
+- Keep examples concise and readable for human understanding
+- Show all user-facing messages and prompts in lowercase to match the
+  conversational, casual tone of the interface
+
 #### Skills System
 
 Users extend the application with domain-specific workflows through skills.

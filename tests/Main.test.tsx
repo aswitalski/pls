@@ -246,5 +246,51 @@ describe('Main component queue-based architecture', () => {
       exitSpy.mockRestore();
       vi.restoreAllMocks();
     });
+
+    it('shows "I\'ve cancelled introspection" when aborting introspect-only plan', async () => {
+      const anthropicModule = await import('../src/services/anthropic.js');
+      const processModule = await import('../src/services/process.js');
+      const { Keys } = await import('./test-utils.js');
+
+      // Mock exitApp to prevent process.exit
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      // Mock service that returns a plan with only Introspect tasks
+      const mockService = {
+        processWithTool: vi.fn().mockResolvedValue({
+          message: 'Here are my capabilities:',
+          tasks: [
+            { action: 'PLAN: Break down requests', type: 'introspect' },
+            { action: 'EXECUTE: Run commands', type: 'introspect' },
+          ],
+        }),
+      };
+
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+        mockService as any
+      );
+
+      const { lastFrame, stdin } = render(
+        <Main app={mockApp} command="list your skills" />
+      );
+
+      // Wait for plan to appear
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      // Press Escape to abort
+      stdin.write(Keys.Escape);
+
+      // Wait for state update
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const output = lastFrame();
+      expect(output).toContain("I've cancelled introspection");
+
+      // Cleanup
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    });
   });
 });

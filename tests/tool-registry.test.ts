@@ -124,4 +124,35 @@ describe('Tool registry', () => {
       expect(registry.hasTool('nonexistent')).toBe(false);
     });
   });
+
+  describe('Built-in tools', () => {
+    it('has plan tool registered', () => {
+      expect(registry.hasTool('plan')).toBe(true);
+
+      const schema = registry.getSchema('plan');
+      expect(schema.name).toBe('plan');
+      expect(schema.description).toContain('Plan and structure tasks');
+    });
+
+    it('has introspect tool registered', () => {
+      expect(registry.hasTool('introspect')).toBe(true);
+
+      const schema = registry.getSchema('introspect');
+      expect(schema.name).toBe('introspect');
+      expect(schema.description).toContain('capabilities and skills');
+    });
+
+    it('can load plan instructions', () => {
+      const instructions = registry.getInstructions('plan');
+      expect(instructions).toBeTruthy();
+      expect(instructions).toContain('Overview');
+    });
+
+    it('can load introspect instructions', () => {
+      const instructions = registry.getInstructions('introspect');
+      expect(instructions).toBeTruthy();
+      expect(instructions).toContain('Overview');
+      expect(instructions).toContain('introspect');
+    });
+  });
 });

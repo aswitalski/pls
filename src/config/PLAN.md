@@ -230,16 +230,30 @@ Examples that should be aborted as offensive:
 
 **For requests with clear intent:**
 
-1. **Information requests** - Use "answer" type when request asks for
+1. **Introspection requests** - Use "introspect" type when request asks about
+   capabilities or skills:
+   - Verbs: "list skills", "show skills", "what can you do", "list
+     capabilities", "show capabilities", "what skills", "describe skills",
+     "flex", "show off"
+   - **Filtering**: If the request specifies a category, domain, or context
+     (e.g., "for deployment", "related to files", "about testing"), add a
+     params object with a filter field containing the specified context
+   - **IMPORTANT**: Introspection has HIGHER PRIORITY than "answer" for these
+     queries. If asking about capabilities/skills, use "introspect", NOT
+     "answer"
+
+2. **Information requests** - Use "answer" type when request asks for
    information:
    - Verbs: "explain", "answer", "describe", "tell me", "say", "what
      is", "how does"
    - Examples:
-     - "explain TypeScript" → type: "answer"
-     - "tell me about Docker" → type: "answer"
+     - "explain typescript" → type: "answer"
+     - "tell me about docker" → type: "answer"
      - "what is the current directory" → type: "answer"
+   - **Exception**: Questions about capabilities/skills should use
+     "introspect" instead
 
-2. **Skill-based requests** - Use skills when verb matches a defined skill:
+3. **Skill-based requests** - Use skills when verb matches a defined skill:
    - If "process" skill exists and user says "process" → Use the process skill
    - If "deploy" skill exists and user says "deploy" → Use the deploy skill
    - Extract steps from the matching skill and create tasks for each step
@@ -359,7 +373,10 @@ When creating task definitions, focus on:
   - `execute` - Shell commands, running programs, scripts, processing
     operations
   - `answer` - Answering questions, explaining concepts, providing
-    information
+    information (EXCEPT for capability/skill queries - use introspect)
+  - `introspect` - Listing available capabilities and skills when user
+    asks what the concierge can do. Include params { filter: "keyword" }
+    if user specifies a filter like "skills for deployment"
   - `report` - Generating summaries, creating reports, displaying
     results
   - `define` - Presenting skill-based options when request matches

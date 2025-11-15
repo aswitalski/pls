@@ -27,6 +27,7 @@ export const Colors = {
     Plan: '#5ccccc', // magenta
     Execute: '#5aaa8a', // green
     Answer: '#9c5ccc', // purple
+    Introspect: '#9c5ccc', // purple
     Report: '#cc9c5c', // orange
     Define: '#cc9c5c', // amber
     Ignore: '#cc7a5c', // dark orange
@@ -57,6 +58,10 @@ export const TaskColors: Record<
   [TaskType.Answer]: {
     description: Colors.Label.Default,
     type: Colors.Type.Answer,
+  },
+  [TaskType.Introspect]: {
+    description: Colors.Label.Default,
+    type: Colors.Type.Introspect,
   },
   [TaskType.Report]: {
     description: Colors.Label.Default,
