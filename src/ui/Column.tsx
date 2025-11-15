@@ -10,7 +10,7 @@ interface ColumnProps {
   debug: boolean;
 }
 
-export const Column: React.FC<ColumnProps> = ({ items, debug }) => {
+export const Column: React.FC<ColumnProps> = React.memo(({ items, debug }) => {
   return (
     <Box
       marginTop={1}
@@ -26,4 +26,4 @@ export const Column: React.FC<ColumnProps> = ({ items, debug }) => {
       ))}
     </Box>
   );
-};
+});

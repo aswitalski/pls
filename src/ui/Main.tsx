@@ -415,7 +415,10 @@ export const Main = ({ app, command }: MainProps) => {
   }, [queue, timeline]);
 
   const current = queue.length > 0 ? queue[0] : null;
-  const items = [...timeline, ...(current ? [current] : [])];
+  const items = React.useMemo(
+    () => [...timeline, ...(current ? [current] : [])],
+    [timeline, current]
+  );
 
   return <Column items={items} debug={isDebug} />;
 };
