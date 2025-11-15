@@ -17,7 +17,10 @@ interface ComponentProps {
   debug: boolean;
 }
 
-export function Component({ def, debug }: ComponentProps): React.ReactElement {
+export const Component = React.memo(function Component({
+  def,
+  debug,
+}: ComponentProps): React.ReactElement {
   switch (def.name) {
     case ComponentName.Welcome:
       return <Welcome {...def.props} />;
@@ -55,4 +58,4 @@ export function Component({ def, debug }: ComponentProps): React.ReactElement {
       return <Confirm {...props} state={state} />;
     }
   }
-}
+});
