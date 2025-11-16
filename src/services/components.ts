@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  Capability,
   ComponentDefinition,
   StatefulComponentDefinition,
 } from '../types/components.js';
@@ -169,6 +170,44 @@ export function createConfirmDefinition(
       message: getConfirmationMessage(),
       onConfirmed,
       onCancelled,
+    },
+  };
+}
+
+export function createIntrospectDefinition(
+  tasks: Task[],
+  service: AnthropicService,
+  onError: (error: string) => void,
+  onComplete: (message: string, capabilities: Capability[]) => void,
+  onAborted: () => void
+): ComponentDefinition {
+  return {
+    id: randomUUID(),
+    name: ComponentName.Introspect,
+    state: {
+      done: false,
+      isLoading: true,
+    },
+    props: {
+      tasks,
+      service,
+      onError,
+      onComplete,
+      onAborted,
+    },
+  };
+}
+
+export function createReportDefinition(
+  message: string,
+  capabilities: Capability[]
+): ComponentDefinition {
+  return {
+    id: randomUUID(),
+    name: ComponentName.Report,
+    props: {
+      message,
+      capabilities,
     },
   };
 }
