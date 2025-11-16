@@ -119,6 +119,12 @@ describe('Main component queue-based architecture', () => {
     it('shows confirmation after plan without Define tasks', async () => {
       const componentsModule = await import('../../src/services/components.js');
       const anthropicModule = await import('../../src/services/anthropic.js');
+      const processModule = await import('../../src/services/process.js');
+
+      // Mock exitApp to prevent process.exit
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
 
       // Mock service that returns a plan without Define tasks
       const mockService = {
@@ -147,6 +153,54 @@ describe('Main component queue-based architecture', () => {
       expect(confirmSpy).toHaveBeenCalled();
 
       // Cleanup
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    });
+
+    it('does not exit when showing confirmation', async () => {
+      const anthropicModule = await import('../../src/services/anthropic.js');
+      const processModule = await import('../../src/services/process.js');
+      const messagesModule = await import('../../src/services/messages.js');
+
+      // Mock confirmation message to make test deterministic
+      vi.spyOn(messagesModule, 'getConfirmationMessage').mockReturnValue(
+        'Test confirmation message'
+      );
+
+      // Mock exitApp to track if it's called
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      // Mock service that returns a plan without Define tasks
+      const mockService = {
+        processWithTool: vi.fn().mockResolvedValue({
+          message: 'Execute these tasks',
+          tasks: [
+            { action: 'Task 1', type: 'execute' },
+            { action: 'Task 2', type: 'execute' },
+          ],
+        }),
+      };
+
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+        mockService as any
+      );
+
+      const { lastFrame } = render(<Main app={mockApp} command="test task" />);
+
+      // Wait for async processing (Command MIN_PROCESSING_TIME + buffer)
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      // Verify the confirmation is shown in the output
+      const output = lastFrame();
+      expect(output).toContain('Test confirmation message');
+
+      // Verify exitApp was NOT called (app should wait for user input)
+      expect(exitSpy).not.toHaveBeenCalled();
+
+      // Cleanup
+      exitSpy.mockRestore();
       vi.restoreAllMocks();
     });
   });

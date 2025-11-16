@@ -12,7 +12,7 @@ import {
   AnthropicModel,
   isValidAnthropicApiKey,
   isValidAnthropicModel,
-} from './config.js';
+} from './configuration.js';
 import { getConfirmationMessage } from './messages.js';
 
 import { ConfigStep, StepType } from '../ui/Config.js';
@@ -99,7 +99,7 @@ export function createPlanDefinition(
   message: string,
   tasks: Task[],
   onAborted: () => void,
-  onSelectionConfirmed?: (tasks: Task[]) => void
+  onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>
 ): ComponentDefinition {
   return {
     id: randomUUID(),
