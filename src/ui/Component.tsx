@@ -7,9 +7,11 @@ import { Command } from './Command.js';
 import { Confirm } from './Confirm.js';
 import { Config } from './Config.js';
 import { Feedback } from './Feedback.js';
+import { Introspect } from './Introspect.js';
 import { Message } from './Message.js';
 import { Plan } from './Plan.js';
 import { Refinement } from './Refinement.js';
+import { Report } from './Report.js';
 import { Welcome } from './Welcome.js';
 
 interface ComponentProps {
@@ -57,5 +59,14 @@ export const Component = React.memo(function Component({
       const state = def.state;
       return <Confirm {...props} state={state} />;
     }
+
+    case ComponentName.Introspect: {
+      const props = def.props;
+      const state = def.state;
+      return <Introspect {...props} state={state} />;
+    }
+
+    case ComponentName.Report:
+      return <Report {...def.props} />;
   }
 });

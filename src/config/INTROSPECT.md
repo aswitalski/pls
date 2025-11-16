@@ -59,13 +59,13 @@ Present capabilities in two categories:
 
 These are the core operations available to all users:
 
-- **CONFIG**: Configuration changes, settings updates
-- **PLAN**: Plan and structure tasks from natural language requests, breaking
+- **Config**: Configuration changes, settings updates
+- **Plan**: Plan and structure tasks from natural language requests, breaking
   them down into clear, actionable steps
-- **INTROSPECT**: List and describe available capabilities and skills
-- **ANSWER**: Answer questions, explain concepts, provide information
-- **EXECUTE**: Run shell commands, execute programs, process operations
-- **REPORT**: Generate summaries, create reports, display results
+- **Introspect**: List and describe available capabilities and skills
+- **Answer**: Answer questions, explain concepts, provide information
+- **Execute**: Run shell commands, execute programs, process operations
+- **Report**: Generate summaries, create reports, display results
 
 ### 2. User-Defined Skills
 
@@ -82,15 +82,20 @@ in the response. For each skill:
 Create tasks with type "introspect" for each capability. Each task should:
 
 - **Action**: The capability name and a concise description
-  - Format: "CAPABILITY: Description"
+  - Format: "Capability Name: description" (note: display format will use " - " separator)
+  - **IMPORTANT**: Use title case for capability names (e.g., "Plan", "Execute"), NOT all uppercase (NOT "PLAN", "EXECUTE")
   - Examples:
-    - "PLAN: Break down requests into actionable steps"
-    - "EXECUTE: Run shell commands and process operations"
-    - "Deploy Application: Build and deploy to staging or production"
+    - "Plan: break down requests into actionable steps"
+    - "Execute: run shell commands and process operations"
+    - "Deploy Application: build and deploy to staging or production"
 - **Type**: Always use "introspect"
 - **Params**: Omit params field
 
-**Keep action descriptions concise, at most 64 characters.**
+**Keep action descriptions concise:**
+- Maximum 60 characters for the description portion (after the colon)
+- Focus on clarity and brevity
+- Describe the core purpose in one short phrase
+- Start descriptions with a lowercase letter (they follow a colon)
 
 ## Filtering
 
@@ -111,8 +116,8 @@ Examples:
 ### Example 1: List All Capabilities
 
 When user asks "list your skills", create an introductory message like "here
-are my capabilities:" followed by a task for each built-in capability: PLAN,
-INTROSPECT, ANSWER, EXECUTE, REPORT, and CONFIG. Each task uses type
+are my capabilities:" followed by a task for each built-in capability: Plan,
+Introspect, Answer, Execute, Report, and Config. Each task uses type
 "introspect" with an action describing the capability.
 
 ### Example 2: Filtered Skills

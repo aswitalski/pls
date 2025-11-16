@@ -44,6 +44,14 @@ workflows, the tool is designed for anyone comfortable with terminal interfaces
 who wants to delegate tasks using natural language rather than memorizing
 specific commands and syntax.
 
+#### Text Processing
+
+**IMPORTANT**: Do not process text locally in the application code. All text
+transformation, formatting, and generation MUST be done by the LLM via the
+system prompt. The application should only send raw information to the LLM and
+display the results as returned. This ensures consistency and leverages the
+LLM's natural language capabilities.
+
 ### Look and feel
 
 The terminal UI should be polished, intuitive, and visually appealing, drawing
@@ -249,6 +257,14 @@ early and maintains codebase health. For smaller changes during active
 development, the development mode provides automatic recompilation in watch
 mode.
 
+#### Testing philosophy
+
+Tests should focus on practical scenarios: parsing, rendering, formatting, and
+handling real data. Test what matters in production, not exhaustive edge cases.
+Write tests that validate real-world usage patterns and catch regressions in
+actual workflows. Avoid over-testing trivial code paths or theoretical scenarios
+that don't occur in practice.
+
 #### Commit messages
 
 Before creating a commit, ensure code quality:
@@ -410,3 +426,6 @@ sufficient.
 - .prettierrc: Formatting rules
 - .prettierignore: Excludes node_modules, dist, package-lock.json
 - eslint.config.js: Strict TypeScript linting rules with type-checking
+- There is an unnecessary empty line before the message (the first line replacing the loading message)
+and there should be one empty line between the list and the message).
+List built-in skills in blue and user-specified ones in green.

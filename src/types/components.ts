@@ -72,6 +72,27 @@ export interface CommandProps {
   onAborted: () => void;
 }
 
+export interface Capability {
+  name: string;
+  description: string;
+  isBuiltIn: boolean;
+}
+
+export interface ReportProps {
+  message: string;
+  capabilities: Capability[];
+}
+
+export interface IntrospectProps {
+  tasks: Task[];
+  state?: IntrospectState;
+  service?: AnthropicService;
+  children?: React.ReactNode;
+  onError?: (error: string) => void;
+  onComplete?: (message: string, capabilities: Capability[]) => void;
+  onAborted: () => void;
+}
+
 // Base state interface - all stateful components extend this
 export interface BaseState {
   done: boolean;
@@ -79,6 +100,11 @@ export interface BaseState {
 
 // Component-specific states
 export interface CommandState extends BaseState {
+  isLoading?: boolean;
+  error?: string;
+}
+
+export interface IntrospectState extends BaseState {
   isLoading?: boolean;
   error?: string;
 }
@@ -142,6 +168,12 @@ type ConfirmDefinition = StatefulDefinition<
   ConfirmProps,
   ConfirmState
 >;
+type IntrospectDefinition = StatefulDefinition<
+  ComponentName.Introspect,
+  IntrospectProps,
+  IntrospectState
+>;
+type ReportDefinition = StatelessDefinition<ComponentName.Report, ReportProps>;
 
 // Discriminated union of all component definitions
 export type ComponentDefinition =
@@ -152,7 +184,9 @@ export type ComponentDefinition =
   | RefinementDefinition
   | PlanDefinition
   | CommandDefinition
-  | ConfirmDefinition;
+  | ConfirmDefinition
+  | IntrospectDefinition
+  | ReportDefinition;
 
 // Union of all stateful component definitions
 export type StatefulComponentDefinition =
@@ -160,4 +194,5 @@ export type StatefulComponentDefinition =
   | RefinementDefinition
   | CommandDefinition
   | PlanDefinition
-  | ConfirmDefinition;
+  | ConfirmDefinition
+  | IntrospectDefinition;

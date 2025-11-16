@@ -237,7 +237,7 @@ Examples that should be aborted as offensive:
    capabilities or skills:
    - Verbs: "list skills", "show skills", "what can you do", "list
      capabilities", "show capabilities", "what skills", "describe skills",
-     "flex", "show off"
+     "introspect", "flex", "show off"
    - **Filtering**: If the request specifies a category, domain, or context
      (e.g., "for deployment", "related to files", "about testing"), add a
      params object with a filter field containing the specified context

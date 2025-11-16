@@ -2,6 +2,7 @@ import React from 'react';
 import { useInput } from 'ink';
 
 import {
+  Capability,
   ComponentDefinition,
   StatefulComponentDefinition,
 } from '../types/components.js';
@@ -35,9 +36,11 @@ import {
   createConfirmDefinition,
   createConfigDefinition,
   createFeedback,
+  createIntrospectDefinition,
   createMessage,
-  createRefinement,
   createPlanDefinition,
+  createRefinement,
+  createReportDefinition,
   createWelcomeDefinition,
   isStateless,
   markAsDone,
@@ -185,17 +188,107 @@ export const Main = ({ app, command }: MainProps) => {
     handleAborted('Plan refinement');
   }, [handleAborted]);
 
+  const handleIntrospectAborted = React.useCallback(() => {
+    handleAborted('Introspection');
+  }, [handleAborted]);
+
+  const handleIntrospectError = React.useCallback(
+    (error: string) => {
+      setQueue((currentQueue) => {
+        if (currentQueue.length === 0) return currentQueue;
+        const [first] = currentQueue;
+        if (first.name === ComponentName.Introspect) {
+          addToTimeline(
+            markAsDone(first as StatefulComponentDefinition),
+            createFeedback(
+              FeedbackType.Failed,
+              FeedbackMessages.UnexpectedError,
+              error
+            )
+          );
+        }
+        exitApp(1);
+        return [];
+      });
+    },
+    [addToTimeline]
+  );
+
+  const handleIntrospectComplete = React.useCallback(
+    (message: string, capabilities: Capability[]) => {
+      setQueue((currentQueue) => {
+        if (currentQueue.length === 0) return currentQueue;
+        const [first] = currentQueue;
+        if (first.name === ComponentName.Introspect) {
+          // Don't add the Introspect component to timeline (it renders null)
+          // Only add the Report component
+          addToTimeline(createReportDefinition(message, capabilities));
+        }
+        exitApp(0);
+        return [];
+      });
+    },
+    [addToTimeline]
+  );
+
   const handleExecutionConfirmed = React.useCallback(() => {
     setQueue((currentQueue) => {
       if (currentQueue.length === 0) return currentQueue;
       const [first] = currentQueue;
       if (first.name === ComponentName.Confirm) {
-        addToTimeline(markAsDone(first as StatefulComponentDefinition));
+        // Find the most recent Plan in timeline to get tasks
+        const currentTimeline = timelineRef.current;
+        const lastPlanIndex = [...currentTimeline]
+          .reverse()
+          .findIndex((item) => item.name === ComponentName.Plan);
+        const lastPlan =
+          lastPlanIndex >= 0
+            ? currentTimeline[currentTimeline.length - 1 - lastPlanIndex]
+            : null;
+
+        const tasks =
+          lastPlan &&
+          lastPlan.name === ComponentName.Plan &&
+          'props' in lastPlan &&
+          lastPlan.props &&
+          'tasks' in lastPlan.props &&
+          Array.isArray(lastPlan.props.tasks)
+            ? (lastPlan.props.tasks as Task[])
+            : [];
+
+        const allIntrospect = tasks.every(
+          (task) => task.type === TaskType.Introspect
+        );
+
+        if (allIntrospect && tasks.length > 0) {
+          // Execute introspection
+          addToTimeline(markAsDone(first as StatefulComponentDefinition));
+          return [
+            createIntrospectDefinition(
+              tasks,
+              service!,
+              handleIntrospectError,
+              handleIntrospectComplete,
+              handleIntrospectAborted
+            ),
+          ];
+        } else {
+          // Regular execution - just exit for now
+          addToTimeline(markAsDone(first as StatefulComponentDefinition));
+          exitApp(0);
+          return [];
+        }
       }
       exitApp(0);
       return [];
     });
-  }, [addToTimeline]);
+  }, [
+    addToTimeline,
+    service,
+    handleIntrospectError,
+    handleIntrospectComplete,
+    handleIntrospectAborted,
+  ]);
 
   const handleExecutionCancelled = React.useCallback(() => {
     setQueue((currentQueue) => {
