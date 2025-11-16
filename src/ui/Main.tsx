@@ -6,13 +6,7 @@ import {
   ComponentDefinition,
   StatefulComponentDefinition,
 } from '../types/components.js';
-import {
-  App,
-  ComponentName,
-  FeedbackType,
-  Task,
-  TaskType,
-} from '../types/types.js';
+import { App, FeedbackType, Task } from '../types/types.js';
 
 import {
   AnthropicService,
@@ -23,38 +17,50 @@ import {
   hasValidAnthropicKey,
   loadConfig,
   loadDebugSetting,
-  saveAnthropicConfig,
   saveDebugSetting,
-} from '../services/config.js';
+} from '../services/configuration.js';
+import { getCancellationMessage } from '../services/messages.js';
 import {
-  FeedbackMessages,
-  getCancellationMessage,
-  getRefiningMessage,
-} from '../services/messages.js';
-import {
-  createAnswerDefinition,
-  createAnswerDisplayDefinition,
   createCommandDefinition,
-  createConfirmDefinition,
   createConfigDefinition,
   createFeedback,
-  createIntrospectDefinition,
   createMessage,
-  createPlanDefinition,
-  createRefinement,
-  createReportDefinition,
   createWelcomeDefinition,
   isStateless,
   markAsDone,
 } from '../services/components.js';
 import { exitApp } from '../services/process.js';
 
-import { Column } from './Column.js';
+import {
+  createAnswerAbortedHandler,
+  createAnswerCompleteHandler,
+  createAnswerErrorHandler,
+} from '../handlers/answer.js';
+import {
+  createCommandAbortedHandler,
+  createCommandCompleteHandler,
+  createCommandErrorHandler,
+} from '../handlers/command.js';
+import {
+  createConfigAbortedHandler,
+  createConfigFinishedHandler,
+} from '../handlers/config.js';
+import {
+  createExecutionCancelledHandler,
+  createExecutionConfirmedHandler,
+} from '../handlers/execution.js';
+import {
+  createIntrospectAbortedHandler,
+  createIntrospectCompleteHandler,
+  createIntrospectErrorHandler,
+} from '../handlers/introspect.js';
+import {
+  createPlanAbortedHandler,
+  createPlanAbortHandlerFactory,
+  createPlanSelectionConfirmedHandler,
+} from '../handlers/plan.js';
 
-interface AnthropicConfig extends Record<string, string> {
-  key: string;
-  model: string;
-}
+import { Column } from './Column.js';
 
 interface MainProps {
   app: App;
@@ -119,24 +125,8 @@ export const Main = ({ app, command }: MainProps) => {
   }, [addToTimeline]);
 
   const handleCommandError = React.useCallback(
-    (error: string) => {
-      setQueue((currentQueue) => {
-        if (currentQueue.length === 0) return currentQueue;
-        const [first] = currentQueue;
-        if (first.name === ComponentName.Command) {
-          addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
-            createFeedback(
-              FeedbackType.Failed,
-              FeedbackMessages.UnexpectedError,
-              error
-            )
-          );
-        }
-        exitApp(1);
-        return [];
-      });
-    },
+    (error: string) =>
+      setQueue(createCommandErrorHandler(addToTimeline)(error)),
     [addToTimeline]
   );
 
@@ -161,326 +151,108 @@ export const Main = ({ app, command }: MainProps) => {
     [addToTimeline]
   );
 
-  const handleConfigAborted = React.useCallback(() => {
-    handleAborted('Configuration');
-  }, [handleAborted]);
+  const handleConfigAborted = React.useCallback(
+    createConfigAbortedHandler(handleAborted),
+    [handleAborted]
+  );
 
-  const handlePlanAborted = React.useCallback(() => {
-    handleAborted('Task selection');
-  }, [handleAborted]);
+  const handlePlanAborted = React.useCallback(
+    createPlanAbortedHandler(handleAborted),
+    [handleAborted]
+  );
 
   const createPlanAbortHandler = React.useCallback(
-    (tasks: Task[]) => {
-      const allIntrospect = tasks.every(
-        (task) => task.type === TaskType.Introspect
-      );
-      if (allIntrospect) {
-        return () => handleAborted('Introspection');
-      }
-      return handlePlanAborted;
-    },
+    createPlanAbortHandlerFactory(handleAborted, handlePlanAborted),
     [handleAborted, handlePlanAborted]
   );
 
-  const handleCommandAborted = React.useCallback(() => {
-    handleAborted('Request');
-  }, [handleAborted]);
+  const handleCommandAborted = React.useCallback(
+    createCommandAbortedHandler(handleAborted),
+    [handleAborted]
+  );
 
   const handleRefinementAborted = React.useCallback(() => {
     handleAborted('Plan refinement');
   }, [handleAborted]);
 
-  const handleIntrospectAborted = React.useCallback(() => {
-    handleAborted('Introspection');
-  }, [handleAborted]);
+  const handleIntrospectAborted = React.useCallback(
+    createIntrospectAbortedHandler(handleAborted),
+    [handleAborted]
+  );
 
   const handleIntrospectError = React.useCallback(
-    (error: string) => {
-      setQueue((currentQueue) => {
-        if (currentQueue.length === 0) return currentQueue;
-        const [first] = currentQueue;
-        if (first.name === ComponentName.Introspect) {
-          addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
-            createFeedback(
-              FeedbackType.Failed,
-              FeedbackMessages.UnexpectedError,
-              error
-            )
-          );
-        }
-        exitApp(1);
-        return [];
-      });
-    },
+    (error: string) =>
+      setQueue(createIntrospectErrorHandler(addToTimeline)(error)),
     [addToTimeline]
   );
 
   const handleIntrospectComplete = React.useCallback(
-    (message: string, capabilities: Capability[]) => {
-      setQueue((currentQueue) => {
-        if (currentQueue.length === 0) return currentQueue;
-        const [first] = currentQueue;
-        if (first.name === ComponentName.Introspect) {
-          // Don't add the Introspect component to timeline (it renders null)
-          // Only add the Report component
-          addToTimeline(createReportDefinition(message, capabilities));
-        }
-        exitApp(0);
-        return [];
-      });
-    },
+    (message: string, capabilities: Capability[]) =>
+      setQueue(
+        createIntrospectCompleteHandler(addToTimeline)(message, capabilities)
+      ),
     [addToTimeline]
   );
 
-  const handleAnswerAborted = React.useCallback(() => {
-    handleAborted('Answer');
-  }, [handleAborted]);
+  const handleAnswerAborted = React.useCallback(
+    createAnswerAbortedHandler(handleAborted),
+    [handleAborted]
+  );
 
   const handleAnswerError = React.useCallback(
-    (error: string) => {
-      setQueue((currentQueue) => {
-        if (currentQueue.length === 0) return currentQueue;
-        const [first] = currentQueue;
-        if (first.name === ComponentName.Answer) {
-          addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
-            createFeedback(
-              FeedbackType.Failed,
-              FeedbackMessages.UnexpectedError,
-              error
-            )
-          );
-        }
-        exitApp(1);
-        return [];
-      });
-    },
+    (error: string) => setQueue(createAnswerErrorHandler(addToTimeline)(error)),
     [addToTimeline]
   );
 
   const handleAnswerComplete = React.useCallback(
-    (answer: string) => {
-      setQueue((currentQueue) => {
-        if (currentQueue.length === 0) return currentQueue;
-        const [first] = currentQueue;
-        if (first.name === ComponentName.Answer) {
-          // Don't add the Answer component to timeline (it renders null)
-          // Only add the AnswerDisplay component
-          addToTimeline(createAnswerDisplayDefinition(answer));
-        }
-        exitApp(0);
-        return [];
-      });
-    },
+    (answer: string) =>
+      setQueue(createAnswerCompleteHandler(addToTimeline)(answer)),
     [addToTimeline]
   );
 
-  const handleExecutionConfirmed = React.useCallback(() => {
-    setQueue((currentQueue) => {
-      if (currentQueue.length === 0) return currentQueue;
-      const [first] = currentQueue;
-      if (first.name === ComponentName.Confirm) {
-        // Find the most recent Plan in timeline to get tasks
-        const currentTimeline = timelineRef.current;
-        const lastPlanIndex = [...currentTimeline]
-          .reverse()
-          .findIndex((item) => item.name === ComponentName.Plan);
-        const lastPlan =
-          lastPlanIndex >= 0
-            ? currentTimeline[currentTimeline.length - 1 - lastPlanIndex]
-            : null;
+  const handleExecutionConfirmed = React.useCallback(
+    () =>
+      setQueue(
+        createExecutionConfirmedHandler(
+          timelineRef,
+          addToTimeline,
+          service!,
+          handleIntrospectError,
+          handleIntrospectComplete,
+          handleIntrospectAborted,
+          handleAnswerError,
+          handleAnswerComplete,
+          handleAnswerAborted
+        )()
+      ),
+    [
+      addToTimeline,
+      service,
+      handleIntrospectError,
+      handleIntrospectComplete,
+      handleIntrospectAborted,
+      handleAnswerError,
+      handleAnswerComplete,
+      handleAnswerAborted,
+    ]
+  );
 
-        const tasks =
-          lastPlan &&
-          lastPlan.name === ComponentName.Plan &&
-          'props' in lastPlan &&
-          lastPlan.props &&
-          'tasks' in lastPlan.props &&
-          Array.isArray(lastPlan.props.tasks)
-            ? (lastPlan.props.tasks as Task[])
-            : [];
-
-        const allIntrospect = tasks.every(
-          (task) => task.type === TaskType.Introspect
-        );
-
-        const allAnswer = tasks.every((task) => task.type === TaskType.Answer);
-
-        if (allIntrospect && tasks.length > 0) {
-          // Execute introspection
-          addToTimeline(markAsDone(first as StatefulComponentDefinition));
-          return [
-            createIntrospectDefinition(
-              tasks,
-              service!,
-              handleIntrospectError,
-              handleIntrospectComplete,
-              handleIntrospectAborted
-            ),
-          ];
-        } else if (allAnswer && tasks.length > 0) {
-          // Execute answer - extract question from first task
-          const question = tasks[0].action;
-          addToTimeline(markAsDone(first as StatefulComponentDefinition));
-          return [
-            createAnswerDefinition(
-              question,
-              service!,
-              handleAnswerError,
-              handleAnswerComplete,
-              handleAnswerAborted
-            ),
-          ];
-        } else {
-          // Regular execution - just exit for now
-          addToTimeline(markAsDone(first as StatefulComponentDefinition));
-          exitApp(0);
-          return [];
-        }
-      }
-      exitApp(0);
-      return [];
-    });
-  }, [
-    addToTimeline,
-    service,
-    handleIntrospectError,
-    handleIntrospectComplete,
-    handleIntrospectAborted,
-    handleAnswerError,
-    handleAnswerComplete,
-    handleAnswerAborted,
-  ]);
-
-  const handleExecutionCancelled = React.useCallback(() => {
-    setQueue((currentQueue) => {
-      if (currentQueue.length === 0) return currentQueue;
-      const [first] = currentQueue;
-      if (first.name === ComponentName.Confirm) {
-        // Find the most recent Plan in timeline to check task types
-        const currentTimeline = timelineRef.current;
-        const lastPlanIndex = [...currentTimeline]
-          .reverse()
-          .findIndex((item) => item.name === ComponentName.Plan);
-        const lastPlan =
-          lastPlanIndex >= 0
-            ? currentTimeline[currentTimeline.length - 1 - lastPlanIndex]
-            : null;
-
-        const allIntrospect =
-          lastPlan &&
-          lastPlan.name === ComponentName.Plan &&
-          'props' in lastPlan &&
-          lastPlan.props &&
-          'tasks' in lastPlan.props &&
-          Array.isArray(lastPlan.props.tasks) &&
-          (lastPlan.props.tasks as Task[]).every(
-            (task) => task.type === TaskType.Introspect
-          );
-
-        const operation = allIntrospect ? 'introspection' : 'execution';
-
-        addToTimeline(
-          markAsDone(first as StatefulComponentDefinition),
-          createFeedback(
-            FeedbackType.Aborted,
-            getCancellationMessage(operation)
-          )
-        );
-      }
-      exitApp(0);
-      return [];
-    });
-  }, [addToTimeline]);
+  const handleExecutionCancelled = React.useCallback(
+    () =>
+      setQueue(createExecutionCancelledHandler(timelineRef, addToTimeline)()),
+    [addToTimeline]
+  );
 
   const handlePlanSelectionConfirmed = React.useCallback(
-    async (selectedTasks: Task[]) => {
-      // Mark current plan as done and add refinement to queue
-      let refinementDef: StatefulComponentDefinition | null = null;
-
-      refinementDef = createRefinement(
-        getRefiningMessage(),
-        handleRefinementAborted
-      ) as StatefulComponentDefinition;
-
-      setQueue((currentQueue) => {
-        if (currentQueue.length === 0) return currentQueue;
-        const [first] = currentQueue;
-        if (first.name === ComponentName.Plan) {
-          addToTimeline(markAsDone(first as StatefulComponentDefinition));
-        }
-        // Add refinement to queue so it becomes the active component
-        return [refinementDef!];
-      });
-
-      // Process refined command in background
-      try {
-        const refinedCommand = selectedTasks
-          .map((task) => {
-            const action = task.action.toLowerCase().replace(/,/g, ' -');
-            const type = task.type || 'execute';
-            return `${action} (type: ${type})`;
-          })
-          .join(', ');
-
-        const result = await service!.processWithTool(refinedCommand, 'plan');
-
-        // Mark refinement as done and move to timeline
-        setQueue((currentQueue) => {
-          if (
-            currentQueue.length > 0 &&
-            currentQueue[0].id === refinementDef!.id
-          ) {
-            addToTimeline(
-              markAsDone(currentQueue[0] as StatefulComponentDefinition)
-            );
-          }
-          return [];
-        });
-
-        // Show final execution plan with confirmation
-        const planDefinition = createPlanDefinition(
-          result.message,
-          result.tasks,
-          createPlanAbortHandler(result.tasks),
-          undefined
-        );
-
-        const confirmDefinition = createConfirmDefinition(
-          handleExecutionConfirmed,
-          handleExecutionCancelled
-        );
-
-        addToTimeline(planDefinition);
-        setQueue([confirmDefinition]);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error occurred';
-
-        // Mark refinement as done and move to timeline before showing error
-        setQueue((currentQueue) => {
-          if (
-            currentQueue.length > 0 &&
-            currentQueue[0].id === refinementDef!.id
-          ) {
-            addToTimeline(
-              markAsDone(currentQueue[0] as StatefulComponentDefinition)
-            );
-          }
-          return [];
-        });
-
-        addToTimeline(
-          createFeedback(
-            FeedbackType.Failed,
-            FeedbackMessages.UnexpectedError,
-            errorMessage
-          )
-        );
-        exitApp(1);
-      }
-    },
+    createPlanSelectionConfirmedHandler(
+      addToTimeline,
+      service!,
+      handleRefinementAborted,
+      createPlanAbortHandler,
+      handleExecutionConfirmed,
+      handleExecutionCancelled,
+      setQueue
+    ),
     [
       addToTimeline,
       service,
@@ -492,46 +264,16 @@ export const Main = ({ app, command }: MainProps) => {
   );
 
   const handleCommandComplete = React.useCallback(
-    (message: string, tasks: Task[]) => {
-      setQueue((currentQueue) => {
-        if (currentQueue.length === 0) return currentQueue;
-        const [first] = currentQueue;
-
-        // Check if tasks contain a Define task that requires user interaction
-        const hasDefineTask = tasks.some(
-          (task) => task.type === TaskType.Define
-        );
-
-        if (first.name === ComponentName.Command) {
-          const planDefinition = createPlanDefinition(
-            message,
-            tasks,
-            createPlanAbortHandler(tasks),
-            hasDefineTask ? handlePlanSelectionConfirmed : undefined
-          );
-
-          if (hasDefineTask) {
-            // Don't exit - keep the plan in the queue for interaction
-            addToTimeline(markAsDone(first as StatefulComponentDefinition));
-            return [planDefinition];
-          } else {
-            // No define task - show plan and confirmation
-            const confirmDefinition = createConfirmDefinition(
-              handleExecutionConfirmed,
-              handleExecutionCancelled
-            );
-            addToTimeline(
-              markAsDone(first as StatefulComponentDefinition),
-              planDefinition
-            );
-            return [confirmDefinition];
-          }
-        }
-
-        exitApp(0);
-        return [];
-      });
-    },
+    (message: string, tasks: Task[]) =>
+      setQueue(
+        createCommandCompleteHandler(
+          addToTimeline,
+          createPlanAbortHandler,
+          handlePlanSelectionConfirmed,
+          handleExecutionConfirmed,
+          handleExecutionCancelled
+        )(message, tasks)
+      ),
     [
       addToTimeline,
       createPlanAbortHandler,
@@ -542,46 +284,24 @@ export const Main = ({ app, command }: MainProps) => {
   );
 
   const handleConfigFinished = React.useCallback(
-    (config: Record<string, string>) => {
-      const anthropicConfig = config as AnthropicConfig;
-      saveAnthropicConfig(anthropicConfig);
-      const newService = createAnthropicService(anthropicConfig);
-      setService(newService);
-
-      // Complete config component and add command if present
-      setQueue((currentQueue) => {
-        if (currentQueue.length === 0) return currentQueue;
-        const [first, ...rest] = currentQueue;
-        if (first.name === ComponentName.Config) {
-          addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
-            createFeedback(
-              FeedbackType.Succeeded,
-              FeedbackMessages.ConfigurationComplete
-            )
-          );
-        }
-
-        // Add command to queue if we have one
-        if (command) {
-          return [
-            ...rest,
-            createCommandDefinition(
-              command,
-              newService,
-              handleCommandError,
-              handleCommandComplete,
-              handleCommandAborted
-            ),
-          ];
-        }
-
-        // No command - exit after showing completion message
-        exitApp(0);
-        return rest;
-      });
-    },
-    [addToTimeline, command, handleCommandError, handleCommandComplete]
+    (config: Record<string, string>) =>
+      setQueue(
+        createConfigFinishedHandler(
+          addToTimeline,
+          command,
+          handleCommandError,
+          handleCommandComplete,
+          handleCommandAborted,
+          setService
+        )(config)
+      ),
+    [
+      addToTimeline,
+      command,
+      handleCommandError,
+      handleCommandComplete,
+      handleCommandAborted,
+    ]
   );
 
   // Initialize queue on mount

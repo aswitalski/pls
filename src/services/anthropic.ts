@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 import type { Task } from '../types/types.js';
 
-import { AnthropicConfig } from './config.js';
+import { AnthropicConfig } from './configuration.js';
 import { formatSkillsForPrompt, loadSkills } from './skills.js';
 import { toolRegistry } from './tool-registry.js';
 

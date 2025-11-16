@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   hasValidAnthropicKey,
   saveAnthropicConfig,
-} from '../../src/services/config.js';
+} from '../../src/services/configuration.js';
 
 import { safeRemoveDirectory } from '../test-utils.js';
 

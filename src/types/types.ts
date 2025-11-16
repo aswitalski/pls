@@ -41,6 +41,8 @@ export enum FeedbackType {
   Failed = 'failed',
 }
 
+export type ExitCode = 0 | 1;
+
 // Structured task definition for tool-based planning
 export interface Task {
   action: string;

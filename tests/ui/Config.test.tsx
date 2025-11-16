@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { AnthropicModel } from '../../src/services/config.js';
+import { AnthropicModel } from '../../src/services/configuration.js';
 
 import { Config, ConfigStep, StepType } from '../../src/ui/Config.js';
 import { Keys } from '../test-utils.js';

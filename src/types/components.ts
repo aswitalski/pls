@@ -51,7 +51,7 @@ export interface PlanProps {
   tasks: Task[];
   state?: PlanState;
   debug?: boolean;
-  onSelectionConfirmed?: (tasks: Task[]) => void;
+  onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>;
   onAborted: () => void;
 }
 
