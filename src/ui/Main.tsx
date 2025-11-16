@@ -32,6 +32,8 @@ import {
   getRefiningMessage,
 } from '../services/messages.js';
 import {
+  createAnswerDefinition,
+  createAnswerDisplayDefinition,
   createCommandDefinition,
   createConfirmDefinition,
   createConfigDefinition,
@@ -231,6 +233,49 @@ export const Main = ({ app, command }: MainProps) => {
     [addToTimeline]
   );
 
+  const handleAnswerAborted = React.useCallback(() => {
+    handleAborted('Answer');
+  }, [handleAborted]);
+
+  const handleAnswerError = React.useCallback(
+    (error: string) => {
+      setQueue((currentQueue) => {
+        if (currentQueue.length === 0) return currentQueue;
+        const [first] = currentQueue;
+        if (first.name === ComponentName.Answer) {
+          addToTimeline(
+            markAsDone(first as StatefulComponentDefinition),
+            createFeedback(
+              FeedbackType.Failed,
+              FeedbackMessages.UnexpectedError,
+              error
+            )
+          );
+        }
+        exitApp(1);
+        return [];
+      });
+    },
+    [addToTimeline]
+  );
+
+  const handleAnswerComplete = React.useCallback(
+    (answer: string) => {
+      setQueue((currentQueue) => {
+        if (currentQueue.length === 0) return currentQueue;
+        const [first] = currentQueue;
+        if (first.name === ComponentName.Answer) {
+          // Don't add the Answer component to timeline (it renders null)
+          // Only add the AnswerDisplay component
+          addToTimeline(createAnswerDisplayDefinition(answer));
+        }
+        exitApp(0);
+        return [];
+      });
+    },
+    [addToTimeline]
+  );
+
   const handleExecutionConfirmed = React.useCallback(() => {
     setQueue((currentQueue) => {
       if (currentQueue.length === 0) return currentQueue;
@@ -260,6 +305,8 @@ export const Main = ({ app, command }: MainProps) => {
           (task) => task.type === TaskType.Introspect
         );
 
+        const allAnswer = tasks.every((task) => task.type === TaskType.Answer);
+
         if (allIntrospect && tasks.length > 0) {
           // Execute introspection
           addToTimeline(markAsDone(first as StatefulComponentDefinition));
@@ -270,6 +317,19 @@ export const Main = ({ app, command }: MainProps) => {
               handleIntrospectError,
               handleIntrospectComplete,
               handleIntrospectAborted
+            ),
+          ];
+        } else if (allAnswer && tasks.length > 0) {
+          // Execute answer - extract question from first task
+          const question = tasks[0].action;
+          addToTimeline(markAsDone(first as StatefulComponentDefinition));
+          return [
+            createAnswerDefinition(
+              question,
+              service!,
+              handleAnswerError,
+              handleAnswerComplete,
+              handleAnswerAborted
             ),
           ];
         } else {
@@ -288,6 +348,9 @@ export const Main = ({ app, command }: MainProps) => {
     handleIntrospectError,
     handleIntrospectComplete,
     handleIntrospectAborted,
+    handleAnswerError,
+    handleAnswerComplete,
+    handleAnswerAborted,
   ]);
 
   const handleExecutionCancelled = React.useCallback(() => {

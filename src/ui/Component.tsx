@@ -3,6 +3,8 @@ import React from 'react';
 import { ComponentDefinition } from '../types/components.js';
 import { ComponentName } from '../types/types.js';
 
+import { Answer } from './Answer.js';
+import { AnswerDisplay } from './AnswerDisplay.js';
 import { Command } from './Command.js';
 import { Confirm } from './Confirm.js';
 import { Config } from './Config.js';
@@ -68,5 +70,14 @@ export const Component = React.memo(function Component({
 
     case ComponentName.Report:
       return <Report {...def.props} />;
+
+    case ComponentName.Answer: {
+      const props = def.props;
+      const state = def.state;
+      return <Answer {...props} state={state} />;
+    }
+
+    case ComponentName.AnswerDisplay:
+      return <AnswerDisplay {...def.props} />;
   }
 });

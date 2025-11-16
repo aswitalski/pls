@@ -1,5 +1,10 @@
 import { existsSync, rmSync } from 'fs';
 
+import type { Capability } from '../src/types/components.js';
+import type { Task } from '../src/types/types.js';
+
+import type { LLMService } from '../src/services/anthropic.js';
+
 /**
  * Test input key constants for stdin.write()
  *
@@ -15,6 +20,36 @@ export const Keys = {
   ArrowLeft: '\x1B[D',
   ArrowRight: '\x1B[C',
 } as const;
+
+/**
+ * Creates a mock LLM service for testing.
+ *
+ * @param result - The result to return from processWithTool
+ * @param error - Optional error to throw instead of returning result
+ * @returns A mock LLMService instance
+ */
+export function createMockAnthropicService(
+  result: {
+    message?: string;
+    tasks?: Task[];
+    capabilities?: Capability[];
+    answer?: string;
+  },
+  error?: Error
+): LLMService {
+  return {
+    processWithTool: () => {
+      if (error) {
+        return Promise.reject(error);
+      }
+      return Promise.resolve({
+        message: result.message || '',
+        tasks: result.tasks || [],
+        answer: result.answer,
+      });
+    },
+  };
+}
 
 /**
  * Safely removes a directory with retry logic and error handling.

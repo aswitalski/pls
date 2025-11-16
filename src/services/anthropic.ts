@@ -10,6 +10,7 @@ export interface CommandResult {
   message: string;
   tasks: Task[];
   systemPrompt?: string;
+  answer?: string;
 }
 
 export interface LLMService {
@@ -69,9 +70,39 @@ export class AnthropicService implements LLMService {
     }
     const content = response.content[0];
 
-    // Extract and validate message and tasks
-    const input = content.input as { message?: string; tasks?: Task[] };
+    // Extract and validate response based on tool type
+    const input = content.input as {
+      message?: string;
+      tasks?: Task[];
+      question?: string;
+      answer?: string;
+    };
 
+    const isDebug = process.env.DEBUG === 'true';
+
+    // Handle answer tool response
+    if (toolName === 'answer') {
+      if (!input.question || typeof input.question !== 'string') {
+        throw new Error(
+          'Invalid tool response: missing or invalid question field'
+        );
+      }
+
+      if (!input.answer || typeof input.answer !== 'string') {
+        throw new Error(
+          'Invalid tool response: missing or invalid answer field'
+        );
+      }
+
+      return {
+        message: '',
+        tasks: [],
+        answer: input.answer,
+        systemPrompt: isDebug ? systemPrompt : undefined,
+      };
+    }
+
+    // Handle plan and introspect tool responses
     if (!input.message || typeof input.message !== 'string') {
       throw new Error(
         'Invalid tool response: missing or invalid message field'
@@ -91,7 +122,6 @@ export class AnthropicService implements LLMService {
       }
     });
 
-    const isDebug = process.env.DEBUG === 'true';
     return {
       message: input.message,
       tasks: input.tasks,

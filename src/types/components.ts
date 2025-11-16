@@ -2,7 +2,7 @@ import React from 'react';
 
 import { App, ComponentName, FeedbackType, Task } from './types.js';
 
-import { AnthropicService } from '../services/anthropic.js';
+import { LLMService } from '../services/anthropic.js';
 
 import { ConfigStep } from '../ui/Config.js';
 
@@ -64,7 +64,7 @@ export interface PlanState extends BaseState {
 export interface CommandProps {
   command: string;
   state?: CommandState;
-  service?: AnthropicService;
+  service?: LLMService;
   error?: string;
   children?: React.ReactNode;
   onError?: (error: string) => void;
@@ -86,11 +86,24 @@ export interface ReportProps {
 export interface IntrospectProps {
   tasks: Task[];
   state?: IntrospectState;
-  service?: AnthropicService;
+  service?: LLMService;
   children?: React.ReactNode;
   onError?: (error: string) => void;
   onComplete?: (message: string, capabilities: Capability[]) => void;
   onAborted: () => void;
+}
+
+export interface AnswerProps {
+  question: string;
+  state?: AnswerState;
+  service?: LLMService;
+  onError?: (error: string) => void;
+  onComplete?: (answer: string) => void;
+  onAborted: () => void;
+}
+
+export interface AnswerDisplayProps {
+  answer: string;
 }
 
 // Base state interface - all stateful components extend this
@@ -105,6 +118,11 @@ export interface CommandState extends BaseState {
 }
 
 export interface IntrospectState extends BaseState {
+  isLoading?: boolean;
+  error?: string;
+}
+
+export interface AnswerState extends BaseState {
   isLoading?: boolean;
   error?: string;
 }
@@ -174,6 +192,15 @@ type IntrospectDefinition = StatefulDefinition<
   IntrospectState
 >;
 type ReportDefinition = StatelessDefinition<ComponentName.Report, ReportProps>;
+type AnswerDefinition = StatefulDefinition<
+  ComponentName.Answer,
+  AnswerProps,
+  AnswerState
+>;
+type AnswerDisplayDefinition = StatelessDefinition<
+  ComponentName.AnswerDisplay,
+  AnswerDisplayProps
+>;
 
 // Discriminated union of all component definitions
 export type ComponentDefinition =
@@ -186,7 +213,9 @@ export type ComponentDefinition =
   | CommandDefinition
   | ConfirmDefinition
   | IntrospectDefinition
-  | ReportDefinition;
+  | ReportDefinition
+  | AnswerDefinition
+  | AnswerDisplayDefinition;
 
 // Union of all stateful component definitions
 export type StatefulComponentDefinition =
@@ -195,4 +224,5 @@ export type StatefulComponentDefinition =
   | CommandDefinition
   | PlanDefinition
   | ConfirmDefinition
-  | IntrospectDefinition;
+  | IntrospectDefinition
+  | AnswerDefinition;
