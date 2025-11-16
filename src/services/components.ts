@@ -7,7 +7,7 @@ import {
 } from '../types/components.js';
 import { App, ComponentName, FeedbackType, Task } from '../types/types.js';
 
-import { AnthropicService } from './anthropic.js';
+import { LLMService } from './anthropic.js';
 import {
   AnthropicModel,
   isValidAnthropicApiKey,
@@ -73,7 +73,7 @@ export function createConfigDefinition(
 
 export function createCommandDefinition(
   command: string,
-  service: AnthropicService,
+  service: LLMService,
   onError: (error: string) => void,
   onComplete: (message: string, tasks: Task[]) => void,
   onAborted: () => void
@@ -176,7 +176,7 @@ export function createConfirmDefinition(
 
 export function createIntrospectDefinition(
   tasks: Task[],
-  service: AnthropicService,
+  service: LLMService,
   onError: (error: string) => void,
   onComplete: (message: string, capabilities: Capability[]) => void,
   onAborted: () => void
@@ -208,6 +208,42 @@ export function createReportDefinition(
     props: {
       message,
       capabilities,
+    },
+  };
+}
+
+export function createAnswerDefinition(
+  question: string,
+  service: LLMService,
+  onError: (error: string) => void,
+  onComplete: (answer: string) => void,
+  onAborted: () => void
+): ComponentDefinition {
+  return {
+    id: randomUUID(),
+    name: ComponentName.Answer,
+    state: {
+      done: false,
+      isLoading: true,
+    },
+    props: {
+      question,
+      service,
+      onError,
+      onComplete,
+      onAborted,
+    },
+  };
+}
+
+export function createAnswerDisplayDefinition(
+  answer: string
+): ComponentDefinition {
+  return {
+    id: randomUUID(),
+    name: ComponentName.AnswerDisplay,
+    props: {
+      answer,
     },
   };
 }

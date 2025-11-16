@@ -17,6 +17,8 @@ export enum ComponentName {
   Confirm = 'confirm',
   Introspect = 'introspect',
   Report = 'report',
+  Answer = 'answer',
+  AnswerDisplay = 'answerDisplay',
 }
 
 export enum TaskType {

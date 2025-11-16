@@ -248,11 +248,32 @@ Examples that should be aborted as offensive:
 2. **Information requests** - Use "answer" type when request asks for
    information:
    - Verbs: "explain", "answer", "describe", "tell me", "say", "what
-     is", "how does"
-   - Examples:
-     - "explain typescript" → type: "answer"
-     - "tell me about docker" → type: "answer"
-     - "what is the current directory" → type: "answer"
+     is", "how does", "find", "search", "lookup"
+   - **CRITICAL**: The action field MUST contain a COMPLETE, SPECIFIC question
+     that can be answered definitively with web search
+   - **Be extremely clear and specific** - phrase the question so there is NO
+     ambiguity about what information is being requested
+   - **Include all context** - product names, versions, locations, timeframes
+   - **If ambiguous, use "define" type instead** - let user choose the specific
+     interpretation before creating the answer task
+   - Examples of CLEAR answer tasks:
+     - "what is typescript" → action: "What is TypeScript?"
+     - "find price of samsung the frame 55 inch" → action: "What is the current
+       retail price of the Samsung The Frame 55 inch TV?"
+     - "show apple stock price" → action: "What is the current stock price of
+       Apple Inc. (AAPL)?"
+     - "tell me about docker" → action: "What is Docker and what is it used
+       for?"
+   - Examples of AMBIGUOUS requests that need "define" type:
+     - "explain x" (unclear what x means) → Create "define" with options:
+       ["Explain the letter X", "Explain X.com platform", "Explain X in
+       mathematics"]
+     - "find price of frame" (which frame?) → Create "define" with options:
+       ["Find price of Samsung The Frame TV", "Find price of picture frames",
+       "Find price of Frame.io subscription"]
+     - "show python version" (which python?) → Create "define" with options:
+       ["Show Python programming language latest version", "Show installed
+       Python version on this system"]
    - **Exception**: Questions about capabilities/skills should use
      "introspect" instead
 
