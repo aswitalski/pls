@@ -1,9 +1,13 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import { Label } from './Label.js';
+import { Separator } from './Separator.js';
 
-type ColoredText = { text: string; color: string; highlightedColor?: string };
+type ColoredText = {
+  text: string;
+  color: string | undefined;
+  highlightedColor?: string | undefined;
+};
 
 interface ListItem {
   description: ColoredText;
@@ -63,13 +67,13 @@ export const List: React.FC<ListProps> = ({
           <Box key={index} flexDirection="column">
             <Box>
               <Text color={markerColor}>{marker}</Text>
-              <Label
-                description={item.description.text}
-                descriptionColor={descriptionColor}
-                type={item.type.text}
-                typeColor={typeColor}
-                showType={showType}
-              />
+              <Text color={descriptionColor}>{item.description.text}</Text>
+              {showType && (
+                <>
+                  <Separator />
+                  <Text color={typeColor}>{item.type.text}</Text>
+                </>
+              )}
             </Box>
             {item.children && item.children.length > 0 && (
               <List

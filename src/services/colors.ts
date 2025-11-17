@@ -1,10 +1,14 @@
-import { FeedbackType, TaskType } from './types.js';
+import { FeedbackType, TaskType } from '../types/types.js';
 
 /**
  * Semantic color palette - colors organized by their purpose/meaning.
  * Prefer adding semantic names here rather than to DescriptiveColors.
  */
 export const Colors = {
+  Text: {
+    Active: '#ffffff', // white
+    Inactive: '#d0d0d0', // ash gray
+  },
   Action: {
     Execute: '#5aaa8a', // green
     Discard: '#a85c3f', // dark orange
@@ -17,7 +21,7 @@ export const Colors = {
     Info: '#5c9ccc', // cyan
   },
   Label: {
-    Default: '#ffffff', // white
+    Default: null, // replaced with active or inactive
     Inactive: '#888888', // gray
     Discarded: '#666666', // dark gray
     Skipped: '#cccc5c', // yellow
@@ -37,11 +41,11 @@ export const Colors = {
 } as const;
 
 /**
- * Task-specific color mappings
+ * Task-specific color mappings (internal)
  */
-export const TaskColors: Record<
+const TaskColors: Record<
   TaskType,
-  { description: string; type: string }
+  { description: string | null; type: string | null }
 > = {
   [TaskType.Config]: {
     description: Colors.Label.Default,
@@ -86,11 +90,73 @@ export const TaskColors: Record<
 } as const;
 
 /**
- * Feedback-specific color mappings
+ * Feedback-specific color mappings (internal)
  */
-export const FeedbackColors: Record<FeedbackType, string> = {
+const FeedbackColors: Record<FeedbackType, string | null> = {
   [FeedbackType.Info]: Colors.Status.Info,
   [FeedbackType.Succeeded]: Colors.Status.Success,
   [FeedbackType.Aborted]: Colors.Status.Warning,
   [FeedbackType.Failed]: Colors.Status.Error,
 } as const;
+
+/**
+ * Process null color values based on current/historical state.
+ *
+ * Replaces null with:
+ * - Colors.Text.Active for current items
+ * - Colors.Text.Inactive (undefined) for historical items
+ */
+function processColor(
+  color: string | null,
+  isCurrent: boolean
+): string | undefined {
+  return color === null
+    ? isCurrent
+      ? Colors.Text.Active
+      : Colors.Text.Inactive
+    : color;
+}
+
+/**
+ * Get task colors with current/historical state handling.
+ *
+ * Processes null color values (terminal default) and replaces them with:
+ * - Colors.Text.Inactive (undefined) for historical items
+ * - Colors.Text.Active for current items
+ */
+export function getTaskColors(
+  type: TaskType,
+  isCurrent: boolean
+): { description: string | undefined; type: string | undefined } {
+  const colors = TaskColors[type];
+
+  return {
+    description: processColor(colors.description, isCurrent),
+    type: processColor(colors.type, isCurrent),
+  };
+}
+
+/**
+ * Get feedback color with current/historical state handling.
+ *
+ * Processes null color values (terminal default) and replaces them with:
+ * - Colors.Text.Inactive (undefined) for historical items
+ * - Colors.Text.Active for current items
+ */
+export function getFeedbackColor(
+  type: FeedbackType,
+  isCurrent: boolean
+): string | undefined {
+  return processColor(FeedbackColors[type], isCurrent);
+}
+
+/**
+ * Get text color based on current/historical state.
+ *
+ * Returns:
+ * - Colors.Text.Active for current items
+ * - Colors.Text.Inactive for historical items
+ */
+export function getTextColor(isCurrent: boolean): string {
+  return isCurrent ? Colors.Text.Active : Colors.Text.Inactive;
+}

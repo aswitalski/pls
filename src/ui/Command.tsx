@@ -3,6 +3,8 @@ import { Box, Text, useInput } from 'ink';
 
 import { CommandProps } from '../types/components.js';
 
+import { getTextColor } from '../services/colors.js';
+
 import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000; // purely for visual effect
@@ -85,10 +87,12 @@ export function Command({
     };
   }, [command, done, service]);
 
+  const isCurrent = done === false;
+
   return (
     <Box alignSelf="flex-start" flexDirection="column">
       <Box>
-        <Text color="gray">&gt; pls {command}</Text>
+        <Text color={getTextColor(isCurrent)}>&gt; pls {command}</Text>
         {isLoading && (
           <>
             <Text> </Text>

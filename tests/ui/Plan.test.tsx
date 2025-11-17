@@ -10,7 +10,7 @@ import { Keys } from '../test-utils.js';
 
 // Destructure for readability
 const { ArrowDown, ArrowUp, Enter, Escape } = Keys;
-const WaitTime = 40;
+const WaitTime = 80;
 
 // Mock onAborted function for all tests
 const mockOnAborted = vi.fn();

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text } from 'ink';
 
-import { Colors } from '../types/colors.js';
+import { Colors } from '../services/colors.js';
 
 interface SeparatorProps {
   color?: string;

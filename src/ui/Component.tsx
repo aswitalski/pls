@@ -41,8 +41,11 @@ export const Component = React.memo(function Component({
       return <Command {...props} state={state} />;
     }
 
-    case ComponentName.Plan:
-      return <Plan {...def.props} debug={debug} />;
+    case ComponentName.Plan: {
+      const props = def.props;
+      const state = def.state;
+      return <Plan {...props} state={state} debug={debug} />;
+    }
 
     case ComponentName.Feedback:
       return <Feedback {...def.props} />;

@@ -3,6 +3,8 @@ import { Box, Text, useInput } from 'ink';
 
 import { AnswerProps } from '../types/components.js';
 
+import { getTextColor } from '../services/colors.js';
+
 import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000;
@@ -16,6 +18,7 @@ export function Answer({
   onAborted,
 }: AnswerProps) {
   const done = state?.done ?? false;
+  const isCurrent = done === false;
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
 
@@ -96,7 +99,7 @@ export function Answer({
     <Box alignSelf="flex-start" flexDirection="column">
       {isLoading && (
         <Box>
-          <Text>Finding answer. </Text>
+          <Text color={getTextColor(isCurrent)}>Finding answer. </Text>
           <Spinner />
         </Box>
       )}
