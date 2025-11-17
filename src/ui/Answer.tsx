@@ -7,7 +7,7 @@ import { getTextColor } from '../services/colors.js';
 
 import { Spinner } from './Spinner.js';
 
-const MIN_PROCESSING_TIME = 1000;
+const MinimumProcessingTime = 400;
 
 export function Answer({
   question,
@@ -54,7 +54,7 @@ export function Answer({
         // Call answer tool
         const result = await svc!.processWithTool(question, 'answer');
         const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
+        const remainingTime = Math.max(0, MinimumProcessingTime - elapsed);
 
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
 
@@ -66,7 +66,7 @@ export function Answer({
         }
       } catch (err) {
         const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
+        const remainingTime = Math.max(0, MinimumProcessingTime - elapsed);
 
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
 

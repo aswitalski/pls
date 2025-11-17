@@ -160,7 +160,7 @@ describe('Answer component', () => {
     );
 
     const elapsed = Date.now() - startTime;
-    // Should take at least 1000ms (MIN_PROCESSING_TIME)
-    expect(elapsed).toBeGreaterThanOrEqual(1000);
+    // Should take at least 400ms (MinimumProcessingTime)
+    expect(elapsed).toBeGreaterThanOrEqual(400);
   });
 });
