@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Text, useFocus, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 
-import { Colors } from '../types/colors.js';
+import { Colors } from '../services/colors.js';
 
 export enum StepType {
   Text = 'text',

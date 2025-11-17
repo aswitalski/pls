@@ -1,6 +1,6 @@
 import { Box, Text } from 'ink';
 
-import { FeedbackColors } from '../types/colors.js';
+import { getFeedbackColor } from '../services/colors.js';
 import { FeedbackProps } from '../types/components.js';
 import { FeedbackType } from '../types/types.js';
 
@@ -14,7 +14,7 @@ function getSymbol(type: FeedbackType): string {
 }
 
 export function Feedback({ type, message }: FeedbackProps) {
-  const color = FeedbackColors[type];
+  const color = getFeedbackColor(type, false);
   const symbol = getSymbol(type);
 
   return (

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 
-import { TaskColors } from '../types/colors.js';
 import { PlanProps } from '../types/components.js';
 import { Task, TaskType } from '../types/types.js';
+import { getTaskColors } from '../services/colors.js';
 
 import { Label } from './Label.js';
 import { List } from './List.js';
@@ -11,30 +11,33 @@ import { List } from './List.js';
 function taskToListItem(
   task: Task,
   highlightedChildIndex: number | null = null,
-  isDefineTaskWithoutSelection: boolean = false
+  isDefineTaskWithoutSelection: boolean = false,
+  isCurrent: boolean = false
 ) {
+  const taskColors = getTaskColors(task.type, isCurrent);
+
   const item: {
-    description: { text: string; color: string };
-    type: { text: string; color: string };
+    description: { text: string; color: string | undefined };
+    type: { text: string; color: string | undefined };
     children: {
-      description: { text: string; color: string };
-      type: { text: string; color: string };
+      description: { text: string; color: string | undefined };
+      type: { text: string; color: string | undefined };
     }[];
     marker?: string;
     markerColor?: string;
   } = {
     description: {
       text: task.action,
-      color: TaskColors[task.type].description,
+      color: taskColors.description,
     },
-    type: { text: task.type, color: TaskColors[task.type].type },
+    type: { text: task.type, color: taskColors.type },
     children: [],
   };
 
   // Mark define tasks with right arrow when no selection has been made
   if (isDefineTaskWithoutSelection) {
     item.marker = '  → ';
-    item.markerColor = TaskColors[TaskType.Plan].type;
+    item.markerColor = getTaskColors(TaskType.Plan, isCurrent).type;
   }
 
   // Add children for Define tasks with options
@@ -48,17 +51,18 @@ function taskToListItem(
           index === highlightedChildIndex ? TaskType.Execute : TaskType.Discard;
       }
 
-      const colors = TaskColors[childType];
+      const colors = getTaskColors(childType, isCurrent);
+      const planColors = getTaskColors(TaskType.Plan, isCurrent);
       return {
         description: {
           text: String(option),
           color: colors.description,
-          highlightedColor: TaskColors[TaskType.Plan].description,
+          highlightedColor: planColors.description,
         },
         type: {
           text: childType,
           color: colors.type,
-          highlightedColor: TaskColors[TaskType.Plan].type,
+          highlightedColor: planColors.type,
         },
       };
     });
@@ -195,6 +199,8 @@ export function Plan({
     state,
   ]);
 
+  const isCurrent = isDone === false;
+
   const listItems = tasks.map((task, idx) => {
     // Find which define group this task belongs to (if any)
     const defineGroupIndex = defineTaskIndices.indexOf(idx);
@@ -224,7 +230,12 @@ export function Plan({
       highlightedIndex === null &&
       !isDone;
 
-    return taskToListItem(task, childIndex, isDefineWithoutSelection);
+    return taskToListItem(
+      task,
+      childIndex,
+      isDefineWithoutSelection,
+      isCurrent
+    );
   });
 
   return (
@@ -233,10 +244,9 @@ export function Plan({
         <Box marginBottom={1}>
           <Label
             description={message}
-            descriptionColor={TaskColors[TaskType.Plan].description}
-            type={TaskType.Plan}
-            typeColor={TaskColors[TaskType.Plan].type}
+            taskType={TaskType.Plan}
             showType={debug}
+            isCurrent={isCurrent}
           />
         </Box>
       )}

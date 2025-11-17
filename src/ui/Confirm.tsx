@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
 
-import { Colors } from '../types/colors.js';
+import { Colors } from '../services/colors.js';
 
 export interface ConfirmProps {
   message: string;
@@ -22,6 +22,7 @@ export function Confirm({
   onCancelled,
 }: ConfirmProps) {
   const done = state?.done ?? false;
+  const isCurrent = done === false;
   const [selectedIndex, setSelectedIndex] = React.useState(0); // 0 = Yes, 1 = No
 
   useInput(
@@ -57,10 +58,12 @@ export function Confirm({
     return (
       <Box flexDirection="column">
         <Box marginBottom={1}>
-          <Text>{message}</Text>
+          <Text color={undefined}>{message}</Text>
         </Box>
         <Box>
-          <Text color="gray">&gt; {options[selectedIndex].label}</Text>
+          <Text color={Colors.Text.Inactive}>
+            &gt; {options[selectedIndex].label}
+          </Text>
         </Box>
       </Box>
     );
@@ -69,7 +72,9 @@ export function Confirm({
   return (
     <Box flexDirection="column">
       <Box marginBottom={1}>
-        <Text>{message}</Text>
+        <Text color={isCurrent ? Colors.Text.Active : Colors.Text.Inactive}>
+          {message}
+        </Text>
       </Box>
       <Box>
         <Text color={Colors.Action.Select}>&gt;</Text>

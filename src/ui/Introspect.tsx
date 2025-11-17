@@ -4,6 +4,8 @@ import { Box, Text, useInput } from 'ink';
 import { Capability, IntrospectProps } from '../types/components.js';
 import { Task } from '../types/types.js';
 
+import { getTextColor } from '../services/colors.js';
+
 import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000;
@@ -50,6 +52,7 @@ export function Introspect({
   onAborted,
 }: IntrospectProps) {
   const done = state?.done ?? false;
+  const isCurrent = done === false;
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
 
@@ -136,7 +139,7 @@ export function Introspect({
     <Box alignSelf="flex-start" flexDirection="column">
       {isLoading && (
         <Box>
-          <Text>Listing capabilities. </Text>
+          <Text color={getTextColor(isCurrent)}>Listing capabilities. </Text>
           <Spinner />
         </Box>
       )}

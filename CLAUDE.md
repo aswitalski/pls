@@ -272,8 +272,9 @@ Before creating a commit, ensure code quality:
 1. **Organize imports**: Ensure all imports follow the import organization rules
    (libraries, types, services, UI components - each group alphabetically
    sorted)
-2. **Format code**: Run `npm run format` to apply consistent formatting across
-   all files
+2. **Format code**: ALWAYS run `npm run format` before committing to apply
+   consistent formatting across all files. This is mandatory and prevents
+   formatting-related changes from cluttering future commits.
 3. **Update tests**: Ensure that tests were added or amended to align with
    changes in the code. All tests must pass before committing.
 
