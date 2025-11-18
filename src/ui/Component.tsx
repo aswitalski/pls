@@ -68,7 +68,7 @@ export const Component = React.memo(function Component({
     case ComponentName.Introspect: {
       const props = def.props;
       const state = def.state;
-      return <Introspect {...props} state={state} />;
+      return <Introspect {...props} state={state} debug={debug} />;
     }
 
     case ComponentName.Report:

@@ -71,6 +71,7 @@ export const Colors = {
   Origin: {
     BuiltIn: Palette.Cyan,
     UserProvided: Palette.Green,
+    Indirect: Palette.Purple,
   },
 } as const;
 

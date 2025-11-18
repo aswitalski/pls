@@ -76,6 +76,7 @@ export interface Capability {
   name: string;
   description: string;
   isBuiltIn: boolean;
+  isIndirect?: boolean;
 }
 
 export interface ReportProps {
@@ -88,6 +89,7 @@ export interface IntrospectProps {
   state?: IntrospectState;
   service?: LLMService;
   children?: React.ReactNode;
+  debug?: boolean;
   onError?: (error: string) => void;
   onComplete?: (message: string, capabilities: Capability[]) => void;
   onAborted: () => void;

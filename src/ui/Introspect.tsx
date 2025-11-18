@@ -20,26 +20,33 @@ const BUILT_IN_CAPABILITIES = new Set([
   'REPORT',
 ]);
 
+const INDIRECT_CAPABILITIES = new Set(['PLAN', 'REPORT']);
+
 function parseCapabilityFromTask(task: Task): Capability {
   // Parse "NAME: Description" format from task.action
   const colonIndex = task.action.indexOf(':');
 
   if (colonIndex === -1) {
+    const upperName = task.action.toUpperCase();
     return {
       name: task.action,
       description: '',
-      isBuiltIn: BUILT_IN_CAPABILITIES.has(task.action.toUpperCase()),
+      isBuiltIn: BUILT_IN_CAPABILITIES.has(upperName),
+      isIndirect: INDIRECT_CAPABILITIES.has(upperName),
     };
   }
 
   const name = task.action.substring(0, colonIndex).trim();
   const description = task.action.substring(colonIndex + 1).trim();
-  const isBuiltIn = BUILT_IN_CAPABILITIES.has(name.toUpperCase());
+  const upperName = name.toUpperCase();
+  const isBuiltIn = BUILT_IN_CAPABILITIES.has(upperName);
+  const isIndirect = INDIRECT_CAPABILITIES.has(upperName);
 
   return {
     name,
     description,
     isBuiltIn,
+    isIndirect,
   };
 }
 
@@ -48,6 +55,7 @@ export function Introspect({
   state,
   service,
   children,
+  debug = false,
   onError,
   onComplete,
   onAborted,
@@ -101,7 +109,17 @@ export function Introspect({
 
         if (mounted) {
           // Parse capabilities from returned tasks
-          const capabilities = result.tasks.map(parseCapabilityFromTask);
+          let capabilities = result.tasks.map(parseCapabilityFromTask);
+
+          // Filter out internal capabilities when not in debug mode
+          if (!debug) {
+            capabilities = capabilities.filter(
+              (cap) =>
+                cap.name.toUpperCase() !== 'PLAN' &&
+                cap.name.toUpperCase() !== 'REPORT'
+            );
+          }
+
           setIsLoading(false);
           onComplete?.(result.message, capabilities);
         }
@@ -129,7 +147,7 @@ export function Introspect({
     return () => {
       mounted = false;
     };
-  }, [tasks, done, service]);
+  }, [tasks, done, service, debug, onComplete, onError]);
 
   // Don't render wrapper when done and nothing to show
   if (!isLoading && !error && !children) {
