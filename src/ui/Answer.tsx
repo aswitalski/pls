@@ -8,7 +8,7 @@ import { useInput } from '../services/keyboard.js';
 
 import { Spinner } from './Spinner.js';
 
-const MinimumProcessingTime = 400;
+const MINIMUM_PROCESSING_TIME = 400;
 
 export function Answer({
   question,
@@ -55,7 +55,7 @@ export function Answer({
         // Call answer tool
         const result = await svc!.processWithTool(question, 'answer');
         const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MinimumProcessingTime - elapsed);
+        const remainingTime = Math.max(0, MINIMUM_PROCESSING_TIME - elapsed);
 
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
 
@@ -67,7 +67,7 @@ export function Answer({
         }
       } catch (err) {
         const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MinimumProcessingTime - elapsed);
+        const remainingTime = Math.max(0, MINIMUM_PROCESSING_TIME - elapsed);
 
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
 

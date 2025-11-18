@@ -78,7 +78,7 @@ export const Colors = {
 /**
  * Task-specific color mappings (internal)
  */
-const TaskColors: Record<
+const taskColors: Record<
   TaskType,
   { description: string | null; type: string | null }
 > = {
@@ -127,7 +127,7 @@ const TaskColors: Record<
 /**
  * Feedback-specific color mappings (internal)
  */
-const FeedbackColors: Record<FeedbackType, string | null> = {
+const feedbackColors: Record<FeedbackType, string | null> = {
   [FeedbackType.Info]: Colors.Status.Info,
   [FeedbackType.Succeeded]: Colors.Status.Success,
   [FeedbackType.Aborted]: Colors.Status.Warning,
@@ -163,7 +163,7 @@ export function getTaskColors(
   type: TaskType,
   isCurrent: boolean
 ): { description: string | undefined; type: string | undefined } {
-  const colors = TaskColors[type];
+  const colors = taskColors[type];
 
   return {
     description: processColor(colors.description, isCurrent),
@@ -182,7 +182,7 @@ export function getFeedbackColor(
   type: FeedbackType,
   isCurrent: boolean
 ): string | undefined {
-  return processColor(FeedbackColors[type], isCurrent);
+  return processColor(feedbackColors[type], isCurrent);
 }
 
 /**

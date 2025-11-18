@@ -346,6 +346,12 @@ sufficient.
   - Use single import statements for multiple items from the same source
   - Avoid unused imports
   - Destructure imports when possible
+- Constant naming: Follow these conventions for const declarations:
+  - App-level variables: camelCase (e.g., `apiClient`, `defaultConfig`)
+  - Module-level config: camelCase (e.g., `minRetries`, `baseUrl`)
+  - Env/configuration constants: UPPER_CASE (e.g., `API_KEY`, `MAX_TIMEOUT`)
+  - Math, static values, sentinel values: UPPER_CASE (e.g.,
+    `MIN_PROCESSING_TIME`, `BUILT_IN_CAPABILITIES`, `MAX_RETRIES`)
 - Control flow: Reduce nesting by using early returns and guard clauses.
   Prefer returning early when conditions aren't met rather than wrapping the
   entire function body in an if statement. This keeps code flat, readable, and
