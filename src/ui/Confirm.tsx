@@ -49,8 +49,8 @@ export function Confirm({
   );
 
   const options = [
-    { label: 'Yes', value: 'yes', color: Colors.Action.Execute },
-    { label: 'No', value: 'no', color: Colors.Action.Discard },
+    { label: 'yes', value: 'yes', color: Colors.Action.Execute },
+    { label: 'no', value: 'no', color: Colors.Status.Error },
   ];
 
   if (done) {
@@ -60,8 +60,13 @@ export function Confirm({
         <Box marginBottom={1}>
           <Text color={undefined}>{message}</Text>
         </Box>
-        <Box>
-          <Text color={Colors.Text.Inactive}>
+        <Box
+          paddingX={1}
+          marginX={-1}
+          alignSelf="flex-start"
+          backgroundColor={Colors.Background.UserQuery}
+        >
+          <Text color={Colors.Text.UserQuery}>
             &gt; {options[selectedIndex].label}
           </Text>
         </Box>
@@ -87,7 +92,6 @@ export function Confirm({
                 <Text
                   color={isSelected ? option.color : undefined}
                   dimColor={!isSelected}
-                  bold={isSelected}
                 >
                   {option.label}
                 </Text>
