@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text } from 'ink';
 
 import { PlanProps } from '../types/components.js';
 import { Task, TaskType } from '../types/types.js';
 import { getTaskColors } from '../services/colors.js';
+import { useInput } from '../services/keyboard.js';
 
 import { Label } from './Label.js';
 import { List } from './List.js';

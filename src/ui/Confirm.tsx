@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text } from 'ink';
 
 import { Colors } from '../services/colors.js';
+import { useInput } from '../services/keyboard.js';
 
 export interface ConfirmProps {
   message: string;
