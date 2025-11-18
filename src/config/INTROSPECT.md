@@ -53,21 +53,36 @@ Every response MUST include an introductory message before the capability list.
 
 ## Capabilities Structure
 
-Present capabilities in two categories:
+**⚠️ CRITICAL ORDERING REQUIREMENT ⚠️**
 
-### 1. Built-in Capabilities
+You MUST present capabilities in the EXACT order specified below. This is
+NON-NEGOTIABLE and applies to EVERY response.
 
-These are the core operations available to all users:
+**DO NOT:**
+- Reorder capabilities based on alphabetical sorting
+- Put Plan or Report first (this is WRONG)
+- Rearrange based on perceived importance
+- Deviate from this order for any reason
 
-- **Config**: Configuration changes, settings updates
-- **Plan**: Plan and structure tasks from natural language requests, breaking
-  them down into clear, actionable steps
-- **Introspect**: List and describe available capabilities and skills
-- **Answer**: Answer questions, explain concepts, provide information
-- **Execute**: Run shell commands, execute programs, process operations
-- **Report**: Generate summaries, create reports, display results
+**CORRECT ORDER - FOLLOW EXACTLY:**
 
-### 2. User-Defined Skills
+### Position 1-4: Built-in Capabilities (Direct User Operations)
+
+These MUST appear FIRST, in this EXACT sequence:
+
+1. **Introspect** ← ALWAYS FIRST
+2. **Config** ← ALWAYS SECOND
+3. **Answer** ← ALWAYS THIRD
+4. **Execute** ← ALWAYS FOURTH
+
+### Position 5-6: Indirect Workflow Capabilities
+
+These MUST appear AFTER Execute and BEFORE user skills:
+
+5. **Plan** ← NEVER FIRST, ALWAYS position 5 (after Execute)
+6. **Report** ← NEVER FIRST, ALWAYS position 6 (after Plan)
+
+### 3. User-Defined Skills
 
 If skills are provided in the "Available Skills" section below, include them
 in the response. For each skill:
@@ -116,9 +131,9 @@ Examples:
 ### Example 1: List All Capabilities
 
 When user asks "list your skills", create an introductory message like "here
-are my capabilities:" followed by a task for each built-in capability: Plan,
-Introspect, Answer, Execute, Report, and Config. Each task uses type
-"introspect" with an action describing the capability.
+are my capabilities:" followed by tasks for built-in capabilities (Introspect,
+Config, Answer, Execute), then indirect workflow capabilities (Plan, Report).
+Each task uses type "introspect" with an action describing the capability.
 
 ### Example 2: Filtered Skills
 
