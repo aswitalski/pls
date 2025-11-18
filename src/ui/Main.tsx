@@ -1,5 +1,4 @@
 import React from 'react';
-import { useInput } from 'ink';
 
 import {
   Capability,
@@ -19,6 +18,7 @@ import {
   loadDebugSetting,
   saveDebugSetting,
 } from '../services/configuration.js';
+import { registerGlobalShortcut } from '../services/keyboard.js';
 import { getCancellationMessage } from '../services/messages.js';
 import {
   createCommandDefinition,
@@ -89,20 +89,17 @@ export const Main = ({ app, command }: MainProps) => {
     timelineRef.current = timeline;
   }, [timeline]);
 
-  // Top-level Shift+Tab handler for debug mode toggle
-  // Child components must ignore Shift+Tab to prevent conflicts
-  useInput(
-    (input, key) => {
-      if (key.shift && key.tab) {
-        setIsDebug((prev) => {
-          const newValue = !prev;
-          saveDebugSetting(newValue);
-          return newValue;
-        });
-      }
-    },
-    { isActive: true }
-  );
+  // Register global keyboard shortcuts
+  React.useEffect(() => {
+    // Shift+Tab: Toggle debug mode
+    registerGlobalShortcut('shift+tab', () => {
+      setIsDebug((prev) => {
+        const newValue = !prev;
+        saveDebugSetting(newValue);
+        return newValue;
+      });
+    });
+  }, []);
 
   const addToTimeline = React.useCallback((...items: ComponentDefinition[]) => {
     setTimeline((timeline) => [...timeline, ...items]);

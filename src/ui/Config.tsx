@@ -1,8 +1,9 @@
 import React from 'react';
-import { Box, Text, useFocus, useInput } from 'ink';
+import { Box, Text, useFocus } from 'ink';
 import TextInput from 'ink-text-input';
 
 import { Colors } from '../services/colors.js';
+import { useInput } from '../services/keyboard.js';
 
 export enum StepType {
   Text = 'text',

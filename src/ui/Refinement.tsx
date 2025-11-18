@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, useInput } from 'ink';
+import { Box } from 'ink';
 
 import { BaseState } from '../types/components.js';
+import { useInput } from '../services/keyboard.js';
 
 import { Message } from './Message.js';
 import { Spinner } from './Spinner.js';
