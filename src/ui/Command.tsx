@@ -91,8 +91,14 @@ export function Command({
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
-      <Box>
-        <Text color={getTextColor(isCurrent)}>&gt; pls {command}</Text>
+      <Box
+        paddingX={done ? 1 : 0}
+        marginX={done ? -1 : 0}
+        backgroundColor={done ? Colors.Background.UserQuery : undefined}
+      >
+        <Text color={isCurrent ? Colors.Text.Active : Colors.Text.UserQuery}>
+          &gt; pls {command}
+        </Text>
         {isLoading && (
           <>
             <Text> </Text>

@@ -16,29 +16,29 @@ describe('Confirm component', () => {
       expect(output).toContain('Should I execute this plan?');
     });
 
-    it('renders Yes and No options', () => {
+    it('renders yes and no options', () => {
       const { lastFrame } = render(
         <Confirm message="Continue?" onCancelled={() => {}} />
       );
 
       const output = lastFrame();
-      expect(output).toContain('Yes');
-      expect(output).toContain('No');
+      expect(output).toContain('yes');
+      expect(output).toContain('no');
     });
 
-    it('highlights Yes by default', () => {
+    it('highlights yes by default', () => {
       const { lastFrame } = render(
         <Confirm message="Continue?" onCancelled={() => {}} />
       );
 
       const output = lastFrame();
       expect(output).toBeTruthy();
-      // Yes should be bold (not dimmed) by default
+      // "yes" should be colored (not dimmed) by default
     });
   });
 
   describe('Interaction', () => {
-    it('calls onConfirmed when Enter pressed on Yes', () => {
+    it('calls onConfirmed when Enter pressed on yes', () => {
       const onConfirmed = vi.fn();
       const { stdin } = render(
         <Confirm
@@ -53,7 +53,7 @@ describe('Confirm component', () => {
       expect(onConfirmed).toHaveBeenCalledOnce();
     });
 
-    it('calls onCancelled when Enter pressed on No', async () => {
+    it('calls onCancelled when Enter pressed on no', async () => {
       const onCancelled = vi.fn();
       const { stdin } = render(
         <Confirm
@@ -75,10 +75,10 @@ describe('Confirm component', () => {
         <Confirm message="Continue?" onCancelled={() => {}} />
       );
 
-      // Initially Yes is selected
-      stdin.write(Keys.Tab); // Now No is selected
-      stdin.write(Keys.Tab); // Back to Yes
-      stdin.write(Keys.Tab); // No again
+      // Initially "yes" is selected
+      stdin.write(Keys.Tab); // Now "no" is selected
+      stdin.write(Keys.Tab); // Back to "yes"
+      stdin.write(Keys.Tab); // "no" again
 
       // Verify it toggles (output would show different highlighting)
       // This is a smoke test - actual highlighting is visual
@@ -101,7 +101,7 @@ describe('Confirm component', () => {
       expect(onConfirmed).not.toHaveBeenCalled();
     });
 
-    it('Escape highlights No and cancels', async () => {
+    it('Escape highlights "no" and cancels', async () => {
       const onCancelled = vi.fn();
       const { stdin } = render(
         <Confirm
@@ -111,7 +111,7 @@ describe('Confirm component', () => {
         />
       );
 
-      // Escape should highlight No and call onCancelled
+      // Escape should highlight "no" and call onCancelled
       stdin.write(Keys.Escape);
 
       expect(onCancelled).toHaveBeenCalledOnce();
@@ -130,7 +130,7 @@ describe('Confirm component', () => {
 
       const output = lastFrame();
       expect(output).toContain('Continue?');
-      expect(output).toContain('> Yes');
+      expect(output).toContain('> yes');
     });
 
     it('renders with done and confirmed state', () => {

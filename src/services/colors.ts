@@ -7,11 +7,15 @@ import { FeedbackType, TaskType } from '../types/types.js';
 export const Palette = {
   White: '#ffffff',
   AshGray: '#d0d0d0',
+  PaleGreen: '#a8dcbc',
   Gray: '#888888',
   DarkGray: '#666666',
+  CharcoalGray: '#282828',
   Green: '#5aaa8a',
+  LightGreen: '#65b595',
   BrightGreen: '#22aa22',
   Yellow: '#cccc5c',
+  LightYellow: '#d4d47a',
   Orange: '#cc9c5c',
   DarkOrange: '#a85c3f',
   BurntOrange: '#cc7a5c',
@@ -30,6 +34,10 @@ export const Colors = {
   Text: {
     Active: Palette.White,
     Inactive: Palette.AshGray,
+    UserQuery: Palette.White,
+  },
+  Background: {
+    UserQuery: Palette.CharcoalGray,
   },
   Action: {
     Execute: Palette.Green,
