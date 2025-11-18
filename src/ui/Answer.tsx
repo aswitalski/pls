@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text } from 'ink';
 
 import { AnswerProps } from '../types/components.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
+import { useInput } from '../services/keyboard.js';
 
 import { Spinner } from './Spinner.js';
 
