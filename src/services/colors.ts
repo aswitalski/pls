@@ -1,42 +1,68 @@
 import { FeedbackType, TaskType } from '../types/types.js';
 
 /**
+ * Base color palette - raw color values with descriptive names.
+ * All colors used in the interface are defined here.
+ */
+export const Palette = {
+  White: '#ffffff',
+  AshGray: '#d0d0d0',
+  Gray: '#888888',
+  DarkGray: '#666666',
+  Green: '#5aaa8a',
+  BrightGreen: '#22aa22',
+  Yellow: '#cccc5c',
+  Orange: '#cc9c5c',
+  DarkOrange: '#a85c3f',
+  BurntOrange: '#cc7a5c',
+  Red: '#cc5c5c',
+  Cyan: '#5c9ccc',
+  LightCyan: '#5ccccc',
+  SteelBlue: '#5c8cbc',
+  Purple: '#9c5ccc',
+} as const;
+
+/**
  * Semantic color palette - colors organized by their purpose/meaning.
- * Prefer adding semantic names here rather than to DescriptiveColors.
+ * References Palette colors to maintain consistency.
  */
 export const Colors = {
   Text: {
-    Active: '#ffffff', // white
-    Inactive: '#d0d0d0', // ash gray
+    Active: Palette.White,
+    Inactive: Palette.AshGray,
   },
   Action: {
-    Execute: '#5aaa8a', // green
-    Discard: '#a85c3f', // dark orange
-    Select: '#5c8cbc', // steel blue
+    Execute: Palette.Green,
+    Discard: Palette.DarkOrange,
+    Select: Palette.SteelBlue,
   },
   Status: {
-    Success: '#22aa22', // green
-    Error: '#cc5c5c', // red
-    Warning: '#cc9c5c', // orange
-    Info: '#5c9ccc', // cyan
+    Success: Palette.BrightGreen,
+    Error: Palette.Red,
+    Warning: Palette.Orange,
+    Info: Palette.Cyan,
   },
   Label: {
-    Default: null, // replaced with active or inactive
-    Inactive: '#888888', // gray
-    Discarded: '#666666', // dark gray
-    Skipped: '#cccc5c', // yellow
+    Default: null, // calculated in runtime
+    Inactive: Palette.Gray,
+    Discarded: Palette.DarkGray,
+    Skipped: Palette.Yellow,
   },
   Type: {
-    Config: '#5c9ccc', // cyan
-    Plan: '#5ccccc', // magenta
-    Execute: '#5aaa8a', // green
-    Answer: '#9c5ccc', // purple
-    Introspect: '#9c5ccc', // purple
-    Report: '#cc9c5c', // orange
-    Define: '#cc9c5c', // amber
-    Ignore: '#cc7a5c', // dark orange
-    Select: '#5c8cbc', // steel blue
-    Discard: '#a85c3f', // dark orange
+    Config: Palette.Cyan,
+    Plan: Palette.LightCyan,
+    Execute: Palette.Green,
+    Answer: Palette.Purple,
+    Introspect: Palette.Purple,
+    Report: Palette.Orange,
+    Define: Palette.Orange,
+    Ignore: Palette.BurntOrange,
+    Select: Palette.SteelBlue,
+    Discard: Palette.DarkOrange,
+  },
+  Origin: {
+    BuiltIn: Palette.Cyan,
+    UserProvided: Palette.Green,
   },
 } as const;
 

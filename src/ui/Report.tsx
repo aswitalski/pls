@@ -1,14 +1,10 @@
 import { Box, Text } from 'ink';
 
 import { Capability, ReportProps } from '../types/components.js';
-
-const COLORS = {
-  BuiltIn: '#5c9ccc', // blue - for built-in capabilities
-  UserDefined: '#5aaa8a', // green - for user-defined skills
-} as const;
+import { Colors } from '../services/colors.js';
 
 function CapabilityItem({ name, description, isBuiltIn }: Capability) {
-  const color = isBuiltIn ? COLORS.BuiltIn : COLORS.UserDefined;
+  const color = isBuiltIn ? Colors.Origin.BuiltIn : Colors.Origin.UserProvided;
 
   return (
     <Box>

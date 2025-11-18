@@ -3,7 +3,7 @@ import { Box, Text, useInput } from 'ink';
 
 import { AnswerProps } from '../types/components.js';
 
-import { getTextColor } from '../services/colors.js';
+import { Colors, getTextColor } from '../services/colors.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -106,7 +106,7 @@ export function Answer({
 
       {error && (
         <Box marginTop={1}>
-          <Text color="red">Error: {error}</Text>
+          <Text color={Colors.Status.Error}>Error: {error}</Text>
         </Box>
       )}
     </Box>

@@ -3,7 +3,7 @@ import { Box, Text, useInput } from 'ink';
 
 import { CommandProps } from '../types/components.js';
 
-import { getTextColor } from '../services/colors.js';
+import { Colors, getTextColor } from '../services/colors.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -103,7 +103,7 @@ export function Command({
 
       {error && (
         <Box marginTop={1}>
-          <Text color="red">Error: {error}</Text>
+          <Text color={Colors.Status.Error}>Error: {error}</Text>
         </Box>
       )}
 
