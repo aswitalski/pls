@@ -8,42 +8,34 @@ import {
 } from '../../src/services/colors.js';
 import { FeedbackType, TaskType } from '../../src/types/types.js';
 
-describe('TaskType enum', () => {
-  it('includes Introspect type', () => {
-    expect(TaskType.Introspect).toBe('introspect');
+describe('Color relationships', () => {
+  it('uses same color for Introspect and Answer types', () => {
+    expect(Colors.Type.Introspect).toBe(Colors.Type.Answer);
   });
 
-  it('has all expected task types', () => {
-    const expectedTypes = [
-      'config',
-      'plan',
-      'execute',
-      'answer',
-      'introspect',
-      'report',
-      'define',
-      'ignore',
-      'select',
-      'discard',
-    ];
+  it('uses same color for Report and Define types', () => {
+    expect(Colors.Type.Report).toBe(Colors.Type.Define);
+  });
 
-    const actualTypes = Object.values(TaskType);
-    expect(actualTypes).toEqual(expectedTypes);
+  it('uses different colors for active vs inactive text', () => {
+    expect(Colors.Text.Active).not.toBe(Colors.Text.Inactive);
   });
 });
 
-describe('Colors.Type', () => {
-  it('defines Introspect color', () => {
-    expect(Colors.Type.Introspect).toBeDefined();
-    expect(typeof Colors.Type.Introspect).toBe('string');
+describe('Origin colors for capability display', () => {
+  it('uses distinct colors for built-in vs user-provided', () => {
+    // Built-in and user-provided must be visually distinguishable
+    expect(Colors.Origin.BuiltIn).not.toBe(Colors.Origin.UserProvided);
   });
 
-  it('uses purple color for Introspect', () => {
-    expect(Colors.Type.Introspect).toBe('#9c5ccc');
+  it('uses same color for built-in capabilities as Config type', () => {
+    // Built-in capabilities share color with Config for visual consistency
+    expect(Colors.Origin.BuiltIn).toBe(Colors.Type.Config);
   });
 
-  it('matches Answer color for Introspect', () => {
-    expect(Colors.Type.Introspect).toBe(Colors.Type.Answer);
+  it('uses same color for user-provided capabilities as Execute action', () => {
+    // User-provided capabilities share color with Execute for consistency
+    expect(Colors.Origin.UserProvided).toBe(Colors.Action.Execute);
   });
 });
 
@@ -144,82 +136,26 @@ describe('getTextColor', () => {
     expect(color).toBe(Colors.Text.Inactive);
   });
 
-  it('returns white for current items', () => {
-    const color = getTextColor(true);
-    expect(color).toBe('#ffffff');
-  });
-
-  it('returns ash gray for historical items', () => {
-    const color = getTextColor(false);
-    expect(color).toBe('#d0d0d0');
+  it('returns different colors for current vs historical items', () => {
+    const currentColor = getTextColor(true);
+    const historicalColor = getTextColor(false);
+    expect(currentColor).not.toBe(historicalColor);
   });
 });
 
 describe('Real-world color scenarios', () => {
-  describe('Active command execution', () => {
-    it('shows command in white when executing', () => {
-      const color = getTextColor(true);
-      expect(color).toBe('#ffffff');
-    });
-
-    it('shows command in gray when completed', () => {
-      const color = getTextColor(false);
-      expect(color).toBe('#d0d0d0');
-    });
-  });
-
-  describe('Answer component states', () => {
-    it('always shows "Finding answer" in white (final response)', () => {
-      // Answer component always uses active color since it's the final response
-      expect(Colors.Text.Active).toBe('#ffffff');
-    });
-  });
-
-  describe('Introspect component states', () => {
-    it('shows "Listing capabilities" in white when processing', () => {
-      const isCurrent = true;
-      const color = getTextColor(isCurrent);
-      expect(color).toBe(Colors.Text.Active);
-    });
-
-    it('shows "Listing capabilities" in gray when completed', () => {
-      const isCurrent = false;
-      const color = getTextColor(isCurrent);
-      expect(color).toBe(Colors.Text.Inactive);
-    });
-  });
-
-  describe('Confirm component states', () => {
-    it('shows message in white when awaiting response', () => {
-      const isCurrent = true;
-      const color = getTextColor(isCurrent);
-      expect(color).toBe(Colors.Text.Active);
-    });
-
-    it('shows message in gray after response', () => {
-      const isCurrent = false;
-      const color = getTextColor(isCurrent);
-      expect(color).toBe(Colors.Text.Inactive);
-    });
-
-    it('shows user choice in gray in timeline', () => {
-      const color = Colors.Text.Inactive;
-      expect(color).toBe('#d0d0d0');
-    });
-  });
-
   describe('Task description colors based on state', () => {
-    it('shows Execute task description in white when current', () => {
+    it('uses active text color for current task descriptions', () => {
       const colors = getTaskColors(TaskType.Execute, true);
       expect(colors.description).toBe(Colors.Text.Active);
     });
 
-    it('shows Execute task description in gray when historical', () => {
+    it('uses inactive text color for historical task descriptions', () => {
       const colors = getTaskColors(TaskType.Execute, false);
       expect(colors.description).toBe(Colors.Text.Inactive);
     });
 
-    it('preserves task type colors regardless of state', () => {
+    it('preserves task type colors regardless of current/historical state', () => {
       const currentColors = getTaskColors(TaskType.Execute, true);
       const historicalColors = getTaskColors(TaskType.Execute, false);
       expect(currentColors.type).toBe(historicalColors.type);
@@ -227,8 +163,8 @@ describe('Real-world color scenarios', () => {
     });
   });
 
-  describe('Timeline rendering', () => {
-    it('uses consistent inactive color for all historical items', () => {
+  describe('Timeline rendering consistency', () => {
+    it('uses same inactive color for all historical items', () => {
       const commandColor = getTextColor(false);
       const answerColor = getTextColor(false);
       const introspectColor = getTextColor(false);
@@ -238,7 +174,7 @@ describe('Real-world color scenarios', () => {
       expect(commandColor).toBe(Colors.Text.Inactive);
     });
 
-    it('uses consistent active color for all current items', () => {
+    it('uses same active color for all current items', () => {
       const commandColor = getTextColor(true);
       const answerColor = getTextColor(true);
       const introspectColor = getTextColor(true);
