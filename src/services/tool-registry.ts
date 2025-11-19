@@ -51,6 +51,7 @@ export const toolRegistry = new ToolRegistry();
 
 // Register built-in tools
 import { answerTool } from '../tools/answer.tool.js';
+import { configTool } from '../tools/config.tool.js';
 import { introspectTool } from '../tools/introspect.tool.js';
 import { planTool } from '../tools/plan.tool.js';
 
@@ -67,4 +68,9 @@ toolRegistry.register('introspect', {
 toolRegistry.register('answer', {
   schema: answerTool,
   instructionsPath: 'config/ANSWER.md',
+});
+
+toolRegistry.register('config', {
+  schema: configTool,
+  instructionsPath: 'config/CONFIG.md',
 });

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
 import { CommandProps } from '../types/components.js';
+import { TaskType } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
@@ -52,7 +53,21 @@ export function Command({
       const startTime = Date.now();
 
       try {
-        const result = await svc!.processWithTool(command, 'plan');
+        let result = await svc!.processWithTool(command, 'plan');
+
+        // If all tasks are config type, delegate to CONFIG tool
+        const allConfig =
+          result.tasks.length > 0 &&
+          result.tasks.every((task) => task.type === TaskType.Config);
+
+        if (allConfig) {
+          // Extract query from first config task params, default to 'app'
+          const query =
+            (result.tasks[0].params?.query as string | undefined) || 'app';
+          // Call CONFIG tool to get specific config keys
+          result = await svc!.processWithTool(query, 'config');
+        }
+
         const elapsed = Date.now() - startTime;
         const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
 

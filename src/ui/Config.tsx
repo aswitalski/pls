@@ -72,11 +72,13 @@ function TextStep({
   };
 
   const handleSubmit = (value: string) => {
-    if (!validate(value)) {
+    // Use placeholder if input is empty
+    const finalValue = value || placeholder || '';
+    if (!validate(finalValue)) {
       setValidationFailed(true);
       return;
     }
-    onSubmit(value);
+    onSubmit(finalValue);
   };
 
   // Handle input manually when validation fails
