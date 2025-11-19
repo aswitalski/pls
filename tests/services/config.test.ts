@@ -7,6 +7,8 @@ import {
   AnthropicModel,
   ConfigError,
   configExists,
+  getAvailableConfigStructure,
+  getConfigSchema,
   getConfigurationRequiredMessage,
   loadConfig,
   loadDebugSetting,
@@ -15,6 +17,8 @@ import {
   saveConfig,
   saveDebugSetting,
 } from '../../src/services/configuration.js';
+import { createConfigStepsFromSchema } from '../../src/services/components.js';
+import { StepType } from '../../src/ui/Config.js';
 
 import { safeRemoveDirectory } from '../test-utils.js';
 
@@ -313,6 +317,139 @@ config:
 
       saveDebugSetting(true);
       expect(loadDebugSetting()).toBe(true);
+    });
+  });
+
+  describe('CONFIG tool support', () => {
+    describe('Config schema', () => {
+      it('returns schema with core config keys', () => {
+        const schema = getConfigSchema();
+
+        expect(schema['anthropic.key']).toBeDefined();
+        expect(schema['anthropic.key'].type).toBe('regexp');
+        expect(schema['anthropic.key'].required).toBe(true);
+
+        expect(schema['anthropic.model']).toBeDefined();
+        expect(schema['anthropic.model'].type).toBe('enum');
+
+        expect(schema['settings.debug']).toBeDefined();
+        expect(schema['settings.debug'].type).toBe('boolean');
+      });
+
+      it('includes descriptions for all keys', () => {
+        const schema = getConfigSchema();
+
+        Object.values(schema).forEach((def) => {
+          expect(def.description).toBeDefined();
+          expect(typeof def.description).toBe('string');
+          expect(def.description.length).toBeGreaterThan(0);
+        });
+      });
+    });
+
+    describe('Config discovery', () => {
+      it('returns only keys and descriptions without values', () => {
+        saveAnthropicConfig({
+          key: 'sk-ant-test-123',
+          model: AnthropicModel.Haiku,
+        });
+
+        const structure = getAvailableConfigStructure();
+
+        expect(structure['anthropic.key']).toBeDefined();
+        expect(structure['anthropic.key']).toBe('Anthropic API key');
+        expect(structure['anthropic.key']).not.toContain('sk-ant');
+      });
+
+      it('includes discovered keys from config file', () => {
+        saveConfig('custom', { mykey: 'myvalue' });
+
+        const structure = getAvailableConfigStructure();
+
+        expect(structure['custom.mykey']).toBeDefined();
+        expect(structure['custom.mykey']).toContain('discovered');
+      });
+
+      it('works when no config file exists', () => {
+        const structure = getAvailableConfigStructure();
+
+        expect(structure['anthropic.key']).toBeDefined();
+        expect(structure['anthropic.model']).toBeDefined();
+        expect(structure['settings.debug']).toBeDefined();
+      });
+    });
+
+    describe('Config step generation', () => {
+      it('creates text step for regexp type', () => {
+        const steps = createConfigStepsFromSchema(['anthropic.key']);
+
+        expect(steps).toHaveLength(1);
+        expect(steps[0].type).toBe(StepType.Text);
+        expect(steps[0].key).toBe('key');
+        expect(steps[0].description).toBe('Anthropic API key');
+      });
+
+      it('creates selection step for enum type', () => {
+        const steps = createConfigStepsFromSchema(['anthropic.model']);
+
+        expect(steps).toHaveLength(1);
+        expect(steps[0].type).toBe(StepType.Selection);
+        expect(steps[0].key).toBe('model');
+      });
+
+      it('creates selection step for boolean type', () => {
+        const steps = createConfigStepsFromSchema(['settings.debug']);
+
+        expect(steps).toHaveLength(1);
+        expect(steps[0].type).toBe(StepType.Selection);
+        expect(steps[0].key).toBe('debug');
+        expect(steps[0].description).toBe('Debug mode');
+      });
+
+      it('extracts short key from dotted path', () => {
+        const steps = createConfigStepsFromSchema([
+          'anthropic.key',
+          'settings.debug',
+        ]);
+
+        expect(steps[0].key).toBe('key');
+        expect(steps[1].key).toBe('debug');
+      });
+
+      it('uses current config value as default if valid', () => {
+        saveAnthropicConfig({
+          key: 'sk-ant-api03-' + 'a'.repeat(95),
+          model: AnthropicModel.Haiku,
+        });
+
+        const steps = createConfigStepsFromSchema([
+          'anthropic.key',
+          'anthropic.model',
+        ]);
+
+        // Check key step (text type)
+        if ('value' in steps[0]) {
+          expect(steps[0].value).toContain('sk-ant');
+        }
+
+        // Check model step (selection type)
+        if ('defaultIndex' in steps[1] && 'options' in steps[1]) {
+          expect(steps[1].defaultIndex).toBeGreaterThanOrEqual(0);
+          expect(steps[1].options[steps[1].defaultIndex].value).toBe(
+            AnthropicModel.Haiku
+          );
+        }
+      });
+
+      it('creates steps for multiple keys', () => {
+        const steps = createConfigStepsFromSchema([
+          'anthropic.key',
+          'anthropic.model',
+          'settings.debug',
+        ]);
+
+        expect(steps).toHaveLength(3);
+      });
     });
   });
 });

@@ -177,6 +177,21 @@ export function Config<
     return firstStep?.type === StepType.Selection ? firstStep.defaultIndex : 0;
   });
 
+  // Initialize inputValue when step changes and current step has a value
+  React.useEffect(() => {
+    if (step < steps.length) {
+      const currentStepConfig = steps[step];
+      if (
+        currentStepConfig?.type === StepType.Text &&
+        currentStepConfig.value
+      ) {
+        setInputValue(currentStepConfig.value);
+      } else {
+        setInputValue('');
+      }
+    }
+  }, [step, steps]);
+
   const normalizeValue = (value: string | null | undefined) => {
     if (value === null || value === undefined) {
       return '';
@@ -302,7 +317,6 @@ export function Config<
           return (
             <TextStep
               value={inputValue}
-              placeholder={stepConfig.value || undefined}
               validate={stepConfig.validate}
               onChange={setInputValue}
               onSubmit={handleSubmit}

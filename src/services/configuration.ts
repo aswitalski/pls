@@ -25,6 +25,39 @@ export interface Config {
   settings?: SettingsConfig;
 }
 
+/**
+ * Base configuration definition with shared properties
+ */
+interface BaseConfigDefinition {
+  required: boolean;
+  description: string;
+}
+
+/**
+ * Configuration definition types - discriminated union for type safety
+ */
+export type ConfigDefinition =
+  | (BaseConfigDefinition & {
+      type: 'regexp';
+      pattern: RegExp;
+    })
+  | (BaseConfigDefinition & {
+      type: 'string';
+      default?: string;
+    })
+  | (BaseConfigDefinition & {
+      type: 'enum';
+      values: string[];
+      default?: string;
+    })
+  | (BaseConfigDefinition & {
+      type: 'number';
+      default?: number;
+    })
+  | (BaseConfigDefinition & {
+      type: 'boolean';
+    });
+
 export class ConfigError extends Error {
   origin?: Error;
 
@@ -224,4 +257,101 @@ export function getConfigurationRequiredMessage(forFutureUse = false): string {
   ];
 
   return messages[Math.floor(Math.random() * messages.length)];
+}
+
+/**
+ * Core configuration schema - defines structure and types for built-in settings
+ */
+const coreConfigSchema: Record<string, ConfigDefinition> = {
+  'anthropic.key': {
+    type: 'regexp',
+    required: true,
+    pattern: /^sk-ant-api03-[A-Za-z0-9_-]{95}$/,
+    description: 'Anthropic API key',
+  },
+  'anthropic.model': {
+    type: 'enum',
+    required: true,
+    values: SUPPORTED_MODELS,
+    default: AnthropicModel.Haiku,
+    description: 'Anthropic model',
+  },
+  'settings.debug': {
+    type: 'boolean',
+    required: false,
+    description: 'Debug mode',
+  },
+};
+
+/**
+ * Get complete configuration schema
+ * Currently returns core schema only
+ * Future: will merge with skill-declared schemas
+ */
+export function getConfigSchema(): Record<string, ConfigDefinition> {
+  return {
+    ...coreConfigSchema,
+    // Future: ...loadSkillSchemas()
+  };
+}
+
+/**
+ * Get available config structure for CONFIG tool
+ * Returns keys with descriptions only (no values for privacy)
+ */
+export function getAvailableConfigStructure(): Record<string, string> {
+  const schema = getConfigSchema();
+  const structure: Record<string, string> = {};
+
+  // Add core schema keys with descriptions
+  for (const [key, definition] of Object.entries(schema)) {
+    structure[key] = definition.description;
+  }
+
+  // Add discovered keys from config file (if it exists)
+  try {
+    const configFile = getConfigFile();
+    if (!existsSync(configFile)) {
+      return structure;
+    }
+
+    const content = readFileSync(configFile, 'utf-8');
+    const parsed = YAML.parse(content) as Record<string, unknown>;
+
+    // Flatten nested config to dot notation
+    function flattenConfig(
+      obj: Record<string, unknown>,
+      prefix = ''
+    ): Record<string, unknown> {
+      const result: Record<string, unknown> = {};
+
+      for (const [key, value] of Object.entries(obj)) {
+        const fullKey = prefix ? `${prefix}.${key}` : key;
+
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          Object.assign(
+            result,
+            flattenConfig(value as Record<string, unknown>, fullKey)
+          );
+        } else {
+          result[fullKey] = value;
+        }
+      }
+
+      return result;
+    }
+
+    const flatConfig = flattenConfig(parsed);
+
+    // Add discovered keys that aren't in schema
+    for (const key of Object.keys(flatConfig)) {
+      if (!structure[key]) {
+        structure[key] = `${key} (discovered)`;
+      }
+    }
+  } catch {
+    // Config file doesn't exist or can't be read, only use schema
+  }
+
+  return structure;
 }

@@ -2,7 +2,10 @@ import Anthropic from '@anthropic-ai/sdk';
 
 import type { Task } from '../types/types.js';
 
-import { AnthropicConfig } from './configuration.js';
+import {
+  AnthropicConfig,
+  getAvailableConfigStructure,
+} from './configuration.js';
 import { formatSkillsForPrompt, loadSkills } from './skills.js';
 import { toolRegistry } from './tool-registry.js';
 
@@ -34,10 +37,25 @@ export class AnthropicService implements LLMService {
     const tool = toolRegistry.getSchema(toolName);
     const instructions = toolRegistry.getInstructions(toolName);
 
-    // Load skills and augment the instructions
-    const skills = loadSkills();
-    const skillsSection = formatSkillsForPrompt(skills);
-    const systemPrompt = instructions + skillsSection;
+    // Build system prompt with additional context based on tool
+    let systemPrompt = instructions;
+
+    // Add skills section for applicable tools
+    if (toolName === 'plan' || toolName === 'introspect') {
+      const skills = loadSkills();
+      const skillsSection = formatSkillsForPrompt(skills);
+      systemPrompt += skillsSection;
+    }
+
+    // Add config structure for config tool only
+    if (toolName === 'config') {
+      const configStructure = getAvailableConfigStructure();
+      const configSection =
+        '\n\n## Available Configuration\n\n' +
+        'Config structure (key: description):\n' +
+        JSON.stringify(configStructure, null, 2);
+      systemPrompt += configSection;
+    }
 
     // Call API with tool
     const response = await this.client.messages.create({
