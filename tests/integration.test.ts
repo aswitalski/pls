@@ -363,4 +363,117 @@ describe('Integration Tests', () => {
       ]);
     });
   });
+
+  describe('Config type tasks', () => {
+    it('processes config request', async () => {
+      mockService.setResponse('config', [
+        {
+          action: 'Configure settings',
+          type: TaskType.Config,
+          params: { query: 'app' },
+        },
+      ]);
+
+      const result = await mockService.processWithTool('config', 'plan');
+
+      expect(result.tasks).toEqual([
+        {
+          action: 'Configure settings',
+          type: TaskType.Config,
+          params: { query: 'app' },
+        },
+      ]);
+    });
+
+    it('processes config with specific section', async () => {
+      mockService.setResponse('config anthropic', [
+        {
+          action: 'Configure Anthropic settings',
+          type: TaskType.Config,
+          params: { query: 'anthropic' },
+        },
+      ]);
+
+      const result = await mockService.processWithTool(
+        'config anthropic',
+        'plan'
+      );
+
+      expect(result.tasks).toEqual([
+        {
+          action: 'Configure Anthropic settings',
+          type: TaskType.Config,
+          params: { query: 'anthropic' },
+        },
+      ]);
+    });
+
+    it('processes change settings request', async () => {
+      mockService.setResponse('change settings', [
+        {
+          action: 'Modify application settings',
+          type: TaskType.Config,
+          params: { query: 'app' },
+        },
+      ]);
+
+      const result = await mockService.processWithTool(
+        'change settings',
+        'plan'
+      );
+
+      expect(result.tasks).toEqual([
+        {
+          action: 'Modify application settings',
+          type: TaskType.Config,
+          params: { query: 'app' },
+        },
+      ]);
+    });
+
+    it('config tool returns specific keys', async () => {
+      mockService.setResponse('anthropic', [
+        {
+          action: 'Configure API key',
+          type: TaskType.Config,
+          params: { key: 'anthropic.key' },
+        },
+        {
+          action: 'Configure model',
+          type: TaskType.Config,
+          params: { key: 'anthropic.model' },
+        },
+      ]);
+
+      const result = await mockService.processWithTool('anthropic', 'config');
+
+      expect(result.tasks).toHaveLength(2);
+      expect(result.tasks[0].type).toBe(TaskType.Config);
+      expect(result.tasks[0].params?.key).toBe('anthropic.key');
+      expect(result.tasks[1].params?.key).toBe('anthropic.model');
+    });
+
+    it('detects all-config tasks', async () => {
+      mockService.setResponse('run settings', [
+        {
+          action: 'Configure API key',
+          type: TaskType.Config,
+          params: { key: 'anthropic.key' },
+        },
+        {
+          action: 'Configure model',
+          type: TaskType.Config,
+          params: { key: 'anthropic.model' },
+        },
+      ]);
+
+      const result = await mockService.processWithTool('run settings', 'plan');
+
+      const allConfig = result.tasks.every(
+        (task) => task.type === TaskType.Config
+      );
+
+      expect(allConfig).toBe(true);
+    });
+  });
 });

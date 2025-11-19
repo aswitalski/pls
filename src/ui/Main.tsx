@@ -219,7 +219,8 @@ export const Main = ({ app, command }: MainProps) => {
           handleIntrospectAborted,
           handleAnswerError,
           handleAnswerComplete,
-          handleAnswerAborted
+          handleAnswerAborted,
+          setQueue
         )()
       ),
     [

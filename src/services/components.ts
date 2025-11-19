@@ -9,9 +9,10 @@ import { App, ComponentName, FeedbackType, Task } from '../types/types.js';
 
 import { LLMService } from './anthropic.js';
 import {
-  AnthropicModel,
-  isValidAnthropicApiKey,
-  isValidAnthropicModel,
+  Config,
+  ConfigDefinition,
+  getConfigSchema,
+  loadConfig,
 } from './configuration.js';
 import { getConfirmationMessage } from './messages.js';
 
@@ -32,27 +33,153 @@ export function createWelcomeDefinition(app: App): ComponentDefinition {
 }
 
 export function createConfigSteps(): ConfigStep[] {
-  return [
-    {
-      description: 'Anthropic API key',
-      key: 'key',
-      type: StepType.Text,
-      value: null,
-      validate: isValidAnthropicApiKey,
-    },
-    {
-      description: 'Model',
-      key: 'model',
-      type: StepType.Selection,
-      options: [
-        { label: 'Haiku 4.5', value: AnthropicModel.Haiku },
-        { label: 'Sonnet 4.5', value: AnthropicModel.Sonnet },
-        { label: 'Opus 4.1', value: AnthropicModel.Opus },
-      ],
-      defaultIndex: 0,
-      validate: isValidAnthropicModel,
-    },
-  ];
+  // Use schema-based config step generation for required Anthropic settings
+  return createConfigStepsFromSchema(['anthropic.key', 'anthropic.model']);
+}
+
+/**
+ * Get current config value for a dotted key path
+ */
+function getConfigValue(config: Config | null, key: string): unknown {
+  if (!config) return undefined;
+
+  const parts = key.split('.');
+  let value: unknown = config;
+
+  for (const part of parts) {
+    if (value && typeof value === 'object' && part in value) {
+      value = (value as Record<string, unknown>)[part];
+    } else {
+      return undefined;
+    }
+  }
+
+  return value;
+}
+
+/**
+ * Get validation function for a config definition
+ */
+function getValidator(
+  definition: ConfigDefinition
+): (value: string) => boolean {
+  switch (definition.type) {
+    case 'regexp':
+      return (value: string) => definition.pattern.test(value);
+    case 'string':
+      return () => true; // Strings are always valid
+    case 'enum':
+      return (value: string) => definition.values.includes(value);
+    case 'number':
+      return (value: string) => !isNaN(Number(value));
+    case 'boolean':
+      return (value: string) => value === 'true' || value === 'false';
+  }
+}
+
+/**
+ * Create config steps from schema for specified keys
+ */
+export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
+  const schema = getConfigSchema();
+  let currentConfig: Config | null = null;
+
+  try {
+    currentConfig = loadConfig();
+  } catch {
+    // Config doesn't exist yet, use defaults
+  }
+
+  return keys.map((key) => {
+    if (!(key in schema)) {
+      throw new Error(`Unknown config key: ${key}`);
+    }
+    const definition = schema[key];
+
+    const currentValue = getConfigValue(currentConfig, key);
+    const keyParts = key.split('.');
+    const shortKey = keyParts[keyParts.length - 1];
+
+    // Map definition to ConfigStep based on type
+    switch (definition.type) {
+      case 'regexp':
+      case 'string': {
+        const value =
+          currentValue !== undefined && typeof currentValue === 'string'
+            ? currentValue
+            : definition.type === 'string'
+              ? (definition.default ?? '')
+              : null;
+
+        return {
+          description: definition.description,
+          key: shortKey,
+          type: StepType.Text,
+          value,
+          validate: getValidator(definition),
+        };
+      }
+
+      case 'number': {
+        const value =
+          currentValue !== undefined && typeof currentValue === 'number'
+            ? String(currentValue)
+            : definition.default !== undefined
+              ? String(definition.default)
+              : '0';
+
+        return {
+          description: definition.description,
+          key: shortKey,
+          type: StepType.Text,
+          value,
+          validate: getValidator(definition),
+        };
+      }
+
+      case 'enum': {
+        const currentStr =
+          currentValue !== undefined && typeof currentValue === 'string'
+            ? currentValue
+            : definition.default;
+
+        const defaultIndex = currentStr
+          ? definition.values.indexOf(currentStr)
+          : 0;
+
+        return {
+          description: definition.description,
+          key: shortKey,
+          type: StepType.Selection,
+          options: definition.values.map((value) => ({
+            label: value,
+            value,
+          })),
+          defaultIndex: Math.max(0, defaultIndex),
+          validate: getValidator(definition),
+        };
+      }
+
+      case 'boolean': {
+        const currentBool =
+          currentValue !== undefined && typeof currentValue === 'boolean'
+            ? currentValue
+            : undefined;
+
+        return {
+          description: definition.description,
+          key: shortKey,
+          type: StepType.Selection,
+          options: [
+            { label: 'Yes', value: 'true' },
+            { label: 'No', value: 'false' },
+          ],
+          defaultIndex: currentBool !== undefined ? (currentBool ? 0 : 1) : 0,
+          validate: getValidator(definition),
+        };
+      }
+    }
+  });
 }
 
 export function createConfigDefinition(
@@ -65,6 +192,26 @@ export function createConfigDefinition(
     state: { done: false },
     props: {
       steps: createConfigSteps(),
+      onFinished,
+      onAborted,
+    },
+  };
+}
+
+/**
+ * Create config definition with specific keys
+ */
+export function createConfigDefinitionWithKeys(
+  keys: string[],
+  onFinished: (config: Record<string, string>) => void,
+  onAborted: () => void
+): ComponentDefinition {
+  return {
+    id: randomUUID(),
+    name: ComponentName.Config,
+    state: { done: false },
+    props: {
+      steps: createConfigStepsFromSchema(keys),
       onFinished,
       onAborted,
     },

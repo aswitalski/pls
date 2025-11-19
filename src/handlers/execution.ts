@@ -1,3 +1,5 @@
+import React from 'react';
+
 import {
   Capability,
   ComponentDefinition,
@@ -8,13 +10,20 @@ import { ComponentName, FeedbackType, TaskType } from '../types/types.js';
 import { LLMService } from '../services/anthropic.js';
 import {
   createAnswerDefinition,
+  createConfigDefinitionWithKeys,
   createFeedback,
   createIntrospectDefinition,
   markAsDone,
 } from '../services/components.js';
+import {
+  createConfigExecutionAbortedHandler,
+  createConfigExecutionFinishedHandler,
+} from './config.js';
 import { getCancellationMessage } from '../services/messages.js';
 import { exitApp } from '../services/process.js';
 import { withQueueHandler } from '../services/queue.js';
+
+type SetQueue = React.Dispatch<React.SetStateAction<ComponentDefinition[]>>;
 
 /**
  * Creates execution confirmed handler
@@ -31,7 +40,8 @@ export function createExecutionConfirmedHandler(
   handleIntrospectAborted: () => void,
   handleAnswerError: (error: string) => void,
   handleAnswerComplete: (answer: string) => void,
-  handleAnswerAborted: () => void
+  handleAnswerAborted: () => void,
+  setQueue: SetQueue
 ) {
   return () =>
     withQueueHandler(ComponentName.Confirm, (first) => {
@@ -57,6 +67,8 @@ export function createExecutionConfirmedHandler(
 
       const allAnswer = tasks.every((task) => task.type === TaskType.Answer);
 
+      const allConfig = tasks.every((task) => task.type === TaskType.Config);
+
       if (allIntrospect && tasks.length > 0) {
         // Execute introspection
         addToTimeline(markAsDone(first as StatefulComponentDefinition));
@@ -80,6 +92,31 @@ export function createExecutionConfirmedHandler(
             handleAnswerError,
             handleAnswerComplete,
             handleAnswerAborted
+          ),
+        ];
+      } else if (allConfig && tasks.length > 0) {
+        // Execute config - extract keys from task params
+        const keys = tasks
+          .map((task) => task.params?.key as string | undefined)
+          .filter((key): key is string => typeof key === 'string');
+        addToTimeline(markAsDone(first as StatefulComponentDefinition));
+
+        // Create handlers with keys for proper saving
+        // Wrap in setQueue to properly update queue when Config finishes
+        const handleConfigFinished = (config: Record<string, string>) => {
+          setQueue(
+            createConfigExecutionFinishedHandler(addToTimeline, keys)(config)
+          );
+        };
+        const handleConfigAborted = () => {
+          setQueue(createConfigExecutionAbortedHandler(addToTimeline)());
+        };
+
+        return [
+          createConfigDefinitionWithKeys(
+            keys,
+            handleConfigFinished,
+            handleConfigAborted
           ),
         ];
       } else {

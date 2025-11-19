@@ -154,5 +154,28 @@ describe('Tool registry', () => {
       expect(instructions).toContain('Overview');
       expect(instructions).toContain('introspect');
     });
+
+    it('has answer tool registered', () => {
+      expect(registry.hasTool('answer')).toBe(true);
+
+      const schema = registry.getSchema('answer');
+      expect(schema.name).toBe('answer');
+      expect(schema.description).toContain('Answer questions');
+    });
+
+    it('has config tool registered', () => {
+      expect(registry.hasTool('config')).toBe(true);
+
+      const schema = registry.getSchema('config');
+      expect(schema.name).toBe('config');
+      expect(schema.description).toContain('configuration settings');
+    });
+
+    it('can load config instructions', () => {
+      const instructions = registry.getInstructions('config');
+      expect(instructions).toBeTruthy();
+      expect(instructions).toContain('Overview');
+      expect(instructions).toContain('CONFIG tool');
+    });
   });
 });
