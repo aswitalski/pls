@@ -12,7 +12,6 @@ import { toolRegistry } from './tool-registry.js';
 export interface CommandResult {
   message: string;
   tasks: Task[];
-  systemPrompt?: string;
   answer?: string;
 }
 
@@ -57,12 +56,21 @@ export class AnthropicService implements LLMService {
       systemPrompt += configSection;
     }
 
+    // Build tools array - add web search for answer tool
+    const tools: (Anthropic.Tool | Anthropic.WebSearchTool20250305)[] = [tool];
+    if (toolName === 'answer') {
+      tools.push({
+        type: 'web_search_20250305',
+        name: 'web_search',
+      });
+    }
+
     // Call API with tool
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: 1024,
       system: systemPrompt,
-      tools: [tool],
+      tools,
       tool_choice: { type: 'any' },
       messages: [
         {
@@ -79,14 +87,29 @@ export class AnthropicService implements LLMService {
       );
     }
 
-    // Validate response structure
-    if (
-      response.content.length === 0 ||
-      response.content[0].type !== 'tool_use'
-    ) {
+    // Find tool_use block in response (may not be first with web search)
+    const toolUseContent = response.content.find(
+      (block) => block.type === 'tool_use'
+    );
+
+    // For answer tool with web search, model might return text directly
+    if (toolName === 'answer' && !toolUseContent) {
+      const textContent = response.content.find(
+        (block) => block.type === 'text'
+      );
+      if (textContent) {
+        return {
+          message: '',
+          tasks: [],
+          answer: textContent.text,
+        };
+      }
+    }
+
+    if (!toolUseContent) {
       throw new Error('Expected tool_use response from Claude API');
     }
-    const content = response.content[0];
+    const content = toolUseContent;
 
     // Extract and validate response based on tool type
     const input = content.input as {
@@ -95,8 +118,6 @@ export class AnthropicService implements LLMService {
       question?: string;
       answer?: string;
     };
-
-    const isDebug = process.env.DEBUG === 'true';
 
     // Handle answer tool response
     if (toolName === 'answer') {
@@ -116,7 +137,6 @@ export class AnthropicService implements LLMService {
         message: '',
         tasks: [],
         answer: input.answer,
-        systemPrompt: isDebug ? systemPrompt : undefined,
       };
     }
 
@@ -143,7 +163,6 @@ export class AnthropicService implements LLMService {
     return {
       message: input.message,
       tasks: input.tasks,
-      systemPrompt: isDebug ? systemPrompt : undefined,
     };
   }
 }
