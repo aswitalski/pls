@@ -1,11 +1,120 @@
-import { describe, expect, it } from 'vitest';
+import { mkdirSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { saveDebugSetting } from '../../src/services/configuration.js';
 import {
   FeedbackMessages,
+  formatErrorMessage,
   getCancellationMessage,
   getConfirmationMessage,
   getRefiningMessage,
 } from '../../src/services/messages.js';
+
+import { safeRemoveDirectory } from '../test-utils.js';
+
+describe('formatErrorMessage', () => {
+  let testDir: string;
+  let originalHome: string | undefined;
+
+  beforeEach(() => {
+    testDir = join(
+      tmpdir(),
+      `pls-test-${Date.now().toString()}-${Math.random().toString()}`
+    );
+    mkdirSync(testDir, { recursive: true });
+    originalHome = process.env.HOME;
+    process.env.HOME = testDir;
+    // Create minimal valid config so loadDebugSetting can load settings
+    const configPath = join(testDir, '.plsrc');
+    writeFileSync(
+      configPath,
+      'anthropic:\n  key: sk-ant-api03-' + 'x'.repeat(95) + '\n',
+      'utf-8'
+    );
+  });
+
+  afterEach(() => {
+    process.env.HOME = originalHome;
+    safeRemoveDirectory(testDir);
+  });
+
+  describe('in normal mode', () => {
+    beforeEach(() => {
+      saveDebugSetting(false);
+    });
+
+    it('extracts message from Anthropic API error format', () => {
+      const apiError = new Error(
+        '400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low"}}'
+      );
+      expect(formatErrorMessage(apiError)).toBe(
+        'Your credit balance is too low'
+      );
+    });
+
+    it('extracts message from nested error object', () => {
+      const apiError = new Error(
+        '{"type":"error","error":{"message":"Invalid API key"}}'
+      );
+      expect(formatErrorMessage(apiError)).toBe('Invalid API key');
+    });
+
+    it('extracts message from top-level message field', () => {
+      const apiError = new Error('{"message":"Rate limit exceeded"}');
+      expect(formatErrorMessage(apiError)).toBe('Rate limit exceeded');
+    });
+
+    it('returns original message for plain text errors', () => {
+      const plainError = new Error('Connection refused');
+      expect(formatErrorMessage(plainError)).toBe('Connection refused');
+    });
+
+    it('returns original message for malformed JSON', () => {
+      const malformedError = new Error('400 {invalid json}');
+      expect(formatErrorMessage(malformedError)).toBe('400 {invalid json}');
+    });
+
+    it('returns original message when JSON has no message field', () => {
+      const noMessageError = new Error('{"type":"error","code":500}');
+      expect(formatErrorMessage(noMessageError)).toBe(
+        '{"type":"error","code":500}'
+      );
+    });
+
+    it('returns default message for non-Error objects', () => {
+      expect(formatErrorMessage('string error')).toBe('Unknown error occurred');
+      expect(formatErrorMessage(null)).toBe('Unknown error occurred');
+      expect(formatErrorMessage(undefined)).toBe('Unknown error occurred');
+      expect(formatErrorMessage(42)).toBe('Unknown error occurred');
+    });
+  });
+
+  describe('in debug mode', () => {
+    beforeEach(() => {
+      saveDebugSetting(true);
+    });
+
+    it('returns full error message including JSON', () => {
+      const apiError = new Error(
+        '400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low"}}'
+      );
+      expect(formatErrorMessage(apiError)).toBe(
+        '400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low"}}'
+      );
+    });
+
+    it('returns full plain text error message', () => {
+      const plainError = new Error('Connection refused');
+      expect(formatErrorMessage(plainError)).toBe('Connection refused');
+    });
+
+    it('returns default message for non-Error objects', () => {
+      expect(formatErrorMessage('string error')).toBe('Unknown error occurred');
+    });
+  });
+});
 
 describe('Message functions', () => {
   describe('getConfirmationMessage', () => {
