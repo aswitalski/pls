@@ -199,3 +199,180 @@ The type system provides better tooling and IDE support.`;
     expect(result.answer?.split('\n')).toHaveLength(4);
   });
 });
+
+describe('Web search integration', () => {
+  it('includes web search tool for answer requests', async () => {
+    let capturedTools: unknown[] = [];
+
+    const mockClient = {
+      messages: {
+        create: vi.fn().mockImplementation((params: { tools: unknown[] }) => {
+          capturedTools = params.tools;
+          return Promise.resolve({
+            stop_reason: 'end_turn',
+            content: [
+              {
+                type: 'tool_use',
+                input: {
+                  question: 'What time is it?',
+                  answer: 'The current time is 3:45 PM.',
+                },
+              },
+            ],
+          });
+        }),
+      },
+    };
+
+    const service = new AnthropicService(
+      'sk-ant-api03-' + 'A'.repeat(95),
+      'claude-haiku-4-5-20251001'
+    );
+
+    (service as unknown as { client: typeof mockClient }).client = mockClient;
+
+    await service.processWithTool('What time is it?', 'answer');
+
+    expect(capturedTools).toHaveLength(2);
+    expect(capturedTools[1]).toEqual({
+      type: 'web_search_20250305',
+      name: 'web_search',
+    });
+  });
+
+  it('handles text response when model returns directly after web search', async () => {
+    const mockClient = {
+      messages: {
+        create: vi.fn().mockResolvedValue({
+          stop_reason: 'end_turn',
+          content: [
+            {
+              type: 'web_search_tool_result',
+              search_results: [
+                { title: 'Current Time', url: 'https://time.is' },
+              ],
+            },
+            {
+              type: 'text',
+              text: 'The current time is 3:45 PM EST.',
+            },
+          ],
+        }),
+      },
+    };
+
+    const service = new AnthropicService(
+      'sk-ant-api03-' + 'A'.repeat(95),
+      'claude-haiku-4-5-20251001'
+    );
+
+    (service as unknown as { client: typeof mockClient }).client = mockClient;
+
+    const result = await service.processWithTool('What time is it?', 'answer');
+
+    expect(result.answer).toBe('The current time is 3:45 PM EST.');
+    expect(result.message).toBe('');
+    expect(result.tasks).toEqual([]);
+  });
+
+  it('finds tool_use after web search results', async () => {
+    const mockClient = {
+      messages: {
+        create: vi.fn().mockResolvedValue({
+          stop_reason: 'end_turn',
+          content: [
+            {
+              type: 'web_search_tool_result',
+              search_results: [
+                { title: 'Weather Report', url: 'https://weather.com' },
+              ],
+            },
+            {
+              type: 'tool_use',
+              input: {
+                question: 'What is the weather in NYC?',
+                answer: 'Currently 72°F and sunny in New York City.',
+              },
+            },
+          ],
+        }),
+      },
+    };
+
+    const service = new AnthropicService(
+      'sk-ant-api03-' + 'A'.repeat(95),
+      'claude-haiku-4-5-20251001'
+    );
+
+    (service as unknown as { client: typeof mockClient }).client = mockClient;
+
+    const result = await service.processWithTool(
+      'What is the weather in NYC?',
+      'answer'
+    );
+
+    expect(result.answer).toBe('Currently 72°F and sunny in New York City.');
+  });
+
+  it('does not include web search tool for plan requests', async () => {
+    let capturedTools: unknown[] = [];
+
+    const mockClient = {
+      messages: {
+        create: vi.fn().mockImplementation((params: { tools: unknown[] }) => {
+          capturedTools = params.tools;
+          return Promise.resolve({
+            stop_reason: 'end_turn',
+            content: [
+              {
+                type: 'tool_use',
+                input: {
+                  message: 'Here is the plan.',
+                  tasks: [{ action: 'Test action', type: 'execute' }],
+                },
+              },
+            ],
+          });
+        }),
+      },
+    };
+
+    const service = new AnthropicService(
+      'sk-ant-api03-' + 'A'.repeat(95),
+      'claude-haiku-4-5-20251001'
+    );
+
+    (service as unknown as { client: typeof mockClient }).client = mockClient;
+
+    await service.processWithTool('do something', 'plan');
+
+    expect(capturedTools).toHaveLength(1);
+  });
+
+  it('throws error when no tool_use or text content for answer', async () => {
+    const mockClient = {
+      messages: {
+        create: vi.fn().mockResolvedValue({
+          stop_reason: 'end_turn',
+          content: [
+            {
+              type: 'web_search_tool_result',
+              search_results: [],
+            },
+          ],
+        }),
+      },
+    };
+
+    const service = new AnthropicService(
+      'sk-ant-api03-' + 'A'.repeat(95),
+      'claude-haiku-4-5-20251001'
+    );
+
+    (service as unknown as { client: typeof mockClient }).client = mockClient;
+
+    await expect(
+      service.processWithTool('What time is it?', 'answer')
+    ).rejects.toThrow('Expected tool_use response from Claude API');
+  });
+});
