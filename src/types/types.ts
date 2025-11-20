@@ -19,6 +19,7 @@ export enum ComponentName {
   Report = 'report',
   Answer = 'answer',
   AnswerDisplay = 'answerDisplay',
+  Execute = 'execute',
 }
 
 export enum TaskType {

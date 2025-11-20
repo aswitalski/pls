@@ -8,6 +8,7 @@ import { AnswerDisplay } from './AnswerDisplay.js';
 import { Command } from './Command.js';
 import { Confirm } from './Confirm.js';
 import { Config } from './Config.js';
+import { Execute } from './Execute.js';
 import { Feedback } from './Feedback.js';
 import { Introspect } from './Introspect.js';
 import { Message } from './Message.js';
@@ -82,5 +83,11 @@ export const Component = React.memo(function Component({
 
     case ComponentName.AnswerDisplay:
       return <AnswerDisplay {...def.props} />;
+
+    case ComponentName.Execute: {
+      const props = def.props;
+      const state = def.state;
+      return <Execute {...props} state={state} />;
+    }
   }
 });

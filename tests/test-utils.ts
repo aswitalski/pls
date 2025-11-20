@@ -3,7 +3,7 @@ import { existsSync, rmSync } from 'fs';
 import type { Capability } from '../src/types/components.js';
 import type { Task } from '../src/types/types.js';
 
-import type { LLMService } from '../src/services/anthropic.js';
+import type { ExecuteCommand, LLMService } from '../src/services/anthropic.js';
 
 /**
  * Test input key constants for stdin.write()
@@ -34,6 +34,7 @@ export function createMockAnthropicService(
     tasks?: Task[];
     capabilities?: Capability[];
     answer?: string;
+    commands?: ExecuteCommand[];
   },
   error?: Error
 ): LLMService {
@@ -46,6 +47,7 @@ export function createMockAnthropicService(
         message: result.message || '',
         tasks: result.tasks || [],
         answer: result.answer,
+        commands: result.commands,
       });
     },
   };
