@@ -22,11 +22,13 @@ export function createExecuteErrorHandler(
 ) {
   return (error: string) =>
     withQueueHandler(ComponentName.Execute, (first) => {
-      addToTimeline(
-        markAsDone(first as StatefulComponentDefinition),
-        createFeedback(FeedbackType.Failed, error)
-      );
-      exitApp(1);
+      setTimeout(() => {
+        addToTimeline(
+          markAsDone(first as StatefulComponentDefinition),
+          createFeedback(FeedbackType.Failed, error)
+        );
+        exitApp(1);
+      }, 0);
       return [];
     });
 }
@@ -49,20 +51,26 @@ export function createExecuteCompleteHandler(
           ? `${failed.description}: ${failed.error}`
           : `${failed.description} failed`;
 
-        addToTimeline(
-          markAsDone(first as StatefulComponentDefinition),
-          createFeedback(FeedbackType.Failed, errorMessage)
-        );
-        exitApp(1);
+        setTimeout(() => {
+          addToTimeline(
+            markAsDone(first as StatefulComponentDefinition),
+            createFeedback(FeedbackType.Failed, errorMessage)
+          );
+          exitApp(1);
+        }, 0);
         return [];
       }
 
       // All succeeded
-      addToTimeline(
-        markAsDone(first as StatefulComponentDefinition),
-        createMessage(`Execution completed in ${formatDuration(totalElapsed)}.`)
-      );
-      exitApp(0);
+      setTimeout(() => {
+        addToTimeline(
+          markAsDone(first as StatefulComponentDefinition),
+          createMessage(
+            `Execution completed in ${formatDuration(totalElapsed)}.`
+          )
+        );
+        exitApp(0);
+      }, 0);
       return [];
     });
 }

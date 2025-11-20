@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ComponentDefinition,
@@ -22,6 +22,11 @@ vi.mock('../../src/services/process.js', () => ({
 describe('Execute handlers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('Execute error handler', () => {
@@ -41,6 +46,7 @@ describe('Execute handlers', () => {
 
       const queueHandler = handler('Network error');
       queueHandler(mockQueue);
+      vi.runAllTimers();
 
       expect(addToTimeline).toHaveBeenCalledTimes(1);
       const args = addToTimeline.mock.calls[0] as ComponentDefinition[];
@@ -125,6 +131,7 @@ describe('Execute handlers', () => {
 
       const queueHandler = handler(outputs, 9000);
       queueHandler(mockQueue);
+      vi.runAllTimers();
 
       expect(addToTimeline).toHaveBeenCalledTimes(1);
       const args = addToTimeline.mock.calls[0] as ComponentDefinition[];
@@ -175,6 +182,7 @@ describe('Execute handlers', () => {
 
       const queueHandler = handler(outputs, 5000);
       queueHandler(mockQueue);
+      vi.runAllTimers();
 
       expect(addToTimeline).toHaveBeenCalledTimes(1);
       const args = addToTimeline.mock.calls[0] as ComponentDefinition[];
@@ -211,6 +219,7 @@ describe('Execute handlers', () => {
 
       const queueHandler = handler(outputs, 3000);
       queueHandler(mockQueue);
+      vi.runAllTimers();
 
       const args = addToTimeline.mock.calls[0] as ComponentDefinition[];
       const feedback = args[1];
