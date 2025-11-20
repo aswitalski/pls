@@ -265,6 +265,14 @@ Write tests that validate real-world usage patterns and catch regressions in
 actual workflows. Avoid over-testing trivial code paths or theoretical scenarios
 that don't occur in practice.
 
+When significant changes, refactoring, or new features are implemented, ask
+whether tests are needed to cover the new functionality. Tests should:
+
+- Cover real-life use cases and scenarios that users will actually encounter
+- Validate the behavior that matters for production use
+- Avoid testing edge cases that would never happen in practice
+- Focus on catching actual bugs rather than achieving coverage metrics
+
 #### Commit messages
 
 Before creating a commit, ensure code quality:
