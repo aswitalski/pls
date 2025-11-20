@@ -12,7 +12,11 @@ import {
   markAsDone,
   createRefinement,
 } from '../services/components.js';
-import { FeedbackMessages, getRefiningMessage } from '../services/messages.js';
+import {
+  FeedbackMessages,
+  formatErrorMessage,
+  getRefiningMessage,
+} from '../services/messages.js';
 import { exitApp } from '../services/process.js';
 
 /**
@@ -116,8 +120,7 @@ export function createPlanSelectionConfirmedHandler(
       addToTimeline(planDefinition);
       setQueue([confirmDefinition]);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage = formatErrorMessage(error);
 
       // Mark refinement as done and move to timeline before showing error
       setQueue((currentQueue) => {

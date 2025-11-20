@@ -6,6 +6,7 @@ import { Task } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
+import { formatErrorMessage } from '../services/messages.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -130,8 +131,7 @@ export function Introspect({
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
 
         if (mounted) {
-          const errorMessage =
-            err instanceof Error ? err.message : 'Unknown error occurred';
+          const errorMessage = formatErrorMessage(err);
           setIsLoading(false);
           if (onError) {
             onError(errorMessage);
