@@ -1,0 +1,231 @@
+import { render } from 'ink-testing-library';
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { TaskType } from '../../src/types/types.js';
+
+import { Execute } from '../../src/ui/Execute.js';
+
+import { createMockAnthropicService } from '../test-utils.js';
+
+// Mock shell service to avoid actual command execution
+vi.mock('../../src/services/shell.js', async () => {
+  const actual = await vi.importActual('../../src/services/shell.js');
+  return {
+    ...actual,
+    executeCommands: vi
+      .fn()
+      .mockImplementation(async (commands, onProgress) => {
+        // Simulate immediate execution for tests
+        const results = commands.map(
+          (cmd: { description: string; command: string }, index: number) => {
+            onProgress?.({
+              currentIndex: index,
+              total: commands.length,
+              command: cmd,
+              status: 'running',
+            });
+            const output = {
+              description: cmd.description,
+              command: cmd.command,
+              output: '',
+              errors: '',
+              result: 'success',
+            };
+            onProgress?.({
+              currentIndex: index,
+              total: commands.length,
+              command: cmd,
+              status: 'success',
+              output,
+            });
+            return output;
+          }
+        );
+        return results;
+      }),
+  };
+});
+
+describe('Execute component', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows loading state while preparing commands', () => {
+    const service = createMockAnthropicService({
+      message: 'Setting up project.',
+      commands: [{ description: 'Create directory', command: 'mkdir test' }],
+    });
+
+    const tasks = [
+      { action: 'Create project directory', type: TaskType.Execute },
+    ];
+
+    const { lastFrame } = render(
+      <Execute
+        tasks={tasks}
+        service={service}
+        onComplete={vi.fn()}
+        onError={vi.fn()}
+        onAborted={vi.fn()}
+      />
+    );
+
+    expect(lastFrame()).toContain('Preparing commands.');
+  });
+
+  it('returns null when done with no commands', () => {
+    const service = createMockAnthropicService({
+      message: '',
+      commands: [],
+    });
+
+    const tasks = [{ action: 'Test', type: TaskType.Execute }];
+
+    const { lastFrame } = render(
+      <Execute
+        tasks={tasks}
+        state={{ done: true }}
+        service={service}
+        onComplete={vi.fn()}
+        onError={vi.fn()}
+        onAborted={vi.fn()}
+      />
+    );
+
+    expect(lastFrame()).toBe('');
+  });
+
+  it('calls onComplete with outputs when successful', async () => {
+    const service = createMockAnthropicService({
+      message: 'Setting up project.',
+      commands: [
+        { description: 'Create directory', command: 'mkdir test' },
+        { description: 'Initialize git', command: 'git init' },
+      ],
+    });
+    const onComplete = vi.fn();
+
+    const tasks = [
+      { action: 'Create project directory', type: TaskType.Execute },
+      { action: 'Initialize git repository', type: TaskType.Execute },
+    ];
+
+    render(
+      <Execute
+        tasks={tasks}
+        service={service}
+        onComplete={onComplete}
+        onError={vi.fn()}
+        onAborted={vi.fn()}
+      />
+    );
+
+    await vi.waitFor(
+      () => {
+        expect(onComplete).toHaveBeenCalled();
+      },
+      { timeout: 2000 }
+    );
+
+    const outputs = onComplete.mock.calls[0][0];
+    expect(outputs).toHaveLength(2);
+    expect(outputs[0].description).toBe('Create directory');
+    expect(outputs[1].description).toBe('Initialize git');
+  });
+
+  it('calls onError when service fails', async () => {
+    const errorMessage = 'API error';
+    const service = createMockAnthropicService({}, new Error(errorMessage));
+    const onError = vi.fn();
+
+    const tasks = [{ action: 'Test', type: TaskType.Execute }];
+
+    render(
+      <Execute
+        tasks={tasks}
+        service={service}
+        onComplete={vi.fn()}
+        onError={onError}
+        onAborted={vi.fn()}
+      />
+    );
+
+    await vi.waitFor(
+      () => {
+        expect(onError).toHaveBeenCalledWith(errorMessage);
+      },
+      { timeout: 2000 }
+    );
+  });
+
+  it('shows error when no service available', async () => {
+    const tasks = [{ action: 'Test', type: TaskType.Execute }];
+
+    const { lastFrame } = render(
+      <Execute
+        tasks={tasks}
+        service={undefined}
+        onComplete={vi.fn()}
+        onError={vi.fn()}
+        onAborted={vi.fn()}
+      />
+    );
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain('Error: No service available');
+    });
+  });
+
+  it('handles escape key to abort', () => {
+    const service = createMockAnthropicService({
+      message: 'Setting up.',
+      commands: [{ description: 'Test', command: 'echo test' }],
+    });
+    const onAborted = vi.fn();
+
+    const tasks = [{ action: 'Test', type: TaskType.Execute }];
+
+    const { stdin } = render(
+      <Execute
+        tasks={tasks}
+        service={service}
+        onComplete={vi.fn()}
+        onError={vi.fn()}
+        onAborted={onAborted}
+      />
+    );
+
+    stdin.write('\x1b'); // Escape key
+
+    expect(onAborted).toHaveBeenCalled();
+  });
+
+  it('calls onComplete with empty outputs when no commands returned', async () => {
+    const service = createMockAnthropicService({
+      message: '',
+      commands: [],
+    });
+    const onComplete = vi.fn();
+
+    const tasks = [{ action: 'Nothing', type: TaskType.Execute }];
+
+    render(
+      <Execute
+        tasks={tasks}
+        service={service}
+        onComplete={onComplete}
+        onError={vi.fn()}
+        onAborted={vi.fn()}
+      />
+    );
+
+    await vi.waitFor(
+      () => {
+        expect(onComplete).toHaveBeenCalledWith([], 0);
+      },
+      { timeout: 2000 }
+    );
+  });
+});

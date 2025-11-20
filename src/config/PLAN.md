@@ -127,8 +127,13 @@ executable operations.
    - Create a task definition for each step with:
      - action: clear, professional description starting with a capital letter
      - type: category of operation (if the skill specifies it or you can infer it)
-     - params: any specific parameters mentioned in the step
+     - params: MUST include:
+       - skill: the skill name (REQUIRED for all skill-based tasks)
+       - All parameter values used in the step (e.g., target, environment, etc.)
+       - Any other specific parameters mentioned in the step
    - NEVER replace the skill's detailed steps with a generic restatement
+   - The params.skill field is CRITICAL for execution to use the skill's
+     Execution section
 
 6. **Handle additional requirements beyond the skill:**
    - If the user's query includes additional requirements beyond the skill,
@@ -138,13 +143,19 @@ executable operations.
    - NEVER create generic execute tasks for unmatched requirements
 
 Example 1 - Skill with parameter, variant specified:
+- Skill name: "Process Data"
 - Skill has {TARGET} parameter with variants: Alpha, Beta, Gamma
 - Skill steps: "- Navigate to the {TARGET} root directory. - Execute the
   {TARGET} generation script. - Run the {TARGET} processing pipeline"
 - User: "process Alpha"
-- Correct: Three tasks with actions following the skill's steps, with
-  {TARGET} replaced by "Alpha"
-- WRONG: One task with action "Process Alpha"
+- Correct: Three tasks with params including skill name:
+  - { action: "Navigate to the Alpha root directory", type: "execute",
+      params: { skill: "Process Data", target: "Alpha" } }
+  - { action: "Execute the Alpha generation script", type: "execute",
+      params: { skill: "Process Data", target: "Alpha" } }
+  - { action: "Run the Alpha processing pipeline", type: "execute",
+      params: { skill: "Process Data", target: "Alpha" } }
+- WRONG: Tasks without params.skill or single task "Process Alpha"
 
 Example 2 - Skill with parameter, variant NOT specified:
 - Same skill as Example 1
@@ -658,8 +669,10 @@ Examples showing proper use of skills and disambiguation:
   Delta"] }. NOTE: If variants have descriptions, format as "Process Alpha, the
   legacy version" NOT "Process Alpha (the legacy version)"
 - "process Alpha" with same process skill → Three tasks extracted from skill
-  steps: "Navigate to the Alpha target's root directory", "Execute the Alpha
-  target generation script", "Run the Alpha processing pipeline"
+  steps, each with params: { skill: "Process Data", target: "Alpha" }:
+  - "Navigate to the Alpha target's root directory"
+  - "Execute the Alpha target generation script"
+  - "Run the Alpha processing pipeline"
 - "process all" with same process skill → Twelve tasks (3 steps × 4 targets)
 - "deploy" with deploy skill (staging, production, canary) → One task: type
   "define", action "Clarify which environment to deploy to:", params

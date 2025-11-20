@@ -8,6 +8,7 @@ import {
 import { App, ComponentName, FeedbackType, Task } from '../types/types.js';
 
 import { LLMService } from './anthropic.js';
+import { CommandOutput } from './shell.js';
 import {
   Config,
   ConfigDefinition,
@@ -397,4 +398,28 @@ export function createAnswerDisplayDefinition(
 
 export function isStateless(component: ComponentDefinition): boolean {
   return !('state' in component);
+}
+
+export function createExecuteDefinition(
+  tasks: Task[],
+  service: LLMService,
+  onError: (error: string) => void,
+  onComplete: (outputs: CommandOutput[], totalElapsed: number) => void,
+  onAborted: () => void
+): ComponentDefinition {
+  return {
+    id: randomUUID(),
+    name: ComponentName.Execute,
+    state: {
+      done: false,
+      isLoading: true,
+    },
+    props: {
+      tasks,
+      service,
+      onError,
+      onComplete,
+      onAborted,
+    },
+  };
 }

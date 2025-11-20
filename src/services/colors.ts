@@ -13,7 +13,7 @@ export const Palette = {
   CharcoalGray: '#282828',
   Green: '#5aaa8a',
   LightGreen: '#65b595',
-  BrightGreen: '#22aa22',
+  BrightGreen: '#3e9a3e',
   Yellow: '#cccc5c',
   LightYellow: '#d4d47a',
   Orange: '#cc9c5c',

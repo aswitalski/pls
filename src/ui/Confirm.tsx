@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import { Colors } from '../services/colors.js';
+import { Colors, Palette } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 
 export interface ConfirmProps {
@@ -50,7 +50,7 @@ export function Confirm({
   );
 
   const options = [
-    { label: 'yes', value: 'yes', color: Colors.Action.Execute },
+    { label: 'yes', value: 'yes', color: Palette.BrightGreen },
     { label: 'no', value: 'no', color: Colors.Status.Error },
   ];
 

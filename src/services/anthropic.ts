@@ -9,10 +9,19 @@ import {
 import { formatSkillsForPrompt, loadSkills } from './skills.js';
 import { toolRegistry } from './tool-registry.js';
 
+export interface ExecuteCommand {
+  description: string;
+  command: string;
+  workdir?: string;
+  timeout?: number;
+  critical?: boolean;
+}
+
 export interface CommandResult {
   message: string;
   tasks: Task[];
   answer?: string;
+  commands?: ExecuteCommand[];
 }
 
 export interface LLMService {
@@ -40,7 +49,11 @@ export class AnthropicService implements LLMService {
     let systemPrompt = instructions;
 
     // Add skills section for applicable tools
-    if (toolName === 'plan' || toolName === 'introspect') {
+    if (
+      toolName === 'plan' ||
+      toolName === 'introspect' ||
+      toolName === 'execute'
+    ) {
       const skills = loadSkills();
       const skillsSection = formatSkillsForPrompt(skills);
       systemPrompt += skillsSection;
@@ -117,7 +130,43 @@ export class AnthropicService implements LLMService {
       tasks?: Task[];
       question?: string;
       answer?: string;
+      commands?: ExecuteCommand[];
     };
+
+    // Handle execute tool response
+    if (toolName === 'execute') {
+      if (!input.message || typeof input.message !== 'string') {
+        throw new Error(
+          'Invalid tool response: missing or invalid message field'
+        );
+      }
+
+      if (!input.commands || !Array.isArray(input.commands)) {
+        throw new Error(
+          'Invalid tool response: missing or invalid commands array'
+        );
+      }
+
+      // Validate each command has required fields
+      input.commands.forEach((cmd, i) => {
+        if (!cmd.description || typeof cmd.description !== 'string') {
+          throw new Error(
+            `Invalid command at index ${String(i)}: missing or invalid 'description' field`
+          );
+        }
+        if (!cmd.command || typeof cmd.command !== 'string') {
+          throw new Error(
+            `Invalid command at index ${String(i)}: missing or invalid 'command' field`
+          );
+        }
+      });
+
+      return {
+        message: input.message,
+        tasks: [],
+        commands: input.commands,
+      };
+    }
 
     // Handle answer tool response
     if (toolName === 'answer') {

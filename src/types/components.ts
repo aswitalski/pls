@@ -3,6 +3,7 @@ import React from 'react';
 import { App, ComponentName, FeedbackType, Task } from './types.js';
 
 import { LLMService } from '../services/anthropic.js';
+import { CommandOutput } from '../services/shell.js';
 
 import { ConfigStep } from '../ui/Config.js';
 
@@ -108,6 +109,15 @@ export interface AnswerDisplayProps {
   answer: string;
 }
 
+export interface ExecuteProps {
+  tasks: Task[];
+  state?: ExecuteState;
+  service?: LLMService;
+  onError?: (error: string) => void;
+  onComplete?: (outputs: CommandOutput[], totalElapsed: number) => void;
+  onAborted: () => void;
+}
+
 // Base state interface - all stateful components extend this
 export interface BaseState {
   done: boolean;
@@ -125,6 +135,11 @@ export interface IntrospectState extends BaseState {
 }
 
 export interface AnswerState extends BaseState {
+  isLoading?: boolean;
+  error?: string;
+}
+
+export interface ExecuteState extends BaseState {
   isLoading?: boolean;
   error?: string;
 }
@@ -203,6 +218,11 @@ type AnswerDisplayDefinition = StatelessDefinition<
   ComponentName.AnswerDisplay,
   AnswerDisplayProps
 >;
+type ExecuteDefinition = StatefulDefinition<
+  ComponentName.Execute,
+  ExecuteProps,
+  ExecuteState
+>;
 
 // Discriminated union of all component definitions
 export type ComponentDefinition =
@@ -217,7 +237,8 @@ export type ComponentDefinition =
   | IntrospectDefinition
   | ReportDefinition
   | AnswerDefinition
-  | AnswerDisplayDefinition;
+  | AnswerDisplayDefinition
+  | ExecuteDefinition;
 
 // Union of all stateful component definitions
 export type StatefulComponentDefinition =
@@ -227,4 +248,5 @@ export type StatefulComponentDefinition =
   | PlanDefinition
   | ConfirmDefinition
   | IntrospectDefinition
-  | AnswerDefinition;
+  | AnswerDefinition
+  | ExecuteDefinition;

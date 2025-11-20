@@ -1,5 +1,7 @@
 import { loadDebugSetting } from './configuration.js';
 
+export { formatDuration } from './utils.js';
+
 /**
  * Returns a natural language confirmation message for plan execution.
  * Randomly selects from variations to sound less robotic.

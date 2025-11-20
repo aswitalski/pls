@@ -11,6 +11,7 @@ import {
   AnthropicService,
   createAnthropicService,
 } from '../services/anthropic.js';
+import { CommandOutput } from '../services/shell.js';
 import {
   getConfigurationRequiredMessage,
   hasValidAnthropicKey,
@@ -36,6 +37,11 @@ import {
   createAnswerCompleteHandler,
   createAnswerErrorHandler,
 } from '../handlers/answer.js';
+import {
+  createExecuteAbortedHandler,
+  createExecuteCompleteHandler,
+  createExecuteErrorHandler,
+} from '../handlers/execute.js';
 import {
   createCommandAbortedHandler,
   createCommandCompleteHandler,
@@ -207,6 +213,25 @@ export const Main = ({ app, command }: MainProps) => {
     [addToTimeline]
   );
 
+  const handleExecuteAborted = React.useCallback(
+    createExecuteAbortedHandler(handleAborted),
+    [handleAborted]
+  );
+
+  const handleExecuteError = React.useCallback(
+    (error: string) =>
+      setQueue(createExecuteErrorHandler(addToTimeline)(error)),
+    [addToTimeline]
+  );
+
+  const handleExecuteComplete = React.useCallback(
+    (outputs: CommandOutput[], totalElapsed: number) =>
+      setQueue(
+        createExecuteCompleteHandler(addToTimeline)(outputs, totalElapsed)
+      ),
+    [addToTimeline]
+  );
+
   const handleExecutionConfirmed = React.useCallback(
     () =>
       setQueue(
@@ -220,6 +245,9 @@ export const Main = ({ app, command }: MainProps) => {
           handleAnswerError,
           handleAnswerComplete,
           handleAnswerAborted,
+          handleExecuteError,
+          handleExecuteComplete,
+          handleExecuteAborted,
           setQueue
         )()
       ),
@@ -232,6 +260,9 @@ export const Main = ({ app, command }: MainProps) => {
       handleAnswerError,
       handleAnswerComplete,
       handleAnswerAborted,
+      handleExecuteError,
+      handleExecuteComplete,
+      handleExecuteAborted,
     ]
   );
 

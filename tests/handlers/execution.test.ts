@@ -79,6 +79,9 @@ describe('Execution handlers', () => {
         vi.fn(), // handleAnswerError
         vi.fn(), // handleAnswerComplete
         vi.fn(), // handleAnswerAborted
+        vi.fn(), // handleExecuteError
+        vi.fn(), // handleExecuteComplete
+        vi.fn(), // handleExecuteAborted
         setQueue
       );
 
@@ -153,6 +156,9 @@ describe('Execution handlers', () => {
         vi.fn(),
         vi.fn(),
         vi.fn(),
+        vi.fn(),
+        vi.fn(),
+        vi.fn(),
         setQueue
       );
 
@@ -218,6 +224,9 @@ describe('Execution handlers', () => {
         vi.fn(),
         vi.fn(),
         vi.fn(),
+        vi.fn(),
+        vi.fn(),
+        vi.fn(),
         setQueue
       );
 
@@ -270,6 +279,9 @@ describe('Execution handlers', () => {
         timelineRef,
         addToTimeline,
         mockService,
+        vi.fn(),
+        vi.fn(),
+        vi.fn(),
         vi.fn(),
         vi.fn(),
         vi.fn(),
@@ -339,6 +351,9 @@ describe('Execution handlers', () => {
         timelineRef,
         addToTimeline,
         mockService,
+        vi.fn(),
+        vi.fn(),
+        vi.fn(),
         vi.fn(),
         vi.fn(),
         vi.fn(),

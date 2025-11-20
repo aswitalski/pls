@@ -1,0 +1,53 @@
+import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages';
+
+export const executeTool: Tool = {
+  name: 'execute',
+  description:
+    'Execute shell commands from planned tasks. Translates task descriptions into specific shell commands that can be run in the terminal. Called after PLAN has created execute tasks and user has confirmed.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      message: {
+        type: 'string',
+        description:
+          'Brief status message about the execution. Must be a single sentence, maximum 64 characters, ending with a period.',
+      },
+      commands: {
+        type: 'array',
+        description: 'Array of commands to execute sequentially',
+        items: {
+          type: 'object',
+          properties: {
+            description: {
+              type: 'string',
+              description:
+                'Brief description of what this command does. Maximum 64 characters.',
+            },
+            command: {
+              type: 'string',
+              description:
+                'The exact shell command to run. Must be a valid shell command.',
+            },
+            workdir: {
+              type: 'string',
+              description:
+                'Optional working directory for the command. Defaults to current directory if not specified.',
+            },
+            timeout: {
+              type: 'number',
+              description:
+                'Optional timeout in milliseconds. Defaults to 30000 (30 seconds).',
+            },
+            critical: {
+              type: 'boolean',
+              description:
+                'Whether failure should stop execution of subsequent commands. Defaults to true.',
+            },
+          },
+          required: ['description', 'command'],
+        },
+      },
+    },
+    required: ['message', 'commands'],
+  },
+};

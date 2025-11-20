@@ -11,10 +11,12 @@ import { LLMService } from '../services/anthropic.js';
 import {
   createAnswerDefinition,
   createConfigDefinitionWithKeys,
+  createExecuteDefinition,
   createFeedback,
   createIntrospectDefinition,
   markAsDone,
 } from '../services/components.js';
+import { CommandOutput } from '../services/shell.js';
 import {
   createConfigExecutionAbortedHandler,
   createConfigExecutionFinishedHandler,
@@ -41,6 +43,12 @@ export function createExecutionConfirmedHandler(
   handleAnswerError: (error: string) => void,
   handleAnswerComplete: (answer: string) => void,
   handleAnswerAborted: () => void,
+  handleExecuteError: (error: string) => void,
+  handleExecuteComplete: (
+    outputs: CommandOutput[],
+    totalElapsed: number
+  ) => void,
+  handleExecuteAborted: () => void,
   setQueue: SetQueue
 ) {
   return () =>
@@ -68,6 +76,8 @@ export function createExecutionConfirmedHandler(
       const allAnswer = tasks.every((task) => task.type === TaskType.Answer);
 
       const allConfig = tasks.every((task) => task.type === TaskType.Config);
+
+      const allExecute = tasks.every((task) => task.type === TaskType.Execute);
 
       if (allIntrospect && tasks.length > 0) {
         // Execute introspection
@@ -119,9 +129,27 @@ export function createExecutionConfirmedHandler(
             handleConfigAborted
           ),
         ];
-      } else {
-        // Regular execution - just exit for now
+      } else if (allExecute && tasks.length > 0) {
+        // Execute shell commands
         addToTimeline(markAsDone(first as StatefulComponentDefinition));
+        return [
+          createExecuteDefinition(
+            tasks,
+            service,
+            handleExecuteError,
+            handleExecuteComplete,
+            handleExecuteAborted
+          ),
+        ];
+      } else {
+        // Mixed task types not supported yet
+        addToTimeline(
+          markAsDone(first as StatefulComponentDefinition),
+          createFeedback(
+            FeedbackType.Failed,
+            'I can only process one type of task at a time for now.'
+          )
+        );
         exitApp(0);
         return [];
       }
