@@ -143,14 +143,16 @@ export function createExecutionConfirmedHandler(
         ];
       } else {
         // Mixed task types not supported yet
-        addToTimeline(
-          markAsDone(first as StatefulComponentDefinition),
-          createFeedback(
-            FeedbackType.Failed,
-            'I can only process one type of task at a time for now.'
-          )
-        );
-        exitApp(0);
+        setTimeout(() => {
+          addToTimeline(
+            markAsDone(first as StatefulComponentDefinition),
+            createFeedback(
+              FeedbackType.Failed,
+              'I can only process one type of task at a time for now.'
+            )
+          );
+          exitApp(0);
+        }, 0);
         return [];
       }
     });
