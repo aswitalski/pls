@@ -5,13 +5,10 @@ import {
   FeedbackProps,
   MessageProps,
 } from '../../src/types/components.js';
+import { HandlerOperations, SetQueue } from '../../src/types/handlers.js';
 import { ComponentName, FeedbackType } from '../../src/types/types.js';
 
-import {
-  createExecuteAbortedHandler,
-  createExecuteCompleteHandler,
-  createExecuteErrorHandler,
-} from '../../src/handlers/execute.js';
+import { createExecuteHandlers } from '../../src/handlers/execute.js';
 import { CommandOutput, ExecutionResult } from '../../src/services/shell.js';
 
 // Mock exitApp to prevent actual process exit
@@ -20,15 +17,42 @@ vi.mock('../../src/services/process.js', () => ({
 }));
 
 describe('Execute handlers', () => {
+  let ops: HandlerOperations;
+  let addToTimelineMock: ReturnType<typeof vi.fn>;
+  let setQueueMock: ReturnType<typeof vi.fn>;
+  let handleAbortedMock: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    addToTimelineMock = vi.fn();
+    setQueueMock = vi.fn(
+      (updater: (queue: ComponentDefinition[]) => ComponentDefinition[]) => {
+        return updater;
+      }
+    );
+    handleAbortedMock = vi.fn();
+    ops = {
+      addToTimeline: addToTimelineMock as (
+        ...items: ComponentDefinition[]
+      ) => void,
+      setQueue: setQueueMock as unknown as SetQueue,
+      service: null,
+    };
   });
+
+  const getQueueUpdater = () =>
+    setQueueMock.mock.calls[0][0] as (
+      queue: ComponentDefinition[]
+    ) => ComponentDefinition[];
+  const getTimelineArgs = () =>
+    addToTimelineMock.mock.calls[0] as ComponentDefinition[];
 
   describe('Execute error handler', () => {
     it('marks Execute component as done and adds failed feedback', () => {
-      const addToTimeline = vi.fn();
-
-      const handler = createExecuteErrorHandler(addToTimeline);
+      const handlers = createExecuteHandlers(
+        ops,
+        handleAbortedMock as (operationName: string) => void
+      );
 
       const mockQueue: ComponentDefinition[] = [
         {
@@ -39,19 +63,20 @@ describe('Execute handlers', () => {
         },
       ];
 
-      const queueHandler = handler('Network error');
-      queueHandler(mockQueue);
+      handlers.onError('Network error');
 
-      expect(addToTimeline).toHaveBeenCalledTimes(1);
-      const args = addToTimeline.mock.calls[0] as ComponentDefinition[];
+      expect(setQueueMock).toHaveBeenCalled();
+      const queueUpdater = getQueueUpdater();
+      queueUpdater(mockQueue);
+
+      expect(addToTimelineMock).toHaveBeenCalledTimes(1);
+      const args = getTimelineArgs();
       const markedExecute = args[0];
       const feedback = args[1];
 
-      // Execute should be marked as done
       expect(markedExecute.name).toBe(ComponentName.Execute);
       expect('state' in markedExecute && markedExecute.state.done).toBe(true);
 
-      // Feedback should be failed type
       expect(feedback.name).toBe(ComponentName.Feedback);
       const feedbackProps = feedback.props as FeedbackProps;
       expect(feedbackProps.type).toBe(FeedbackType.Failed);
@@ -59,9 +84,10 @@ describe('Execute handlers', () => {
     });
 
     it('returns empty queue after processing', () => {
-      const addToTimeline = vi.fn();
-
-      const handler = createExecuteErrorHandler(addToTimeline);
+      const handlers = createExecuteHandlers(
+        ops,
+        handleAbortedMock as (operationName: string) => void
+      );
 
       const mockQueue: ComponentDefinition[] = [
         {
@@ -72,30 +98,36 @@ describe('Execute handlers', () => {
         },
       ];
 
-      const queueHandler = handler('Error');
-      const result = queueHandler(mockQueue);
+      handlers.onError('Error');
+
+      const queueUpdater = getQueueUpdater();
+      const result = queueUpdater(mockQueue);
 
       expect(result).toEqual([]);
     });
 
     it('handles empty queue gracefully', () => {
-      const addToTimeline = vi.fn();
+      const handlers = createExecuteHandlers(
+        ops,
+        handleAbortedMock as (operationName: string) => void
+      );
 
-      const handler = createExecuteErrorHandler(addToTimeline);
-      const queueHandler = handler('Error');
+      handlers.onError('Error');
 
-      const result = queueHandler([]);
+      const queueUpdater = getQueueUpdater();
+      const result = queueUpdater([]);
 
       expect(result).toEqual([]);
-      expect(addToTimeline).not.toHaveBeenCalled();
+      expect(addToTimelineMock).not.toHaveBeenCalled();
     });
   });
 
   describe('Execute complete handler', () => {
     it('marks Execute as done with success feedback when all commands succeed', () => {
-      const addToTimeline = vi.fn();
-
-      const handler = createExecuteCompleteHandler(addToTimeline);
+      const handlers = createExecuteHandlers(
+        ops,
+        handleAbortedMock as (operationName: string) => void
+      );
 
       const outputs: CommandOutput[] = [
         {
@@ -123,28 +155,29 @@ describe('Execute handlers', () => {
         },
       ];
 
-      const queueHandler = handler(outputs, 9000);
-      queueHandler(mockQueue);
+      handlers.onComplete(outputs, 9000);
 
-      expect(addToTimeline).toHaveBeenCalledTimes(1);
-      const args = addToTimeline.mock.calls[0] as ComponentDefinition[];
+      const queueUpdater = getQueueUpdater();
+      queueUpdater(mockQueue);
+
+      expect(addToTimelineMock).toHaveBeenCalledTimes(1);
+      const args = getTimelineArgs();
       const markedExecute = args[0];
       const message = args[1];
 
-      // Execute should be marked as done
       expect(markedExecute.name).toBe(ComponentName.Execute);
       expect('state' in markedExecute && markedExecute.state.done).toBe(true);
 
-      // Should be a message (not feedback)
       expect(message.name).toBe(ComponentName.Message);
       const messageProps = message.props as MessageProps;
       expect(messageProps.text).toBe('Execution completed in 9 seconds.');
     });
 
     it('adds failed feedback when a command fails with error message', () => {
-      const addToTimeline = vi.fn();
-
-      const handler = createExecuteCompleteHandler(addToTimeline);
+      const handlers = createExecuteHandlers(
+        ops,
+        handleAbortedMock as (operationName: string) => void
+      );
 
       const outputs: CommandOutput[] = [
         {
@@ -173,11 +206,13 @@ describe('Execute handlers', () => {
         },
       ];
 
-      const queueHandler = handler(outputs, 5000);
-      queueHandler(mockQueue);
+      handlers.onComplete(outputs, 5000);
 
-      expect(addToTimeline).toHaveBeenCalledTimes(1);
-      const args = addToTimeline.mock.calls[0] as ComponentDefinition[];
+      const queueUpdater = getQueueUpdater();
+      queueUpdater(mockQueue);
+
+      expect(addToTimelineMock).toHaveBeenCalledTimes(1);
+      const args = getTimelineArgs();
       const feedback = args[1];
 
       const feedbackProps = feedback.props as FeedbackProps;
@@ -186,9 +221,10 @@ describe('Execute handlers', () => {
     });
 
     it('adds failed feedback with exit code when no error message', () => {
-      const addToTimeline = vi.fn();
-
-      const handler = createExecuteCompleteHandler(addToTimeline);
+      const handlers = createExecuteHandlers(
+        ops,
+        handleAbortedMock as (operationName: string) => void
+      );
 
       const outputs: CommandOutput[] = [
         {
@@ -209,10 +245,12 @@ describe('Execute handlers', () => {
         },
       ];
 
-      const queueHandler = handler(outputs, 3000);
-      queueHandler(mockQueue);
+      handlers.onComplete(outputs, 3000);
 
-      const args = addToTimeline.mock.calls[0] as ComponentDefinition[];
+      const queueUpdater = getQueueUpdater();
+      queueUpdater(mockQueue);
+
+      const args = getTimelineArgs();
       const feedback = args[1];
 
       const feedbackProps = feedback.props as FeedbackProps;
@@ -221,9 +259,10 @@ describe('Execute handlers', () => {
     });
 
     it('returns empty queue after processing', () => {
-      const addToTimeline = vi.fn();
-
-      const handler = createExecuteCompleteHandler(addToTimeline);
+      const handlers = createExecuteHandlers(
+        ops,
+        handleAbortedMock as (operationName: string) => void
+      );
 
       const outputs: CommandOutput[] = [
         {
@@ -244,33 +283,39 @@ describe('Execute handlers', () => {
         },
       ];
 
-      const queueHandler = handler(outputs, 1000);
-      const result = queueHandler(mockQueue);
+      handlers.onComplete(outputs, 1000);
+
+      const queueUpdater = getQueueUpdater();
+      const result = queueUpdater(mockQueue);
 
       expect(result).toEqual([]);
     });
 
     it('handles empty queue gracefully', () => {
-      const addToTimeline = vi.fn();
+      const handlers = createExecuteHandlers(
+        ops,
+        handleAbortedMock as (operationName: string) => void
+      );
 
-      const handler = createExecuteCompleteHandler(addToTimeline);
-      const queueHandler = handler([], 0);
+      handlers.onComplete([], 0);
 
-      const result = queueHandler([]);
+      const queueUpdater = getQueueUpdater();
+      const result = queueUpdater([]);
 
       expect(result).toEqual([]);
-      expect(addToTimeline).not.toHaveBeenCalled();
+      expect(addToTimelineMock).not.toHaveBeenCalled();
     });
   });
 
   describe('Execute aborted handler', () => {
     it('calls handleAborted with operation name', () => {
-      const handleAborted = vi.fn();
+      const handlers = createExecuteHandlers(
+        ops,
+        handleAbortedMock as (operationName: string) => void
+      );
+      handlers.onAborted();
 
-      const handler = createExecuteAbortedHandler(handleAborted);
-      handler();
-
-      expect(handleAborted).toHaveBeenCalledWith('Execution');
+      expect(handleAbortedMock).toHaveBeenCalledWith('Execution');
     });
   });
 });

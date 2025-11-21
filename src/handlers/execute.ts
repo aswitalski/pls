@@ -1,7 +1,5 @@
-import {
-  ComponentDefinition,
-  StatefulComponentDefinition,
-} from '../types/components.js';
+import { StatefulComponentDefinition } from '../types/components.js';
+import { ExecuteHandlers, HandlerOperations } from '../types/handlers.js';
 import { ComponentName, FeedbackType } from '../types/types.js';
 
 import {
@@ -15,65 +13,60 @@ import { CommandOutput, ExecutionResult } from '../services/shell.js';
 import { withQueueHandler } from '../services/queue.js';
 
 /**
- * Creates execute error handler
+ * Creates all execute handlers
  */
-export function createExecuteErrorHandler(
-  addToTimeline: (...items: ComponentDefinition[]) => void
-) {
-  return (error: string) =>
-    withQueueHandler(ComponentName.Execute, (first) => {
-      addToTimeline(
-        markAsDone(first as StatefulComponentDefinition),
-        createFeedback(FeedbackType.Failed, error)
-      );
-      exitApp(1);
-      return [];
-    });
-}
-
-/**
- * Creates execute complete handler
- */
-export function createExecuteCompleteHandler(
-  addToTimeline: (...items: ComponentDefinition[]) => void
-) {
-  return (outputs: CommandOutput[], totalElapsed: number) =>
-    withQueueHandler(ComponentName.Execute, (first) => {
-      // Check if any command failed
-      const failed = outputs.find(
-        (out) => out.result !== ExecutionResult.Success
-      );
-
-      if (failed) {
-        const errorMessage = failed.error
-          ? `${failed.description}: ${failed.error}`
-          : `${failed.description} failed`;
-
-        addToTimeline(
+export function createExecuteHandlers(
+  ops: HandlerOperations,
+  handleAborted: (operationName: string) => void
+): ExecuteHandlers {
+  const onError = (error: string) => {
+    ops.setQueue(
+      withQueueHandler(ComponentName.Execute, (first) => {
+        ops.addToTimeline(
           markAsDone(first as StatefulComponentDefinition),
-          createFeedback(FeedbackType.Failed, errorMessage)
+          createFeedback(FeedbackType.Failed, error)
         );
         exitApp(1);
         return [];
-      }
+      })
+    );
+  };
 
-      // All succeeded
-      addToTimeline(
-        markAsDone(first as StatefulComponentDefinition),
-        createMessage(`Execution completed in ${formatDuration(totalElapsed)}.`)
-      );
-      exitApp(0);
-      return [];
-    });
-}
+  const onComplete = (outputs: CommandOutput[], totalElapsed: number) => {
+    ops.setQueue(
+      withQueueHandler(ComponentName.Execute, (first) => {
+        const failed = outputs.find(
+          (out) => out.result !== ExecutionResult.Success
+        );
 
-/**
- * Creates execute aborted handler
- */
-export function createExecuteAbortedHandler(
-  handleAborted: (operationName: string) => void
-) {
-  return () => {
+        if (failed) {
+          const errorMessage = failed.error
+            ? `${failed.description}: ${failed.error}`
+            : `${failed.description} failed`;
+
+          ops.addToTimeline(
+            markAsDone(first as StatefulComponentDefinition),
+            createFeedback(FeedbackType.Failed, errorMessage)
+          );
+          exitApp(1);
+          return [];
+        }
+
+        ops.addToTimeline(
+          markAsDone(first as StatefulComponentDefinition),
+          createMessage(
+            `Execution completed in ${formatDuration(totalElapsed)}.`
+          )
+        );
+        exitApp(0);
+        return [];
+      })
+    );
+  };
+
+  const onAborted = () => {
     handleAborted('Execution');
   };
+
+  return { onError, onComplete, onAborted };
 }

@@ -4,7 +4,12 @@ import {
   ComponentDefinition,
   StatefulComponentDefinition,
 } from '../types/components.js';
-import { ComponentName, FeedbackType, Task } from '../types/types.js';
+import {
+  CommandHandlers,
+  ConfigHandlers,
+  HandlerOperations,
+} from '../types/handlers.js';
+import { ComponentName, FeedbackType } from '../types/types.js';
 
 import {
   AnthropicService,
@@ -26,66 +31,60 @@ interface AnthropicConfig extends Record<string, string> {
 }
 
 /**
- * Creates config finished handler
+ * Creates all config handlers
  */
-export function createConfigFinishedHandler(
-  addToTimeline: (...items: ComponentDefinition[]) => void,
+export function createConfigHandlers(
+  ops: HandlerOperations,
+  handleAborted: (operationName: string) => void,
   command: string | null,
-  handleCommandError: (error: string) => void,
-  handleCommandComplete: (message: string, tasks: Task[]) => void,
-  handleCommandAborted: () => void,
+  commandHandlers: CommandHandlers,
   setService: React.Dispatch<React.SetStateAction<AnthropicService | null>>
-) {
-  return (config: Record<string, string>) => {
+): ConfigHandlers {
+  const onFinished = (config: Record<string, string>) => {
     const anthropicConfig = config as AnthropicConfig;
     saveAnthropicConfig(anthropicConfig);
     const newService = createAnthropicService(anthropicConfig);
     setService(newService);
 
-    return withQueueHandler(
-      ComponentName.Config,
-      (first, rest): ComponentDefinition[] => {
-        addToTimeline(
-          markAsDone(first as StatefulComponentDefinition),
-          createFeedback(
-            FeedbackType.Succeeded,
-            FeedbackMessages.ConfigurationComplete
-          )
-        );
+    ops.setQueue(
+      withQueueHandler(
+        ComponentName.Config,
+        (first, rest): ComponentDefinition[] => {
+          ops.addToTimeline(
+            markAsDone(first as StatefulComponentDefinition),
+            createFeedback(
+              FeedbackType.Succeeded,
+              FeedbackMessages.ConfigurationComplete
+            )
+          );
 
-        // Add command to queue if we have one
-        if (command) {
-          return [
-            ...rest,
-            createCommandDefinition(
-              command,
-              newService,
-              handleCommandError,
-              handleCommandComplete,
-              handleCommandAborted
-            ),
-          ];
-        }
+          if (command) {
+            return [
+              ...rest,
+              createCommandDefinition(
+                command,
+                newService,
+                commandHandlers.onError,
+                commandHandlers.onComplete,
+                commandHandlers.onAborted
+              ),
+            ];
+          }
 
-        // No command - exit after showing completion message
-        exitApp(0);
-        return rest;
-      },
-      false,
-      0
+          exitApp(0);
+          return rest;
+        },
+        false,
+        0
+      )
     );
   };
-}
 
-/**
- * Creates config aborted handler
- */
-export function createConfigAbortedHandler(
-  handleAborted: (operationName: string) => void
-) {
-  return () => {
+  const onAborted = () => {
     handleAborted('Configuration');
   };
+
+  return { onFinished, onAborted };
 }
 
 /**
@@ -97,8 +96,6 @@ export function createConfigExecutionFinishedHandler(
   keys: string[]
 ) {
   return (config: Record<string, string>) => {
-    // Map short keys back to full keys and save
-    // Group by section (e.g., "anthropic", "settings")
     const sections: Record<string, Record<string, string>> = {};
 
     for (const fullKey of keys) {
@@ -113,7 +110,6 @@ export function createConfigExecutionFinishedHandler(
       }
     }
 
-    // Save each section
     for (const [section, sectionConfig] of Object.entries(sections)) {
       saveConfig(section, sectionConfig);
     }

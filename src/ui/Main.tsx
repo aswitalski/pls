@@ -1,26 +1,16 @@
 import React from 'react';
 
 import {
-  Capability,
   ComponentDefinition,
   StatefulComponentDefinition,
 } from '../types/components.js';
-import { App, FeedbackType, Task } from '../types/types.js';
+import { HandlerOperations } from '../types/handlers.js';
+import { App, FeedbackType } from '../types/types.js';
 
 import {
   AnthropicService,
   createAnthropicService,
 } from '../services/anthropic.js';
-import { CommandOutput } from '../services/shell.js';
-import {
-  getConfigurationRequiredMessage,
-  hasValidAnthropicKey,
-  loadConfig,
-  loadDebugSetting,
-  saveDebugSetting,
-} from '../services/configuration.js';
-import { registerGlobalShortcut } from '../services/keyboard.js';
-import { getCancellationMessage } from '../services/messages.js';
 import {
   createCommandDefinition,
   createConfigDefinition,
@@ -30,41 +20,24 @@ import {
   isStateless,
   markAsDone,
 } from '../services/components.js';
+import {
+  getConfigurationRequiredMessage,
+  hasValidAnthropicKey,
+  loadConfig,
+  loadDebugSetting,
+  saveDebugSetting,
+} from '../services/configuration.js';
+import { registerGlobalShortcut } from '../services/keyboard.js';
+import { getCancellationMessage } from '../services/messages.js';
 import { exitApp } from '../services/process.js';
 
-import {
-  createAnswerAbortedHandler,
-  createAnswerCompleteHandler,
-  createAnswerErrorHandler,
-} from '../handlers/answer.js';
-import {
-  createExecuteAbortedHandler,
-  createExecuteCompleteHandler,
-  createExecuteErrorHandler,
-} from '../handlers/execute.js';
-import {
-  createCommandAbortedHandler,
-  createCommandCompleteHandler,
-  createCommandErrorHandler,
-} from '../handlers/command.js';
-import {
-  createConfigAbortedHandler,
-  createConfigFinishedHandler,
-} from '../handlers/config.js';
-import {
-  createExecutionCancelledHandler,
-  createExecutionConfirmedHandler,
-} from '../handlers/execution.js';
-import {
-  createIntrospectAbortedHandler,
-  createIntrospectCompleteHandler,
-  createIntrospectErrorHandler,
-} from '../handlers/introspect.js';
-import {
-  createPlanAbortedHandler,
-  createPlanAbortHandlerFactory,
-  createPlanSelectionConfirmedHandler,
-} from '../handlers/plan.js';
+import { createAnswerHandlers } from '../handlers/answer.js';
+import { createCommandHandlers } from '../handlers/command.js';
+import { createConfigHandlers } from '../handlers/config.js';
+import { createExecuteHandlers } from '../handlers/execute.js';
+import { createExecutionHandlers } from '../handlers/execution.js';
+import { createIntrospectHandlers } from '../handlers/introspect.js';
+import { createPlanHandlers } from '../handlers/plan.js';
 
 import { Column } from './Column.js';
 
@@ -74,7 +47,6 @@ interface MainProps {
 }
 
 export const Main = ({ app, command }: MainProps) => {
-  // Initialize service from existing config if available
   const [service, setService] = React.useState<AnthropicService | null>(() => {
     if (hasValidAnthropicKey()) {
       const config = loadConfig();
@@ -89,15 +61,8 @@ export const Main = ({ app, command }: MainProps) => {
     loadDebugSetting()
   );
 
-  // Use ref to track latest timeline for callbacks
-  const timelineRef = React.useRef<ComponentDefinition[]>(timeline);
-  React.useEffect(() => {
-    timelineRef.current = timeline;
-  }, [timeline]);
-
   // Register global keyboard shortcuts
   React.useEffect(() => {
-    // Shift+Tab: Toggle debug mode
     registerGlobalShortcut('shift+tab', () => {
       setIsDebug((prev) => {
         const newValue = !prev;
@@ -117,7 +82,6 @@ export const Main = ({ app, command }: MainProps) => {
 
       const [first, ...rest] = currentQueue;
 
-      // Stateless components auto-complete immediately
       if (isStateless(first)) {
         addToTimeline(first);
         return rest;
@@ -127,12 +91,7 @@ export const Main = ({ app, command }: MainProps) => {
     });
   }, [addToTimeline]);
 
-  const handleCommandError = React.useCallback(
-    (error: string) =>
-      setQueue(createCommandErrorHandler(addToTimeline)(error)),
-    [addToTimeline]
-  );
-
+  // Core abort handler
   const handleAborted = React.useCallback(
     (operationName: string) => {
       setQueue((currentQueue) => {
@@ -154,183 +113,68 @@ export const Main = ({ app, command }: MainProps) => {
     [addToTimeline]
   );
 
-  const handleConfigAborted = React.useCallback(
-    createConfigAbortedHandler(handleAborted),
-    [handleAborted]
-  );
-
-  const handlePlanAborted = React.useCallback(
-    createPlanAbortedHandler(handleAborted),
-    [handleAborted]
-  );
-
-  const createPlanAbortHandler = React.useCallback(
-    createPlanAbortHandlerFactory(handleAborted, handlePlanAborted),
-    [handleAborted, handlePlanAborted]
-  );
-
-  const handleCommandAborted = React.useCallback(
-    createCommandAbortedHandler(handleAborted),
-    [handleAborted]
-  );
-
-  const handleRefinementAborted = React.useCallback(() => {
-    handleAborted('Plan refinement');
-  }, [handleAborted]);
-
-  const handleIntrospectAborted = React.useCallback(
-    createIntrospectAbortedHandler(handleAborted),
-    [handleAborted]
-  );
-
-  const handleIntrospectError = React.useCallback(
-    (error: string) =>
-      setQueue(createIntrospectErrorHandler(addToTimeline)(error)),
-    [addToTimeline]
-  );
-
-  const handleIntrospectComplete = React.useCallback(
-    (message: string, capabilities: Capability[]) =>
-      setQueue(
-        createIntrospectCompleteHandler(addToTimeline)(message, capabilities)
-      ),
-    [addToTimeline]
-  );
-
-  const handleAnswerAborted = React.useCallback(
-    createAnswerAbortedHandler(handleAborted),
-    [handleAborted]
-  );
-
-  const handleAnswerError = React.useCallback(
-    (error: string) => setQueue(createAnswerErrorHandler(addToTimeline)(error)),
-    [addToTimeline]
-  );
-
-  const handleAnswerComplete = React.useCallback(
-    (answer: string) =>
-      setQueue(createAnswerCompleteHandler(addToTimeline)(answer)),
-    [addToTimeline]
-  );
-
-  const handleExecuteAborted = React.useCallback(
-    createExecuteAbortedHandler(handleAborted),
-    [handleAborted]
-  );
-
-  const handleExecuteError = React.useCallback(
-    (error: string) =>
-      setQueue(createExecuteErrorHandler(addToTimeline)(error)),
-    [addToTimeline]
-  );
-
-  const handleExecuteComplete = React.useCallback(
-    (outputs: CommandOutput[], totalElapsed: number) =>
-      setQueue(
-        createExecuteCompleteHandler(addToTimeline)(outputs, totalElapsed)
-      ),
-    [addToTimeline]
-  );
-
-  const handleExecutionConfirmed = React.useCallback(
-    () =>
-      setQueue(
-        createExecutionConfirmedHandler(
-          timelineRef,
-          addToTimeline,
-          service!,
-          handleIntrospectError,
-          handleIntrospectComplete,
-          handleIntrospectAborted,
-          handleAnswerError,
-          handleAnswerComplete,
-          handleAnswerAborted,
-          handleExecuteError,
-          handleExecuteComplete,
-          handleExecuteAborted,
-          setQueue
-        )()
-      ),
-    [
+  // Create operations object
+  const ops: HandlerOperations = React.useMemo(
+    () => ({
       addToTimeline,
+      setQueue,
       service,
-      handleIntrospectError,
-      handleIntrospectComplete,
-      handleIntrospectAborted,
-      handleAnswerError,
-      handleAnswerComplete,
-      handleAnswerAborted,
-      handleExecuteError,
-      handleExecuteComplete,
-      handleExecuteAborted,
-    ]
+    }),
+    [addToTimeline, service]
   );
 
-  const handleExecutionCancelled = React.useCallback(
+  // Create handlers in dependency order
+  const introspectHandlers = React.useMemo(
+    () => createIntrospectHandlers(ops, handleAborted),
+    [ops, handleAborted]
+  );
+
+  const answerHandlers = React.useMemo(
+    () => createAnswerHandlers(ops, handleAborted),
+    [ops, handleAborted]
+  );
+
+  const executeHandlers = React.useMemo(
+    () => createExecuteHandlers(ops, handleAborted),
+    [ops, handleAborted]
+  );
+
+  const executionHandlers = React.useMemo(
     () =>
-      setQueue(createExecutionCancelledHandler(timelineRef, addToTimeline)()),
-    [addToTimeline]
+      createExecutionHandlers(ops, {
+        introspect: introspectHandlers,
+        answer: answerHandlers,
+        execute: executeHandlers,
+      }),
+    [ops, introspectHandlers, answerHandlers, executeHandlers]
   );
 
-  const handlePlanSelectionConfirmed = React.useCallback(
-    createPlanSelectionConfirmedHandler(
-      addToTimeline,
-      service!,
-      handleRefinementAborted,
-      createPlanAbortHandler,
-      handleExecutionConfirmed,
-      handleExecutionCancelled,
-      setQueue
-    ),
-    [
-      addToTimeline,
-      service,
-      handleRefinementAborted,
-      createPlanAbortHandler,
-      handleExecutionConfirmed,
-      handleExecutionCancelled,
-    ]
+  const planHandlers = React.useMemo(
+    () => createPlanHandlers(ops, handleAborted, executionHandlers),
+    [ops, handleAborted, executionHandlers]
   );
 
-  const handleCommandComplete = React.useCallback(
-    (message: string, tasks: Task[]) =>
-      setQueue(
-        createCommandCompleteHandler(
-          addToTimeline,
-          createPlanAbortHandler,
-          handlePlanSelectionConfirmed,
-          handleExecutionConfirmed,
-          handleExecutionCancelled
-        )(message, tasks)
+  const commandHandlers = React.useMemo(
+    () =>
+      createCommandHandlers(
+        ops,
+        handleAborted,
+        planHandlers,
+        executionHandlers
       ),
-    [
-      addToTimeline,
-      createPlanAbortHandler,
-      handlePlanSelectionConfirmed,
-      handleExecutionConfirmed,
-      handleExecutionCancelled,
-    ]
+    [ops, handleAborted, planHandlers, executionHandlers]
   );
 
-  const handleConfigFinished = React.useCallback(
-    (config: Record<string, string>) =>
-      setQueue(
-        createConfigFinishedHandler(
-          addToTimeline,
-          command,
-          handleCommandError,
-          handleCommandComplete,
-          handleCommandAborted,
-          setService
-        )(config)
+  const configHandlers = React.useMemo(
+    () =>
+      createConfigHandlers(
+        ops,
+        handleAborted,
+        command,
+        commandHandlers,
+        setService
       ),
-    [
-      addToTimeline,
-      command,
-      handleCommandError,
-      handleCommandComplete,
-      handleCommandAborted,
-    ]
+    [ops, handleAborted, command, commandHandlers]
   );
 
   // Initialize queue on mount
@@ -338,41 +182,43 @@ export const Main = ({ app, command }: MainProps) => {
     const hasConfig = !!service;
 
     if (command && hasConfig) {
-      // With command + valid config: [Command]
       setQueue([
         createCommandDefinition(
           command,
           service,
-          handleCommandError,
-          handleCommandComplete,
-          handleCommandAborted
+          commandHandlers.onError,
+          commandHandlers.onComplete,
+          commandHandlers.onAborted
         ),
       ]);
     } else if (command && !hasConfig) {
-      // With command + no config: [Message, Config] (Command added after config)
       setQueue([
         createMessage(getConfigurationRequiredMessage()),
-        createConfigDefinition(handleConfigFinished, handleConfigAborted),
+        createConfigDefinition(
+          configHandlers.onFinished,
+          configHandlers.onAborted
+        ),
       ]);
     } else if (!command && hasConfig) {
-      // No command + valid config: [Welcome]
       setQueue([createWelcomeDefinition(app)]);
     } else {
-      // No command + no config: [Welcome, Message, Config]
       setQueue([
         createWelcomeDefinition(app),
         createMessage(getConfigurationRequiredMessage(true)),
-        createConfigDefinition(handleConfigFinished, handleConfigAborted),
+        createConfigDefinition(
+          configHandlers.onFinished,
+          configHandlers.onAborted
+        ),
       ]);
     }
-  }, []); // Only run on mount
+  }, []);
 
   // Process queue whenever it changes
   React.useEffect(() => {
     processNextInQueue();
   }, [queue, processNextInQueue]);
 
-  // Exit when queue is empty and timeline has content (all stateless components done)
+  // Exit when queue is empty and timeline has content
   React.useEffect(() => {
     if (queue.length === 0 && timeline.length > 0) {
       exitApp(0);

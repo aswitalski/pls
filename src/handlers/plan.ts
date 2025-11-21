@@ -1,10 +1,11 @@
+import { StatefulComponentDefinition } from '../types/components.js';
 import {
-  ComponentDefinition,
-  StatefulComponentDefinition,
-} from '../types/components.js';
+  ExecutionHandlers,
+  HandlerOperations,
+  PlanHandlers,
+} from '../types/handlers.js';
 import { ComponentName, FeedbackType, Task, TaskType } from '../types/types.js';
 
-import { LLMService } from '../services/anthropic.js';
 import {
   createConfirmDefinition,
   createFeedback,
@@ -20,24 +21,18 @@ import {
 import { exitApp } from '../services/process.js';
 
 /**
- * Creates plan aborted handler
+ * Creates all plan handlers
  */
-export function createPlanAbortedHandler(
-  handleAborted: (operationName: string) => void
-) {
-  return () => {
+export function createPlanHandlers(
+  ops: HandlerOperations,
+  handleAborted: (operationName: string) => void,
+  executionHandlers: ExecutionHandlers
+): PlanHandlers {
+  const onAborted = () => {
     handleAborted('Task selection');
   };
-}
 
-/**
- * Creates plan abort handler factory
- */
-export function createPlanAbortHandlerFactory(
-  handleAborted: (operationName: string) => void,
-  handlePlanAborted: () => void
-) {
-  return (tasks: Task[]) => {
+  const createAbortHandler = (tasks: Task[]) => {
     const allIntrospect = tasks.every(
       (task) => task.type === TaskType.Introspect
     );
@@ -46,41 +41,37 @@ export function createPlanAbortHandlerFactory(
         handleAborted('Introspection');
       };
     }
-    return handlePlanAborted;
+    return onAborted;
   };
-}
 
-/**
- * Creates plan selection confirmed handler
- */
-export function createPlanSelectionConfirmedHandler(
-  addToTimeline: (...items: ComponentDefinition[]) => void,
-  service: LLMService,
-  handleRefinementAborted: () => void,
-  createPlanAbortHandler: (tasks: Task[]) => () => void,
-  handleExecutionConfirmed: () => void,
-  handleExecutionCancelled: () => void,
-  setQueue: React.Dispatch<React.SetStateAction<ComponentDefinition[]>>
-) {
-  return async (selectedTasks: Task[]) => {
-    // Mark current plan as done and add refinement to queue
-    const refinementDef = createRefinement(
-      getRefiningMessage(),
-      handleRefinementAborted
-    ) as StatefulComponentDefinition;
+  const onSelectionConfirmed = async (selectedTasks: Task[]) => {
+    const refinementDef = createRefinement(getRefiningMessage(), () => {
+      handleAborted('Plan refinement');
+    }) as StatefulComponentDefinition;
 
-    setQueue((currentQueue) => {
+    ops.setQueue((currentQueue) => {
       if (currentQueue.length === 0) return currentQueue;
       const [first] = currentQueue;
       if (first.name === ComponentName.Plan) {
-        addToTimeline(markAsDone(first as StatefulComponentDefinition));
+        ops.addToTimeline(markAsDone(first as StatefulComponentDefinition));
       }
-      // Add refinement to queue so it becomes the active component
       return [refinementDef];
     });
 
-    // Process refined command in background
     try {
+      const service = ops.service;
+      if (!service) {
+        ops.addToTimeline(
+          createFeedback(
+            FeedbackType.Failed,
+            FeedbackMessages.UnexpectedError,
+            'Service not available'
+          )
+        );
+        exitApp(1);
+        return;
+      }
+
       const refinedCommand = selectedTasks
         .map((task) => {
           const action = task.action.toLowerCase().replace(/,/g, ' -');
@@ -91,51 +82,52 @@ export function createPlanSelectionConfirmedHandler(
 
       const result = await service.processWithTool(refinedCommand, 'plan');
 
-      // Mark refinement as done and move to timeline
-      setQueue((currentQueue) => {
+      ops.setQueue((currentQueue) => {
         if (
           currentQueue.length > 0 &&
           currentQueue[0].id === refinementDef.id
         ) {
-          addToTimeline(
+          ops.addToTimeline(
             markAsDone(currentQueue[0] as StatefulComponentDefinition)
           );
         }
         return [];
       });
 
-      // Show final execution plan with confirmation
       const planDefinition = createPlanDefinition(
         result.message,
         result.tasks,
-        createPlanAbortHandler(result.tasks),
+        createAbortHandler(result.tasks),
         undefined
       );
 
       const confirmDefinition = createConfirmDefinition(
-        handleExecutionConfirmed,
-        handleExecutionCancelled
+        () => {
+          executionHandlers.onConfirmed(result.tasks);
+        },
+        () => {
+          executionHandlers.onCancelled(result.tasks);
+        }
       );
 
-      addToTimeline(planDefinition);
-      setQueue([confirmDefinition]);
+      ops.addToTimeline(planDefinition);
+      ops.setQueue([confirmDefinition]);
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
 
-      // Mark refinement as done and move to timeline before showing error
-      setQueue((currentQueue) => {
+      ops.setQueue((currentQueue) => {
         if (
           currentQueue.length > 0 &&
           currentQueue[0].id === refinementDef.id
         ) {
-          addToTimeline(
+          ops.addToTimeline(
             markAsDone(currentQueue[0] as StatefulComponentDefinition)
           );
         }
         return [];
       });
 
-      addToTimeline(
+      ops.addToTimeline(
         createFeedback(
           FeedbackType.Failed,
           FeedbackMessages.UnexpectedError,
@@ -145,4 +137,6 @@ export function createPlanSelectionConfirmedHandler(
       exitApp(1);
     }
   };
+
+  return { onAborted, createAbortHandler, onSelectionConfirmed };
 }

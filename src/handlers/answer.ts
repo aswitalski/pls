@@ -1,46 +1,39 @@
-import { ComponentDefinition } from '../types/components.js';
+import { AnswerHandlers, HandlerOperations } from '../types/handlers.js';
 import { ComponentName } from '../types/types.js';
 
 import { createAnswerDisplayDefinition } from '../services/components.js';
 import { createErrorHandler, withQueueHandler } from '../services/queue.js';
 
 /**
- * Creates answer error handler
+ * Creates all answer handlers
  */
-export function createAnswerErrorHandler(
-  addToTimeline: (...items: ComponentDefinition[]) => void
-) {
-  return (error: string) =>
-    createErrorHandler(ComponentName.Answer, addToTimeline)(error);
-}
-
-/**
- * Creates answer completion handler
- */
-export function createAnswerCompleteHandler(
-  addToTimeline: (...items: ComponentDefinition[]) => void
-) {
-  return (answer: string) =>
-    withQueueHandler(
-      ComponentName.Answer,
-      () => {
-        // Don't add the Answer component to timeline (it renders null)
-        // Only add the AnswerDisplay component
-        addToTimeline(createAnswerDisplayDefinition(answer));
-        return undefined;
-      },
-      true,
-      0
-    );
-}
-
-/**
- * Creates answer aborted handler
- */
-export function createAnswerAbortedHandler(
+export function createAnswerHandlers(
+  ops: HandlerOperations,
   handleAborted: (operationName: string) => void
-) {
-  return () => {
+): AnswerHandlers {
+  const onError = (error: string) => {
+    ops.setQueue(
+      createErrorHandler(ComponentName.Answer, ops.addToTimeline)(error)
+    );
+  };
+
+  const onComplete = (answer: string) => {
+    ops.setQueue(
+      withQueueHandler(
+        ComponentName.Answer,
+        () => {
+          ops.addToTimeline(createAnswerDisplayDefinition(answer));
+          return undefined;
+        },
+        true,
+        0
+      )
+    );
+  };
+
+  const onAborted = () => {
     handleAborted('Answer');
   };
+
+  return { onError, onComplete, onAborted };
 }

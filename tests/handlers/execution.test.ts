@@ -5,10 +5,11 @@ import {
   ConfigProps,
   StatefulComponentDefinition,
 } from '../../src/types/components.js';
+import { HandlerOperations, SetQueue } from '../../src/types/handlers.js';
 import { ComponentName, TaskType } from '../../src/types/types.js';
 
 import { LLMService } from '../../src/services/anthropic.js';
-import { createExecutionConfirmedHandler } from '../../src/handlers/execution.js';
+import { createExecutionHandlers } from '../../src/handlers/execution.js';
 
 // Mock exitApp to prevent actual process exit
 vi.mock('../../src/services/process.js', () => ({
@@ -29,63 +30,63 @@ vi.mock('../../src/services/configuration.js', async (importOriginal) => {
 });
 
 describe('Execution handlers', () => {
+  let ops: HandlerOperations;
+  let addToTimelineMock: ReturnType<typeof vi.fn>;
+  let setQueueMock: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    addToTimelineMock = vi.fn();
+    setQueueMock = vi.fn(
+      (updater: (queue: ComponentDefinition[]) => ComponentDefinition[]) => {
+        return updater;
+      }
+    );
   });
+
+  const getQueueUpdater = () =>
+    setQueueMock.mock.calls[0][0] as (
+      queue: ComponentDefinition[]
+    ) => ComponentDefinition[];
+  const getTimelineArgs = () =>
+    addToTimelineMock.mock.calls[0] as ComponentDefinition[];
 
   describe('Config task execution', () => {
     it('creates config definition when all tasks are config type', () => {
-      const timeline: ComponentDefinition[] = [
+      const tasks = [
         {
-          id: 'plan-1',
-          name: ComponentName.Plan,
-          state: {
-            done: true,
-            highlightedIndex: null,
-            currentDefineGroupIndex: 0,
-            completedSelections: [],
-          },
-          props: {
-            message: 'Configure settings',
-            tasks: [
-              {
-                action: 'Configure API key',
-                type: TaskType.Config,
-                params: { key: 'anthropic.key' },
-              },
-              {
-                action: 'Configure model',
-                type: TaskType.Config,
-                params: { key: 'anthropic.model' },
-              },
-            ],
-            onAborted: vi.fn(),
-          },
+          action: 'Configure API key',
+          type: TaskType.Config,
+          params: { key: 'anthropic.key' },
+        },
+        {
+          action: 'Configure model',
+          type: TaskType.Config,
+          params: { key: 'anthropic.model' },
         },
       ];
 
-      const timelineRef = { current: timeline };
-      const addToTimeline = vi.fn();
-      const setQueue = vi.fn();
       const mockService = {} as unknown as LLMService;
+      ops = {
+        addToTimeline: addToTimelineMock as (
+          ...items: ComponentDefinition[]
+        ) => void,
+        setQueue: setQueueMock as unknown as SetQueue,
+        service: mockService,
+      };
 
-      const handler = createExecutionConfirmedHandler(
-        timelineRef,
-        addToTimeline,
-        mockService,
-        vi.fn(), // handleIntrospectError
-        vi.fn(), // handleIntrospectComplete
-        vi.fn(), // handleIntrospectAborted
-        vi.fn(), // handleAnswerError
-        vi.fn(), // handleAnswerComplete
-        vi.fn(), // handleAnswerAborted
-        vi.fn(), // handleExecuteError
-        vi.fn(), // handleExecuteComplete
-        vi.fn(), // handleExecuteAborted
-        setQueue
-      );
+      const taskHandlers = {
+        introspect: {
+          onError: vi.fn(),
+          onComplete: vi.fn(),
+          onAborted: vi.fn(),
+        },
+        answer: { onError: vi.fn(), onComplete: vi.fn(), onAborted: vi.fn() },
+        execute: { onError: vi.fn(), onComplete: vi.fn(), onAborted: vi.fn() },
+      };
 
-      // Create confirm component in queue
+      const handlers = createExecutionHandlers(ops, taskHandlers);
+
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
@@ -97,70 +98,53 @@ describe('Execution handlers', () => {
         },
       };
 
-      const queueHandler = handler();
-      const result = queueHandler([confirmComponent]);
+      handlers.onConfirmed(tasks);
 
-      // Should return array with Config definition
+      const queueUpdater = getQueueUpdater();
+      const result = queueUpdater([confirmComponent]);
+
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe(ComponentName.Config);
 
-      // Confirm should be marked as done in timeline
-      expect(addToTimeline).toHaveBeenCalledTimes(1);
-      const markedConfirm = addToTimeline.mock
-        .calls[0][0] as StatefulComponentDefinition;
+      expect(addToTimelineMock).toHaveBeenCalledTimes(1);
+      const markedConfirm = getTimelineArgs()[0] as StatefulComponentDefinition;
       expect(markedConfirm.state.done).toBe(true);
     });
 
     it('extracts config keys from task params', () => {
-      const timeline: ComponentDefinition[] = [
+      const tasks = [
         {
-          id: 'plan-1',
-          name: ComponentName.Plan,
-          state: {
-            done: true,
-            highlightedIndex: null,
-            currentDefineGroupIndex: 0,
-            completedSelections: [],
-          },
-          props: {
-            message: 'Configure',
-            tasks: [
-              {
-                action: 'Configure key',
-                type: TaskType.Config,
-                params: { key: 'anthropic.key' },
-              },
-              {
-                action: 'Configure debug',
-                type: TaskType.Config,
-                params: { key: 'settings.debug' },
-              },
-            ],
-            onAborted: vi.fn(),
-          },
+          action: 'Configure key',
+          type: TaskType.Config,
+          params: { key: 'anthropic.key' },
+        },
+        {
+          action: 'Configure debug',
+          type: TaskType.Config,
+          params: { key: 'settings.debug' },
         },
       ];
 
-      const timelineRef = { current: timeline };
-      const addToTimeline = vi.fn();
-      const setQueue = vi.fn();
       const mockService = {} as unknown as LLMService;
+      ops = {
+        addToTimeline: addToTimelineMock as (
+          ...items: ComponentDefinition[]
+        ) => void,
+        setQueue: setQueueMock as unknown as SetQueue,
+        service: mockService,
+      };
 
-      const handler = createExecutionConfirmedHandler(
-        timelineRef,
-        addToTimeline,
-        mockService,
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        setQueue
-      );
+      const taskHandlers = {
+        introspect: {
+          onError: vi.fn(),
+          onComplete: vi.fn(),
+          onAborted: vi.fn(),
+        },
+        answer: { onError: vi.fn(), onComplete: vi.fn(), onAborted: vi.fn() },
+        execute: { onError: vi.fn(), onComplete: vi.fn(), onAborted: vi.fn() },
+      };
+
+      const handlers = createExecutionHandlers(ops, taskHandlers);
 
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
@@ -169,10 +153,11 @@ describe('Execution handlers', () => {
         props: { message: 'Execute?' },
       };
 
-      const queueHandler = handler();
-      const result = queueHandler([confirmComponent]);
+      handlers.onConfirmed(tasks);
 
-      // Config component should have steps generated from keys
+      const queueUpdater = getQueueUpdater();
+      const result = queueUpdater([confirmComponent]);
+
       expect(result[0].name).toBe(ComponentName.Config);
       const configProps = result[0].props as ConfigProps;
       expect(configProps.steps).toBeDefined();
@@ -180,55 +165,38 @@ describe('Execution handlers', () => {
     });
 
     it('filters out tasks without key param', () => {
-      const timeline: ComponentDefinition[] = [
+      const tasks = [
         {
-          id: 'plan-1',
-          name: ComponentName.Plan,
-          state: {
-            done: true,
-            highlightedIndex: null,
-            currentDefineGroupIndex: 0,
-            completedSelections: [],
-          },
-          props: {
-            message: 'Configure',
-            tasks: [
-              {
-                action: 'Configure key',
-                type: TaskType.Config,
-                params: { key: 'anthropic.key' },
-              },
-              {
-                action: 'Invalid config',
-                type: TaskType.Config,
-                // Missing key param
-              },
-            ],
-            onAborted: vi.fn(),
-          },
+          action: 'Configure key',
+          type: TaskType.Config,
+          params: { key: 'anthropic.key' },
+        },
+        {
+          action: 'Invalid config',
+          type: TaskType.Config,
         },
       ];
 
-      const timelineRef = { current: timeline };
-      const addToTimeline = vi.fn();
-      const setQueue = vi.fn();
       const mockService = {} as unknown as LLMService;
+      ops = {
+        addToTimeline: addToTimelineMock as (
+          ...items: ComponentDefinition[]
+        ) => void,
+        setQueue: setQueueMock as unknown as SetQueue,
+        service: mockService,
+      };
 
-      const handler = createExecutionConfirmedHandler(
-        timelineRef,
-        addToTimeline,
-        mockService,
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        setQueue
-      );
+      const taskHandlers = {
+        introspect: {
+          onError: vi.fn(),
+          onComplete: vi.fn(),
+          onAborted: vi.fn(),
+        },
+        answer: { onError: vi.fn(), onComplete: vi.fn(), onAborted: vi.fn() },
+        execute: { onError: vi.fn(), onComplete: vi.fn(), onAborted: vi.fn() },
+      };
+
+      const handlers = createExecutionHandlers(ops, taskHandlers);
 
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
@@ -237,59 +205,44 @@ describe('Execution handlers', () => {
         props: { message: 'Execute?' },
       };
 
-      const queueHandler = handler();
-      const result = queueHandler([confirmComponent]);
+      handlers.onConfirmed(tasks);
 
-      // Should only have one step from the valid key
+      const queueUpdater = getQueueUpdater();
+      const result = queueUpdater([confirmComponent]);
+
       const configProps = result[0].props as ConfigProps;
       expect(configProps.steps.length).toBe(1);
     });
 
     it('wraps config handlers with setQueue for proper queue management', () => {
-      const timeline: ComponentDefinition[] = [
+      const tasks = [
         {
-          id: 'plan-1',
-          name: ComponentName.Plan,
-          state: {
-            done: true,
-            highlightedIndex: null,
-            currentDefineGroupIndex: 0,
-            completedSelections: [],
-          },
-          props: {
-            message: 'Configure',
-            tasks: [
-              {
-                action: 'Configure key',
-                type: TaskType.Config,
-                params: { key: 'anthropic.key' },
-              },
-            ],
-            onAborted: vi.fn(),
-          },
+          action: 'Configure key',
+          type: TaskType.Config,
+          params: { key: 'anthropic.key' },
         },
       ];
 
-      const timelineRef = { current: timeline };
-      const addToTimeline = vi.fn();
-      const setQueue = vi.fn();
       const mockService = {} as unknown as LLMService;
+      ops = {
+        addToTimeline: addToTimelineMock as (
+          ...items: ComponentDefinition[]
+        ) => void,
+        setQueue: setQueueMock as unknown as SetQueue,
+        service: mockService,
+      };
 
-      const handler = createExecutionConfirmedHandler(
-        timelineRef,
-        addToTimeline,
-        mockService,
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        setQueue
-      );
+      const taskHandlers = {
+        introspect: {
+          onError: vi.fn(),
+          onComplete: vi.fn(),
+          onAborted: vi.fn(),
+        },
+        answer: { onError: vi.fn(), onComplete: vi.fn(), onAborted: vi.fn() },
+        execute: { onError: vi.fn(), onComplete: vi.fn(), onAborted: vi.fn() },
+      };
+
+      const handlers = createExecutionHandlers(ops, taskHandlers);
 
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
@@ -298,70 +251,54 @@ describe('Execution handlers', () => {
         props: { message: 'Execute?' },
       };
 
-      const queueHandler = handler();
-      const result = queueHandler([confirmComponent]);
+      handlers.onConfirmed(tasks);
 
-      // Config component should have onFinished and onAborted handlers
+      const queueUpdater = getQueueUpdater();
+      const result = queueUpdater([confirmComponent]);
+
       const configProps = result[0].props as ConfigProps;
       expect(configProps.onFinished).toBeDefined();
       expect(configProps.onAborted).toBeDefined();
 
-      // When onFinished is called, it should call setQueue
       if (configProps.onFinished) {
         configProps.onFinished({ key: 'test-value' });
       }
-      expect(setQueue).toHaveBeenCalled();
+      expect(setQueueMock).toHaveBeenCalledTimes(2);
     });
 
     it('does not create config for mixed task types', () => {
-      const timeline: ComponentDefinition[] = [
+      const tasks = [
         {
-          id: 'plan-1',
-          name: ComponentName.Plan,
-          state: {
-            done: true,
-            highlightedIndex: null,
-            currentDefineGroupIndex: 0,
-            completedSelections: [],
-          },
-          props: {
-            message: 'Mixed tasks',
-            tasks: [
-              {
-                action: 'Configure key',
-                type: TaskType.Config,
-                params: { key: 'anthropic.key' },
-              },
-              {
-                action: 'Execute something',
-                type: TaskType.Execute,
-              },
-            ],
-            onAborted: vi.fn(),
-          },
+          action: 'Configure key',
+          type: TaskType.Config,
+          params: { key: 'anthropic.key' },
+        },
+        {
+          action: 'Execute something',
+          type: TaskType.Execute,
         },
       ];
 
-      const timelineRef = { current: timeline };
-      const addToTimeline = vi.fn();
-      const setQueue = vi.fn();
       const mockService = {} as unknown as LLMService;
+      ops = {
+        addToTimeline: addToTimelineMock as (
+          ...items: ComponentDefinition[]
+        ) => void,
+        setQueue: setQueueMock as unknown as SetQueue,
+        service: mockService,
+      };
 
-      const handler = createExecutionConfirmedHandler(
-        timelineRef,
-        addToTimeline,
-        mockService,
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        setQueue
-      );
+      const taskHandlers = {
+        introspect: {
+          onError: vi.fn(),
+          onComplete: vi.fn(),
+          onAborted: vi.fn(),
+        },
+        answer: { onError: vi.fn(), onComplete: vi.fn(), onAborted: vi.fn() },
+        execute: { onError: vi.fn(), onComplete: vi.fn(), onAborted: vi.fn() },
+      };
+
+      const handlers = createExecutionHandlers(ops, taskHandlers);
 
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
@@ -370,11 +307,11 @@ describe('Execution handlers', () => {
         props: { message: 'Execute?' },
       };
 
-      const queueHandler = handler();
-      const result = queueHandler([confirmComponent]);
+      handlers.onConfirmed(tasks);
 
-      // Should not create Config component for mixed types
-      // Currently falls through to regular execution (exits)
+      const queueUpdater = getQueueUpdater();
+      const result = queueUpdater([confirmComponent]);
+
       expect(result).toEqual([]);
     });
   });
