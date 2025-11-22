@@ -14,6 +14,8 @@ import {
   ExecutionStatus,
   executeCommands,
 } from '../services/shell.js';
+import { replacePlaceholders } from '../services/placeholder-resolver.js';
+import { loadUserConfig } from '../services/config-loader.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -190,13 +192,19 @@ export function Execute({
       const startTime = Date.now();
 
       try {
-        // Format tasks for the execute tool
+        // Load user config for placeholder resolution
+        const userConfig = loadUserConfig();
+
+        // Format tasks for the execute tool and resolve placeholders
         const taskDescriptions = tasks
           .map((task) => {
+            // Resolve placeholders in task action
+            const resolvedAction = replacePlaceholders(task.action, userConfig);
+
             const params = task.params
               ? ` (params: ${JSON.stringify(task.params)})`
               : '';
-            return `- ${task.action}${params}`;
+            return `- ${resolvedAction}${params}`;
           })
           .join('\n');
 
@@ -216,10 +224,16 @@ export function Execute({
           return;
         }
 
+        // Resolve placeholders in command strings before execution
+        const resolvedCommands = result.commands.map((cmd) => ({
+          ...cmd,
+          command: replacePlaceholders(cmd.command, userConfig),
+        }));
+
         // Set message and initialize command statuses
         setMessage(result.message);
         setCommandStatuses(
-          result.commands.map((cmd, index) => ({
+          resolvedCommands.map((cmd, index) => ({
             command: cmd,
             status: ExecutionStatus.Pending,
             label: tasks[index]?.action,
@@ -231,7 +245,7 @@ export function Execute({
 
         // Execute commands sequentially
         const outputs = await executeCommands(
-          result.commands,
+          resolvedCommands,
           (progress: ExecutionProgress) => {
             if (!mounted) return;
 

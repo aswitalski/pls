@@ -24,6 +24,7 @@ import {
 import { getCancellationMessage } from '../services/messages.js';
 import { exitApp } from '../services/process.js';
 import { withQueueHandler } from '../services/queue.js';
+import { validateExecuteTasks } from '../services/execution-validator.js';
 
 type SetQueue = React.Dispatch<React.SetStateAction<ComponentDefinition[]>>;
 
@@ -130,7 +131,25 @@ export function createExecutionConfirmedHandler(
           ),
         ];
       } else if (allExecute && tasks.length > 0) {
-        // Execute shell commands
+        // Validate config requirements before execution
+        const missingConfig = validateExecuteTasks(tasks);
+
+        if (missingConfig.length > 0) {
+          // Config is missing - generate feedback synchronously
+          addToTimeline(markAsDone(first as StatefulComponentDefinition));
+
+          const missingList = missingConfig
+            .map((req) => `  - ${req.description}`)
+            .join('\n');
+
+          const message = `Missing required configuration:\n\n${missingList}\n\nPlease configure these values before executing.`;
+
+          addToTimeline(createFeedback(FeedbackType.Aborted, message));
+          exitApp(1);
+          return [];
+        }
+
+        // No missing config - execute directly
         addToTimeline(markAsDone(first as StatefulComponentDefinition));
         return [
           createExecuteDefinition(

@@ -8,6 +8,21 @@ import { Execute } from '../../src/ui/Execute.js';
 
 import { createMockAnthropicService } from '../test-utils.js';
 
+// Mock config loader to provide test config
+vi.mock('../../src/services/config-loader.js', () => ({
+  loadUserConfig: vi.fn().mockReturnValue({
+    project: {
+      alpha: {
+        path: '/home/user/alpha',
+      },
+      beta: {
+        path: '/home/user/beta',
+      },
+    },
+  }),
+  hasConfigPath: vi.fn().mockReturnValue(true),
+}));
+
 // Mock shell service to avoid actual command execution
 vi.mock('../../src/services/shell.js', async () => {
   const actual = await vi.importActual('../../src/services/shell.js');
@@ -227,5 +242,91 @@ describe('Execute component', () => {
       },
       { timeout: 2000 }
     );
+  });
+
+  it('resolves placeholders in commands before execution', async () => {
+    const { executeCommands } = await import('../../src/services/shell.js');
+
+    const service = createMockAnthropicService({
+      message: 'Navigating to repository.',
+      commands: [
+        {
+          description: 'Navigate to project directory',
+          command: 'cd {project.alpha.path}',
+        },
+      ],
+    });
+
+    const tasks = [
+      {
+        action: 'Navigate to Alpha project directory',
+        type: TaskType.Execute,
+      },
+    ];
+
+    render(
+      <Execute
+        tasks={tasks}
+        service={service}
+        onComplete={vi.fn()}
+        onError={vi.fn()}
+        onAborted={vi.fn()}
+      />
+    );
+
+    await vi.waitFor(
+      () => {
+        expect(executeCommands).toHaveBeenCalled();
+      },
+      { timeout: 2000 }
+    );
+
+    // Verify that executeCommands was called with resolved placeholders
+    const commandsArg = (executeCommands as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(commandsArg[0].command).toBe('cd /home/user/alpha');
+  });
+
+  it('keeps unresolved placeholders if not in config', async () => {
+    const { executeCommands } = await import('../../src/services/shell.js');
+
+    const service = createMockAnthropicService({
+      message: 'Running command.',
+      commands: [
+        {
+          description: 'Navigate to unknown path',
+          command: 'cd {project.gamma.path}',
+        },
+      ],
+    });
+
+    const tasks = [
+      {
+        action: 'Navigate to Gamma project directory',
+        type: TaskType.Execute,
+      },
+    ];
+
+    render(
+      <Execute
+        tasks={tasks}
+        service={service}
+        onComplete={vi.fn()}
+        onError={vi.fn()}
+        onAborted={vi.fn()}
+      />
+    );
+
+    await vi.waitFor(
+      () => {
+        expect(executeCommands).toHaveBeenCalled();
+      },
+      { timeout: 2000 }
+    );
+
+    // Verify that unresolved placeholders are kept as-is
+    const commandsArg = (executeCommands as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(commandsArg[0].command).toBe('cd {project.gamma.path}');
   });
 });
