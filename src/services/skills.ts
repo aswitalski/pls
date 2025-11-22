@@ -2,6 +2,10 @@ import { existsSync, readdirSync, readFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 
+import { SkillDefinition } from '../types/skills.js';
+
+import { parseSkillMarkdown } from './skill-parser.js';
+
 /**
  * Get the path to the skills directory
  */
@@ -38,6 +42,39 @@ export function loadSkills(): string[] {
     // Return empty array if there's any error reading the directory
     return [];
   }
+}
+
+/**
+ * Load and parse all skill definitions
+ * Returns structured skill definitions
+ */
+export function loadSkillDefinitions(): SkillDefinition[] {
+  const skillContents = loadSkills();
+  const definitions: SkillDefinition[] = [];
+
+  for (const content of skillContents) {
+    const parsed = parseSkillMarkdown(content);
+    if (parsed) {
+      definitions.push(parsed);
+    }
+  }
+
+  return definitions;
+}
+
+/**
+ * Create skill lookup function from definitions
+ */
+export function createSkillLookup(
+  definitions: SkillDefinition[]
+): (name: string) => SkillDefinition | null {
+  const map = new Map<string, SkillDefinition>();
+
+  for (const definition of definitions) {
+    map.set(definition.name, definition);
+  }
+
+  return (name: string) => map.get(name) || null;
 }
 
 /**

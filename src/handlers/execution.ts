@@ -5,7 +5,7 @@ import {
   ComponentDefinition,
   StatefulComponentDefinition,
 } from '../types/components.js';
-import { ComponentName, FeedbackType, TaskType } from '../types/types.js';
+import { ComponentName, FeedbackType, Task, TaskType } from '../types/types.js';
 
 import { LLMService } from '../services/anthropic.js';
 import {
@@ -14,6 +14,8 @@ import {
   createExecuteDefinition,
   createFeedback,
   createIntrospectDefinition,
+  createPlanDefinition,
+  createConfirmDefinition,
   markAsDone,
 } from '../services/components.js';
 import { CommandOutput } from '../services/shell.js';
@@ -24,6 +26,7 @@ import {
 import { getCancellationMessage } from '../services/messages.js';
 import { exitApp } from '../services/process.js';
 import { withQueueHandler } from '../services/queue.js';
+import { validateExecuteTasks } from '../services/execution-validator.js';
 
 type SetQueue = React.Dispatch<React.SetStateAction<ComponentDefinition[]>>;
 
@@ -130,7 +133,108 @@ export function createExecutionConfirmedHandler(
           ),
         ];
       } else if (allExecute && tasks.length > 0) {
-        // Execute shell commands
+        // Validate config requirements before execution
+        const missingConfig = validateExecuteTasks(tasks);
+
+        if (missingConfig.length > 0) {
+          // Config is missing - insert CONFIG tasks first
+          addToTimeline(markAsDone(first as StatefulComponentDefinition));
+
+          const configKeys = missingConfig.map((req) => req.path);
+          const configTasks: Task[] = missingConfig.map((req) => ({
+            action: req.description,
+            type: TaskType.Config,
+            params: { key: req.path },
+          }));
+
+          // Create handlers that will re-queue execute tasks after config
+          const handleConfigFinished = (config: Record<string, string>) => {
+            // Save config
+            setQueue(
+              createConfigExecutionFinishedHandler(
+                addToTimeline,
+                configKeys
+              )(config)
+            );
+
+            // Re-queue the execute tasks after config is saved
+            setTimeout(() => {
+              const planDef = createPlanDefinition(
+                'Configuration complete. Ready to proceed.',
+                tasks,
+                () => {
+                  /* no-op abort handler */
+                },
+                undefined
+              );
+
+              const confirmDef = createConfirmDefinition(
+                () => {
+                  // Execute the original tasks
+                  setQueue([
+                    createExecuteDefinition(
+                      tasks,
+                      service,
+                      handleExecuteError,
+                      handleExecuteComplete,
+                      handleExecuteAborted
+                    ),
+                  ]);
+                },
+                () => {
+                  // User cancelled after config
+                  addToTimeline(
+                    createFeedback(
+                      FeedbackType.Aborted,
+                      getCancellationMessage('execution')
+                    )
+                  );
+                  exitApp(0);
+                }
+              );
+
+              addToTimeline(planDef);
+              setQueue([confirmDef]);
+            }, 0);
+          };
+
+          const handleConfigAborted = () => {
+            setQueue(createConfigExecutionAbortedHandler(addToTimeline)());
+          };
+
+          return [
+            createPlanDefinition(
+              'Missing configuration detected. Please provide the following:',
+              configTasks,
+              () => {
+                /* no-op abort handler */
+              },
+              undefined
+            ),
+            createConfirmDefinition(
+              () => {
+                setQueue([
+                  createConfigDefinitionWithKeys(
+                    configKeys,
+                    handleConfigFinished,
+                    handleConfigAborted
+                  ),
+                ]);
+              },
+              () => {
+                addToTimeline(
+                  createFeedback(
+                    FeedbackType.Aborted,
+                    getCancellationMessage('configuration')
+                  )
+                );
+                exitApp(0);
+              }
+            ),
+          ];
+        }
+
+        // No missing config - execute directly
         addToTimeline(markAsDone(first as StatefulComponentDefinition));
         return [
           createExecuteDefinition(

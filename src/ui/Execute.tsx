@@ -14,6 +14,8 @@ import {
   ExecutionStatus,
   executeCommands,
 } from '../services/shell.js';
+import { replacePlaceholders } from '../services/placeholder-resolver.js';
+import { loadUserConfig } from '../services/config-loader.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -190,13 +192,19 @@ export function Execute({
       const startTime = Date.now();
 
       try {
-        // Format tasks for the execute tool
+        // Load user config for placeholder resolution
+        const userConfig = loadUserConfig();
+
+        // Format tasks for the execute tool and resolve placeholders
         const taskDescriptions = tasks
           .map((task) => {
+            // Resolve placeholders in task action
+            const resolvedAction = replacePlaceholders(task.action, userConfig);
+
             const params = task.params
               ? ` (params: ${JSON.stringify(task.params)})`
               : '';
-            return `- ${task.action}${params}`;
+            return `- ${resolvedAction}${params}`;
           })
           .join('\n');
 

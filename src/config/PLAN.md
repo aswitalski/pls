@@ -113,6 +113,26 @@ executable operations.
      Extract the individual steps from the skill's "Execution" or "Steps"
      section (prefer Execution if available)
    - Replace ALL parameter placeholders with the specified value
+   - **CRITICAL - Variant Placeholder Resolution**: If the execution commands
+     contain variant placeholders (any uppercase word in a placeholder path,
+     e.g., {section.VARIANT.property}, {project.TARGET.path}, {env.TYPE.name}),
+     you MUST:
+     1. Identify the variant name from the user's request (e.g., "alpha", "beta")
+     2. Normalize the variant to lowercase (e.g., "alpha", "beta")
+     3. Replace the uppercase placeholder component with the actual variant name
+        in ALL task actions
+     4. Examples:
+        - User says "process target alpha" → variant is "alpha"
+          - Execution line: `cd {project.TARGET.path}`
+          - Task action MUST be: `cd {project.alpha.path}` (NOT `cd {project.TARGET.path}`)
+        - User says "deploy to staging environment" → variant is "staging"
+          - Execution line: `setup {env.TYPE.config}`
+          - Task action MUST be: `setup {env.staging.config}` (NOT `setup {env.TYPE.config}`)
+     5. This applies to ALL placeholders in task actions, whether from direct
+        execution lines or from referenced skills (e.g., [Navigate To Target])
+     6. The uppercase word can be ANY name (VARIANT, TARGET, TYPE, ENV, etc.) -
+        all uppercase path components indicate variant placeholders that must
+        be resolved
 
 4. **Handle partial execution:**
    - Keywords indicating partial execution: "only", "just", specific verbs
@@ -156,6 +176,17 @@ Example 1 - Skill with parameter, variant specified:
   - { action: "Run the Alpha processing pipeline", type: "execute",
       params: { skill: "Process Data", target: "Alpha" } }
 - WRONG: Tasks without params.skill or single task "Process Alpha"
+
+Example 1b - Skill with variant placeholder in config:
+- Skill name: "Navigate To Target"
+- Skill config defines: target.alpha.path, target.beta.path, target.gamma.path
+- Skill execution: "cd {target.OPTION.path}"
+- User: "navigate to beta"
+- Variant matched: "beta"
+- Correct task action: "cd {target.beta.path}"
+- WRONG task action: "cd {target.OPTION.path}" (uppercase OPTION not resolved!)
+- Note: The config validator will later check if target.beta.path exists
+  in ~/.plsrc and prompt the user if missing
 
 Example 2 - Skill with parameter, variant NOT specified:
 - Same skill as Example 1
