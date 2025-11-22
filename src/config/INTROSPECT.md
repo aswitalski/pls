@@ -75,12 +75,13 @@ These MUST appear FIRST, in this EXACT sequence:
 3. **Answer** ← ALWAYS THIRD
 4. **Execute** ← ALWAYS FOURTH
 
-### Position 5-6: Indirect Workflow Capabilities
+### Position 5-7: Indirect Workflow Capabilities
 
 These MUST appear AFTER Execute and BEFORE user skills:
 
 5. **Plan** ← NEVER FIRST, ALWAYS position 5 (after Execute)
-6. **Report** ← NEVER FIRST, ALWAYS position 6 (after Plan)
+6. **Validate** ← ALWAYS position 6 (after Plan)
+7. **Report** ← NEVER FIRST, ALWAYS position 7 (after Validate)
 
 ### 3. User-Defined Skills
 
@@ -132,8 +133,9 @@ Examples:
 
 When user asks "list your skills", create an introductory message like "here
 are my capabilities:" followed by tasks for built-in capabilities (Introspect,
-Config, Answer, Execute), then indirect workflow capabilities (Plan, Report).
-Each task uses type "introspect" with an action describing the capability.
+Config, Answer, Execute), then indirect workflow capabilities (Validate, Plan,
+Report). Each task uses type "introspect" with an action describing the
+capability.
 
 ### Example 2: Filtered Skills
 
@@ -146,8 +148,9 @@ with its description.
 
 When user asks "what can you do" and user-defined skills like "process data"
 and "backup files" exist, create an introductory message like "i can help with
-these operations:" followed by all built-in capabilities plus the user-defined
-skills. Each capability and skill becomes a task with type "introspect".
+these operations:" followed by all built-in capabilities (Introspect, Config,
+Answer, Execute, Validate, Plan, Report) plus the user-defined skills. Each
+capability and skill becomes a task with type "introspect".
 
 ## Final Validation
 

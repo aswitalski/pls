@@ -55,6 +55,7 @@ import { configTool } from '../tools/config.tool.js';
 import { executeTool } from '../tools/execute.tool.js';
 import { introspectTool } from '../tools/introspect.tool.js';
 import { planTool } from '../tools/plan.tool.js';
+import { validateTool } from '../tools/validate.tool.js';
 
 toolRegistry.register('plan', {
   schema: planTool,
@@ -79,4 +80,9 @@ toolRegistry.register('config', {
 toolRegistry.register('execute', {
   schema: executeTool,
   instructionsPath: 'config/EXECUTE.md',
+});
+
+toolRegistry.register('validate', {
+  schema: validateTool,
+  instructionsPath: 'config/VALIDATE.md',
 });

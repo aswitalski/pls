@@ -9,6 +9,7 @@ import { App, ComponentName, FeedbackType, Task } from '../types/types.js';
 
 import { LLMService } from './anthropic.js';
 import { CommandOutput } from './shell.js';
+import { ConfigRequirement } from '../types/skills.js';
 import {
   Config,
   ConfigDefinition,
@@ -92,8 +93,23 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
   }
 
   return keys.map((key) => {
+    // Check if key is in schema (built-in config)
     if (!(key in schema)) {
-      throw new Error(`Unknown config key: ${key}`);
+      // Key is not in schema - it's from a skill
+      // Create a simple text step with placeholder description
+      const keyParts = key.split('.');
+      const shortKey = keyParts[keyParts.length - 1];
+      const description = keyParts
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+
+      return {
+        description: `${description} {${key}}`,
+        key: shortKey,
+        type: StepType.Text,
+        value: null,
+        validate: () => true, // Accept any string for now
+      };
     }
     const definition = schema[key];
 
@@ -416,6 +432,32 @@ export function createExecuteDefinition(
     },
     props: {
       tasks,
+      service,
+      onError,
+      onComplete,
+      onAborted,
+    },
+  };
+}
+
+export function createValidateDefinition(
+  missingConfig: ConfigRequirement[],
+  userRequest: string,
+  service: LLMService,
+  onError: (error: string) => void,
+  onComplete: (configWithDescriptions: ConfigRequirement[]) => void,
+  onAborted: () => void
+): ComponentDefinition {
+  return {
+    id: randomUUID(),
+    name: ComponentName.Validate,
+    state: {
+      done: false,
+      isLoading: true,
+    },
+    props: {
+      missingConfig,
+      userRequest,
       service,
       onError,
       onComplete,

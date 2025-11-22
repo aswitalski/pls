@@ -29,6 +29,11 @@ vi.mock('../../src/services/configuration.js', async (importOriginal) => {
   };
 });
 
+// Mock execution validator
+vi.mock('../../src/services/execution-validator.js', () => ({
+  validateExecuteTasks: vi.fn(() => []),
+}));
+
 describe('Execution handlers', () => {
   let ops: HandlerOperations;
   let addToTimelineMock: ReturnType<typeof vi.fn>;

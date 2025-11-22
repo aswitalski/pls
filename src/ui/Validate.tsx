@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { Capability, IntrospectProps } from '../types/components.js';
-import { Task } from '../types/types.js';
+import { ValidateProps } from '../types/components.js';
+import { ConfigRequirement } from '../types/skills.js';
+import { TaskType } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
@@ -12,56 +13,16 @@ import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000;
 
-const BUILT_IN_CAPABILITIES = new Set([
-  'CONFIG',
-  'PLAN',
-  'INTROSPECT',
-  'ANSWER',
-  'EXECUTE',
-  'VALIDATE',
-  'REPORT',
-]);
-
-const INDIRECT_CAPABILITIES = new Set(['PLAN', 'VALIDATE', 'REPORT']);
-
-function parseCapabilityFromTask(task: Task): Capability {
-  // Parse "NAME: Description" format from task.action
-  const colonIndex = task.action.indexOf(':');
-
-  if (colonIndex === -1) {
-    const upperName = task.action.toUpperCase();
-    return {
-      name: task.action,
-      description: '',
-      isBuiltIn: BUILT_IN_CAPABILITIES.has(upperName),
-      isIndirect: INDIRECT_CAPABILITIES.has(upperName),
-    };
-  }
-
-  const name = task.action.substring(0, colonIndex).trim();
-  const description = task.action.substring(colonIndex + 1).trim();
-  const upperName = name.toUpperCase();
-  const isBuiltIn = BUILT_IN_CAPABILITIES.has(upperName);
-  const isIndirect = INDIRECT_CAPABILITIES.has(upperName);
-
-  return {
-    name,
-    description,
-    isBuiltIn,
-    isIndirect,
-  };
-}
-
-export function Introspect({
-  tasks,
+export function Validate({
+  missingConfig,
+  userRequest,
   state,
   service,
   children,
-  debug = false,
   onError,
   onComplete,
   onAborted,
-}: IntrospectProps) {
+}: ValidateProps) {
   const done = state?.done ?? false;
   const isCurrent = done === false;
   const [error, setError] = useState<string | null>(null);
@@ -96,34 +57,41 @@ export function Introspect({
       const startTime = Date.now();
 
       try {
-        // Get the introspect task action (first task should have the intro message)
-        const introspectAction = tasks[0]?.action || 'list capabilities';
+        // Build prompt for VALIDATE tool
+        const prompt = buildValidatePrompt(missingConfig, userRequest);
 
-        // Call introspect tool
-        const result = await svc!.processWithTool(
-          introspectAction,
-          'introspect'
-        );
+        // Call validate tool
+        const result = await svc!.processWithTool(prompt, 'validate');
         const elapsed = Date.now() - startTime;
         const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
 
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
 
         if (mounted) {
-          // Parse capabilities from returned tasks
-          let capabilities = result.tasks.map(parseCapabilityFromTask);
+          // Extract CONFIG tasks with descriptions from result
+          const configTasks = result.tasks.filter(
+            (task) => task.type === TaskType.Config
+          );
 
-          // Filter out internal capabilities when not in debug mode
-          if (!debug) {
-            capabilities = capabilities.filter(
-              (cap) =>
-                cap.name.toUpperCase() !== 'PLAN' &&
-                cap.name.toUpperCase() !== 'REPORT'
-            );
-          }
+          // Build ConfigRequirements with descriptions
+          const withDescriptions: ConfigRequirement[] = configTasks.map(
+            (task) => {
+              const key =
+                typeof task.params?.key === 'string'
+                  ? task.params.key
+                  : 'unknown';
+              const original = missingConfig.find((req) => req.path === key);
+
+              return {
+                path: key,
+                type: original?.type || 'string',
+                description: task.action,
+              };
+            }
+          );
 
           setIsLoading(false);
-          onComplete?.(result.message, capabilities);
+          onComplete?.(withDescriptions);
         }
       } catch (err) {
         const elapsed = Date.now() - startTime;
@@ -148,10 +116,18 @@ export function Introspect({
     return () => {
       mounted = false;
     };
-  }, [tasks, done, service, debug, onComplete, onError]);
+  }, [
+    missingConfig,
+    userRequest,
+    done,
+    service,
+    onComplete,
+    onError,
+    onAborted,
+  ]);
 
-  // Don't render wrapper when done and nothing to show
-  if (!isLoading && !error && !children) {
+  // Don't render when done, error, or nothing to show
+  if (done || (!isLoading && !error && !children)) {
     return null;
   }
 
@@ -159,7 +135,9 @@ export function Introspect({
     <Box alignSelf="flex-start" flexDirection="column">
       {isLoading && (
         <Box>
-          <Text color={getTextColor(isCurrent)}>Listing capabilities. </Text>
+          <Text color={getTextColor(isCurrent)}>
+            Validating configuration requirements.{' '}
+          </Text>
           <Spinner />
         </Box>
       )}
@@ -173,4 +151,23 @@ export function Introspect({
       {children}
     </Box>
   );
+}
+
+/**
+ * Build prompt for VALIDATE tool
+ */
+function buildValidatePrompt(
+  missingConfig: ConfigRequirement[],
+  userRequest: string
+): string {
+  const configList = missingConfig
+    .map((req) => `- Config path: ${req.path}\n  Type: ${req.type}`)
+    .join('\n');
+
+  return `User requested: "${userRequest}"
+
+Missing configuration values:
+${configList}
+
+Generate natural language descriptions for these configuration values based on the skill context.`;
 }

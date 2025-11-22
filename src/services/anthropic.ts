@@ -52,7 +52,8 @@ export class AnthropicService implements LLMService {
     if (
       toolName === 'plan' ||
       toolName === 'introspect' ||
-      toolName === 'execute'
+      toolName === 'execute' ||
+      toolName === 'validate'
     ) {
       const skills = loadSkills();
       const skillsSection = formatSkillsForPrompt(skills);
@@ -190,7 +191,7 @@ export class AnthropicService implements LLMService {
     }
 
     // Handle plan and introspect tool responses
-    if (!input.message || typeof input.message !== 'string') {
+    if (input.message === undefined || typeof input.message !== 'string') {
       throw new Error(
         'Invalid tool response: missing or invalid message field'
       );

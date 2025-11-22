@@ -4,6 +4,7 @@ import { App, ComponentName, FeedbackType, Task } from './types.js';
 
 import { LLMService } from '../services/anthropic.js';
 import { CommandOutput } from '../services/shell.js';
+import { ConfigRequirement } from './skills.js';
 
 import { ConfigStep } from '../ui/Config.js';
 
@@ -118,6 +119,17 @@ export interface ExecuteProps {
   onAborted: () => void;
 }
 
+export interface ValidateProps {
+  missingConfig: ConfigRequirement[];
+  userRequest: string;
+  state?: ValidateState;
+  service?: LLMService;
+  children?: React.ReactNode;
+  onError?: (error: string) => void;
+  onComplete?: (configWithDescriptions: ConfigRequirement[]) => void;
+  onAborted: () => void;
+}
+
 // Base state interface - all stateful components extend this
 export interface BaseState {
   done: boolean;
@@ -140,6 +152,11 @@ export interface AnswerState extends BaseState {
 }
 
 export interface ExecuteState extends BaseState {
+  isLoading?: boolean;
+  error?: string;
+}
+
+export interface ValidateState extends BaseState {
   isLoading?: boolean;
   error?: string;
 }
@@ -223,6 +240,11 @@ type ExecuteDefinition = StatefulDefinition<
   ExecuteProps,
   ExecuteState
 >;
+type ValidateDefinition = StatefulDefinition<
+  ComponentName.Validate,
+  ValidateProps,
+  ValidateState
+>;
 
 // Discriminated union of all component definitions
 export type ComponentDefinition =
@@ -238,7 +260,8 @@ export type ComponentDefinition =
   | ReportDefinition
   | AnswerDefinition
   | AnswerDisplayDefinition
-  | ExecuteDefinition;
+  | ExecuteDefinition
+  | ValidateDefinition;
 
 // Union of all stateful component definitions
 export type StatefulComponentDefinition =
@@ -249,4 +272,5 @@ export type StatefulComponentDefinition =
   | ConfirmDefinition
   | IntrospectDefinition
   | AnswerDefinition
-  | ExecuteDefinition;
+  | ExecuteDefinition
+  | ValidateDefinition;

@@ -18,6 +18,7 @@ export interface ConfigOption {
 export type ConfigStep = {
   description: string;
   key: string;
+  path?: string;
   validate: (value: string) => boolean;
 } & (
   | {
@@ -40,6 +41,7 @@ export interface ConfigProps<
 > {
   steps: ConfigStep[];
   state?: ConfigState;
+  debug?: boolean;
   onFinished?: (config: T) => void;
   onAborted?: () => void;
 }
@@ -148,7 +150,7 @@ function SelectionStep({
 
 export function Config<
   T extends Record<string, string> = Record<string, string>,
->({ steps, state, onFinished, onAborted }: ConfigProps<T>) {
+>({ steps, state, debug, onFinished, onAborted }: ConfigProps<T>) {
   const done = state?.done ?? false;
 
   const [step, setStep] = React.useState<number>(done ? steps.length : 0);
@@ -353,7 +355,15 @@ export function Config<
             marginTop={index === 0 ? 0 : 1}
           >
             <Box>
-              <Text>{stepConfig.description}:</Text>
+              <Text>{stepConfig.description}</Text>
+              <Text>: </Text>
+              {debug && stepConfig.path && (
+                <Text color={Colors.Type.Define}>
+                  {'{'}
+                  {stepConfig.path}
+                  {'}'}
+                </Text>
+              )}
             </Box>
             <Box>
               <Text> </Text>

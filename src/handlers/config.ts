@@ -96,17 +96,27 @@ export function createConfigExecutionFinishedHandler(
   keys: string[]
 ) {
   return (config: Record<string, string>) => {
-    const sections: Record<string, Record<string, string>> = {};
+    // Group by top-level section
+    const sections: Record<string, Record<string, unknown>> = {};
 
     for (const fullKey of keys) {
       const parts = fullKey.split('.');
       const shortKey = parts[parts.length - 1];
-      const section = parts.slice(0, -1).join('.');
+      const topSection = parts[0];
 
-      sections[section] = sections[section] ?? {};
+      // Initialize section if needed
+      sections[topSection] = sections[topSection] ?? {};
 
       if (shortKey in config) {
-        sections[section][shortKey] = config[shortKey];
+        const value = config[shortKey];
+
+        // Build nested structure recursively
+        let current: Record<string, unknown> = sections[topSection];
+        for (let i = 1; i < parts.length - 1; i++) {
+          current[parts[i]] = current[parts[i]] ?? {};
+          current = current[parts[i]] as Record<string, unknown>;
+        }
+        current[parts[parts.length - 1]] = value;
       }
     }
 

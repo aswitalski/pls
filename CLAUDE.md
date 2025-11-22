@@ -174,6 +174,123 @@ concatenates their content into tool instructions as an "Available Skills"
 section. This allows users to teach the app about project-specific commands
 without modifying code. Missing skills directory fails gracefully.
 
+##### Skill Definition Format
+
+Skills follow a structured markdown format providing deterministic execution
+despite LLM indeterminism. Each skill file contains these sections:
+
+**Name** (required, ### heading)
+- Unique identifier for the skill
+- Used for skill references in Execution sections: `[Skill Name]`
+- Must match exactly for skill cross-references
+
+**Description** (required, ### heading)
+- Explains the skill's purpose for humans and LLM
+- Documents variants, conditions, and special cases
+- Guides LLM on when to skip optional steps
+- Example: "Generation script only needed for major changes"
+
+**Aliases** (optional, ### heading)
+- Bullet list of example commands that invoke this skill
+- Helps LLM recognize skill from natural language
+- Example: "navigate to product", "go to project directory"
+
+**Config** (optional, ### heading)
+- YAML structure defining required configuration properties
+- Nested format using indentation (standard YAML)
+- Properties specify TypeScript types: string, boolean, number
+- Example:
+  ```yaml
+  product:
+    alpha:
+      path: string
+      enabled: boolean
+    beta:
+      path: string
+      enabled: boolean
+  ```
+- Generates config paths in dot notation: `product.alpha.path`,
+  `product.beta.enabled`
+- Values stored in user's `~/.plsrc` file
+
+**Steps** (required, ### heading)
+- Bullet list describing logical workflow steps
+- Human-readable, may contain placeholder references
+- Must have same number of items as Execution section (if present)
+- Used for LLM understanding and user documentation
+
+**Execution** (optional but recommended, ### heading)
+- Bullet list of actual commands to execute
+- Each line becomes one task in execution plan
+- Must have same number of items as Steps section
+- Supports three syntaxes:
+  1. Direct commands: `python3 ./script.py --flag`
+  2. Labeled commands: `Run: npm install`
+  3. Skill references: `[Other Skill Name]`
+- Supports two placeholder types:
+  1. Strict: `{section.variant.property}` - direct config lookup
+  2. Variant: `{section.VARIANT.property}` - LLM matches variant from user
+     intent
+
+**Parameter Placeholder Resolution:**
+
+Strict placeholders (all lowercase path components):
+- Format: `{product.alpha.path}`
+- Resolution: Direct lookup in ~/.plsrc at path `product.alpha.path`
+- Deterministic: No LLM interpretation
+- Use when variant is known or single-variant configs
+
+Variant placeholders (uppercase VARIANT keyword):
+- Format: `{product.VARIANT.path}`
+- Resolution: Two-phase process
+  1. Planning: LLM matches user intent ("alpha", "variant A") to variant name
+     (`alpha`)
+  2. Execution: Strict config lookup at resolved path (`product.alpha.path`)
+- Controlled indeterminism: LLM picks variant, then deterministic lookup
+- Use when skill supports multiple variants and user specifies which one
+
+**Skill Reference Resolution:**
+
+Format: `[Skill Name]` in Execution section
+- Example: `[Navigate To Product]`
+- Planning phase: Recursively load referenced skill's execution steps
+- Inject steps inline at reference position
+- Enables composition of complex workflows from simple skills
+- Circular reference detection required
+- Referenced skill's config requirements inherited
+
+**Config Validation Workflow:**
+
+When skill is matched during planning:
+1. Extract all config paths from Execution section
+2. Recursively expand skill references
+3. Replace VARIANT with LLM-matched variant name
+4. Check if required properties exist in ~/.plsrc
+5. If missing: Insert CONFIG task before execution tasks
+6. CONFIG task prompts for all missing properties
+7. User provides values, saved to ~/.plsrc
+8. Execution proceeds with fully resolved config
+
+**Example Workflow:** User runs `pls process alpha`
+
+1. PLAN matches "process" to "Process Product" skill
+2. PLAN extracts "alpha" and matches to variant `alpha`
+3. Process execution line: `[Navigate To Product]`
+   - Expand to: `operation {product.VARIANT.path}`
+   - Replace VARIANT with `alpha`: `operation {product.alpha.path}`
+   - Check config: Does `product.alpha.path` exist in ~/.plsrc?
+4. If missing: Create CONFIG task
+   - Prompt: "Product Alpha path"
+   - User enters: `/data/projects/alpha`
+   - Save to ~/.plsrc
+5. Execute: `operation /data/projects/alpha`
+6. Execute remaining commands
+
+This design achieves determinism through layering:
+- Layer 1 (LLM): Match natural language to skills and variants
+- Layer 2 (Structured): Execute exact commands with strict config lookup
+- Layer 3 (Validation): Enforce required config before execution
+
 #### Component Lifecycle
 
 The main interface uses a queue-based execution model with two arrays: queue

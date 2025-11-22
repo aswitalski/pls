@@ -15,6 +15,7 @@ import { Message } from './Message.js';
 import { Plan } from './Plan.js';
 import { Refinement } from './Refinement.js';
 import { Report } from './Report.js';
+import { Validate } from './Validate.js';
 import { Welcome } from './Welcome.js';
 
 interface ComponentProps {
@@ -33,7 +34,7 @@ export const Component = React.memo(function Component({
     case ComponentName.Config: {
       const props = def.props;
       const state = def.state;
-      return <Config {...props} state={state} />;
+      return <Config {...props} state={state} debug={debug} />;
     }
 
     case ComponentName.Command: {
@@ -88,6 +89,12 @@ export const Component = React.memo(function Component({
       const props = def.props;
       const state = def.state;
       return <Execute {...props} state={state} />;
+    }
+
+    case ComponentName.Validate: {
+      const props = def.props;
+      const state = def.state;
+      return <Validate {...props} state={state} />;
     }
   }
 });

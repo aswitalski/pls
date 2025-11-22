@@ -113,6 +113,26 @@ executable operations.
      Extract the individual steps from the skill's "Execution" or "Steps"
      section (prefer Execution if available)
    - Replace ALL parameter placeholders with the specified value
+   - **CRITICAL - Variant Placeholder Resolution**: If the execution commands
+     contain variant placeholders (any uppercase word in a placeholder path,
+     e.g., {section.VARIANT.property}, {project.TARGET.path}, {env.TYPE.name}),
+     you MUST:
+     1. Identify the variant name from the user's request (e.g., "alpha", "beta")
+     2. Normalize the variant to lowercase (e.g., "alpha", "beta")
+     3. Replace the uppercase placeholder component with the actual variant name
+        in ALL task actions
+     4. Examples:
+        - User says "process alpha target" → variant is "alpha"
+          - Execution line: `cd {project.VARIANT.path}`
+          - Task action MUST be: `cd {project.alpha.path}` (NOT `cd {project.VARIANT.path}`)
+        - User says "deploy to staging environment" → variant is "staging"
+          - Execution line: `setup {env.TYPE.config}`
+          - Task action MUST be: `setup {env.staging.config}` (NOT `setup {env.TYPE.config}`)
+     5. This applies to ALL placeholders in task actions, whether from direct
+        execution lines or from referenced skills (e.g., [Navigate To Target])
+     6. The uppercase word can be ANY name (VARIANT, TARGET, TYPE, PRODUCT, etc.) -
+        all uppercase path components indicate variant placeholders that must
+        be resolved
 
 4. **Handle partial execution:**
    - Keywords indicating partial execution: "only", "just", specific verbs
@@ -129,11 +149,16 @@ executable operations.
      - type: category of operation (if the skill specifies it or you can infer it)
      - params: MUST include:
        - skill: the skill name (REQUIRED for all skill-based tasks)
-       - All parameter values used in the step (e.g., target, environment, etc.)
+       - variant: the resolved variant value (REQUIRED if skill has variant placeholders)
+       - All other parameter values used in the step (e.g., target, environment, etc.)
        - Any other specific parameters mentioned in the step
    - NEVER replace the skill's detailed steps with a generic restatement
    - The params.skill field is CRITICAL for execution to use the skill's
      Execution section
+   - The params.variant field is CRITICAL for config validation to resolve
+     variant placeholders in the skill's Execution section
+   - Example: If user selects "Deploy to production" and skill has {env.VARIANT.url},
+     params must include variant: "production" so validator can resolve to {env.production.url}
 
 6. **Handle additional requirements beyond the skill:**
    - If the user's query includes additional requirements beyond the skill,
@@ -156,6 +181,19 @@ Example 1 - Skill with parameter, variant specified:
   - { action: "Run the Alpha processing pipeline", type: "execute",
       params: { skill: "Process Data", target: "Alpha" } }
 - WRONG: Tasks without params.skill or single task "Process Alpha"
+
+Example 1b - Skill with variant placeholder in config:
+- Skill name: "Navigate To Target"
+- Skill config defines: target.alpha.path, target.beta.path, target.gamma.path
+- Skill execution: "cd {target.VARIANT.path}"
+- User: "navigate to beta"
+- Variant matched: "beta"
+- Correct task: { action: "Navigate to Beta target directory", type: "execute",
+    params: { skill: "Navigate To Target", variant: "beta" } }
+- WRONG: params without variant field
+- WRONG: task action "cd {target.VARIANT.path}" (uppercase VARIANT not resolved!)
+- Note: The config validator will use params.variant="beta" to resolve
+  {target.VARIANT.path} → {target.beta.path}, then check if it exists in ~/.plsrc
 
 Example 2 - Skill with parameter, variant NOT specified:
 - Same skill as Example 1
