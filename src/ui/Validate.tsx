@@ -27,6 +27,9 @@ export function Validate({
   const isCurrent = done === false;
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
+  const [completionMessage, setCompletionMessage] = useState<string | null>(
+    null
+  );
 
   useInput(
     (input, key) => {
@@ -90,6 +93,20 @@ export function Validate({
             }
           );
 
+          // Build completion message showing which config properties are needed
+          const count = withDescriptions.length;
+          const propertyWord = count === 1 ? 'property' : 'properties';
+
+          // Shuffle between different message variations
+          const messages = [
+            `Additional configuration ${propertyWord} required.`,
+            `Configuration ${propertyWord} needed.`,
+            `Missing configuration ${propertyWord} detected.`,
+            `Setup requires configuration ${propertyWord}.`,
+          ];
+          const message = messages[Math.floor(Math.random() * messages.length)];
+
+          setCompletionMessage(message);
           setIsLoading(false);
           onComplete?.(withDescriptions);
         }
@@ -126,8 +143,8 @@ export function Validate({
     onAborted,
   ]);
 
-  // Don't render when done, error, or nothing to show
-  if (done || (!isLoading && !error && !children)) {
+  // Don't render when done and nothing to show
+  if (done && !completionMessage && !error && !children) {
     return null;
   }
 
@@ -139,6 +156,12 @@ export function Validate({
             Validating configuration requirements.{' '}
           </Text>
           <Spinner />
+        </Box>
+      )}
+
+      {completionMessage && !isLoading && (
+        <Box>
+          <Text color={getTextColor(isCurrent)}>{completionMessage}</Text>
         </Box>
       )}
 

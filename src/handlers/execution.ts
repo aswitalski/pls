@@ -134,55 +134,66 @@ export function createExecutionHandlers(
             const handleValidateComplete = (
               configWithDescriptions: ConfigRequirement[]
             ) => {
-              // Create CONFIG component with descriptions from VALIDATE
-              const handleConfigFinished = (config: Record<string, string>) => {
-                ops.setQueue(
-                  createConfigExecutionFinishedHandler(
-                    ops.addToTimeline,
-                    keys
-                  )(config)
-                );
-              };
-              const handleConfigAborted = () => {
-                ops.setQueue(
-                  createConfigExecutionAbortedHandler(ops.addToTimeline)()
-                );
-              };
+              ops.setQueue(
+                withQueueHandler(ComponentName.Validate, (first) => {
+                  // Create CONFIG component with descriptions from VALIDATE
+                  const handleConfigFinished = (
+                    config: Record<string, string>
+                  ) => {
+                    ops.setQueue(
+                      createConfigExecutionFinishedHandler(
+                        ops.addToTimeline,
+                        keys
+                      )(config)
+                    );
+                  };
+                  const handleConfigAborted = () => {
+                    ops.setQueue(
+                      createConfigExecutionAbortedHandler(ops.addToTimeline)()
+                    );
+                  };
 
-              // Create config steps from validated descriptions
-              const steps = configWithDescriptions.map((req) => {
-                const keyParts = req.path.split('.');
-                const shortKey = keyParts[keyParts.length - 1];
+                  // Create config steps from validated descriptions
+                  const steps = configWithDescriptions.map((req) => {
+                    const keyParts = req.path.split('.');
+                    const shortKey = keyParts[keyParts.length - 1];
 
-                // Extract description without the {path} suffix
-                // Format from VALIDATE: "Description {path}"
-                let description = req.description || req.path;
-                const pathPattern = /\s*\{[^}]+\}\s*$/;
-                description = description.replace(pathPattern, '').trim();
+                    // Extract description without the {path} suffix
+                    // Format from VALIDATE: "Description {path}"
+                    let description = req.description || req.path;
+                    const pathPattern = /\s*\{[^}]+\}\s*$/;
+                    description = description.replace(pathPattern, '').trim();
 
-                const step: ConfigStep = {
-                  description,
-                  key: shortKey,
-                  path: req.path,
-                  type: StepType.Text,
-                  value: null,
-                  validate: () => true,
-                };
-                return step;
-              });
+                    const step: ConfigStep = {
+                      description,
+                      key: shortKey,
+                      path: req.path,
+                      type: StepType.Text,
+                      value: null,
+                      validate: () => true,
+                    };
+                    return step;
+                  });
 
-              ops.setQueue([
-                {
-                  id: crypto.randomUUID(),
-                  name: ComponentName.Config,
-                  state: { done: false },
-                  props: {
-                    steps,
-                    onFinished: handleConfigFinished,
-                    onAborted: handleConfigAborted,
-                  },
-                },
-              ]);
+                  // Mark Validate as done and move to timeline
+                  ops.addToTimeline(
+                    markAsDone(first as StatefulComponentDefinition)
+                  );
+
+                  return [
+                    {
+                      id: crypto.randomUUID(),
+                      name: ComponentName.Config,
+                      state: { done: false },
+                      props: {
+                        steps,
+                        onFinished: handleConfigFinished,
+                        onAborted: handleConfigAborted,
+                      },
+                    },
+                  ];
+                })
+              );
             };
 
             const handleValidateError = (error: string) => {
