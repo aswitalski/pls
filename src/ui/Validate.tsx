@@ -8,6 +8,7 @@ import { TaskType } from '../types/types.js';
 import { Colors, getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
+import { ensureMinimumTime } from '../services/timing.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -65,10 +66,8 @@ export function Validate({
 
         // Call validate tool
         const result = await svc!.processWithTool(prompt, 'validate');
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
 
-        await new Promise((resolve) => setTimeout(resolve, remainingTime));
+        await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
           // Extract CONFIG tasks with descriptions from result
@@ -111,10 +110,7 @@ export function Validate({
           onComplete?.(withDescriptions);
         }
       } catch (err) {
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
-
-        await new Promise((resolve) => setTimeout(resolve, remainingTime));
+        await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);

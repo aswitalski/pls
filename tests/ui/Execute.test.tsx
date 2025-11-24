@@ -8,6 +8,14 @@ import { Execute } from '../../src/ui/Execute.js';
 
 import { createMockAnthropicService } from '../test-utils.js';
 
+// Mock timing helpers to skip delays in tests
+vi.mock('../../src/services/timing.js', () => ({
+  ensureMinimumTime: vi.fn().mockResolvedValue(undefined),
+  withMinimumTime: vi
+    .fn()
+    .mockImplementation(async (operation) => await operation()),
+}));
+
 vi.useFakeTimers();
 
 // Mock config loader to provide test config
@@ -143,7 +151,7 @@ describe('Execute component', () => {
       () => {
         expect(onComplete).toHaveBeenCalled();
       },
-      { timeout: 2000 }
+      { timeout: 500 }
     );
 
     const outputs = onComplete.mock.calls[0][0];
@@ -173,7 +181,7 @@ describe('Execute component', () => {
       () => {
         expect(onError).toHaveBeenCalledWith(errorMessage);
       },
-      { timeout: 2000 }
+      { timeout: 500 }
     );
   });
 
@@ -244,7 +252,7 @@ describe('Execute component', () => {
         const frame = lastFrame();
         return frame?.includes('Long task') || frame?.includes('Processing.');
       },
-      { timeout: 1000 }
+      { timeout: 500 }
     );
 
     // Abort during execution
@@ -282,7 +290,7 @@ describe('Execute component', () => {
         const frame = lastFrame();
         return frame?.includes('Long task') || frame?.includes('Processing.');
       },
-      { timeout: 1000 }
+      { timeout: 500 }
     );
 
     stdin.write('\x1b'); // Escape key
@@ -318,7 +326,7 @@ describe('Execute component', () => {
       () => {
         expect(onComplete).toHaveBeenCalledWith([], 0);
       },
-      { timeout: 2000 }
+      { timeout: 500 }
     );
   });
 
@@ -356,7 +364,7 @@ describe('Execute component', () => {
       () => {
         expect(executeCommands).toHaveBeenCalled();
       },
-      { timeout: 2000 }
+      { timeout: 500 }
     );
 
     // Verify that executeCommands was called with resolved placeholders
@@ -399,7 +407,7 @@ describe('Execute component', () => {
       () => {
         expect(executeCommands).toHaveBeenCalled();
       },
-      { timeout: 2000 }
+      { timeout: 500 }
     );
 
     // Verify that unresolved placeholders are kept as-is

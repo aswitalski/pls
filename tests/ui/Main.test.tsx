@@ -6,6 +6,19 @@ import { App } from '../../src/types/types.js';
 
 import { Main } from '../../src/ui/Main.js';
 
+// Mock timing helpers to skip delays in tests
+vi.mock('../../src/services/timing.js', () => ({
+  ensureMinimumTime: vi.fn().mockResolvedValue(undefined),
+  withMinimumTime: vi
+    .fn()
+    .mockImplementation(async (operation) => await operation()),
+}));
+
+// Wait times for React render cycles
+// With timing helpers mocked, we only need to wait for React render cycles
+const ShortWait = 50; // For simple React updates and mocked anthropic calls
+const WorkflowWait = 100; // For complex component workflows (Command -> Plan -> Confirm)
+
 describe('Main component queue-based architecture', () => {
   const mockApp: App = {
     name: 'test-app',
@@ -101,7 +114,7 @@ describe('Main component queue-based architecture', () => {
       const { lastFrame } = render(<Main app={mockApp} command={null} />);
 
       // Wait for effects to run
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, ShortWait));
 
       // Should have rendered the welcome screen
       const output = lastFrame();
@@ -146,8 +159,8 @@ describe('Main component queue-based architecture', () => {
 
       render(<Main app={mockApp} command="test task" />);
 
-      // Wait for async processing (Command MIN_PROCESSING_TIME + buffer)
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      // Wait for async processing (Command -> Plan -> Confirm workflow)
+      await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
 
       // Verify createConfirmDefinition was called
       expect(confirmSpy).toHaveBeenCalled();
@@ -189,8 +202,8 @@ describe('Main component queue-based architecture', () => {
 
       const { lastFrame } = render(<Main app={mockApp} command="test task" />);
 
-      // Wait for async processing (Command MIN_PROCESSING_TIME + buffer)
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      // Wait for async processing (Command -> Plan -> Confirm workflow)
+      await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
 
       // Verify the confirmation is shown in the output
       const output = lastFrame();
@@ -236,13 +249,13 @@ describe('Main component queue-based architecture', () => {
       );
 
       // Wait for confirmation to appear
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
 
       // Press Escape to abort
       stdin.write(Keys.Escape);
 
       // Wait for state update
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, ShortWait));
 
       const output = lastFrame();
       expect(output).toMatch(
@@ -288,13 +301,13 @@ describe('Main component queue-based architecture', () => {
       );
 
       // Wait for plan to appear
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
 
       // Press Escape to abort
       stdin.write(Keys.Escape);
 
       // Wait for state update
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, ShortWait));
 
       const output = lastFrame();
       expect(output).toMatch(
@@ -337,13 +350,13 @@ describe('Main component queue-based architecture', () => {
       );
 
       // Wait for plan to appear
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
 
       // Press Escape to abort
       stdin.write(Keys.Escape);
 
       // Wait for state update
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, ShortWait));
 
       const output = lastFrame();
       expect(output).toMatch(

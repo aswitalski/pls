@@ -66,6 +66,7 @@ describe('Confirm component', () => {
       stdin.write(Keys.Tab);
       await new Promise((resolve) => setTimeout(resolve, 50)); // Wait for state update
       stdin.write(Keys.Enter);
+      await new Promise((resolve) => setTimeout(resolve, 10)); // Wait for callback
 
       expect(onCancelled).toHaveBeenCalledOnce();
     });

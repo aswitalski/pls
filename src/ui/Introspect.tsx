@@ -7,6 +7,7 @@ import { Task } from '../types/types.js';
 import { Colors, getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
+import { ensureMinimumTime } from '../services/timing.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -104,10 +105,8 @@ export function Introspect({
           introspectAction,
           'introspect'
         );
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
 
-        await new Promise((resolve) => setTimeout(resolve, remainingTime));
+        await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
           // Parse capabilities from returned tasks
@@ -126,10 +125,7 @@ export function Introspect({
           onComplete?.(result.message, capabilities);
         }
       } catch (err) {
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
-
-        await new Promise((resolve) => setTimeout(resolve, remainingTime));
+        await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);

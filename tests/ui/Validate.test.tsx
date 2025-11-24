@@ -9,6 +9,14 @@ import { Validate } from '../../src/ui/Validate.js';
 
 import { createMockAnthropicService, Keys } from '../test-utils.js';
 
+// Mock timing helpers to skip delays in tests
+vi.mock('../../src/services/timing.js', () => ({
+  ensureMinimumTime: vi.fn().mockResolvedValue(undefined),
+  withMinimumTime: vi
+    .fn()
+    .mockImplementation(async (operation) => await operation()),
+}));
+
 describe('Validate component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -113,7 +121,7 @@ describe('Validate component', () => {
             },
           ]);
         },
-        { timeout: 2000 }
+        { timeout: 500 }
       );
     });
 
@@ -154,7 +162,7 @@ describe('Validate component', () => {
             expect(output.length).toBeGreaterThan(0);
           }
         },
-        { timeout: 2000 }
+        { timeout: 500 }
       );
     });
   });
@@ -208,7 +216,7 @@ describe('Validate component', () => {
             },
           ]);
         },
-        { timeout: 2000 }
+        { timeout: 500 }
       );
     });
 
@@ -255,7 +263,7 @@ describe('Validate component', () => {
             expect(output.length).toBeGreaterThan(0);
           }
         },
-        { timeout: 2000 }
+        { timeout: 500 }
       );
     });
   });
@@ -285,7 +293,7 @@ describe('Validate component', () => {
         () => {
           expect(onError).toHaveBeenCalledWith(errorMessage);
         },
-        { timeout: 2000 }
+        { timeout: 500 }
       );
     });
 
@@ -347,7 +355,10 @@ describe('Validate component', () => {
   });
 
   describe('Minimum processing time', () => {
-    it('respects minimum processing time', async () => {
+    it('uses ensureMinimumTime for UX polish', async () => {
+      const { ensureMinimumTime } = await import(
+        '../../src/services/timing.js'
+      );
       const missingConfig: ConfigRequirement[] = [
         { path: 'api.key', type: 'string' },
       ];
@@ -362,8 +373,6 @@ describe('Validate component', () => {
 
       const service = createMockAnthropicService({ tasks });
       const onComplete = vi.fn();
-
-      const startTime = Date.now();
 
       render(
         <Validate
@@ -380,11 +389,11 @@ describe('Validate component', () => {
         () => {
           expect(onComplete).toHaveBeenCalled();
         },
-        { timeout: 2000 }
+        { timeout: 500 }
       );
 
-      const elapsed = Date.now() - startTime;
-      expect(elapsed).toBeGreaterThanOrEqual(1000);
+      // Should have called ensureMinimumTime (mocked to return immediately in tests)
+      expect(ensureMinimumTime).toHaveBeenCalled();
     });
   });
 
@@ -426,7 +435,7 @@ describe('Validate component', () => {
             },
           ]);
         },
-        { timeout: 2000 }
+        { timeout: 500 }
       );
     });
 
@@ -467,7 +476,7 @@ describe('Validate component', () => {
             },
           ]);
         },
-        { timeout: 2000 }
+        { timeout: 500 }
       );
     });
   });

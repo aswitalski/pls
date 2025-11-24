@@ -16,6 +16,7 @@ import {
 } from '../services/shell.js';
 import { replacePlaceholders } from '../services/placeholder-resolver.js';
 import { loadUserConfig } from '../services/config-loader.js';
+import { ensureMinimumTime } from '../services/timing.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -246,10 +247,8 @@ export function Execute({
 
         // Call execute tool to get commands
         const result = await svc!.processWithTool(taskDescriptions, 'execute');
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MINIMUM_PROCESSING_TIME - elapsed);
 
-        await new Promise((resolve) => setTimeout(resolve, remainingTime));
+        await ensureMinimumTime(startTime, MINIMUM_PROCESSING_TIME);
 
         if (!mounted) return;
 
@@ -335,10 +334,7 @@ export function Execute({
           setIsExecuting(false);
         }
       } catch (err) {
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MINIMUM_PROCESSING_TIME - elapsed);
-
-        await new Promise((resolve) => setTimeout(resolve, remainingTime));
+        await ensureMinimumTime(startTime, MINIMUM_PROCESSING_TIME);
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);

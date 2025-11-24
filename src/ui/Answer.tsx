@@ -6,6 +6,7 @@ import { AnswerProps } from '../types/components.js';
 import { Colors, getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
+import { withMinimumTime } from '../services/timing.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -50,15 +51,12 @@ export function Answer({
     let mounted = true;
 
     async function process(svc: typeof service) {
-      const startTime = Date.now();
-
       try {
-        // Call answer tool
-        const result = await svc!.processWithTool(question, 'answer');
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MINIMUM_PROCESSING_TIME - elapsed);
-
-        await new Promise((resolve) => setTimeout(resolve, remainingTime));
+        // Call answer tool with minimum processing time for UX polish
+        const result = await withMinimumTime(
+          () => svc!.processWithTool(question, 'answer'),
+          MINIMUM_PROCESSING_TIME
+        );
 
         if (mounted) {
           // Extract answer from result
@@ -67,11 +65,6 @@ export function Answer({
           onComplete?.(answer);
         }
       } catch (err) {
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MINIMUM_PROCESSING_TIME - elapsed);
-
-        await new Promise((resolve) => setTimeout(resolve, remainingTime));
-
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
           setIsLoading(false);

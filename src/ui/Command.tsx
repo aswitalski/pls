@@ -7,6 +7,7 @@ import { TaskType } from '../types/types.js';
 import { Colors, getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
+import { ensureMinimumTime } from '../services/timing.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -69,20 +70,14 @@ export function Command({
           result = await svc!.processWithTool(query, 'config');
         }
 
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
-
-        await new Promise((resolve) => setTimeout(resolve, remainingTime));
+        await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
           setIsLoading(false);
           onComplete?.(result.message, result.tasks);
         }
       } catch (err) {
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MIN_PROCESSING_TIME - elapsed);
-
-        await new Promise((resolve) => setTimeout(resolve, remainingTime));
+        await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);

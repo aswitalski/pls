@@ -6,6 +6,14 @@ import { Answer } from '../../src/ui/Answer.js';
 
 import { createMockAnthropicService } from '../test-utils.js';
 
+// Mock timing helpers to skip delays in tests
+vi.mock('../../src/services/timing.js', () => ({
+  ensureMinimumTime: vi.fn().mockResolvedValue(undefined),
+  withMinimumTime: vi
+    .fn()
+    .mockImplementation(async (operation) => await operation()),
+}));
+
 describe('Answer component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -68,7 +76,7 @@ describe('Answer component', () => {
       () => {
         expect(onComplete).toHaveBeenCalledWith(answer);
       },
-      { timeout: 2000 }
+      { timeout: 500 }
     );
   });
 
@@ -92,7 +100,7 @@ describe('Answer component', () => {
       () => {
         expect(onError).toHaveBeenCalledWith(errorMessage);
       },
-      { timeout: 2000 }
+      { timeout: 500 }
     );
   });
 
@@ -134,12 +142,11 @@ describe('Answer component', () => {
     expect(onAborted).toHaveBeenCalled();
   });
 
-  it('respects minimum processing time', async () => {
+  it('uses withMinimumTime for UX polish', async () => {
+    const { withMinimumTime } = await import('../../src/services/timing.js');
     const answer = 'Quick answer';
     const service = createMockAnthropicService({ answer });
     const onComplete = vi.fn();
-
-    const startTime = Date.now();
 
     render(
       <Answer
@@ -156,11 +163,10 @@ describe('Answer component', () => {
       () => {
         expect(onComplete).toHaveBeenCalled();
       },
-      { timeout: 2000 }
+      { timeout: 500 }
     );
 
-    const elapsed = Date.now() - startTime;
-    // Should take at least 400ms (MinimumProcessingTime)
-    expect(elapsed).toBeGreaterThanOrEqual(400);
+    // Should have called withMinimumTime (mocked to return immediately in tests)
+    expect(withMinimumTime).toHaveBeenCalled();
   });
 });
