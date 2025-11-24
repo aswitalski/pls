@@ -143,7 +143,10 @@ export function createExecutionHandlers(
                     ops.setQueue(
                       createConfigExecutionFinishedHandler(
                         ops.addToTimeline,
-                        keys
+                        keys,
+                        tasks,
+                        service,
+                        taskHandlers.execute
                       )(config)
                     );
                   };

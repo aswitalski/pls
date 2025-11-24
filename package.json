@@ -1,6 +1,6 @@
 {
   "name": "prompt-language-shell",
-  "version": "0.4.9",
+  "version": "0.5.0",
   "description": "Your personal command-line concierge. Ask politely, and it gets things done.",
   "type": "module",
   "main": "dist/index.js",

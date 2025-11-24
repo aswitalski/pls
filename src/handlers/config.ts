@@ -7,16 +7,19 @@ import {
 import {
   CommandHandlers,
   ConfigHandlers,
+  ExecuteHandlers,
   HandlerOperations,
 } from '../types/handlers.js';
-import { ComponentName, FeedbackType } from '../types/types.js';
+import { ComponentName, FeedbackType, Task } from '../types/types.js';
 
 import {
   AnthropicService,
   createAnthropicService,
+  LLMService,
 } from '../services/anthropic.js';
 import {
   createCommandDefinition,
+  createExecuteDefinition,
   createFeedback,
   markAsDone,
 } from '../services/components.js';
@@ -89,11 +92,14 @@ export function createConfigHandlers(
 
 /**
  * Creates config execution finished handler for CONFIG skill
- * Saves arbitrary config keys and exits
+ * Saves arbitrary config keys and optionally continues with execution
  */
 export function createConfigExecutionFinishedHandler(
   addToTimeline: (...items: ComponentDefinition[]) => void,
-  keys: string[]
+  keys: string[],
+  tasks?: Task[],
+  service?: LLMService,
+  executeHandlers?: ExecuteHandlers
 ) {
   return (config: Record<string, string>) => {
     // Group by top-level section
@@ -135,6 +141,21 @@ export function createConfigExecutionFinishedHandler(
           )
         );
 
+        // If tasks are provided, continue with execution
+        if (tasks && service && executeHandlers) {
+          return [
+            ...rest,
+            createExecuteDefinition(
+              tasks,
+              service,
+              executeHandlers.onError,
+              executeHandlers.onComplete,
+              executeHandlers.onAborted
+            ),
+          ];
+        }
+
+        // Otherwise, exit (legacy behavior for initial setup)
         exitApp(0);
         return rest;
       },

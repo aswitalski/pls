@@ -4,7 +4,11 @@ import {
   ComponentDefinition,
   FeedbackProps,
 } from '../../src/types/components.js';
-import { ComponentName, FeedbackType } from '../../src/types/types.js';
+import {
+  ComponentName,
+  FeedbackType,
+  TaskType,
+} from '../../src/types/types.js';
 
 import {
   createConfigExecutionAbortedHandler,
@@ -198,6 +202,80 @@ describe('Config execution handlers', () => {
       // Should return empty since component didn't match
       expect(result).toEqual([]);
       expect(addToTimeline).not.toHaveBeenCalled();
+    });
+
+    it('exits without tasks parameter (backward compatibility)', async () => {
+      const { exitApp } = await import('../../src/services/process.js');
+      const addToTimeline = vi.fn();
+      const keys = ['anthropic.key'];
+
+      const handler = createConfigExecutionFinishedHandler(addToTimeline, keys);
+
+      const config = { key: 'sk-ant-test' };
+
+      const mockQueue: ComponentDefinition[] = [
+        {
+          id: 'config-1',
+          name: ComponentName.Config,
+          state: { done: false },
+          props: { steps: [] },
+        },
+      ];
+
+      const queueHandler = handler(config);
+      queueHandler(mockQueue);
+
+      // Should exit when no tasks provided
+      expect(exitApp).toHaveBeenCalledWith(0);
+    });
+
+    it('continues with execution when tasks parameter provided', () => {
+      const addToTimeline = vi.fn();
+      const keys = ['product.alpha.path'];
+
+      const tasks = [
+        {
+          action: 'Build {product.alpha.path}',
+          type: TaskType.Execute,
+          params: { skill: 'build-product', variant: 'alpha' },
+        },
+      ];
+
+      const mockService = {
+        processWithTool: vi.fn(),
+      };
+
+      const executeHandlers = {
+        onError: vi.fn(),
+        onComplete: vi.fn(),
+        onAborted: vi.fn(),
+      };
+
+      const handler = createConfigExecutionFinishedHandler(
+        addToTimeline,
+        keys,
+        tasks,
+        mockService,
+        executeHandlers
+      );
+
+      const config = { path: '/data/products/alpha' };
+
+      const mockQueue: ComponentDefinition[] = [
+        {
+          id: 'config-1',
+          name: ComponentName.Config,
+          state: { done: false },
+          props: { steps: [] },
+        },
+      ];
+
+      const queueHandler = handler(config);
+      const result = queueHandler(mockQueue);
+
+      // Should create EXECUTE component instead of exiting
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe(ComponentName.Execute);
     });
   });
 
