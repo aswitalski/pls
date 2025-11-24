@@ -19,6 +19,7 @@ export function createExecuteHandlers(
   ops: HandlerOperations,
   handleAborted: (operationName: string) => void
 ): ExecuteHandlers {
+  void handleAborted;
   const onError = (error: string) => {
     ops.setQueue(
       withQueueHandler(ComponentName.Execute, (first) => {
@@ -64,8 +65,22 @@ export function createExecuteHandlers(
     );
   };
 
-  const onAborted = () => {
-    handleAborted('Execution');
+  const onAborted = (elapsedTime: number) => {
+    ops.setQueue(
+      withQueueHandler(ComponentName.Execute, (first) => {
+        const message =
+          elapsedTime > 0
+            ? `The execution was cancelled after ${formatDuration(elapsedTime)}.`
+            : 'The execution was cancelled.';
+
+        ops.addToTimeline(
+          markAsDone(first as StatefulComponentDefinition),
+          createFeedback(FeedbackType.Aborted, message)
+        );
+        exitApp(0);
+        return [];
+      })
+    );
   };
 
   return { onError, onComplete, onAborted };

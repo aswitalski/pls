@@ -5,6 +5,7 @@ export enum ExecutionStatus {
   Running = 'running',
   Success = 'success',
   Failed = 'failed',
+  Aborted = 'aborted',
 }
 
 export enum ExecutionResult {

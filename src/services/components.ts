@@ -421,7 +421,7 @@ export function createExecuteDefinition(
   service: LLMService,
   onError: (error: string) => void,
   onComplete: (outputs: CommandOutput[], totalElapsed: number) => void,
-  onAborted: () => void
+  onAborted: (elapsedTime: number) => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),

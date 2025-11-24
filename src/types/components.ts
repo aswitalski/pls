@@ -116,7 +116,7 @@ export interface ExecuteProps {
   service?: LLMService;
   onError?: (error: string) => void;
   onComplete?: (outputs: CommandOutput[], totalElapsed: number) => void;
-  onAborted: () => void;
+  onAborted: (elapsedTime: number) => void;
 }
 
 export interface ValidateProps {

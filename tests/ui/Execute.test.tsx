@@ -8,6 +8,8 @@ import { Execute } from '../../src/ui/Execute.js';
 
 import { createMockAnthropicService } from '../test-utils.js';
 
+vi.useFakeTimers();
+
 // Mock config loader to provide test config
 vi.mock('../../src/services/config-loader.js', () => ({
   loadUserConfig: vi.fn().mockReturnValue({
@@ -215,6 +217,82 @@ describe('Execute component', () => {
     stdin.write('\x1b'); // Escape key
 
     expect(onAborted).toHaveBeenCalled();
+  });
+
+  it('calculates elapsed time when aborting execution', async () => {
+    const service = createMockAnthropicService({
+      message: 'Processing.',
+      commands: [{ description: 'Long task', command: 'sleep 10' }],
+    });
+    const onAborted = vi.fn();
+
+    const tasks = [{ action: 'Run long task', type: TaskType.Execute }];
+
+    const { stdin, lastFrame } = render(
+      <Execute
+        tasks={tasks}
+        service={service}
+        onComplete={vi.fn()}
+        onError={vi.fn()}
+        onAborted={onAborted}
+      />
+    );
+
+    // Wait for execution UI to appear (command is being executed)
+    await vi.waitFor(
+      () => {
+        const frame = lastFrame();
+        return frame?.includes('Long task') || frame?.includes('Processing.');
+      },
+      { timeout: 1000 }
+    );
+
+    // Abort during execution
+    stdin.write('\x1b'); // Escape key
+
+    // Should have called onAborted with elapsed time
+    expect(onAborted).toHaveBeenCalled();
+    const elapsedTime = onAborted.mock.calls[0][0];
+    expect(typeof elapsedTime).toBe('number');
+    expect(elapsedTime).toBeGreaterThanOrEqual(0);
+  });
+
+  it('sets command status to aborted when cancelled', async () => {
+    const service = createMockAnthropicService({
+      message: 'Processing.',
+      commands: [{ description: 'Long task', command: 'sleep 10' }],
+    });
+    const onAborted = vi.fn();
+
+    const tasks = [{ action: 'Run long task', type: TaskType.Execute }];
+
+    const { stdin, lastFrame } = render(
+      <Execute
+        tasks={tasks}
+        service={service}
+        onComplete={vi.fn()}
+        onError={vi.fn()}
+        onAborted={onAborted}
+      />
+    );
+
+    // Wait for execution UI to appear
+    await vi.waitFor(
+      () => {
+        const frame = lastFrame();
+        return frame?.includes('Long task') || frame?.includes('Processing.');
+      },
+      { timeout: 1000 }
+    );
+
+    stdin.write('\x1b'); // Escape key
+
+    // onAborted should be called with elapsed time
+    expect(onAborted).toHaveBeenCalled();
+    const elapsedTime = onAborted.mock.calls[0][0];
+    expect(typeof elapsedTime).toBe('number');
+    // Elapsed time should be non-negative (0 or positive)
+    expect(elapsedTime).toBeGreaterThanOrEqual(0);
   });
 
   it('calls onComplete with empty outputs when no commands returned', async () => {

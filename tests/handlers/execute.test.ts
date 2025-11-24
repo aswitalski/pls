@@ -308,14 +308,76 @@ describe('Execute handlers', () => {
   });
 
   describe('Execute aborted handler', () => {
-    it('calls handleAborted with operation name', () => {
+    it('adds aborted feedback with elapsed time to timeline', () => {
       const handlers = createExecuteHandlers(
         ops,
         handleAbortedMock as (operationName: string) => void
       );
-      handlers.onAborted();
+      handlers.onAborted(1500);
 
-      expect(handleAbortedMock).toHaveBeenCalledWith('Execution');
+      const queueUpdater = getQueueUpdater();
+      const result = queueUpdater([
+        {
+          id: '123',
+          name: ComponentName.Execute,
+          state: { done: false, isLoading: false },
+          props: {
+            tasks: [],
+            onError: vi.fn(),
+            onComplete: vi.fn(),
+            onAborted: vi.fn(),
+          },
+        },
+      ]);
+
+      expect(result).toEqual([]);
+      expect(addToTimelineMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: ComponentName.Execute,
+          state: { done: true, isLoading: false },
+        }),
+        expect.objectContaining({
+          name: ComponentName.Feedback,
+          props: {
+            type: FeedbackType.Aborted,
+            message: 'The execution was cancelled after 1 second.',
+          },
+        })
+      );
+    });
+
+    it('adds aborted feedback without time when elapsed is zero', () => {
+      const handlers = createExecuteHandlers(
+        ops,
+        handleAbortedMock as (operationName: string) => void
+      );
+      handlers.onAborted(0);
+
+      const queueUpdater = getQueueUpdater();
+      queueUpdater([
+        {
+          id: '123',
+          name: ComponentName.Execute,
+          state: { done: false, isLoading: false },
+          props: {
+            tasks: [],
+            onError: vi.fn(),
+            onComplete: vi.fn(),
+            onAborted: vi.fn(),
+          },
+        },
+      ]);
+
+      expect(addToTimelineMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          name: ComponentName.Feedback,
+          props: {
+            type: FeedbackType.Aborted,
+            message: 'The execution was cancelled.',
+          },
+        })
+      );
     });
   });
 });

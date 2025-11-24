@@ -26,6 +26,7 @@ const STATUS_ICONS: Record<ExecutionStatus, string> = {
   [ExecutionStatus.Running]: '• ',
   [ExecutionStatus.Success]: '✓ ',
   [ExecutionStatus.Failed]: '✗ ',
+  [ExecutionStatus.Aborted]: '⊘ ',
 };
 
 interface CommandState {
@@ -36,6 +37,21 @@ interface CommandState {
   startTime?: number;
   endTime?: number;
   elapsed?: number;
+}
+
+function calculateTotalElapsed(commandStatuses: CommandState[]): number {
+  return commandStatuses.reduce((sum, cmd) => {
+    if (cmd.elapsed !== undefined) {
+      return sum + cmd.elapsed;
+    }
+    if (cmd.startTime) {
+      const elapsed = cmd.endTime
+        ? cmd.endTime - cmd.startTime
+        : Date.now() - cmd.startTime;
+      return sum + elapsed;
+    }
+    return sum;
+  }, 0);
 }
 
 function getStatusColors(status: ExecutionStatus) {
@@ -66,6 +82,13 @@ function getStatusColors(status: ExecutionStatus) {
         icon: Colors.Status.Error,
         description: Colors.Status.Error,
         command: Colors.Status.Error,
+        symbol: Palette.Gray,
+      };
+    case ExecutionStatus.Aborted:
+      return {
+        icon: Palette.DarkOrange,
+        description: getTextColor(true),
+        command: Palette.DarkOrange,
         symbol: Palette.Gray,
       };
   }
@@ -139,7 +162,26 @@ export function Execute({
       if (key.escape && (isLoading || isExecuting) && !done) {
         setIsLoading(false);
         setIsExecuting(false);
-        onAborted();
+        setRunningIndex(null);
+        // Mark any running command as aborted when cancelled
+        const now = Date.now();
+        setCommandStatuses((prev) =>
+          prev.map((item) => {
+            if (item.status === ExecutionStatus.Running) {
+              const elapsed = item.startTime
+                ? Math.floor((now - item.startTime) / 1000) * 1000
+                : undefined;
+              return {
+                ...item,
+                status: ExecutionStatus.Aborted,
+                endTime: now,
+                elapsed,
+              };
+            }
+            return item;
+          })
+        );
+        onAborted(calculateTotalElapsed(commandStatuses));
       }
     },
     { isActive: (isLoading || isExecuting) && !done }
@@ -166,13 +208,7 @@ export function Execute({
   useEffect(() => {
     if (isExecuting || commandStatuses.length === 0 || !outputs.length) return;
 
-    // Sum up elapsed times from all commands
-    const totalElapsed = commandStatuses.reduce(
-      (sum, cmd) => sum + (cmd.elapsed ?? 0),
-      0
-    );
-
-    onComplete?.(outputs, totalElapsed);
+    onComplete?.(outputs, calculateTotalElapsed(commandStatuses));
   }, [isExecuting, commandStatuses, outputs, onComplete]);
 
   useEffect(() => {

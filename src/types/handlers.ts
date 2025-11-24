@@ -45,7 +45,7 @@ export interface IntrospectHandlers {
 export interface ExecuteHandlers {
   onError: (error: string) => void;
   onComplete: (outputs: CommandOutput[], totalElapsed: number) => void;
-  onAborted: () => void;
+  onAborted: (elapsedTime: number) => void;
 }
 
 /**
