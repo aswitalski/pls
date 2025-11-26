@@ -3,7 +3,21 @@ import { Box, Text } from 'ink';
 import { WelcomeProps } from '../types/components.js';
 import { App } from '../types/types.js';
 
+import { Palette } from '../services/colors.js';
+
 import { Panel } from './Panel.js';
+
+export function Welcome({ app }: WelcomeProps) {
+  return (
+    <Box alignSelf="flex-start">
+      <Panel>
+        <Header app={app} />
+        <Description description={app.description} />
+        <Usage />
+      </Panel>
+    </Box>
+  );
+}
 
 function Header({ app }: { app: App }) {
   const words = app.name
@@ -13,14 +27,12 @@ function Header({ app }: { app: App }) {
   return (
     <Box marginBottom={1} gap={1}>
       {words.map((word, index) => (
-        <Text color="greenBright" bold key={index}>
+        <Text color={Palette.BrightGreen} bold key={index}>
           {word}
         </Text>
       ))}
-      <Text color="whiteBright" dimColor>
-        v{app.version}
-      </Text>
-      {app.isDev && <Text color="yellowBright">dev</Text>}
+      <Text color={Palette.AshGray}>v{app.version}</Text>
+      {app.isDev && <Text color={Palette.Yellow}>dev</Text>}
     </Box>
   );
 }
@@ -35,7 +47,7 @@ function Description({ description }: { description: string }) {
     <>
       {lines.map((line, index) => (
         <Box key={index}>
-          <Text color="white">{line}.</Text>
+          <Text color={Palette.White}>{line}.</Text>
         </Box>
       ))}
     </>
@@ -44,35 +56,40 @@ function Description({ description }: { description: string }) {
 
 function Usage() {
   return (
-    <Box flexDirection="column" marginTop={1}>
-      <Text color="brightWhite" bold>
-        Usage:
-      </Text>
-      <Box gap={1}>
-        <Text color="whiteBright" dimColor>
-          &gt;
-        </Text>
-        <Box gap={1}>
-          <Text color="greenBright" bold>
-            pls
-          </Text>
-          <Text color="yellow" bold>
-            [describe your request]
-          </Text>
-        </Box>
-      </Box>
+    <Box flexDirection="column" marginTop={1} gap={1}>
+      <Section title="Get started:">
+        <Example>list skills</Example>
+      </Section>
+      <Section title="Usage:">
+        <Example>[describe your request]</Example>
+      </Section>
     </Box>
   );
 }
 
-export function Welcome({ app }: WelcomeProps) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <Box alignSelf="flex-start">
-      <Panel>
-        <Header app={app} />
-        <Description description={app.description} />
-        <Usage />
-      </Panel>
+    <Box flexDirection="column">
+      <Text color={Palette.White}>{title}</Text>
+      {children}
+    </Box>
+  );
+}
+
+function Example({ children }: { children: string }) {
+  return (
+    <Box gap={1}>
+      <Text color={Palette.Gray}>&gt;</Text>
+      <Text color={Palette.BrightGreen} bold>
+        pls
+      </Text>
+      <Text color={Palette.Yellow}>{children}</Text>
     </Box>
   );
 }
