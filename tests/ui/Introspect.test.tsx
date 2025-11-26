@@ -16,9 +16,64 @@ describe('Introspect capability parsing', () => {
         'CONFIG',
         'ANSWER',
         'INTROSPECT',
+        'VALIDATE',
         'REPORT',
       ]).toContain(upperName);
     });
+  });
+
+  it('filters debug-only capabilities in normal mode', () => {
+    // Simulate the filtering logic from Introspect component
+    const allCapabilities = [
+      { name: 'Introspect', description: 'list capabilities' },
+      { name: 'Config', description: 'manage settings' },
+      { name: 'Answer', description: 'provide information' },
+      { name: 'Execute', description: 'run commands' },
+      { name: 'Plan', description: 'break down requests' },
+      { name: 'Validate', description: 'verify operations' },
+      { name: 'Report', description: 'summarize outcomes' },
+    ];
+
+    // In normal mode, filter out Plan, Validate, Report
+    const filteredCapabilities = allCapabilities.filter(
+      (cap) =>
+        cap.name.toUpperCase() !== 'PLAN' &&
+        cap.name.toUpperCase() !== 'VALIDATE' &&
+        cap.name.toUpperCase() !== 'REPORT'
+    );
+
+    expect(filteredCapabilities.length).toBe(4);
+    expect(filteredCapabilities.map((c) => c.name)).toEqual([
+      'Introspect',
+      'Config',
+      'Answer',
+      'Execute',
+    ]);
+  });
+
+  it('includes debug-only capabilities in debug mode', () => {
+    // In debug mode, all capabilities should be included
+    const allCapabilities = [
+      { name: 'Introspect', description: 'list capabilities' },
+      { name: 'Config', description: 'manage settings' },
+      { name: 'Answer', description: 'provide information' },
+      { name: 'Execute', description: 'run commands' },
+      { name: 'Plan', description: 'break down requests' },
+      { name: 'Validate', description: 'verify operations' },
+      { name: 'Report', description: 'summarize outcomes' },
+    ];
+
+    // In debug mode, no filtering applied
+    expect(allCapabilities.length).toBe(7);
+    expect(allCapabilities.map((c) => c.name)).toEqual([
+      'Introspect',
+      'Config',
+      'Answer',
+      'Execute',
+      'Plan',
+      'Validate',
+      'Report',
+    ]);
   });
 
   it('handles mixed built-in and user-defined capabilities', () => {

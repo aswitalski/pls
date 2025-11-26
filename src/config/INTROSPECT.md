@@ -133,9 +133,10 @@ Examples:
 
 When user asks "list your skills", create an introductory message like "here
 are my capabilities:" followed by tasks for built-in capabilities (Introspect,
-Config, Answer, Execute), then indirect workflow capabilities (Validate, Plan,
-Report). Each task uses type "introspect" with an action describing the
-capability.
+Config, Answer, Execute), then indirect workflow capabilities (Plan, Validate,
+Report).
+
+Each task uses type "introspect" with an action describing the capability.
 
 ### Example 2: Filtered Skills
 

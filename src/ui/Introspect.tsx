@@ -117,6 +117,7 @@ export function Introspect({
             capabilities = capabilities.filter(
               (cap) =>
                 cap.name.toUpperCase() !== 'PLAN' &&
+                cap.name.toUpperCase() !== 'VALIDATE' &&
                 cap.name.toUpperCase() !== 'REPORT'
             );
           }
