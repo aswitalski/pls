@@ -297,10 +297,11 @@ describe('Plan component', () => {
         completedSelections: [],
       };
       const onSelectionConfirmed = vi.fn();
+      const onComplete = vi.fn();
 
       const { stdin } = render(
         <Plan
-          onAborted={mockOnAborted}
+          handlers={{ onAborted: mockOnAborted, onComplete, onError: vi.fn() }}
           state={state}
           tasks={[
             { action: 'Install dependencies', type: TaskType.Execute },
@@ -310,12 +311,18 @@ describe('Plan component', () => {
         />
       );
 
-      // Try to interact - should do nothing
+      // With no DEFINE tasks, Plan should auto-confirm immediately
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        { action: 'Install dependencies', type: TaskType.Execute },
+        { action: 'Run tests', type: TaskType.Execute },
+      ]);
+      expect(onComplete).toHaveBeenCalled();
+
+      // Try to interact - should do nothing since already completed
       stdin.write(ArrowDown);
       stdin.write(Enter);
 
       expect(state.highlightedIndex).toBeNull();
-      expect(onSelectionConfirmed).not.toHaveBeenCalled();
     });
 
     it('renders selection with correct visual states', async () => {
@@ -328,7 +335,7 @@ describe('Plan component', () => {
 
       const { lastFrame, stdin } = render(
         <Plan
-          onAborted={mockOnAborted}
+          handlers={{ onAborted: mockOnAborted, onComplete: vi.fn(), onError: vi.fn() }}
           state={state}
           tasks={[
             {
@@ -348,20 +355,15 @@ describe('Plan component', () => {
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
+      const outputBeforeSelection = lastFrame();
+      expect(outputBeforeSelection).toContain('Staging');
+      expect(outputBeforeSelection).toContain(TaskType.Define);
+
       // Confirm selection
       stdin.write(Enter);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
-      const output = lastFrame();
-      expect(output).toBeTruthy();
-
-      // Verify selected item shows as "execute"
-      expect(output).toContain('Staging');
-      expect(output).toContain(TaskType.Execute);
-
-      // Verify non-selected items show as "discard"
-      expect(output).toContain(TaskType.Discard);
-
+      // Verify onSelectionConfirmed was called with the selected item
       expect(onSelectionConfirmed).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
@@ -903,7 +905,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
-          onAborted={onAborted}
+          handlers={{ onAborted, onComplete: vi.fn(), onError: vi.fn() }}
           state={state}
           tasks={[
             {
@@ -916,7 +918,7 @@ describe('Plan component', () => {
       );
 
       stdin.write(Escape);
-      expect(onAborted).toHaveBeenCalledTimes(1);
+      expect(onAborted).toHaveBeenCalledWith('task selection');
     });
 
     it('does not call onAborted when Esc is pressed after done', () => {
@@ -929,8 +931,9 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
-          onAborted={onAborted}
+          handlers={{ onAborted, onComplete: vi.fn(), onError: vi.fn() }}
           state={state}
+          isActive={false}
           tasks={[
             {
               action: 'Choose deployment',

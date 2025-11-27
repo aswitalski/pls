@@ -5,6 +5,7 @@ import { Capability, IntrospectProps } from '../types/components.js';
 import { Task } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
+import { createReportDefinition } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
@@ -60,9 +61,7 @@ export function Introspect({
   service,
   children,
   debug = false,
-  onError,
-  onComplete,
-  onAborted,
+  handlers,
 }: IntrospectProps) {
   // isActive passed as prop
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +71,7 @@ export function Introspect({
     (input, key) => {
       if (key.escape && isLoading && isActive) {
         setIsLoading(false);
-        onAborted('introspection');
+        handlers?.onAborted?.('introspection');
       }
     },
     { isActive: isLoading && isActive }
@@ -123,7 +122,16 @@ export function Introspect({
           }
 
           setIsLoading(false);
-          onComplete?.(result.message, capabilities);
+
+          // Add Report component to queue
+          if (handlers?.addToQueue) {
+            handlers.addToQueue(
+              createReportDefinition(result.message, capabilities)
+            );
+          }
+
+          // Signal completion
+          handlers?.onComplete?.();
         }
       } catch (err) {
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
@@ -131,11 +139,8 @@ export function Introspect({
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
           setIsLoading(false);
-          if (onError) {
-            onError(errorMessage);
-          } else {
-            setError(errorMessage);
-          }
+          setError(errorMessage);
+          handlers?.onError?.(errorMessage);
         }
       }
     }
@@ -145,7 +150,7 @@ export function Introspect({
     return () => {
       mounted = false;
     };
-  }, [tasks, isActive, service, debug, onComplete, onError]);
+  }, [tasks, isActive, service, debug, handlers]);
 
   // Don't render wrapper when done and nothing to show
   if (!isLoading && !error && !children) {

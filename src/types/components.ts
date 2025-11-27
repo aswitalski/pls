@@ -106,9 +106,6 @@ export interface IntrospectProps extends BaseStatefulProps<IntrospectState> {
   service?: LLMService;
   children?: React.ReactNode;
   debug?: boolean;
-  onError?: (error: string) => void;
-  onComplete?: (message: string, capabilities: Capability[]) => void;
-  onAborted: (operation: string) => void;
 }
 
 export interface AnswerProps extends BaseStatefulProps<AnswerState> {
