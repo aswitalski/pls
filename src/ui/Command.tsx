@@ -99,12 +99,8 @@ export function Command({
   }, [command, isActive, service]);
 
   return (
-    <Box alignSelf="flex-start" flexDirection="column">
-      <Box
-        paddingX={!isActive ? 1 : 0}
-        marginX={!isActive ? -1 : 0}
-        backgroundColor={!isActive ? Colors.Background.UserQuery : undefined}
-      >
+    <Box alignSelf="flex-start" flexDirection="column" marginLeft={1}>
+      <Box>
         <Text color={isActive ? Colors.Text.Active : Colors.Text.UserQuery}>
           &gt; pls {command}
         </Text>

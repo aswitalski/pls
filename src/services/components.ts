@@ -236,10 +236,7 @@ export function createConfigDefinitionWithKeys(
 
 export function createCommandDefinition(
   command: string,
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (message: string, tasks: Task[]) => void,
-  onAborted: (operation: string) => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
@@ -250,9 +247,6 @@ export function createCommandDefinition(
     props: {
       command,
       service,
-      onError,
-      onComplete,
-      onAborted,
     } as any,
   };
 }

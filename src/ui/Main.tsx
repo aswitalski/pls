@@ -1,13 +1,14 @@
 import React from 'react';
 
 import { ComponentDefinition, Handlers } from '../types/components.js';
-import { App, FeedbackType } from '../types/types.js';
+import { App, FeedbackType, Task } from '../types/types.js';
 
 import {
   AnthropicService,
   createAnthropicService,
 } from '../services/anthropic.js';
 import {
+  createCommandDefinition,
   createConfigDefinitionWithKeys,
   createMessage,
   createProgressDefinition,
@@ -32,15 +33,7 @@ interface MainProps {
 }
 
 export const Main = ({ app, command }: MainProps) => {
-  const [service, setService] = React.useState<AnthropicService | null>(() => {
-    try {
-      const config = loadConfig();
-      return createAnthropicService(config.anthropic);
-    } catch {
-      // No config file exists yet
-      return null;
-    }
-  });
+  const [service, setService] = React.useState<AnthropicService | null>(null);
 
   const [initialQueue, setInitialQueue] = React.useState<
     ComponentDefinition[] | null
@@ -60,8 +53,34 @@ export const Main = ({ app, command }: MainProps) => {
     });
   }, []);
 
-  // Initialize queue on mount
+  // Initialize service on mount
   React.useEffect(() => {
+    if (service !== null) {
+      return;
+    }
+
+    const missingKeys = getMissingConfigKeys();
+
+    if (missingKeys.length === 0) {
+      // Config exists - create service immediately
+      try {
+        const config = loadConfig();
+        const newService = createAnthropicService(config.anthropic);
+        setService(newService);
+      } catch {
+        // Service creation failed - will show error
+      }
+    }
+    // If config is missing, service will be created after config completes
+  }, [service]);
+
+  // Initialize queue after service is ready
+  React.useEffect(() => {
+    // Only set initial queue once
+    if (initialQueue !== null) {
+      return;
+    }
+
     const missingKeys = getMissingConfigKeys();
 
     if (missingKeys.length > 0) {
@@ -92,12 +111,15 @@ export const Main = ({ app, command }: MainProps) => {
           handleConfigAborted
         ),
       ]);
-    } else if (!command) {
-      // Valid config exists, no command - show welcome
+    } else if (service && command) {
+      // Valid service exists and command provided - execute command
+      setInitialQueue([createCommandDefinition(command, service)]);
+    } else if (service && !command) {
+      // Valid service exists, no command - show welcome
       setInitialQueue([createWelcomeDefinition(app)]);
     }
-    // TODO: Handle command flow
-  }, [app, command, service]);
+    // Wait for service to be initialized before setting queue
+  }, [app, command, service, initialQueue]);
 
   // Don't render until initial queue is ready
   if (initialQueue === null) {

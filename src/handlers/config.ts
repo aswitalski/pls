@@ -63,13 +63,7 @@ export function createConfigHandlers(
           if (command) {
             return [
               ...rest,
-              createCommandDefinition(
-                command,
-                newService,
-                commandHandlers.onError,
-                commandHandlers.onComplete,
-                commandHandlers.onAborted
-              ),
+              createCommandDefinition(command, newService),
             ];
           }
 
