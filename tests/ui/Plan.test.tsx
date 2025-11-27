@@ -1274,5 +1274,177 @@ describe('Plan component', () => {
       const hasTypeIndicator = output!.includes('Review changes ›');
       expect(hasTypeIndicator).toBe(false);
     });
+
+    it('infers Answer type from explain/describe keywords', async () => {
+      const state: PlanState = {
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const onSelectionConfirmed = vi.fn();
+      const { stdin } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          onSelectionConfirmed={onSelectionConfirmed}
+          tasks={[
+            {
+              action: 'Clarify what you want to know:',
+              type: TaskType.Define,
+              params: {
+                options: ['Explain unit testing'],
+              },
+            },
+          ]}
+          handlers={{
+            onComplete: vi.fn(),
+            onError: vi.fn(),
+            onAborted: vi.fn(),
+          }}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          action: 'Explain unit testing',
+          type: TaskType.Answer,
+        },
+      ]);
+    });
+
+    it('infers Introspect type from list skills keyword', async () => {
+      const state: PlanState = {
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const onSelectionConfirmed = vi.fn();
+      const { stdin } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          onSelectionConfirmed={onSelectionConfirmed}
+          tasks={[
+            {
+              action: 'What do you want to do:',
+              type: TaskType.Define,
+              params: {
+                options: ['List your skills'],
+              },
+            },
+          ]}
+          handlers={{
+            onComplete: vi.fn(),
+            onError: vi.fn(),
+            onAborted: vi.fn(),
+          }}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          action: 'List your skills',
+          type: TaskType.Introspect,
+        },
+      ]);
+    });
+
+    it('infers Config type from configure keyword', async () => {
+      const state: PlanState = {
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const onSelectionConfirmed = vi.fn();
+      const { stdin } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          onSelectionConfirmed={onSelectionConfirmed}
+          tasks={[
+            {
+              action: 'What do you want to do:',
+              type: TaskType.Define,
+              params: {
+                options: ['Configure settings'],
+              },
+            },
+          ]}
+          handlers={{
+            onComplete: vi.fn(),
+            onError: vi.fn(),
+            onAborted: vi.fn(),
+          }}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          action: 'Configure settings',
+          type: TaskType.Config,
+        },
+      ]);
+    });
+
+    it('infers Execute type as default for other actions', async () => {
+      const state: PlanState = {
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const onSelectionConfirmed = vi.fn();
+      const { stdin } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          onSelectionConfirmed={onSelectionConfirmed}
+          tasks={[
+            {
+              action: 'What do you want to do:',
+              type: TaskType.Define,
+              params: {
+                options: ['Build the project'],
+              },
+            },
+          ]}
+          handlers={{
+            onComplete: vi.fn(),
+            onError: vi.fn(),
+            onAborted: vi.fn(),
+          }}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          action: 'Build the project',
+          type: TaskType.Execute,
+        },
+      ]);
+    });
   });
 });

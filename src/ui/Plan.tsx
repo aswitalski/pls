@@ -9,6 +9,52 @@ import { useInput } from '../services/keyboard.js';
 import { Label } from './Label.js';
 import { List } from './List.js';
 
+/**
+ * Infer task type from action text by checking for common keywords
+ */
+function inferTaskType(action: string): TaskType {
+  const lowerAction = action.toLowerCase();
+
+  // Check for Introspect type keywords (check before Answer since some overlap)
+  if (
+    (lowerAction.includes('list') || lowerAction.includes('show')) &&
+    (lowerAction.includes('capabilities') ||
+      lowerAction.includes('skills') ||
+      lowerAction.includes('what can you'))
+  ) {
+    return TaskType.Introspect;
+  }
+
+  // Check for Answer type keywords
+  if (
+    lowerAction.startsWith('explain ') ||
+    lowerAction.startsWith('answer ') ||
+    lowerAction.startsWith('describe ') ||
+    lowerAction.startsWith('tell me ') ||
+    lowerAction.startsWith('what is ') ||
+    lowerAction.startsWith('what are ') ||
+    lowerAction.startsWith('how does ') ||
+    lowerAction.startsWith('how do ') ||
+    lowerAction.startsWith('find ') ||
+    lowerAction.startsWith('search ') ||
+    lowerAction.startsWith('lookup ')
+  ) {
+    return TaskType.Answer;
+  }
+
+  // Check for Config type keywords
+  if (
+    lowerAction.startsWith('configure ') ||
+    lowerAction.startsWith('change settings') ||
+    lowerAction.includes('config ')
+  ) {
+    return TaskType.Config;
+  }
+
+  // Default to Execute for all other actions
+  return TaskType.Execute;
+}
+
 function taskToListItem(
   task: Task,
   highlightedChildIndex: number | null = null,
@@ -173,10 +219,14 @@ export function Plan({
               // This is a Define task - only include the selected option
               const options = task.params.options as string[];
               const selectedIndex = newCompletedSelections[defineGroupIndex];
+              const selectedOption = String(options[selectedIndex]);
+
+              // Infer task type from the action text
+              const inferredType = inferTaskType(selectedOption);
 
               refinedTasks.push({
-                action: String(options[selectedIndex]),
-                type: TaskType.Execute,
+                action: selectedOption,
+                type: inferredType,
               });
             } else if (
               task.type !== TaskType.Ignore &&
