@@ -297,6 +297,75 @@ export function getConfigSchema(): Record<string, ConfigDefinition> {
 }
 
 /**
+ * Get missing required configuration keys
+ * Returns array of keys that are required but not present or invalid in config
+ */
+export function getMissingConfigKeys(): string[] {
+  const schema = getConfigSchema();
+  const missing: string[] = [];
+
+  let currentConfig: Config | null = null;
+  try {
+    currentConfig = loadConfig();
+  } catch {
+    // Config doesn't exist
+  }
+
+  for (const [key, definition] of Object.entries(schema)) {
+    if (!definition.required) {
+      continue;
+    }
+
+    // Get current value for this key
+    const parts = key.split('.');
+    let value: unknown = currentConfig;
+
+    for (const part of parts) {
+      if (value && typeof value === 'object' && part in value) {
+        value = (value as Record<string, unknown>)[part];
+      } else {
+        value = undefined;
+        break;
+      }
+    }
+
+    // Check if value is missing or invalid
+    if (value === undefined || value === null) {
+      missing.push(key);
+      continue;
+    }
+
+    // Validate based on type
+    let isValid = false;
+    switch (definition.type) {
+      case 'regexp':
+        isValid =
+          typeof value === 'string' && definition.pattern.test(value);
+        break;
+      case 'string':
+        isValid = typeof value === 'string';
+        break;
+      case 'enum':
+        isValid =
+          typeof value === 'string' && definition.values.includes(value);
+        break;
+      case 'number':
+        isValid = typeof value === 'number';
+        break;
+      case 'boolean':
+        isValid = typeof value === 'boolean';
+        break;
+    }
+
+    if (!isValid) {
+      missing.push(key);
+    }
+  }
+
+  return missing;
+}
+
+/**
  * Get available config structure for CONFIG tool
  * Returns keys with descriptions only (no values for privacy)
  */

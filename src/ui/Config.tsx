@@ -34,7 +34,10 @@ export type ConfigStep = {
     }
 );
 
-interface ConfigState {}
+interface ConfigState {
+  values?: Record<string, string>;
+  completedStep?: number;
+}
 
 export interface ConfigProps<
   T extends Record<string, string> = Record<string, string>,
@@ -163,8 +166,16 @@ export function Config<
 }: ConfigProps<T>) {
   // isActive passed as prop
 
-  const [step, setStep] = React.useState<number>(!isActive ? steps.length : 0);
+  const [step, setStep] = React.useState<number>(
+    !isActive ? (state?.completedStep ?? steps.length) : 0
+  );
   const [values, setValues] = React.useState<Record<string, string>>(() => {
+    // If not active and we have saved state values, use those
+    if (!isActive && state?.values) {
+      return state.values;
+    }
+
+    // Otherwise initialize from step defaults
     const initial: Record<string, string> = {};
     steps.forEach((stepConfig) => {
       switch (stepConfig.type) {
@@ -329,7 +340,11 @@ export function Config<
             />
           );
         }
-        return <Text dimColor>{values[stepConfig.key] || ''}</Text>;
+        return (
+          <Text dimColor wrap="truncate-end">
+            {values[stepConfig.key] || ''}
+          </Text>
+        );
       case StepType.Selection: {
         if (!isCurrentStep) {
           const selectedOption = stepConfig.options.find(

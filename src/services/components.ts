@@ -126,6 +126,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Text,
           value,
           validate: getValidator(definition),
@@ -143,6 +144,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Text,
           value,
           validate: getValidator(definition),
@@ -162,6 +164,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Selection,
           options: definition.values.map((value) => ({
             label: value,
@@ -181,6 +184,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Selection,
           options: [
             { label: 'Yes', value: 'true' },
@@ -414,6 +418,37 @@ export function isStateless(component: ComponentDefinition): boolean {
 export function markAsDone(
   component: ComponentDefinition
 ): ComponentDefinition {
+  // For Config components, reload the config values to display in timeline
+  if (component.name === ComponentName.Config) {
+    try {
+      const config = loadConfig();
+      const steps = component.props.steps as ConfigStep[];
+
+      // Build values object from current config
+      const values: Record<string, string> = {};
+      steps.forEach((step) => {
+        // Reconstruct full path from step
+        const fullPath = step.path || `anthropic.${step.key}`;
+        const value = getConfigValue(config, fullPath);
+
+        if (value !== undefined) {
+          values[step.key] = String(value).trim();
+        }
+      });
+
+      return {
+        ...component,
+        state: {
+          values,
+          completedStep: steps.length,
+        },
+      };
+    } catch {
+      // Config load failed, return as-is
+      return component;
+    }
+  }
+
   return component;
 }
 

@@ -8,13 +8,14 @@ import {
   createAnthropicService,
 } from '../services/anthropic.js';
 import {
-  createConfigDefinition,
+  createConfigDefinitionWithKeys,
   createMessage,
   createProgressDefinition,
   createWelcomeDefinition,
 } from '../services/components.js';
 import {
   getConfigurationRequiredMessage,
+  getMissingConfigKeys,
   hasValidAnthropicKey,
   loadConfig,
   loadDebugSetting,
@@ -61,10 +62,10 @@ export const Main = ({ app, command }: MainProps) => {
 
   // Initialize queue on mount
   React.useEffect(() => {
-    const hasConfig = !!service;
+    const missingKeys = getMissingConfigKeys();
 
-    if (!hasConfig) {
-      // No valid config - show initial configuration flow
+    if (missingKeys.length > 0) {
+      // Missing config - show initial configuration flow
       const handleConfigFinished = (config: Record<string, string>) => {
         // Save config and create service
         try {
@@ -85,7 +86,11 @@ export const Main = ({ app, command }: MainProps) => {
       setInitialQueue([
         createWelcomeDefinition(app),
         createMessage(getConfigurationRequiredMessage()),
-        createConfigDefinition(handleConfigFinished, handleConfigAborted),
+        createConfigDefinitionWithKeys(
+          missingKeys,
+          handleConfigFinished,
+          handleConfigAborted
+        ),
       ]);
     } else if (!command) {
       // Valid config exists, no command - show welcome
