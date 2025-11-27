@@ -209,8 +209,9 @@ export function saveConfig(
   writeFileSync(configFile, newContent, 'utf-8');
 }
 
-export function saveAnthropicConfig(config: AnthropicConfig): void {
+export function saveAnthropicConfig(config: AnthropicConfig): Config {
   saveConfig('anthropic', config);
+  return loadConfig();
 }
 
 export function saveDebugSetting(debug: boolean): void {

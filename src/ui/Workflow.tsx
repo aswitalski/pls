@@ -13,6 +13,7 @@ import {
   isStateless,
   markAsDone,
 } from '../services/components.js';
+import { useInput } from '../services/keyboard.js';
 import { exitApp } from '../services/process.js';
 
 import { Component } from './Component.js';
@@ -64,6 +65,8 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
     }),
     [moveActiveToTimeline]
   );
+
+  // Global Esc handler removed - components handle their own Esc individually
 
   // Move next item from queue to active
   React.useEffect(() => {

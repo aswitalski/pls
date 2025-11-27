@@ -2,6 +2,8 @@ import React from 'react';
 import { Box, Text, useFocus } from 'ink';
 import TextInput from 'ink-text-input';
 
+import { Handlers } from '../types/components.js';
+
 import { Colors } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 
@@ -41,6 +43,7 @@ export interface ConfigProps<
   state?: ConfigState;
   isActive?: boolean;
   debug?: boolean;
+  handlers?: Handlers;
   onFinished?: (config: T) => void;
   onAborted?: (operation: string) => void;
 }
@@ -154,6 +157,7 @@ export function Config<
   state,
   isActive = true,
   debug,
+  handlers,
   onFinished,
   onAborted,
 }: ConfigProps<T>) {
@@ -291,6 +295,12 @@ export function Config<
       if (onFinished) {
         onFinished(newValues as T);
       }
+
+      // Signal Workflow that config is complete
+      if (handlers?.onComplete) {
+        handlers.onComplete();
+      }
+
       setStep(steps.length);
     } else {
       setStep(step + 1);
@@ -343,7 +353,7 @@ export function Config<
   };
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" marginLeft={1}>
       {steps.map((stepConfig, index) => {
         const isCurrentStep = index === step && isActive;
         const isCompleted = index < step;

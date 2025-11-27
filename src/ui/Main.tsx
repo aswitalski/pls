@@ -1,20 +1,24 @@
 import React from 'react';
 
 import { ComponentDefinition, Handlers } from '../types/components.js';
-import { App } from '../types/types.js';
+import { App, FeedbackType } from '../types/types.js';
 
 import {
   AnthropicService,
   createAnthropicService,
 } from '../services/anthropic.js';
 import {
+  createConfigDefinition,
+  createMessage,
   createProgressDefinition,
   createWelcomeDefinition,
 } from '../services/components.js';
 import {
+  getConfigurationRequiredMessage,
   hasValidAnthropicKey,
   loadConfig,
   loadDebugSetting,
+  saveAnthropicConfig,
   saveDebugSetting,
 } from '../services/configuration.js';
 import { registerGlobalShortcut } from '../services/keyboard.js';
@@ -28,11 +32,13 @@ interface MainProps {
 
 export const Main = ({ app, command }: MainProps) => {
   const [service, setService] = React.useState<AnthropicService | null>(() => {
-    if (hasValidAnthropicKey()) {
+    try {
       const config = loadConfig();
       return createAnthropicService(config.anthropic);
+    } catch {
+      // No config file exists yet
+      return null;
     }
-    return null;
   });
 
   const [initialQueue, setInitialQueue] = React.useState<
@@ -53,26 +59,40 @@ export const Main = ({ app, command }: MainProps) => {
     });
   }, []);
 
-  // Placeholder handlers (will be replaced by Workflow's real handlers)
-  const placeholderHandlers: Handlers = React.useMemo(
-    () => ({
-      onComplete: () => {},
-      onAborted: (_operation: string) => {},
-      onError: (_error: string) => {},
-    }),
-    []
-  );
-
   // Initialize queue on mount
   React.useEffect(() => {
     const hasConfig = !!service;
 
-    // Initial implementation: only handle Welcome flow
-    if (!command && hasConfig) {
+    if (!hasConfig) {
+      // No valid config - show initial configuration flow
+      const handleConfigFinished = (config: Record<string, string>) => {
+        // Save config and create service
+        try {
+          const newConfig = saveAnthropicConfig(
+            config as { key: string; model: string }
+          );
+          const newService = createAnthropicService(newConfig.anthropic);
+          setService(newService);
+        } catch (error) {
+          // Config creation failed
+        }
+      };
+
+      const handleConfigAborted = (operation: string) => {
+        // Config was cancelled - just exit
+      };
+
+      setInitialQueue([
+        createWelcomeDefinition(app),
+        createMessage(getConfigurationRequiredMessage()),
+        createConfigDefinition(handleConfigFinished, handleConfigAborted),
+      ]);
+    } else if (!command) {
+      // Valid config exists, no command - show welcome
       setInitialQueue([createWelcomeDefinition(app)]);
     }
-    // TODO: Handle other flows (config, command) in future implementation
-  }, [app, command, service, placeholderHandlers]);
+    // TODO: Handle command flow
+  }, [app, command, service]);
 
   // Don't render until initial queue is ready
   if (initialQueue === null) {
