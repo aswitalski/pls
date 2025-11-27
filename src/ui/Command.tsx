@@ -14,6 +14,7 @@ import { formatErrorMessage } from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
 
 import { Spinner } from './Spinner.js';
+import { UserQuery } from './UserQuery.js';
 
 const MIN_PROCESSING_TIME = 1000; // purely for visual effect
 
@@ -133,17 +134,15 @@ export function Command({
 
   return (
     <Box alignSelf="flex-start" flexDirection="column" marginLeft={1}>
-      <Box>
-        <Text color={isActive ? Colors.Text.Active : Colors.Text.UserQuery}>
-          &gt; pls {command}
-        </Text>
-        {isActive && (
-          <>
-            <Text> </Text>
-            <Spinner />
-          </>
-        )}
-      </Box>
+      {!isActive ? (
+        <UserQuery>&gt; pls {command}</UserQuery>
+      ) : (
+        <Box>
+          <Text color={Colors.Text.Active}>&gt; pls {command}</Text>
+          <Text> </Text>
+          <Spinner />
+        </Box>
+      )}
 
       {error && (
         <Box marginTop={1}>

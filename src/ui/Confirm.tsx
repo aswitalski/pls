@@ -4,6 +4,8 @@ import { Box, Text } from 'ink';
 import { Colors, Palette } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 
+import { UserQuery } from './UserQuery.js';
+
 export interface ConfirmProps {
   message: string;
   state?: ConfirmState;
@@ -61,16 +63,7 @@ export function Confirm({
         <Box marginBottom={1}>
           <Text color={undefined}>{message}</Text>
         </Box>
-        <Box
-          paddingX={1}
-          marginX={-1}
-          alignSelf="flex-start"
-          backgroundColor={Colors.Background.UserQuery}
-        >
-          <Text color={Colors.Text.UserQuery}>
-            &gt; {options[selectedIndex].label}
-          </Text>
-        </Box>
+        <UserQuery>&gt; {options[selectedIndex].label}</UserQuery>
       </Box>
     );
   }
