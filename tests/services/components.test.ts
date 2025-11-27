@@ -147,9 +147,7 @@ describe('Component Types', () => {
 
   describe('Command component definition', () => {
     it('creates valid stateful command definition', () => {
-      const state: CommandState = {
-        isLoading: true,
-      };
+      const state: CommandState = {};
 
       const def: ComponentDefinition = {
         id: 'test-command-1',
@@ -162,13 +160,11 @@ describe('Component Types', () => {
       };
 
       expect(def.name).toBe(ComponentName.Command);
-      expect('state' in def && def.state.isLoading).toBe(true);
       expect(def.props.command).toBe('test command');
     });
 
     it('supports error state', () => {
       const state: CommandState = {
-        isLoading: false,
         error: 'Test error',
       };
 
@@ -335,34 +331,32 @@ describe('Component Types', () => {
       });
     });
 
-    it('tracks command component loading states', () => {
-      const loadingState: CommandState = {
-        isLoading: true,
+    it('tracks command component error states', () => {
+      const errorState: CommandState = {
+        error: 'Processing failed',
       };
 
-      const completedState: CommandState = {
-        isLoading: false,
-      };
+      const successState: CommandState = {};
 
-      const loadingDef: ComponentDefinition = {
-        id: 'test-command-loading',
+      const errorDef: ComponentDefinition = {
+        id: 'test-command-error',
         name: ComponentName.Command,
-        state: loadingState,
+        state: errorState,
         props: { command: 'test', onAborted: vi.fn() },
       };
 
-      const completedDef: ComponentDefinition = {
-        id: 'test-command-completed',
+      const successDef: ComponentDefinition = {
+        id: 'test-command-success',
         name: ComponentName.Command,
-        state: completedState,
+        state: successState,
         props: { command: 'test', onAborted: vi.fn() },
       };
 
-      expect('state' in loadingDef && loadingDef.state.isLoading).toBe(true);
-
-      expect('state' in completedDef && completedDef.state.isLoading).toBe(
-        false
+      expect('state' in errorDef && errorDef.state.error).toBe(
+        'Processing failed'
       );
+
+      expect('state' in successDef && successDef.state.error).toBeUndefined();
     });
   });
 

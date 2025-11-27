@@ -241,9 +241,7 @@ export function createCommandDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Command,
-    state: {
-      isLoading: true,
-    },
+    state: {},
     props: {
       command,
       service,

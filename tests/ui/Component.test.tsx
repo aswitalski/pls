@@ -108,13 +108,11 @@ describe('Component', () => {
     expect(result.props.def.state?.done).toBe(false);
   });
 
-  it('renders command component in loading state', () => {
+  it('renders command component', () => {
     const def: ComponentDefinition = {
       id: 'test-command-1',
       name: ComponentName.Command,
-      state: {
-        isLoading: true,
-      },
+      state: {},
       props: {
         command: 'test command',
         onAborted: vi.fn(),
@@ -125,16 +123,13 @@ describe('Component', () => {
 
     expect(result).toBeDefined();
     expect(result.props.def.props.command).toBe('test command');
-    expect(result.props.def.state.isLoading).toBe(true);
   });
 
   it('renders command component with children', () => {
     const def: ComponentDefinition = {
       id: 'test-command-2',
       name: ComponentName.Command,
-      state: {
-        isLoading: false,
-      },
+      state: {},
       props: {
         command: 'test command',
         children: 'Some content',
@@ -146,7 +141,6 @@ describe('Component', () => {
 
     expect(result).toBeDefined();
     expect(result.props.def.props.children).toBe('Some content');
-    expect(result.props.def.state.done).toBe(true);
   });
 
   it('renders command component with error', () => {
@@ -154,7 +148,6 @@ describe('Component', () => {
       id: 'test-command-3',
       name: ComponentName.Command,
       state: {
-        isLoading: false,
         error: 'Something went wrong',
       },
       props: {
@@ -291,7 +284,7 @@ describe('Component', () => {
       {
         id: 'test-command-4',
         name: ComponentName.Command,
-        state: { isLoading: true },
+        state: {},
         props: { command: 'test', onAborted: vi.fn() },
       },
       {

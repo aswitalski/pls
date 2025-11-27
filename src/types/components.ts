@@ -13,6 +13,7 @@ export interface Handlers {
   onComplete: () => void;
   onAborted: (operation: string) => void;
   onError: (error: string) => void;
+  addToQueue?: (...items: ComponentDefinition[]) => void;
 }
 
 // Base state interface - all stateful components extend this
@@ -142,8 +143,9 @@ export interface ValidateProps extends BaseStatefulProps<ValidateState> {
 
 // Component-specific states
 export interface CommandState extends BaseState {
-  isLoading?: boolean;
   error?: string;
+  message?: string;
+  tasks?: Task[];
 }
 
 export interface IntrospectState extends BaseState {

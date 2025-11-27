@@ -22,27 +22,25 @@ describe('Command component error handling', () => {
     });
   });
 
-  describe('Loading states', () => {
-    it('displays loading state initially', () => {
-      const result = (
-        <Command
-          onAborted={mockOnAborted}
-          command="test command"
-          state={{ isLoading: true }}
-        />
-      );
-
-      expect(result.props.state?.isLoading).toBe(true);
-      expect(result.props.state?.done).toBe(false);
-    });
-
-    it('displays non-loading state when done', () => {
+  describe('Component states', () => {
+    it('displays active state', () => {
       const result = (
         <Command onAborted={mockOnAborted} command="test command" />
       );
 
-      expect(result.props.state?.isLoading).toBe(false);
-      expect(result.props.state?.done).toBe(true);
+      expect(result.props.isActive).toBe(true);
+    });
+
+    it('displays inactive state when not active', () => {
+      const result = (
+        <Command
+          onAborted={mockOnAborted}
+          command="test command"
+          isActive={false}
+        />
+      );
+
+      expect(result.props.isActive).toBe(false);
     });
   });
 
@@ -62,33 +60,33 @@ describe('Command component error handling', () => {
   });
 
   describe('Abort handling', () => {
-    it('calls onAborted when Esc is pressed during loading', () => {
+    it('calls onAborted when Esc is pressed', () => {
       const onAborted = vi.fn();
       const { stdin } = render(
-        <Command
-          onAborted={onAborted}
-          command="test command"
-          state={{ isLoading: true }}
-        />
+        <Command onAborted={onAborted} command="test command" />
       );
 
       stdin.write(Escape);
       expect(onAborted).toHaveBeenCalledTimes(1);
     });
 
-    it('stops loading state when aborted', () => {
-      const onAborted = vi.fn();
-      const state = { done: false, isLoading: true };
+    it('calls handler when aborted', () => {
+      const handlers = {
+        onAborted: vi.fn(),
+        onComplete: vi.fn(),
+        onError: vi.fn(),
+      };
       const { stdin } = render(
-        <Command onAborted={onAborted} command="test command" state={state} />
+        <Command
+          onAborted={vi.fn()}
+          command="test command"
+          handlers={handlers}
+        />
       );
-
-      expect(state.isLoading).toBe(true);
 
       stdin.write(Escape);
 
-      // onAborted should be called and isLoading is set to false before calling it
-      expect(onAborted).toHaveBeenCalledTimes(1);
+      expect(handlers.onAborted).toHaveBeenCalledTimes(1);
     });
 
     it('does not call onAborted when Esc is pressed after done', () => {

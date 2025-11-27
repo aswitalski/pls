@@ -78,6 +78,7 @@ export function Plan({
   state,
   isActive = true,
   debug = false,
+  handlers,
   onSelectionConfirmed,
   onAborted,
 }: PlanProps) {
@@ -106,6 +107,19 @@ export function Plan({
     : 0;
 
   const hasMoreGroups = currentDefineGroupIndex < defineTaskIndices.length - 1;
+
+  // If no DEFINE tasks, immediately confirm with all tasks
+  useEffect(() => {
+    if (isActive && defineTaskIndices.length === 0 && onSelectionConfirmed) {
+      // No selection needed - all tasks are concrete
+      const concreteTasks = tasks.filter(
+        (task) => task.type !== TaskType.Ignore && task.type !== TaskType.Discard
+      );
+      onSelectionConfirmed(concreteTasks);
+      // Signal Plan completion after adding Confirm to queue
+      handlers?.onComplete?.();
+    }
+  }, [isActive, defineTaskIndices.length, tasks, onSelectionConfirmed, handlers]);
 
   useInput(
     (input, key) => {
@@ -175,6 +189,8 @@ export function Plan({
           });
 
           onSelectionConfirmed?.(refinedTasks);
+          // Signal Plan completion after adding Confirm to queue
+          handlers?.onComplete?.();
         }
       }
     },
@@ -223,7 +239,7 @@ export function Plan({
   });
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" marginLeft={1}>
       {message && (
         <Box marginBottom={1}>
           <Label

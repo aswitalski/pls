@@ -57,7 +57,7 @@ export function Confirm({
   if (!isActive) {
     // When done, show both the message and user's choice in timeline
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" marginLeft={1}>
         <Box marginBottom={1}>
           <Text color={undefined}>{message}</Text>
         </Box>
@@ -76,7 +76,7 @@ export function Confirm({
   }
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" marginLeft={1}>
       <Box marginBottom={1}>
         <Text color={isActive ? Colors.Text.Active : Colors.Text.Inactive}>
           {message}

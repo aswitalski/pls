@@ -2,9 +2,13 @@ import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
 import { CommandProps } from '../types/components.js';
-import { TaskType } from '../types/types.js';
+import { Task, TaskType } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
+import {
+  createConfirmDefinition,
+  createPlanDefinition,
+} from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
@@ -19,21 +23,21 @@ export function Command({
   isActive = true,
   service,
   children,
-  onError,
-  onComplete,
-  onAborted,
+  handlers,
 }: CommandProps) {
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
+  const [resultMessage, setResultMessage] = useState<string | null>(
+    state?.message ?? null
+  );
+  const [resultTasks, setResultTasks] = useState<Task[]>(state?.tasks ?? []);
 
   useInput(
     (input, key) => {
-      if (key.escape && isLoading && isActive) {
-        setIsLoading(false);
-        onAborted('request');
+      if (key.escape && isActive) {
+        handlers?.onAborted?.('request');
       }
     },
-    { isActive: isLoading && isActive }
+    { isActive }
   );
 
   useEffect(() => {
@@ -45,7 +49,6 @@ export function Command({
     // Skip processing if no service available
     if (!service) {
       setError('No service available');
-      setIsLoading(false);
       return;
     }
 
@@ -73,20 +76,50 @@ export function Command({
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
-          setIsLoading(false);
-          onComplete?.(result.message, result.tasks);
+          setResultMessage(result.message);
+          setResultTasks(result.tasks);
+
+          // Add Plan component to queue if we have tasks and handlers
+          if (result.tasks.length > 0 && handlers?.addToQueue) {
+            const handleAborted = (operation: string) => {
+              handlers?.onAborted?.(operation);
+            };
+
+            const handleConfirmed = (refinedTasks: Task[]) => {
+              // Add Confirm component after Plan selections are complete
+              if (handlers?.addToQueue) {
+                const onConfirmed = () => {
+                  handlers?.onComplete?.();
+                };
+
+                const onCancelled = () => {
+                  handlers?.onAborted?.('confirmation');
+                };
+
+                handlers.addToQueue(createConfirmDefinition(onConfirmed, onCancelled));
+              }
+            };
+
+            handlers.addToQueue(
+              createPlanDefinition(
+                result.message,
+                result.tasks,
+                handleAborted,
+                handleConfirmed
+              )
+            );
+          }
+
+          // Signal completion after adding to queue
+          handlers?.onComplete?.();
         }
       } catch (err) {
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
-          setIsLoading(false);
-          if (onError) {
-            onError(errorMessage);
-          } else {
-            setError(errorMessage);
-          }
+          setError(errorMessage);
+          handlers?.onError?.(errorMessage);
         }
       }
     }
@@ -104,7 +137,7 @@ export function Command({
         <Text color={isActive ? Colors.Text.Active : Colors.Text.UserQuery}>
           &gt; pls {command}
         </Text>
-        {isLoading && (
+        {isActive && (
           <>
             <Text> </Text>
             <Spinner />

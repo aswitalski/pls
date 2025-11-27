@@ -62,6 +62,9 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
           createFeedback(FeedbackType.Failed, error),
         ]);
       },
+      addToQueue: (...items: ComponentDefinition[]) => {
+        setQueue((queue) => [...queue, ...items]);
+      },
     }),
     [moveActiveToTimeline]
   );
