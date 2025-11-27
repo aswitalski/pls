@@ -45,7 +45,7 @@ describe('Answer component', () => {
     const { lastFrame } = render(
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
-        state={{ done: true }}
+        state={{}}
         service={service}
         onComplete={vi.fn()}
         onError={vi.fn()}

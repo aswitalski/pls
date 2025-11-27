@@ -1,4 +1,5 @@
 import React from 'react';
+import { Box } from 'ink';
 
 import { ComponentDefinition } from '../types/components.js';
 import { ComponentName } from '../types/types.js';
@@ -13,6 +14,7 @@ import { Feedback } from './Feedback.js';
 import { Introspect } from './Introspect.js';
 import { Message } from './Message.js';
 import { Plan } from './Plan.js';
+import { Progress } from './Progress.js';
 import { Refinement } from './Refinement.js';
 import { Report } from './Report.js';
 import { Validate } from './Validate.js';
@@ -20,34 +22,40 @@ import { Welcome } from './Welcome.js';
 
 interface ComponentProps {
   def: ComponentDefinition;
+  done: boolean;
   debug: boolean;
 }
 
 export const Component = React.memo(function Component({
   def,
+  done,
   debug,
 }: ComponentProps): React.ReactElement {
+  // For stateless components, always use done=true
+  const isStatelessComponent = !('state' in def);
+  const isActive = isStatelessComponent ? false : !done;
+
   switch (def.name) {
     case ComponentName.Welcome:
       return <Welcome {...def.props} />;
 
-    case ComponentName.Config: {
-      const props = def.props;
-      const state = def.state;
-      return <Config {...props} state={state} debug={debug} />;
-    }
+    case ComponentName.Config:
+      return (
+        <Config
+          {...def.props}
+          state={def.state}
+          done={!isActive}
+          debug={debug}
+        />
+      );
 
-    case ComponentName.Command: {
-      const props = def.props;
-      const state = def.state;
-      return <Command {...props} state={state} />;
-    }
+    case ComponentName.Command:
+      return <Command {...def.props} state={def.state} done={!isActive} />;
 
-    case ComponentName.Plan: {
-      const props = def.props;
-      const state = def.state;
-      return <Plan {...props} state={state} debug={debug} />;
-    }
+    case ComponentName.Plan:
+      return (
+        <Plan {...def.props} state={def.state} done={!isActive} debug={debug} />
+      );
 
     case ComponentName.Feedback:
       return <Feedback {...def.props} />;
@@ -55,46 +63,38 @@ export const Component = React.memo(function Component({
     case ComponentName.Message:
       return <Message {...def.props} />;
 
-    case ComponentName.Refinement: {
-      const props = def.props;
-      const state = def.state;
-      return <Refinement {...props} state={state} />;
-    }
+    case ComponentName.Refinement:
+      return <Refinement {...def.props} state={def.state} done={!isActive} />;
 
-    case ComponentName.Confirm: {
-      const props = def.props;
-      const state = def.state;
-      return <Confirm {...props} state={state} />;
-    }
+    case ComponentName.Confirm:
+      return <Confirm {...def.props} state={def.state} done={!isActive} />;
 
-    case ComponentName.Introspect: {
-      const props = def.props;
-      const state = def.state;
-      return <Introspect {...props} state={state} debug={debug} />;
-    }
+    case ComponentName.Introspect:
+      return (
+        <Introspect
+          {...def.props}
+          state={def.state}
+          done={!isActive}
+          debug={debug}
+        />
+      );
 
     case ComponentName.Report:
       return <Report {...def.props} />;
 
-    case ComponentName.Answer: {
-      const props = def.props;
-      const state = def.state;
-      return <Answer {...props} state={state} />;
-    }
+    case ComponentName.Answer:
+      return <Answer {...def.props} state={def.state} done={!isActive} />;
 
     case ComponentName.AnswerDisplay:
       return <AnswerDisplay {...def.props} />;
 
-    case ComponentName.Execute: {
-      const props = def.props;
-      const state = def.state;
-      return <Execute {...props} state={state} />;
-    }
+    case ComponentName.Execute:
+      return <Execute {...def.props} state={def.state} done={!isActive} />;
 
-    case ComponentName.Validate: {
-      const props = def.props;
-      const state = def.state;
-      return <Validate {...props} state={state} />;
-    }
+    case ComponentName.Validate:
+      return <Validate {...def.props} state={def.state} done={!isActive} />;
+
+    case ComponentName.Progress:
+      return <Progress {...def.props} state={def.state} done={!isActive} />;
   }
 });

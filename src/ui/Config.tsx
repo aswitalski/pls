@@ -32,18 +32,17 @@ export type ConfigStep = {
     }
 );
 
-interface ConfigState {
-  done: boolean;
-}
+interface ConfigState {}
 
 export interface ConfigProps<
   T extends Record<string, string> = Record<string, string>,
 > {
   steps: ConfigStep[];
   state?: ConfigState;
+  done?: boolean;
   debug?: boolean;
   onFinished?: (config: T) => void;
-  onAborted?: () => void;
+  onAborted?: (operation: string) => void;
 }
 
 interface TextStepProps {
@@ -150,10 +149,17 @@ function SelectionStep({
 
 export function Config<
   T extends Record<string, string> = Record<string, string>,
->({ steps, state, debug, onFinished, onAborted }: ConfigProps<T>) {
-  const done = state?.done ?? false;
+>({
+  steps,
+  state,
+  done = false,
+  debug,
+  onFinished,
+  onAborted,
+}: ConfigProps<T>) {
+  const isActive = !done;
 
-  const [step, setStep] = React.useState<number>(done ? steps.length : 0);
+  const [step, setStep] = React.useState<number>(!isActive ? steps.length : 0);
   const [values, setValues] = React.useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     steps.forEach((stepConfig) => {
@@ -189,7 +195,7 @@ export function Config<
   };
 
   useInput((input, key) => {
-    if (key.escape && !done && step < steps.length) {
+    if (key.escape && isActive && step < steps.length) {
       // Save current value before aborting
       const currentStepConfig = steps[step];
       if (currentStepConfig) {
@@ -214,13 +220,13 @@ export function Config<
         }
       }
       if (onAborted) {
-        onAborted();
+        onAborted('configuration');
       }
       return;
     }
 
     const currentStep = steps[step];
-    if (!done && step < steps.length && currentStep) {
+    if (isActive && step < steps.length && currentStep) {
       switch (currentStep.type) {
         case StepType.Selection:
           if (key.tab) {
@@ -339,9 +345,9 @@ export function Config<
   return (
     <Box flexDirection="column">
       {steps.map((stepConfig, index) => {
-        const isCurrentStep = index === step && !done;
+        const isCurrentStep = index === step && isActive;
         const isCompleted = index < step;
-        const wasAborted = index === step && done;
+        const wasAborted = index === step && !isActive;
         const shouldShow = isCompleted || isCurrentStep || wasAborted;
 
         if (!shouldShow) {

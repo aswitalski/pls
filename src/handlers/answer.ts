@@ -31,8 +31,8 @@ export function createAnswerHandlers(
     );
   };
 
-  const onAborted = () => {
-    handleAborted('Answer');
+  const onAborted = (operation: string) => {
+    handleAborted(operation);
   };
 
   return { onError, onComplete, onAborted };

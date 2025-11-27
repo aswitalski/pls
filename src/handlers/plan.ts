@@ -10,7 +10,6 @@ import {
   createConfirmDefinition,
   createFeedback,
   createPlanDefinition,
-  markAsDone,
   createRefinement,
 } from '../services/components.js';
 import {
@@ -28,8 +27,8 @@ export function createPlanHandlers(
   handleAborted: (operationName: string) => void,
   executionHandlers: ExecutionHandlers
 ): PlanHandlers {
-  const onAborted = () => {
-    handleAborted('Task selection');
+  const onAborted = (operation: string) => {
+    handleAborted(operation);
   };
 
   const createAbortHandler = (tasks: Task[]) => {
@@ -37,23 +36,26 @@ export function createPlanHandlers(
       (task) => task.type === TaskType.Introspect
     );
     if (allIntrospect) {
-      return () => {
-        handleAborted('Introspection');
+      return (operation: string) => {
+        handleAborted(operation);
       };
     }
     return onAborted;
   };
 
   const onSelectionConfirmed = async (selectedTasks: Task[]) => {
-    const refinementDef = createRefinement(getRefiningMessage(), () => {
-      handleAborted('Plan refinement');
-    }) as StatefulComponentDefinition;
+    const refinementDef = createRefinement(
+      getRefiningMessage(),
+      (operation: string) => {
+        handleAborted(operation);
+      }
+    ) as StatefulComponentDefinition;
 
     ops.setQueue((currentQueue) => {
       if (currentQueue.length === 0) return currentQueue;
       const [first] = currentQueue;
       if (first.name === ComponentName.Plan) {
-        ops.addToTimeline(markAsDone(first as StatefulComponentDefinition));
+        ops.addToTimeline(first);
       }
       return [refinementDef];
     });
@@ -87,9 +89,7 @@ export function createPlanHandlers(
           currentQueue.length > 0 &&
           currentQueue[0].id === refinementDef.id
         ) {
-          ops.addToTimeline(
-            markAsDone(currentQueue[0] as StatefulComponentDefinition)
-          );
+          ops.addToTimeline(currentQueue[0]);
         }
         return [];
       });
@@ -120,9 +120,7 @@ export function createPlanHandlers(
           currentQueue.length > 0 &&
           currentQueue[0].id === refinementDef.id
         ) {
-          ops.addToTimeline(
-            markAsDone(currentQueue[0] as StatefulComponentDefinition)
-          );
+          ops.addToTimeline(currentQueue[0]);
         }
         return [];
       });

@@ -4,7 +4,7 @@ import {
 } from '../types/components.js';
 import { ComponentName, ExitCode, FeedbackType } from '../types/types.js';
 
-import { createFeedback, markAsDone } from './components.js';
+import { createFeedback } from './components.js';
 import { FeedbackMessages } from './messages.js';
 import { exitApp } from './process.js';
 
@@ -69,7 +69,7 @@ export function createErrorHandler(
       componentName,
       (first) => {
         addToTimeline(
-          markAsDone(first as StatefulComponentDefinition),
+          first,
           createFeedback(
             FeedbackType.Failed,
             FeedbackMessages.UnexpectedError,

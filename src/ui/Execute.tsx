@@ -142,15 +142,15 @@ function CommandStatusDisplay({ item, elapsed }: CommandStatusDisplayProps) {
 export function Execute({
   tasks,
   state,
+  done = false,
   service,
   onError,
   onComplete,
   onAborted,
 }: ExecuteProps) {
-  const done = state?.done ?? false;
-  const isCurrent = done === false;
+  const isActive = !done;
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
+  const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
   const [isExecuting, setIsExecuting] = useState(false);
   const [commandStatuses, setCommandStatuses] = useState<CommandState[]>([]);
   const [message, setMessage] = useState<string>('');
@@ -160,7 +160,7 @@ export function Execute({
 
   useInput(
     (input, key) => {
-      if (key.escape && (isLoading || isExecuting) && !done) {
+      if (key.escape && (isLoading || isExecuting) && isActive) {
         setIsLoading(false);
         setIsExecuting(false);
         setRunningIndex(null);
@@ -182,10 +182,10 @@ export function Execute({
             return item;
           })
         );
-        onAborted(calculateTotalElapsed(commandStatuses));
+        onAborted('execution', calculateTotalElapsed(commandStatuses));
       }
     },
-    { isActive: (isLoading || isExecuting) && !done }
+    { isActive: (isLoading || isExecuting) && isActive }
   );
 
   // Update elapsed time for running command
@@ -213,7 +213,7 @@ export function Execute({
   }, [isExecuting, commandStatuses, outputs, onComplete]);
 
   useEffect(() => {
-    if (done) {
+    if (!isActive) {
       return;
     }
 
@@ -354,21 +354,21 @@ export function Execute({
     return () => {
       mounted = false;
     };
-  }, [tasks, done, service, onComplete, onError]);
+  }, [tasks, isActive, service, onComplete, onError]);
 
   // Return null only when loading completes with no commands
-  if (done && commandStatuses.length === 0 && !error) {
+  if (!isActive && commandStatuses.length === 0 && !error) {
     return null;
   }
 
-  // Show completed steps when done
-  const showCompletedSteps = done && commandStatuses.length > 0;
+  // Show completed steps when not active
+  const showCompletedSteps = !isActive && commandStatuses.length > 0;
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
       {isLoading && (
         <Box>
-          <Text color={getTextColor(isCurrent)}>Preparing commands. </Text>
+          <Text color={getTextColor(isActive)}>Preparing commands. </Text>
           <Spinner />
         </Box>
       )}
@@ -377,7 +377,7 @@ export function Execute({
         <Box flexDirection="column">
           {message && (
             <Box marginBottom={1}>
-              <Text color={getTextColor(isCurrent)}>{message}</Text>
+              <Text color={getTextColor(isActive)}>{message}</Text>
               {isExecuting && (
                 <Text>
                   {' '}

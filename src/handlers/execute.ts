@@ -2,11 +2,7 @@ import { StatefulComponentDefinition } from '../types/components.js';
 import { ExecuteHandlers, HandlerOperations } from '../types/handlers.js';
 import { ComponentName, FeedbackType } from '../types/types.js';
 
-import {
-  createFeedback,
-  createMessage,
-  markAsDone,
-} from '../services/components.js';
+import { createFeedback, createMessage } from '../services/components.js';
 import { formatDuration } from '../services/messages.js';
 import { exitApp } from '../services/process.js';
 import { CommandOutput, ExecutionResult } from '../services/shell.js';
@@ -23,10 +19,7 @@ export function createExecuteHandlers(
   const onError = (error: string) => {
     ops.setQueue(
       withQueueHandler(ComponentName.Execute, (first) => {
-        ops.addToTimeline(
-          markAsDone(first as StatefulComponentDefinition),
-          createFeedback(FeedbackType.Failed, error)
-        );
+        ops.addToTimeline(first, createFeedback(FeedbackType.Failed, error));
         exitApp(1);
         return [];
       })
@@ -46,7 +39,7 @@ export function createExecuteHandlers(
             : `${failed.description} failed`;
 
           ops.addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
+            first,
             createFeedback(FeedbackType.Failed, errorMessage)
           );
           exitApp(1);
@@ -54,7 +47,7 @@ export function createExecuteHandlers(
         }
 
         ops.addToTimeline(
-          markAsDone(first as StatefulComponentDefinition),
+          first,
           createMessage(
             `Execution completed in ${formatDuration(totalElapsed)}.`
           )
@@ -65,18 +58,15 @@ export function createExecuteHandlers(
     );
   };
 
-  const onAborted = (elapsedTime: number) => {
+  const onAborted = (operation: string, elapsedTime: number) => {
     ops.setQueue(
       withQueueHandler(ComponentName.Execute, (first) => {
         const message =
           elapsedTime > 0
-            ? `The execution was cancelled after ${formatDuration(elapsedTime)}.`
-            : 'The execution was cancelled.';
+            ? `The ${operation} was cancelled after ${formatDuration(elapsedTime)}.`
+            : `The ${operation} was cancelled.`;
 
-        ops.addToTimeline(
-          markAsDone(first as StatefulComponentDefinition),
-          createFeedback(FeedbackType.Aborted, message)
-        );
+        ops.addToTimeline(first, createFeedback(FeedbackType.Aborted, message));
         exitApp(0);
         return [];
       })

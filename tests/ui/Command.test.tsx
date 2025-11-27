@@ -14,11 +14,7 @@ describe('Command component error handling', () => {
   describe('Error display', () => {
     it('displays error from state', () => {
       const result = (
-        <Command
-          onAborted={mockOnAborted}
-          command="test command"
-          state={{ done: true, isLoading: false, error: 'Test error' }}
-        />
+        <Command onAborted={mockOnAborted} command="test command" />
       );
 
       expect(result).toBeDefined();
@@ -32,7 +28,7 @@ describe('Command component error handling', () => {
         <Command
           onAborted={mockOnAborted}
           command="test command"
-          state={{ done: false, isLoading: true }}
+          state={{ isLoading: true }}
         />
       );
 
@@ -42,11 +38,7 @@ describe('Command component error handling', () => {
 
     it('displays non-loading state when done', () => {
       const result = (
-        <Command
-          onAborted={mockOnAborted}
-          command="test command"
-          state={{ done: true, isLoading: false }}
-        />
+        <Command onAborted={mockOnAborted} command="test command" />
       );
 
       expect(result.props.state?.isLoading).toBe(false);
@@ -60,7 +52,6 @@ describe('Command component error handling', () => {
         <Command
           onAborted={mockOnAborted}
           command="commit changes with message 'add new feature'"
-          state={{ done: true, isLoading: false }}
         />
       );
 
@@ -77,7 +68,7 @@ describe('Command component error handling', () => {
         <Command
           onAborted={onAborted}
           command="test command"
-          state={{ done: false, isLoading: true }}
+          state={{ isLoading: true }}
         />
       );
 
@@ -103,11 +94,7 @@ describe('Command component error handling', () => {
     it('does not call onAborted when Esc is pressed after done', () => {
       const onAborted = vi.fn();
       const { stdin } = render(
-        <Command
-          onAborted={onAborted}
-          command="test command"
-          state={{ done: true, isLoading: false }}
-        />
+        <Command onAborted={onAborted} command="test command" />
       );
 
       stdin.write(Escape);

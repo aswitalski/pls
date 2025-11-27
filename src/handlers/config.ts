@@ -21,7 +21,6 @@ import {
   createCommandDefinition,
   createExecuteDefinition,
   createFeedback,
-  markAsDone,
 } from '../services/components.js';
 import { saveAnthropicConfig, saveConfig } from '../services/configuration.js';
 import { FeedbackMessages } from '../services/messages.js';
@@ -54,7 +53,7 @@ export function createConfigHandlers(
         ComponentName.Config,
         (first, rest): ComponentDefinition[] => {
           ops.addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
+            first,
             createFeedback(
               FeedbackType.Succeeded,
               FeedbackMessages.ConfigurationComplete
@@ -83,8 +82,8 @@ export function createConfigHandlers(
     );
   };
 
-  const onAborted = () => {
-    handleAborted('Configuration');
+  const onAborted = (operation: string) => {
+    handleAborted(operation);
   };
 
   return { onFinished, onAborted };
@@ -134,7 +133,7 @@ export function createConfigExecutionFinishedHandler(
       ComponentName.Config,
       (first, rest): ComponentDefinition[] => {
         addToTimeline(
-          markAsDone(first as StatefulComponentDefinition),
+          first,
           createFeedback(
             FeedbackType.Succeeded,
             FeedbackMessages.ConfigurationComplete
@@ -171,14 +170,12 @@ export function createConfigExecutionFinishedHandler(
 export function createConfigExecutionAbortedHandler(
   addToTimeline: (...items: ComponentDefinition[]) => void
 ) {
-  return () => {
+  return (operation: string) => {
     return withQueueHandler(
       ComponentName.Config,
       (first, rest): ComponentDefinition[] => {
-        addToTimeline(
-          markAsDone(first as StatefulComponentDefinition),
-          createFeedback(FeedbackType.Aborted, 'Configuration cancelled.')
-        );
+        const message = `The ${operation} was cancelled.`;
+        addToTimeline(first, createFeedback(FeedbackType.Aborted, message));
 
         exitApp(0);
         return rest;

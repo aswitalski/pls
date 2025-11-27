@@ -68,7 +68,6 @@ describe('Component Types', () => {
       };
 
       expect(def.name).toBe(ComponentName.Config);
-      expect('state' in def && def.state.done).toBe(false);
     });
 
     it('supports multiple configuration steps', () => {
@@ -99,7 +98,7 @@ describe('Component Types', () => {
       const def: ComponentDefinition = {
         id: 'test-config-2',
         name: ComponentName.Config,
-        state: { done: false },
+        state: {},
         props: {
           steps: stepConfigs,
         },
@@ -138,7 +137,7 @@ describe('Component Types', () => {
       const def: ComponentDefinition = {
         id: 'test-config-3',
         name: ComponentName.Config,
-        state: { done: false },
+        state: {},
         props,
       };
 
@@ -149,7 +148,6 @@ describe('Component Types', () => {
   describe('Command component definition', () => {
     it('creates valid stateful command definition', () => {
       const state: CommandState = {
-        done: false,
         isLoading: true,
       };
 
@@ -164,14 +162,12 @@ describe('Component Types', () => {
       };
 
       expect(def.name).toBe(ComponentName.Command);
-      expect('state' in def && def.state.done).toBe(false);
       expect('state' in def && def.state.isLoading).toBe(true);
       expect(def.props.command).toBe('test command');
     });
 
     it('supports error state', () => {
       const state: CommandState = {
-        done: true,
         isLoading: false,
         error: 'Test error',
       };
@@ -200,7 +196,7 @@ describe('Component Types', () => {
       const def: ComponentDefinition = {
         id: 'test-command-3',
         name: ComponentName.Command,
-        state: { done: false },
+        state: {},
         props,
       };
 
@@ -227,7 +223,6 @@ describe('Component Types', () => {
       };
 
       expect(def.name).toBe(ComponentName.Confirm);
-      expect('state' in def && def.state.done).toBe(false);
       expect(def.props.message).toBe('Should I execute this plan?');
     });
 
@@ -235,7 +230,7 @@ describe('Component Types', () => {
       const def: ComponentDefinition = {
         id: 'test-confirm-2',
         name: ComponentName.Confirm,
-        state: { done: false },
+        state: {},
         props: {
           message: 'Continue?',
         },
@@ -258,7 +253,7 @@ describe('Component Types', () => {
         {
           id: 'test-config-4',
           name: ComponentName.Config,
-          state: { done: false },
+          state: {},
           props: {
             steps: [
               {
@@ -274,7 +269,7 @@ describe('Component Types', () => {
         {
           id: 'test-command-4',
           name: ComponentName.Command,
-          state: { done: false },
+          state: {},
           props: { command: 'test', onAborted: vi.fn() },
         },
       ];
@@ -288,13 +283,11 @@ describe('Component Types', () => {
           case ComponentName.Config:
             expect('state' in def).toBe(true);
             if ('state' in def) {
-              expect(def.state.done).toBeDefined();
             }
             break;
           case ComponentName.Command:
             expect('state' in def).toBe(true);
             if ('state' in def) {
-              expect(def.state.done).toBeDefined();
             }
             expect(def.props.command).toBeDefined();
             break;
@@ -337,21 +330,17 @@ describe('Component Types', () => {
         };
 
         if (index < 2) {
-          expect('state' in def && def.state.done).toBe(false);
         } else {
-          expect('state' in def && def.state.done).toBe(true);
         }
       });
     });
 
     it('tracks command component loading states', () => {
       const loadingState: CommandState = {
-        done: false,
         isLoading: true,
       };
 
       const completedState: CommandState = {
-        done: true,
         isLoading: false,
       };
 
@@ -370,12 +359,10 @@ describe('Component Types', () => {
       };
 
       expect('state' in loadingDef && loadingDef.state.isLoading).toBe(true);
-      expect('state' in loadingDef && loadingDef.state.done).toBe(false);
 
       expect('state' in completedDef && completedDef.state.isLoading).toBe(
         false
       );
-      expect('state' in completedDef && completedDef.state.done).toBe(true);
     });
   });
 
@@ -385,7 +372,6 @@ describe('Component Types', () => {
       const def = createRefinement('Processing request', onAborted);
 
       expect(def.name).toBe(ComponentName.Refinement);
-      expect('state' in def && def.state.done).toBe(false);
       if (def.name === ComponentName.Refinement) {
         expect(def.props.text).toBe('Processing request');
         expect(def.props.onAborted).toBe(onAborted);

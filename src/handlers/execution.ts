@@ -19,7 +19,6 @@ import {
   createFeedback,
   createIntrospectDefinition,
   createValidateDefinition,
-  markAsDone,
 } from '../services/components.js';
 import { ConfigStep, StepType } from '../ui/Config.js';
 import { getCancellationMessage } from '../services/messages.js';
@@ -62,7 +61,7 @@ export function createExecutionHandlers(
         const service = ops.service;
         if (!service) {
           ops.addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
+            first,
             createFeedback(FeedbackType.Failed, 'Service not available')
           );
           exitApp(1);
@@ -70,7 +69,7 @@ export function createExecutionHandlers(
         }
 
         if (allIntrospect && tasks.length > 0) {
-          ops.addToTimeline(markAsDone(first as StatefulComponentDefinition));
+          ops.addToTimeline(first);
           return [
             createIntrospectDefinition(
               tasks,
@@ -82,7 +81,7 @@ export function createExecutionHandlers(
           ];
         } else if (allAnswer && tasks.length > 0) {
           const question = tasks[0].action;
-          ops.addToTimeline(markAsDone(first as StatefulComponentDefinition));
+          ops.addToTimeline(first);
           return [
             createAnswerDefinition(
               question,
@@ -96,7 +95,7 @@ export function createExecutionHandlers(
           const keys = tasks
             .map((task) => task.params?.key as string | undefined)
             .filter((key): key is string => typeof key === 'string');
-          ops.addToTimeline(markAsDone(first as StatefulComponentDefinition));
+          ops.addToTimeline(first);
 
           const handleConfigFinished = (config: Record<string, string>) => {
             ops.setQueue(
@@ -106,9 +105,9 @@ export function createExecutionHandlers(
               )(config)
             );
           };
-          const handleConfigAborted = () => {
+          const handleConfigAborted = (operation: string) => {
             ops.setQueue(
-              createConfigExecutionAbortedHandler(ops.addToTimeline)()
+              createConfigExecutionAbortedHandler(ops.addToTimeline)(operation)
             );
           };
 
@@ -128,7 +127,7 @@ export function createExecutionHandlers(
             const keys = missingConfig.map((req) => req.path);
             const userRequest = tasks.map((t) => t.action).join(', ');
 
-            ops.addToTimeline(markAsDone(first as StatefulComponentDefinition));
+            ops.addToTimeline(first);
 
             // Create handlers for Validate completion
             const handleValidateComplete = (
@@ -150,9 +149,11 @@ export function createExecutionHandlers(
                       )(config)
                     );
                   };
-                  const handleConfigAborted = () => {
+                  const handleConfigAborted = (operation: string) => {
                     ops.setQueue(
-                      createConfigExecutionAbortedHandler(ops.addToTimeline)()
+                      createConfigExecutionAbortedHandler(ops.addToTimeline)(
+                        operation
+                      )
                     );
                   };
 
@@ -179,9 +180,7 @@ export function createExecutionHandlers(
                   });
 
                   // Mark Validate as done and move to timeline
-                  ops.addToTimeline(
-                    markAsDone(first as StatefulComponentDefinition)
-                  );
+                  ops.addToTimeline(first);
 
                   return [
                     {
@@ -227,7 +226,7 @@ export function createExecutionHandlers(
           }
 
           // No missing config - execute directly
-          ops.addToTimeline(markAsDone(first as StatefulComponentDefinition));
+          ops.addToTimeline(first);
           return [
             createExecuteDefinition(
               tasks,
@@ -239,7 +238,7 @@ export function createExecutionHandlers(
           ];
         } else {
           ops.addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
+            first,
             createFeedback(
               FeedbackType.Failed,
               'I can only process one type of task at a time for now.'
@@ -264,7 +263,7 @@ export function createExecutionHandlers(
           const operation = allIntrospect ? 'introspection' : 'execution';
 
           ops.addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
+            first,
             createFeedback(
               FeedbackType.Aborted,
               getCancellationMessage(operation)

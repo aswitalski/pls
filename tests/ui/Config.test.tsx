@@ -22,7 +22,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps).toHaveLength(1);
       expect(result.props.state?.done).toBe(false);
@@ -39,7 +39,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps[0].value).toBe(AnthropicModel.Haiku);
     });
@@ -57,7 +57,7 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{ done: false }} onFinished={onFinished} />
+        <Config steps={steps} state={{}} onFinished={onFinished} />
       );
 
       expect(result.props.onFinished).toBe(onFinished);
@@ -90,7 +90,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps).toHaveLength(3);
     });
@@ -120,7 +120,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps[0].value).toBeNull();
       expect(result.props.steps[1].value).toBe('claude-haiku-4-5-20251001');
@@ -147,7 +147,7 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{ done: false }} onFinished={onFinished} />
+        <Config steps={steps} state={{}} onFinished={onFinished} />
       );
 
       expect(result.props.onFinished).toBe(onFinished);
@@ -167,9 +167,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = (
-        <Config steps={steps} state={{ done: false }} onAborted={onAborted} />
-      );
+      const result = <Config steps={steps} state={{}} onAborted={onAborted} />;
 
       expect(result.props.onAborted).toBe(onAborted);
     });
@@ -185,7 +183,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.onAborted).toBeUndefined();
     });
@@ -203,7 +201,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: true }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.state?.done).toBe(true);
     });
@@ -233,7 +231,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: true }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.state?.done).toBe(true);
       expect(result.props.steps).toHaveLength(3);
@@ -252,7 +250,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.onFinished).toBeUndefined();
     });
@@ -273,7 +271,7 @@ describe('Config component interaction flows', () => {
       const result = (
         <Config
           steps={steps}
-          state={{ done: false }}
+          state={{}}
           onFinished={onFinished}
           onAborted={onAborted}
         />
@@ -303,7 +301,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps[0].description).toBe('API Key (required)');
       expect(result.props.steps[1].description).toBe('Model [optional]');
@@ -320,7 +318,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps[0].value).toBe('你好世界 🌍');
     });

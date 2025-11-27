@@ -101,7 +101,7 @@ describe('Execution handlers', () => {
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: { done: false },
+        state: {},
         props: {
           message: 'Execute?',
           onConfirmed: vi.fn(),
@@ -119,7 +119,7 @@ describe('Execution handlers', () => {
 
       expect(addToTimelineMock).toHaveBeenCalledTimes(1);
       const markedConfirm = getTimelineArgs()[0] as StatefulComponentDefinition;
-      expect(markedConfirm.state.done).toBe(true);
+      expect(markedConfirm.name).toBe(ComponentName.Confirm);
     });
 
     it('extracts config keys from task params', () => {
@@ -160,7 +160,7 @@ describe('Execution handlers', () => {
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: { done: false },
+        state: {},
         props: { message: 'Execute?' },
       };
 
@@ -212,7 +212,7 @@ describe('Execution handlers', () => {
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: { done: false },
+        state: {},
         props: { message: 'Execute?' },
       };
 
@@ -258,7 +258,7 @@ describe('Execution handlers', () => {
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: { done: false },
+        state: {},
         props: { message: 'Execute?' },
       };
 
@@ -314,7 +314,7 @@ describe('Execution handlers', () => {
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: { done: false },
+        state: {},
         props: { message: 'Execute?' },
       };
 
@@ -389,7 +389,7 @@ describe('Execution handlers', () => {
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: { done: false },
+        state: {},
         props: { message: 'Execute?' },
       };
 
@@ -515,7 +515,7 @@ describe('Execution handlers', () => {
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: { done: false },
+        state: {},
         props: { message: 'Execute?' },
       };
 
@@ -632,7 +632,7 @@ describe('Execution handlers', () => {
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: { done: false },
+        state: {},
         props: { message: 'Execute?' },
       };
 
@@ -680,7 +680,7 @@ describe('Execution handlers', () => {
       expect(addToTimelineMock).toHaveBeenCalledWith(
         expect.objectContaining({
           name: ComponentName.Config,
-          state: { done: true },
+          state: {},
         }) as ComponentDefinition,
         expect.objectContaining({
           name: ComponentName.Feedback,

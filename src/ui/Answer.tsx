@@ -15,29 +15,29 @@ const MINIMUM_PROCESSING_TIME = 400;
 export function Answer({
   question,
   state,
+  done = false,
   service,
   onError,
   onComplete,
   onAborted,
 }: AnswerProps) {
-  const done = state?.done ?? false;
-  const isCurrent = done === false;
+  const isActive = !done;
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
+  const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
 
   useInput(
     (input, key) => {
-      if (key.escape && isLoading && !done) {
+      if (key.escape && isLoading && isActive) {
         setIsLoading(false);
-        onAborted();
+        onAborted('answer');
       }
     },
-    { isActive: isLoading && !done }
+    { isActive: isLoading && isActive }
   );
 
   useEffect(() => {
     // Skip processing if done
-    if (done) {
+    if (!isActive) {
       return;
     }
 
@@ -82,10 +82,10 @@ export function Answer({
     return () => {
       mounted = false;
     };
-  }, [question, done, service, onComplete, onError]);
+  }, [question, isActive, service, onComplete, onError]);
 
   // Return null when done (like Introspect)
-  if (done || (!isLoading && !error)) {
+  if (!isActive || (!isLoading && !error)) {
     return null;
   }
 
@@ -93,7 +93,7 @@ export function Answer({
     <Box alignSelf="flex-start" flexDirection="column">
       {isLoading && (
         <Box>
-          <Text color={getTextColor(isCurrent)}>Finding answer. </Text>
+          <Text color={getTextColor(isActive)}>Finding answer. </Text>
           <Spinner />
         </Box>
       )}

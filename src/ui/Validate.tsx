@@ -18,33 +18,33 @@ export function Validate({
   missingConfig,
   userRequest,
   state,
+  done = false,
   service,
   children,
   onError,
   onComplete,
   onAborted,
 }: ValidateProps) {
-  const done = state?.done ?? false;
-  const isCurrent = done === false;
+  const isActive = !done;
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
+  const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
   const [completionMessage, setCompletionMessage] = useState<string | null>(
     null
   );
 
   useInput(
     (input, key) => {
-      if (key.escape && isLoading && !done) {
+      if (key.escape && isLoading && isActive) {
         setIsLoading(false);
-        onAborted();
+        onAborted('validation');
       }
     },
-    { isActive: isLoading && !done }
+    { isActive: isLoading && isActive }
   );
 
   useEffect(() => {
-    // Skip processing if done
-    if (done) {
+    // Skip processing if not active
+    if (!isActive) {
       return;
     }
 
@@ -132,15 +132,15 @@ export function Validate({
   }, [
     missingConfig,
     userRequest,
-    done,
+    isActive,
     service,
     onComplete,
     onError,
     onAborted,
   ]);
 
-  // Don't render when done and nothing to show
-  if (done && !completionMessage && !error && !children) {
+  // Don't render when not active and nothing to show
+  if (!isActive && !completionMessage && !error && !children) {
     return null;
   }
 
@@ -148,7 +148,7 @@ export function Validate({
     <Box alignSelf="flex-start" flexDirection="column">
       {isLoading && (
         <Box>
-          <Text color={getTextColor(isCurrent)}>
+          <Text color={getTextColor(isActive)}>
             Validating configuration requirements.{' '}
           </Text>
           <Spinner />
@@ -157,7 +157,7 @@ export function Validate({
 
       {completionMessage && !isLoading && (
         <Box>
-          <Text color={getTextColor(isCurrent)}>{completionMessage}</Text>
+          <Text color={getTextColor(isActive)}>{completionMessage}</Text>
         </Box>
       )}
 

@@ -32,8 +32,8 @@ export function createIntrospectHandlers(
     );
   };
 
-  const onAborted = () => {
-    handleAborted('Introspection');
+  const onAborted = (operation: string) => {
+    handleAborted(operation);
   };
 
   return { onError, onComplete, onAborted };

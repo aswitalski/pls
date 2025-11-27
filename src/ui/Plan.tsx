@@ -76,10 +76,12 @@ export function Plan({
   message,
   tasks,
   state,
+  done = false,
   debug = false,
   onSelectionConfirmed,
   onAborted,
 }: PlanProps) {
+  const isActive = !done;
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(
     state?.highlightedIndex ?? null
   );
@@ -88,7 +90,6 @@ export function Plan({
   const [completedSelections, setCompletedSelections] = useState<number[]>(
     state?.completedSelections ?? []
   );
-  const [isDone, setIsDone] = useState<boolean>(state?.done ?? false);
 
   // Find all Define tasks
   const defineTaskIndices = tasks
@@ -108,13 +109,13 @@ export function Plan({
 
   useInput(
     (input, key) => {
-      // Don't handle input if already done or no define task
-      if (isDone || !defineTask) {
+      // Don't handle input if not active or no define task
+      if (!isActive || !defineTask) {
         return;
       }
 
       if (key.escape) {
-        onAborted();
+        onAborted('task selection');
         return;
       }
 
@@ -143,12 +144,8 @@ export function Plan({
           setCurrentDefineGroupIndex(currentDefineGroupIndex + 1);
           setHighlightedIndex(null);
         } else {
-          // Last group - mark as done to show the selection
-          setIsDone(true);
-          setHighlightedIndex(null); // Clear highlight to show Execute color
-          if (state) {
-            state.done = true;
-          }
+          // Last group - clear highlight to show Execute color
+          setHighlightedIndex(null);
 
           // Build refined task list with only selected options (no discarded or ignored ones)
           const refinedTasks: Task[] = [];
@@ -181,7 +178,7 @@ export function Plan({
         }
       }
     },
-    { isActive: !isDone && defineTask !== null }
+    { isActive: isActive && defineTask !== null }
   );
 
   // Sync state back to state object
@@ -190,17 +187,8 @@ export function Plan({
       state.highlightedIndex = highlightedIndex;
       state.currentDefineGroupIndex = currentDefineGroupIndex;
       state.completedSelections = completedSelections;
-      state.done = isDone;
     }
-  }, [
-    highlightedIndex,
-    currentDefineGroupIndex,
-    completedSelections,
-    isDone,
-    state,
-  ]);
-
-  const isCurrent = isDone === false;
+  }, [highlightedIndex, currentDefineGroupIndex, completedSelections, state]);
 
   const listItems = tasks.map((task, idx) => {
     // Find which define group this task belongs to (if any)
@@ -214,9 +202,9 @@ export function Plan({
         // Previously completed group - show the selection
         childIndex = completedSelections[defineGroupIndex] ?? null;
       } else if (defineGroupIndex === currentDefineGroupIndex) {
-        // Current active group - show live navigation unless done
-        if (isDone) {
-          // If done, show the completed selection for this group too
+        // Current active group - show live navigation unless not active
+        if (!isActive) {
+          // If not active, show the completed selection for this group too
           childIndex = completedSelections[defineGroupIndex] ?? null;
         } else {
           childIndex = null;
@@ -224,19 +212,14 @@ export function Plan({
       }
     }
 
-    // Show arrow on current active define task when no child is highlighted and not done
+    // Show arrow on current active define task when no child is highlighted and is active
     const isDefineWithoutSelection =
       isDefineTask &&
       defineGroupIndex === currentDefineGroupIndex &&
       highlightedIndex === null &&
-      !isDone;
+      isActive;
 
-    return taskToListItem(
-      task,
-      childIndex,
-      isDefineWithoutSelection,
-      isCurrent
-    );
+    return taskToListItem(task, childIndex, isDefineWithoutSelection, isActive);
   });
 
   return (
@@ -247,7 +230,7 @@ export function Plan({
             description={message}
             taskType={TaskType.Plan}
             showType={debug}
-            isCurrent={isCurrent}
+            isCurrent={isActive}
           />
         </Box>
       )}

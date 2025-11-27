@@ -16,29 +16,30 @@ const MIN_PROCESSING_TIME = 1000; // purely for visual effect
 export function Command({
   command,
   state,
+  done = false,
   service,
   children,
   onError,
   onComplete,
   onAborted,
 }: CommandProps) {
-  const done = state?.done ?? false;
+  const isActive = !done;
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
+  const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
 
   useInput(
     (input, key) => {
-      if (key.escape && isLoading && !done) {
+      if (key.escape && isLoading && isActive) {
         setIsLoading(false);
-        onAborted();
+        onAborted('request');
       }
     },
-    { isActive: isLoading && !done }
+    { isActive: isLoading && isActive }
   );
 
   useEffect(() => {
-    // Skip processing if done (showing historical/final state)
-    if (done) {
+    // Skip processing if not active (showing historical/final state)
+    if (!isActive) {
       return;
     }
 
@@ -96,18 +97,16 @@ export function Command({
     return () => {
       mounted = false;
     };
-  }, [command, done, service]);
-
-  const isCurrent = done === false;
+  }, [command, isActive, service]);
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
       <Box
-        paddingX={done ? 1 : 0}
-        marginX={done ? -1 : 0}
-        backgroundColor={done ? Colors.Background.UserQuery : undefined}
+        paddingX={!isActive ? 1 : 0}
+        marginX={!isActive ? -1 : 0}
+        backgroundColor={!isActive ? Colors.Background.UserQuery : undefined}
       >
-        <Text color={isCurrent ? Colors.Text.Active : Colors.Text.UserQuery}>
+        <Text color={isActive ? Colors.Text.Active : Colors.Text.UserQuery}>
           &gt; pls {command}
         </Text>
         {isLoading && (

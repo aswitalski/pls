@@ -7,28 +7,28 @@ import { useInput } from '../services/keyboard.js';
 export interface ConfirmProps {
   message: string;
   state?: ConfirmState;
+  done?: boolean;
   onConfirmed?: () => void;
   onCancelled?: () => void;
 }
 
 export interface ConfirmState {
-  done: boolean;
   confirmed?: boolean;
 }
 
 export function Confirm({
   message,
   state,
+  done = false,
   onConfirmed,
   onCancelled,
 }: ConfirmProps) {
-  const done = state?.done ?? false;
-  const isCurrent = done === false;
+  const isActive = !done;
   const [selectedIndex, setSelectedIndex] = React.useState(0); // 0 = Yes, 1 = No
 
   useInput(
     (input, key) => {
-      if (done) return;
+      if (!isActive) return;
 
       if (key.escape) {
         // Escape: highlight "No" and cancel
@@ -46,7 +46,7 @@ export function Confirm({
         }
       }
     },
-    { isActive: !done }
+    { isActive }
   );
 
   const options = [
@@ -54,7 +54,7 @@ export function Confirm({
     { label: 'no', value: 'no', color: Colors.Status.Error },
   ];
 
-  if (done) {
+  if (!isActive) {
     // When done, show both the message and user's choice in timeline
     return (
       <Box flexDirection="column">
@@ -78,7 +78,7 @@ export function Confirm({
   return (
     <Box flexDirection="column">
       <Box marginBottom={1}>
-        <Text color={isCurrent ? Colors.Text.Active : Colors.Text.Inactive}>
+        <Text color={isActive ? Colors.Text.Active : Colors.Text.Inactive}>
           {message}
         </Text>
       </Box>

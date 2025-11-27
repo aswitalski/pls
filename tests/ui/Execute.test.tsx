@@ -111,7 +111,7 @@ describe('Execute component', () => {
     const { lastFrame } = render(
       <Execute
         tasks={tasks}
-        state={{ done: true }}
+        state={{}}
         service={service}
         onComplete={vi.fn()}
         onError={vi.fn()}

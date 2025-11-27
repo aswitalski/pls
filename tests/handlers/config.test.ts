@@ -50,7 +50,7 @@ describe('Config execution handlers', () => {
         {
           id: 'config-1',
           name: ComponentName.Config,
-          state: { done: false },
+          state: {},
           props: { steps: [] },
         },
       ];
@@ -77,7 +77,7 @@ describe('Config execution handlers', () => {
         {
           id: 'config-1',
           name: ComponentName.Config,
-          state: { done: false },
+          state: {},
           props: { steps: [] },
         },
       ];
@@ -91,9 +91,8 @@ describe('Config execution handlers', () => {
       const markedConfig = args[0];
       const feedback = args[1];
 
-      // Config should be marked as done
+      // Config should be added to timeline
       expect(markedConfig.name).toBe(ComponentName.Config);
-      expect('state' in markedConfig && markedConfig.state.done).toBe(true);
 
       // Feedback should be success type
       expect(feedback.name).toBe(ComponentName.Feedback);
@@ -120,7 +119,7 @@ describe('Config execution handlers', () => {
         {
           id: 'config-1',
           name: ComponentName.Config,
-          state: { done: false },
+          state: {},
           props: { steps: [] },
         },
         nextComponent,
@@ -148,7 +147,7 @@ describe('Config execution handlers', () => {
         {
           id: 'config-1',
           name: ComponentName.Config,
-          state: { done: false },
+          state: {},
           props: { steps: [] },
         },
       ];
@@ -217,7 +216,7 @@ describe('Config execution handlers', () => {
         {
           id: 'config-1',
           name: ComponentName.Config,
-          state: { done: false },
+          state: {},
           props: { steps: [] },
         },
       ];
@@ -265,7 +264,7 @@ describe('Config execution handlers', () => {
         {
           id: 'config-1',
           name: ComponentName.Config,
-          state: { done: false },
+          state: {},
           props: { steps: [] },
         },
       ];
@@ -289,12 +288,12 @@ describe('Config execution handlers', () => {
         {
           id: 'config-1',
           name: ComponentName.Config,
-          state: { done: false },
+          state: {},
           props: { steps: [] },
         },
       ];
 
-      const queueHandler = handler();
+      const queueHandler = handler('configuration');
       queueHandler(mockQueue);
 
       // Verify addToTimeline was called
@@ -303,9 +302,8 @@ describe('Config execution handlers', () => {
       const markedConfig = args[0];
       const feedback = args[1];
 
-      // Config should be marked as done
+      // Config should be added to timeline
       expect(markedConfig.name).toBe(ComponentName.Config);
-      expect('state' in markedConfig && markedConfig.state.done).toBe(true);
 
       // Feedback should be aborted type
       expect(feedback.name).toBe(ComponentName.Feedback);
@@ -329,13 +327,13 @@ describe('Config execution handlers', () => {
         {
           id: 'config-1',
           name: ComponentName.Config,
-          state: { done: false },
+          state: {},
           props: { steps: [] },
         },
         nextComponent,
       ];
 
-      const queueHandler = handler();
+      const queueHandler = handler('configuration');
       const result = queueHandler(mockQueue);
 
       expect(result).toEqual([nextComponent]);
@@ -345,7 +343,7 @@ describe('Config execution handlers', () => {
       const addToTimeline = vi.fn();
 
       const handler = createConfigExecutionAbortedHandler(addToTimeline);
-      const queueHandler = handler();
+      const queueHandler = handler('configuration');
 
       const result = queueHandler([]);
 

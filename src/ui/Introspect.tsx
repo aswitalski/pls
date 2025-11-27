@@ -56,6 +56,7 @@ function parseCapabilityFromTask(task: Task): Capability {
 export function Introspect({
   tasks,
   state,
+  done = false,
   service,
   children,
   debug = false,
@@ -63,24 +64,23 @@ export function Introspect({
   onComplete,
   onAborted,
 }: IntrospectProps) {
-  const done = state?.done ?? false;
-  const isCurrent = done === false;
+  const isActive = !done;
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
+  const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
 
   useInput(
     (input, key) => {
-      if (key.escape && isLoading && !done) {
+      if (key.escape && isLoading && isActive) {
         setIsLoading(false);
-        onAborted();
+        onAborted('introspection');
       }
     },
-    { isActive: isLoading && !done }
+    { isActive: isLoading && isActive }
   );
 
   useEffect(() => {
-    // Skip processing if done
-    if (done) {
+    // Skip processing if not active
+    if (!isActive) {
       return;
     }
 
@@ -145,7 +145,7 @@ export function Introspect({
     return () => {
       mounted = false;
     };
-  }, [tasks, done, service, debug, onComplete, onError]);
+  }, [tasks, isActive, service, debug, onComplete, onError]);
 
   // Don't render wrapper when done and nothing to show
   if (!isLoading && !error && !children) {
@@ -156,7 +156,7 @@ export function Introspect({
     <Box alignSelf="flex-start" flexDirection="column">
       {isLoading && (
         <Box>
-          <Text color={getTextColor(isCurrent)}>Listing capabilities. </Text>
+          <Text color={getTextColor(isActive)}>Listing capabilities. </Text>
           <Spinner />
         </Box>
       )}

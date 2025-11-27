@@ -10,7 +10,6 @@ import { ComponentName, Task, TaskType } from '../types/types.js';
 import {
   createConfirmDefinition,
   createPlanDefinition,
-  markAsDone,
 } from '../services/components.js';
 import { createErrorHandler, withQueueHandler } from '../services/queue.js';
 
@@ -46,7 +45,7 @@ export function createCommandHandlers(
           );
 
           if (hasDefineTask) {
-            ops.addToTimeline(markAsDone(first as StatefulComponentDefinition));
+            ops.addToTimeline(first);
             return [planDefinition];
           } else {
             const confirmDefinition = createConfirmDefinition(
@@ -57,10 +56,7 @@ export function createCommandHandlers(
                 executionHandlers.onCancelled(tasks);
               }
             );
-            ops.addToTimeline(
-              markAsDone(first as StatefulComponentDefinition),
-              planDefinition
-            );
+            ops.addToTimeline(first, planDefinition);
             return [confirmDefinition];
           }
         },
@@ -70,8 +66,8 @@ export function createCommandHandlers(
     );
   };
 
-  const onAborted = () => {
-    handleAborted('Request');
+  const onAborted = (operation: string) => {
+    handleAborted(operation);
   };
 
   return { onError, onComplete, onAborted };

@@ -24,7 +24,7 @@ export interface HandlerOperations {
 export interface AnswerHandlers {
   onError: (error: string) => void;
   onComplete: (answer: string) => void;
-  onAborted: () => void;
+  onAborted: (operation: string) => void;
 }
 
 /**
@@ -36,7 +36,7 @@ export interface IntrospectHandlers {
     message: string,
     capabilities: import('./components.js').Capability[]
   ) => void;
-  onAborted: () => void;
+  onAborted: (operation: string) => void;
 }
 
 /**
@@ -45,7 +45,7 @@ export interface IntrospectHandlers {
 export interface ExecuteHandlers {
   onError: (error: string) => void;
   onComplete: (outputs: CommandOutput[], totalElapsed: number) => void;
-  onAborted: (elapsedTime: number) => void;
+  onAborted: (operation: string, elapsedTime: number) => void;
 }
 
 /**
@@ -60,8 +60,10 @@ export interface ExecutionHandlers {
  * Plan handler callbacks
  */
 export interface PlanHandlers {
-  onAborted: () => void;
-  createAbortHandler: (tasks: import('./types.js').Task[]) => () => void;
+  onAborted: (operation: string) => void;
+  createAbortHandler: (
+    tasks: import('./types.js').Task[]
+  ) => (operation: string) => void;
   onSelectionConfirmed: (tasks: import('./types.js').Task[]) => Promise<void>;
 }
 
@@ -71,7 +73,7 @@ export interface PlanHandlers {
 export interface CommandHandlers {
   onError: (error: string) => void;
   onComplete: (message: string, tasks: import('./types.js').Task[]) => void;
-  onAborted: () => void;
+  onAborted: (operation: string) => void;
 }
 
 /**
@@ -79,5 +81,5 @@ export interface CommandHandlers {
  */
 export interface ConfigHandlers {
   onFinished: (config: Record<string, string>) => void;
-  onAborted: () => void;
+  onAborted: (operation: string) => void;
 }

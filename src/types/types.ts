@@ -21,6 +21,7 @@ export enum ComponentName {
   AnswerDisplay = 'answerDisplay',
   Execute = 'execute',
   Validate = 'validate',
+  Progress = 'progress',
 }
 
 export enum TaskType {

@@ -58,7 +58,7 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { done: false },
+          state: { isLoading: false },
           props: { tasks: [], onAborted: vi.fn() },
         },
       ];
@@ -75,7 +75,6 @@ describe('Execute handlers', () => {
       const feedback = args[1];
 
       expect(markedExecute.name).toBe(ComponentName.Execute);
-      expect('state' in markedExecute && markedExecute.state.done).toBe(true);
 
       expect(feedback.name).toBe(ComponentName.Feedback);
       const feedbackProps = feedback.props as FeedbackProps;
@@ -93,7 +92,7 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { done: false },
+          state: { isLoading: false },
           props: { tasks: [], onAborted: vi.fn() },
         },
       ];
@@ -150,7 +149,7 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { done: false },
+          state: { isLoading: false },
           props: { tasks: [], onAborted: vi.fn() },
         },
       ];
@@ -166,7 +165,6 @@ describe('Execute handlers', () => {
       const message = args[1];
 
       expect(markedExecute.name).toBe(ComponentName.Execute);
-      expect('state' in markedExecute && markedExecute.state.done).toBe(true);
 
       expect(message.name).toBe(ComponentName.Message);
       const messageProps = message.props as MessageProps;
@@ -201,7 +199,7 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { done: false },
+          state: { isLoading: false },
           props: { tasks: [], onAborted: vi.fn() },
         },
       ];
@@ -240,7 +238,7 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { done: false },
+          state: { isLoading: false },
           props: { tasks: [], onAborted: vi.fn() },
         },
       ];
@@ -278,7 +276,7 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { done: false },
+          state: { isLoading: false },
           props: { tasks: [], onAborted: vi.fn() },
         },
       ];
@@ -313,14 +311,14 @@ describe('Execute handlers', () => {
         ops,
         handleAbortedMock as (operationName: string) => void
       );
-      handlers.onAborted(1500);
+      handlers.onAborted('execution', 1500);
 
       const queueUpdater = getQueueUpdater();
       const result = queueUpdater([
         {
           id: '123',
           name: ComponentName.Execute,
-          state: { done: false, isLoading: false },
+          state: { isLoading: false },
           props: {
             tasks: [],
             onError: vi.fn(),
@@ -334,7 +332,7 @@ describe('Execute handlers', () => {
       expect(addToTimelineMock).toHaveBeenCalledWith(
         expect.objectContaining({
           name: ComponentName.Execute,
-          state: { done: true, isLoading: false },
+          state: { isLoading: false },
         }),
         expect.objectContaining({
           name: ComponentName.Feedback,
@@ -351,14 +349,14 @@ describe('Execute handlers', () => {
         ops,
         handleAbortedMock as (operationName: string) => void
       );
-      handlers.onAborted(0);
+      handlers.onAborted('execution', 0);
 
       const queueUpdater = getQueueUpdater();
       queueUpdater([
         {
           id: '123',
           name: ComponentName.Execute,
-          state: { done: false, isLoading: false },
+          state: { isLoading: false },
           props: {
             tasks: [],
             onError: vi.fn(),
