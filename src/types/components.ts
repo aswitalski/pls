@@ -70,7 +70,7 @@ export interface PlanProps extends BaseStatefulProps<PlanState> {
   tasks: Task[];
   debug?: boolean;
   onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>;
-  onAborted: (operation: string) => void;
+  onAborted?: (operation: string) => void; // TODO: Remove from tests, uses handlers now
 }
 
 export interface PlanState extends BaseState {

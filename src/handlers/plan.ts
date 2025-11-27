@@ -97,7 +97,6 @@ export function createPlanHandlers(
       const planDefinition = createPlanDefinition(
         result.message,
         result.tasks,
-        createAbortHandler(result.tasks),
         undefined
       );
 

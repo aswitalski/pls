@@ -83,10 +83,6 @@ export function Command({
 
           // Add Plan component to queue if we have tasks and handlers
           if (result.tasks.length > 0 && handlers?.addToQueue) {
-            const handleAborted = (operation: string) => {
-              handlers?.onAborted?.(operation);
-            };
-
             const handleConfirmed = (refinedTasks: Task[]) => {
               // Add Confirm component after Plan selections are complete
               if (handlers?.addToQueue) {
@@ -116,12 +112,7 @@ export function Command({
             };
 
             handlers.addToQueue(
-              createPlanDefinition(
-                result.message,
-                result.tasks,
-                handleAborted,
-                handleConfirmed
-              )
+              createPlanDefinition(result.message, result.tasks, handleConfirmed)
             );
           }
 

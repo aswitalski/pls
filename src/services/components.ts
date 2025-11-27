@@ -252,7 +252,6 @@ export function createCommandDefinition(
 export function createPlanDefinition(
   message: string,
   tasks: Task[],
-  onAborted: (operation: string) => void,
   onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>
 ): ComponentDefinition {
   return {
@@ -267,7 +266,6 @@ export function createPlanDefinition(
       message,
       tasks,
       onSelectionConfirmed,
-      onAborted,
     } as any,
   };
 }

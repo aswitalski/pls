@@ -80,7 +80,6 @@ export function Plan({
   debug = false,
   handlers,
   onSelectionConfirmed,
-  onAborted,
 }: PlanProps) {
   // isActive passed as prop
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(
@@ -129,7 +128,7 @@ export function Plan({
       }
 
       if (key.escape) {
-        onAborted('task selection');
+        handlers?.onAborted?.('task selection');
         return;
       }
 

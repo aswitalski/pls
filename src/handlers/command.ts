@@ -40,7 +40,6 @@ export function createCommandHandlers(
           const planDefinition = createPlanDefinition(
             message,
             tasks,
-            planHandlers.createAbortHandler(tasks),
             hasDefineTask ? planHandlers.onSelectionConfirmed : undefined
           );
 
