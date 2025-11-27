@@ -358,23 +358,15 @@ export function createReportDefinition(
 
 export function createAnswerDefinition(
   question: string,
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (answer: string) => void,
-  onAborted: (operation: string) => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Answer,
-    state: {
-      isLoading: true,
-    },
+    state: {},
     props: {
       question,
       service,
-      onError,
-      onComplete,
-      onAborted,
     } as any,
   };
 }

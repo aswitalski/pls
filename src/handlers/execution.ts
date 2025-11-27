@@ -74,15 +74,7 @@ export function createExecutionHandlers(
         } else if (allAnswer && tasks.length > 0) {
           const question = tasks[0].action;
           ops.addToTimeline(first);
-          return [
-            createAnswerDefinition(
-              question,
-              service,
-              taskHandlers.answer.onError,
-              taskHandlers.answer.onComplete,
-              taskHandlers.answer.onAborted
-            ),
-          ];
+          return [createAnswerDefinition(question, service)];
         } else if (allConfig && tasks.length > 0) {
           const keys = tasks
             .map((task) => task.params?.key as string | undefined)

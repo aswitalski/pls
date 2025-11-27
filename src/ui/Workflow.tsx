@@ -65,6 +65,18 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
       addToQueue: (...items: ComponentDefinition[]) => {
         setQueue((queue) => [...queue, ...items]);
       },
+      updateState: (newState: Partial<any>) => {
+        setActive((curr) => {
+          if (!curr || !('state' in curr)) return curr;
+          return {
+            ...curr,
+            state: {
+              ...curr.state,
+              ...newState,
+            },
+          } as ComponentDefinition;
+        });
+      },
     }),
     [moveActiveToTimeline]
   );

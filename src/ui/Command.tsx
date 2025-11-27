@@ -6,6 +6,7 @@ import { Task, TaskType } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
 import {
+  createAnswerDefinition,
   createConfirmDefinition,
   createIntrospectDefinition,
   createPlanDefinition,
@@ -92,12 +93,19 @@ export function Command({
                   const allIntrospect = taskTypes.every(
                     (type) => type === TaskType.Introspect
                   );
+                  const allAnswer = taskTypes.every(
+                    (type) => type === TaskType.Answer
+                  );
 
                   if (allIntrospect && service && handlers?.addToQueue) {
                     // Execute introspection
                     handlers.addToQueue(
                       createIntrospectDefinition(refinedTasks, service)
                     );
+                  } else if (allAnswer && service && handlers?.addToQueue) {
+                    // Execute answer
+                    const question = refinedTasks[0].action;
+                    handlers.addToQueue(createAnswerDefinition(question, service));
                   }
 
                   handlers?.onComplete?.();

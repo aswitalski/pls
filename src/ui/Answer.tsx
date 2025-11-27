@@ -17,21 +17,18 @@ export function Answer({
   state,
   isActive = true,
   service,
-  onError,
-  onComplete,
-  onAborted,
+  handlers,
 }: AnswerProps) {
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
+  const [answer, setAnswer] = useState<string | null>(state?.answer ?? null);
 
   useInput(
     (input, key) => {
-      if (key.escape && isLoading && isActive) {
-        setIsLoading(false);
-        onAborted('answer');
+      if (key.escape && isActive) {
+        handlers?.onAborted?.('answer');
       }
     },
-    { isActive: isLoading && isActive }
+    { isActive }
   );
 
   useEffect(() => {
@@ -43,7 +40,6 @@ export function Answer({
     // Skip processing if no service available
     if (!service) {
       setError('No service available');
-      setIsLoading(false);
       return;
     }
 
@@ -59,19 +55,20 @@ export function Answer({
 
         if (mounted) {
           // Extract answer from result
-          const answer = result.answer || '';
-          setIsLoading(false);
-          onComplete?.(answer);
+          const answerText = result.answer || '';
+          setAnswer(answerText);
+
+          // Update component state so answer persists in timeline
+          handlers?.updateState?.({ answer: answerText });
+
+          // Signal completion
+          handlers?.onComplete?.();
         }
       } catch (err) {
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
-          setIsLoading(false);
-          if (onError) {
-            onError(errorMessage);
-          } else {
-            setError(errorMessage);
-          }
+          setError(errorMessage);
+          handlers?.onError?.(errorMessage);
         }
       }
     }
@@ -81,24 +78,36 @@ export function Answer({
     return () => {
       mounted = false;
     };
-  }, [question, isActive, service, onComplete, onError]);
+  }, [question, isActive, service, handlers]);
 
-  // Return null when done (like Introspect)
-  if (!isActive || (!isLoading && !error)) {
-    return null;
-  }
+  const lines = answer ? answer.split('\n') : [];
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
-      {isLoading && (
-        <Box>
+      {isActive && !answer && !error && (
+        <Box marginLeft={1}>
           <Text color={getTextColor(isActive)}>Finding answer. </Text>
           <Spinner />
         </Box>
       )}
 
+      {answer && (
+        <>
+          <Box marginLeft={1} marginBottom={1}>
+            <Text color={getTextColor(isActive)}>{question}</Text>
+          </Box>
+          <Box flexDirection="column" paddingLeft={3}>
+            {lines.map((line, index) => (
+              <Text color={getTextColor(isActive)} key={index}>
+                {line}
+              </Text>
+            ))}
+          </Box>
+        </>
+      )}
+
       {error && (
-        <Box marginTop={1}>
+        <Box marginTop={1} marginLeft={1}>
           <Text color={Colors.Status.Error}>Error: {error}</Text>
         </Box>
       )}

@@ -14,6 +14,7 @@ export interface Handlers {
   onAborted: (operation: string) => void;
   onError: (error: string) => void;
   addToQueue?: (...items: ComponentDefinition[]) => void;
+  updateState?: (state: Partial<BaseState>) => void;
 }
 
 // Base state interface - all stateful components extend this
@@ -111,9 +112,6 @@ export interface IntrospectProps extends BaseStatefulProps<IntrospectState> {
 export interface AnswerProps extends BaseStatefulProps<AnswerState> {
   question: string;
   service?: LLMService;
-  onError?: (error: string) => void;
-  onComplete?: (answer: string) => void;
-  onAborted: (operation: string) => void;
 }
 
 export interface AnswerDisplayProps {
@@ -151,8 +149,8 @@ export interface IntrospectState extends BaseState {
 }
 
 export interface AnswerState extends BaseState {
-  isLoading?: boolean;
   error?: string;
+  answer?: string;
 }
 
 export interface ExecuteState extends BaseState {
