@@ -199,11 +199,25 @@ export function Plan({
         setCompletedSelections(newCompletedSelections);
 
         if (hasMoreGroups) {
+          // Save state before advancing to next group
+          if (state) {
+            state.highlightedIndex = null;
+            state.currentDefineGroupIndex = currentDefineGroupIndex + 1;
+            state.completedSelections = newCompletedSelections;
+          }
+
           // Advance to next group
           setCurrentDefineGroupIndex(currentDefineGroupIndex + 1);
           setHighlightedIndex(null);
         } else {
-          // Last group - clear highlight to show Execute color
+          // Last group - save state before completion
+          if (state) {
+            state.highlightedIndex = null;
+            state.currentDefineGroupIndex = currentDefineGroupIndex;
+            state.completedSelections = newCompletedSelections;
+          }
+
+          // Clear highlight to show Execute color
           setHighlightedIndex(null);
 
           // Build refined task list with only selected options (no discarded or ignored ones)

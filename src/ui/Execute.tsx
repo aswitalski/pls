@@ -144,30 +144,32 @@ export function Execute({
   state,
   isActive = true,
   service,
-  onError,
-  onComplete,
-  onAborted,
+  handlers,
 }: ExecuteProps) {
   // isActive passed as prop
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
+  const [error, setError] = useState<string | null>(state?.error ?? null);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [commandStatuses, setCommandStatuses] = useState<CommandState[]>([]);
-  const [message, setMessage] = useState<string>('');
+  const [commandStatuses, setCommandStatuses] = useState<CommandState[]>(
+    (state?.commandStatuses as CommandState[]) ?? []
+  );
+  const [message, setMessage] = useState<string>(state?.message ?? '');
   const [currentElapsed, setCurrentElapsed] = useState<number>(0);
   const [runningIndex, setRunningIndex] = useState<number | null>(null);
   const [outputs, setOutputs] = useState<CommandOutput[]>([]);
+  const [hasProcessed, setHasProcessed] = useState(false);
+
+  // Derive loading state from current conditions
+  const isLoading = isActive && commandStatuses.length === 0 && !error && !isExecuting && !hasProcessed;
 
   useInput(
-    (input, key) => {
+    (_, key) => {
       if (key.escape && (isLoading || isExecuting) && isActive) {
-        setIsLoading(false);
         setIsExecuting(false);
         setRunningIndex(null);
         // Mark any running command as aborted when cancelled
         const now = Date.now();
-        setCommandStatuses((prev) =>
-          prev.map((item) => {
+        setCommandStatuses((prev) => {
+          const updated = prev.map((item) => {
             if (item.status === ExecutionStatus.Running) {
               const elapsed = item.startTime
                 ? Math.floor((now - item.startTime) / 1000) * 1000
@@ -180,9 +182,18 @@ export function Execute({
               };
             }
             return item;
-          })
-        );
-        onAborted('execution', calculateTotalElapsed(commandStatuses));
+          });
+
+          // Save state after updating
+          if (state) {
+            state.commandStatuses = updated;
+            state.message = message;
+          }
+
+          return updated;
+        });
+
+        handlers?.onAborted?.('execution');
       }
     },
     { isActive: (isLoading || isExecuting) && isActive }
@@ -209,8 +220,15 @@ export function Execute({
   useEffect(() => {
     if (isExecuting || commandStatuses.length === 0 || !outputs.length) return;
 
-    onComplete?.(outputs, calculateTotalElapsed(commandStatuses));
-  }, [isExecuting, commandStatuses, outputs, onComplete]);
+    // Save state before completing
+    if (state) {
+      state.message = message;
+      state.commandStatuses = commandStatuses;
+      state.error = error;
+    }
+
+    handlers?.onComplete?.();
+  }, [isExecuting, commandStatuses, outputs, handlers, state, message, error]);
 
   useEffect(() => {
     if (!isActive) {
@@ -219,7 +237,6 @@ export function Execute({
 
     if (!service) {
       setError('No service available');
-      setIsLoading(false);
       return;
     }
 
@@ -253,9 +270,16 @@ export function Execute({
         if (!mounted) return;
 
         if (!result.commands || result.commands.length === 0) {
-          setIsLoading(false);
           setOutputs([]);
-          onComplete?.([], 0);
+          setHasProcessed(true);
+
+          // Save state before completing
+          if (state) {
+            state.message = result.message;
+            state.commandStatuses = [];
+          }
+
+          handlers?.onComplete?.();
           return;
         }
 
@@ -275,7 +299,6 @@ export function Execute({
           }))
         );
 
-        setIsLoading(false);
         setIsExecuting(true);
 
         // Execute commands sequentially
@@ -338,13 +361,16 @@ export function Execute({
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
-          setIsLoading(false);
           setIsExecuting(false);
-          if (onError) {
-            onError(errorMessage);
-          } else {
-            setError(errorMessage);
+          setError(errorMessage);
+          setHasProcessed(true);
+
+          // Save error state
+          if (state) {
+            state.error = errorMessage;
           }
+
+          handlers?.onError?.(errorMessage);
         }
       }
     }
@@ -354,7 +380,7 @@ export function Execute({
     return () => {
       mounted = false;
     };
-  }, [tasks, isActive, service, onComplete, onError]);
+  }, [tasks, isActive, service, handlers]);
 
   // Return null only when loading completes with no commands
   if (!isActive && commandStatuses.length === 0 && !error) {

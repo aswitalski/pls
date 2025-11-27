@@ -211,15 +211,7 @@ export function createExecutionHandlers(
 
           // No missing config - execute directly
           ops.addToTimeline(first);
-          return [
-            createExecuteDefinition(
-              tasks,
-              service,
-              taskHandlers.execute.onError,
-              taskHandlers.execute.onComplete,
-              taskHandlers.execute.onAborted
-            ),
-          ];
+          return [createExecuteDefinition(tasks, service)];
         } else {
           ops.addToTimeline(
             first,

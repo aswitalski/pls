@@ -430,23 +430,15 @@ export function markAsDone(
 
 export function createExecuteDefinition(
   tasks: Task[],
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (outputs: CommandOutput[], totalElapsed: number) => void,
-  onAborted: (operation: string, elapsedTime: number) => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Execute,
-    state: {
-      isLoading: true,
-    },
+    state: {},
     props: {
       tasks,
       service,
-      onError,
-      onComplete,
-      onAborted,
     } as any,
   };
 }

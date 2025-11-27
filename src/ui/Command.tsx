@@ -4,10 +4,11 @@ import { Box, Text } from 'ink';
 import { CommandProps } from '../types/components.js';
 import { Task, TaskType } from '../types/types.js';
 
-import { Colors, getTextColor } from '../services/colors.js';
+import { Colors } from '../services/colors.js';
 import {
   createAnswerDefinition,
   createConfirmDefinition,
+  createExecuteDefinition,
   createIntrospectDefinition,
   createPlanDefinition,
 } from '../services/components.js';
@@ -29,13 +30,9 @@ export function Command({
   handlers,
 }: CommandProps) {
   const [error, setError] = useState<string | null>(null);
-  const [resultMessage, setResultMessage] = useState<string | null>(
-    state?.message ?? null
-  );
-  const [resultTasks, setResultTasks] = useState<Task[]>(state?.tasks ?? []);
 
   useInput(
-    (input, key) => {
+    (_, key) => {
       if (key.escape && isActive) {
         handlers?.onAborted?.('request');
       }
@@ -79,47 +76,57 @@ export function Command({
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
-          setResultMessage(result.message);
-          setResultTasks(result.tasks);
+          // Save result to state for timeline display
+          if (state) {
+            state.message = result.message;
+            state.tasks = result.tasks;
+          }
 
-          // Add Plan component to queue if we have tasks and handlers
-          if (result.tasks.length > 0 && handlers?.addToQueue) {
+          // Add Plan component to queue if we have tasks, handlers, and service
+          if (result.tasks.length > 0 && handlers?.addToQueue && service) {
+            const { addToQueue, onComplete, onAborted } = handlers;
+
             const handleConfirmed = (refinedTasks: Task[]) => {
-              // Add Confirm component after Plan selections are complete
-              if (handlers?.addToQueue) {
-                const onConfirmed = () => {
-                  // Check task types and route to appropriate handler
-                  const taskTypes = refinedTasks.map((t) => t.type);
-                  const allIntrospect = taskTypes.every(
-                    (type) => type === TaskType.Introspect
+              // Check task types and route to appropriate handler
+              const taskTypes = refinedTasks.map((t) => t.type);
+              const allIntrospect = taskTypes.every(
+                (type) => type === TaskType.Introspect
+              );
+              const allAnswer = taskTypes.every(
+                (type) => type === TaskType.Answer
+              );
+              const allExecute = taskTypes.every(
+                (type) => type === TaskType.Execute
+              );
+
+              const onConfirmed = () => {
+                if (allIntrospect) {
+                  // Execute introspection
+                  addToQueue(
+                    createIntrospectDefinition(refinedTasks, service)
                   );
-                  const allAnswer = taskTypes.every(
-                    (type) => type === TaskType.Answer
+                } else if (allAnswer) {
+                  // Execute answer
+                  const question = refinedTasks[0].action;
+                  addToQueue(createAnswerDefinition(question, service));
+                } else if (allExecute) {
+                  // Execute tasks
+                  addToQueue(
+                    createExecuteDefinition(refinedTasks, service)
                   );
+                }
 
-                  if (allIntrospect && service && handlers?.addToQueue) {
-                    // Execute introspection
-                    handlers.addToQueue(
-                      createIntrospectDefinition(refinedTasks, service)
-                    );
-                  } else if (allAnswer && service && handlers?.addToQueue) {
-                    // Execute answer
-                    const question = refinedTasks[0].action;
-                    handlers.addToQueue(createAnswerDefinition(question, service));
-                  }
+                onComplete();
+              };
 
-                  handlers?.onComplete?.();
-                };
+              const onCancelled = () => {
+                onAborted('confirmation');
+              };
 
-                const onCancelled = () => {
-                  handlers?.onAborted?.('confirmation');
-                };
-
-                handlers.addToQueue(createConfirmDefinition(onConfirmed, onCancelled));
-              }
+              addToQueue(createConfirmDefinition(onConfirmed, onCancelled));
             };
 
-            handlers.addToQueue(
+            addToQueue(
               createPlanDefinition(result.message, result.tasks, handleConfirmed)
             );
           }

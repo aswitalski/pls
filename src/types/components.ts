@@ -121,9 +121,6 @@ export interface AnswerDisplayProps {
 export interface ExecuteProps extends BaseStatefulProps<ExecuteState> {
   tasks: Task[];
   service?: LLMService;
-  onError?: (error: string) => void;
-  onComplete?: (outputs: CommandOutput[], totalElapsed: number) => void;
-  onAborted: (operation: string, elapsedTime: number) => void;
 }
 
 export interface ValidateProps extends BaseStatefulProps<ValidateState> {
@@ -154,8 +151,17 @@ export interface AnswerState extends BaseState {
 }
 
 export interface ExecuteState extends BaseState {
-  isLoading?: boolean;
-  error?: string;
+  error?: string | null;
+  message?: string;
+  commandStatuses?: Array<{
+    label: string;
+    command: { description: string; command: string };
+    status: string;
+    output?: unknown;
+    startTime?: number;
+    endTime?: number;
+    elapsed?: number;
+  }>;
 }
 
 export interface ValidateState extends BaseState {

@@ -136,16 +136,7 @@ export function createConfigExecutionFinishedHandler(
 
         // If tasks are provided, continue with execution
         if (tasks && service && executeHandlers) {
-          return [
-            ...rest,
-            createExecuteDefinition(
-              tasks,
-              service,
-              executeHandlers.onError,
-              executeHandlers.onComplete,
-              executeHandlers.onAborted
-            ),
-          ];
+          return [...rest, createExecuteDefinition(tasks, service)];
         }
 
         // Otherwise, exit (legacy behavior for initial setup)

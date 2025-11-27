@@ -58,8 +58,8 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { isLoading: false },
-          props: { tasks: [], onAborted: vi.fn() },
+          state: {},
+          props: { tasks: [] },
         },
       ];
 
@@ -92,8 +92,8 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { isLoading: false },
-          props: { tasks: [], onAborted: vi.fn() },
+          state: {},
+          props: { tasks: [] },
         },
       ];
 
@@ -149,8 +149,8 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { isLoading: false },
-          props: { tasks: [], onAborted: vi.fn() },
+          state: {},
+          props: { tasks: [] },
         },
       ];
 
@@ -199,8 +199,8 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { isLoading: false },
-          props: { tasks: [], onAborted: vi.fn() },
+          state: {},
+          props: { tasks: [] },
         },
       ];
 
@@ -238,8 +238,8 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { isLoading: false },
-          props: { tasks: [], onAborted: vi.fn() },
+          state: {},
+          props: { tasks: [] },
         },
       ];
 
@@ -276,8 +276,8 @@ describe('Execute handlers', () => {
         {
           id: 'execute-1',
           name: ComponentName.Execute,
-          state: { isLoading: false },
-          props: { tasks: [], onAborted: vi.fn() },
+          state: {},
+          props: { tasks: [] },
         },
       ];
 
@@ -318,12 +318,9 @@ describe('Execute handlers', () => {
         {
           id: '123',
           name: ComponentName.Execute,
-          state: { isLoading: false },
+          state: {},
           props: {
             tasks: [],
-            onError: vi.fn(),
-            onComplete: vi.fn(),
-            onAborted: vi.fn(),
           },
         },
       ]);
@@ -356,12 +353,9 @@ describe('Execute handlers', () => {
         {
           id: '123',
           name: ComponentName.Execute,
-          state: { isLoading: false },
+          state: {},
           props: {
             tasks: [],
-            onError: vi.fn(),
-            onComplete: vi.fn(),
-            onAborted: vi.fn(),
           },
         },
       ]);

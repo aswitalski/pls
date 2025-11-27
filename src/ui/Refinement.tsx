@@ -9,14 +9,12 @@ import { Spinner } from './Spinner.js';
 
 export const Refinement = ({
   text,
-  state,
   isActive = true,
   onAborted,
 }: RefinementProps) => {
-  // isActive passed as prop
 
   useInput(
-    (input, key) => {
+    (_, key) => {
       if (key.escape && isActive) {
         onAborted('plan refinement');
         return;
