@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Answer } from '../../src/ui/Answer.js';
 
-import { createMockAnthropicService } from '../test-utils.js';
+import {
+  createMockAnthropicService,
+  createMockHandlers,
+} from '../test-utils.js';
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({
@@ -28,16 +31,14 @@ describe('Answer component', () => {
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers()}
       />
     );
 
     expect(lastFrame()).toContain('Finding answer.');
   });
 
-  it('returns null when done', () => {
+  it('displays question and answer when done', () => {
     const service = createMockAnthropicService({
       answer: 'The 55 inch Samsung The Frame costs around $1,500.',
     });
@@ -45,39 +46,44 @@ describe('Answer component', () => {
     const { lastFrame } = render(
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
-        state={{ done: true }}
+        state={{ answer: 'The 55 inch Samsung The Frame costs around $1,500.' }}
+        isActive={false}
         service={service}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers()}
       />
     );
 
-    expect(lastFrame()).toBe('');
+    const output = lastFrame();
+    expect(output).toContain('What is the price of Samsung The Frame 55 inch?');
+    expect(output).toContain(
+      'The 55 inch Samsung The Frame costs around $1,500.'
+    );
   });
 
-  it('calls onComplete with answer when successful', async () => {
+  it('calls onComplete when successful', async () => {
     const answer = 'The 55 inch Samsung The Frame costs around $1,500.';
     const service = createMockAnthropicService({ answer });
     const onComplete = vi.fn();
 
-    render(
+    const { lastFrame } = render(
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
-        onComplete={onComplete}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers({ onComplete })}
       />
     );
 
-    // Wait for async processing (minimum 1000ms processing time)
+    // Wait for async processing
     await vi.waitFor(
       () => {
-        expect(onComplete).toHaveBeenCalledWith(answer);
+        expect(onComplete).toHaveBeenCalled();
       },
       { timeout: 500 }
     );
+
+    // Should display the answer
+    const output = lastFrame();
+    expect(output).toContain(answer);
   });
 
   it('calls onError when service fails', async () => {
@@ -89,9 +95,7 @@ describe('Answer component', () => {
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
-        onComplete={vi.fn()}
-        onError={onError}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers({ onError })}
       />
     );
 
@@ -109,9 +113,7 @@ describe('Answer component', () => {
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={undefined}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers()}
       />
     );
 
@@ -131,15 +133,13 @@ describe('Answer component', () => {
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={onAborted}
+        handlers={createMockHandlers({ onAborted })}
       />
     );
 
     stdin.write('\x1b'); // Escape key
 
-    expect(onAborted).toHaveBeenCalled();
+    expect(onAborted).toHaveBeenCalledWith('answer');
   });
 
   it('uses withMinimumTime for UX polish', async () => {
@@ -152,9 +152,7 @@ describe('Answer component', () => {
       <Answer
         question="Quick question?"
         service={service}
-        onComplete={onComplete}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers({ onComplete })}
       />
     );
 

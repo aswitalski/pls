@@ -162,13 +162,12 @@ describe('Anthropic API key validation', () => {
     });
 
     it('rejects empty API key', () => {
-      saveAnthropicConfig({
-        key: '',
-        model: 'claude-haiku-4-5-20251001',
-      });
-
-      const result = hasValidAnthropicKey();
-      expect(result).toBe(false);
+      expect(() =>
+        saveAnthropicConfig({
+          key: '',
+          model: 'claude-haiku-4-5-20251001',
+        })
+      ).toThrow('Missing or invalid API key');
     });
 
     it('rejects API key with correct length but wrong prefix', () => {

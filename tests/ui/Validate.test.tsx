@@ -17,6 +17,37 @@ vi.mock('../../src/services/timing.js', () => ({
     .mockImplementation(async (operation) => await operation()),
 }));
 
+// Mock Config component to auto-complete when rendered
+vi.mock('../../src/ui/Config.js', () => ({
+  Config: ({
+    onFinished,
+    steps,
+  }: {
+    onFinished: (config: Record<string, string>) => void;
+    steps: unknown[];
+  }) => {
+    // Auto-complete the config with mock values
+    React.useEffect(() => {
+      const config: Record<string, string> = {};
+      onFinished(config);
+    }, [onFinished]);
+    return null;
+  },
+  StepType: {
+    Text: 'text',
+    Selection: 'selection',
+  },
+}));
+
+// Mock saveConfig to avoid file system operations in tests
+vi.mock('../../src/services/configuration.js', async () => {
+  const actual = await vi.importActual('../../src/services/configuration.js');
+  return {
+    ...actual,
+    saveConfig: vi.fn(),
+  };
+});
+
 describe('Validate component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -71,7 +102,8 @@ describe('Validate component', () => {
         <Validate
           missingConfig={missingConfig}
           userRequest="build alpha"
-          state={{ done: true }}
+          state={{}}
+          isActive={false}
           service={service}
           onComplete={vi.fn()}
           onError={vi.fn()}

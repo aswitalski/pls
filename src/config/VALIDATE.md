@@ -29,12 +29,12 @@ For each CONFIG task, create a natural language description that:
 
 ## Description Format
 
-**Format:** "Brief description" (NO {config.path} at the end!)
+**Format:** "Brief description" (DO NOT include {config.path}!)
 
 The description should:
 - Start with what the config value represents (e.g., "Path to...", "URL for...", "Name of...")
 - Be SHORT and direct - no extra details or variant explanations
-- NOT include the config path in curly brackets - that's added automatically
+- NEVER include the config path in curly brackets like {config.path}
 
 ## Examples
 
@@ -50,7 +50,7 @@ The description should:
 message: ""
 tasks: [
   {
-    action: "Path to Alpha repository {project.alpha.repo}",
+    action: "Path to Alpha repository",
     type: "config",
     params: { key: "project.alpha.repo" }
   }
@@ -69,7 +69,7 @@ tasks: [
 message: ""
 tasks: [
   {
-    action: "Staging environment URL {env.staging.url}",
+    action: "Staging environment URL",
     type: "config",
     params: { key: "env.staging.url" }
   }
@@ -88,7 +88,7 @@ tasks: [
 message: ""
 tasks: [
   {
-    action: "Path to Beta workspace {workspace.beta.path}",
+    action: "Path to Beta workspace",
     type: "config",
     params: { key: "workspace.beta.path" }
   }
@@ -98,10 +98,10 @@ tasks: [
 ## Guidelines
 
 1. **Use skill context**: Read the skill's Description section to understand what the variant represents
-2. **Be specific**: Don't just say "Repository path" - say "Alpha project repository path"
-3. **Add helpful details**: Include information from the description (e.g., "legacy implementation")
-4. **Keep it concise**: One sentence that clearly explains what's needed
-5. **Always include the path**: End with `{config.path}` for technical reference
+2. **Be specific**: Don't just say "Repository path" - say "Path to Alpha repository"
+3. **Add helpful details**: Include information from the description when relevant
+4. **Keep it concise**: One brief phrase that clearly explains what's needed
+5. **Never include the path**: Do not append `{config.path}` - it's shown separately in debug mode
 
 ## Common Config Types
 
@@ -122,7 +122,7 @@ Return a message field (can be empty string) and an array of CONFIG tasks:
 message: ""
 tasks: [
   {
-    action: "Natural description {config.path}",
+    action: "Natural description without config path",
     type: "config",
     params: { key: "config.path" }
   },
@@ -136,4 +136,5 @@ tasks: [
 - All tasks must include params.key with the config path
 - Descriptions should be helpful and contextual, not just technical
 - Use information from Available Skills section to provide context
-- Keep descriptions to one concise sentence
+- Keep descriptions to one brief phrase (3-6 words)
+- NEVER include the config path in the action/description - it's shown separately

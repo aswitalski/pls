@@ -50,6 +50,30 @@ export function getCancellationMessage(operation: string): string {
 }
 
 /**
+ * Returns an error message when the request cannot be understood.
+ * Randomly selects from variations to sound natural.
+ */
+export function getUnknownRequestMessage(): string {
+  const messages = [
+    'I do not understand the request.',
+    'I cannot understand what you want me to do.',
+    "I'm not sure what you're asking for.",
+    'I cannot determine what action to take.',
+    'This request is unclear to me.',
+    'I do not recognize this command.',
+  ];
+  return messages[Math.floor(Math.random() * messages.length)];
+}
+
+/**
+ * Returns an error message for mixed task types.
+ */
+export function getMixedTaskTypesError(types: string[]): string {
+  const typeList = types.join(', ');
+  return `Mixed task types are not supported. Found: ${typeList}. All tasks in a plan must have the same type.`;
+}
+
+/**
  * Feedback messages for various operations
  */
 export const FeedbackMessages = {

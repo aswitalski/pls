@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { Box, Text } from 'ink';
 
 import { WelcomeProps } from '../types/components.js';
@@ -67,13 +68,7 @@ function Usage() {
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Box flexDirection="column">
       <Text color={Palette.White}>{title}</Text>

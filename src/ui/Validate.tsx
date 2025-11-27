@@ -9,7 +9,9 @@ import { Colors, getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
+import { saveConfig, unflattenConfig } from '../services/configuration.js';
 
+import { Config, ConfigStep, StepType } from './Config.js';
 import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000;
@@ -18,40 +20,43 @@ export function Validate({
   missingConfig,
   userRequest,
   state,
+  isActive = true,
   service,
   children,
+  debug,
   onError,
   onComplete,
   onAborted,
+  handlers,
 }: ValidateProps) {
-  const done = state?.done ?? false;
-  const isCurrent = done === false;
+  // isActive passed as prop
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
   const [completionMessage, setCompletionMessage] = useState<string | null>(
     null
   );
+  const [configRequirements, setConfigRequirements] = useState<
+    ConfigRequirement[] | null
+  >(null);
+  const [showConfig, setShowConfig] = useState(false);
 
   useInput(
-    (input, key) => {
-      if (key.escape && isLoading && !done) {
-        setIsLoading(false);
-        onAborted();
+    (_, key) => {
+      if (key.escape && isActive && !showConfig) {
+        onAborted('validation');
       }
     },
-    { isActive: isLoading && !done }
+    { isActive: isActive && !showConfig }
   );
 
   useEffect(() => {
-    // Skip processing if done
-    if (done) {
+    // Skip processing if not active
+    if (!isActive) {
       return;
     }
 
     // Skip processing if no service available
     if (!service) {
       setError('No service available');
-      setIsLoading(false);
       return;
     }
 
@@ -106,15 +111,25 @@ export function Validate({
           const message = messages[Math.floor(Math.random() * messages.length)];
 
           setCompletionMessage(message);
-          setIsLoading(false);
-          onComplete?.(withDescriptions);
+          setConfigRequirements(withDescriptions);
+
+          // Save state after validation completes
+          handlers?.updateState({
+            configRequirements: withDescriptions,
+            validated: true,
+          });
         }
       } catch (err) {
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
-          setIsLoading(false);
+
+          // Save error state
+          handlers?.updateState({
+            error: errorMessage,
+          });
+
           if (onError) {
             onError(errorMessage);
           } else {
@@ -132,38 +147,79 @@ export function Validate({
   }, [
     missingConfig,
     userRequest,
-    done,
+    isActive,
     service,
     onComplete,
     onError,
     onAborted,
   ]);
 
-  // Don't render when done and nothing to show
-  if (done && !completionMessage && !error && !children) {
+  // Don't render when not active and nothing to show
+  if (!isActive && !completionMessage && !error && !children) {
     return null;
   }
 
+  // Create ConfigSteps from requirements
+  const configSteps: ConfigStep[] | null = configRequirements
+    ? configRequirements.map((req) => ({
+        description: req.description || req.path,
+        key: req.path,
+        path: req.path,
+        type: StepType.Text,
+        value: null,
+        validate: () => true,
+      }))
+    : null;
+
+  const handleConfigFinished = (config: Record<string, string>) => {
+    // Convert flat dotted keys to nested structure grouped by section
+    const configBySection = unflattenConfig(config);
+
+    // Save each section
+    for (const [section, sectionConfig] of Object.entries(configBySection)) {
+      saveConfig(section, sectionConfig);
+    }
+
+    onComplete?.(configRequirements!);
+  };
+
+  const handleConfigAborted = (operation: string) => {
+    onAborted(operation);
+  };
+
   return (
     <Box alignSelf="flex-start" flexDirection="column">
-      {isLoading && (
-        <Box>
-          <Text color={getTextColor(isCurrent)}>
+      {isActive && !completionMessage && !error && (
+        <Box marginLeft={1}>
+          <Text color={getTextColor(isActive)}>
             Validating configuration requirements.{' '}
           </Text>
           <Spinner />
         </Box>
       )}
 
-      {completionMessage && !isLoading && (
-        <Box>
-          <Text color={getTextColor(isCurrent)}>{completionMessage}</Text>
+      {completionMessage && (
+        <Box marginLeft={1}>
+          <Text color={getTextColor(isActive)}>{completionMessage}</Text>
         </Box>
       )}
 
       {error && (
         <Box marginTop={1}>
           <Text color={Colors.Status.Error}>Error: {error}</Text>
+        </Box>
+      )}
+
+      {configSteps && !error && (
+        <Box marginTop={1}>
+          <Config
+            steps={configSteps}
+            isActive={isActive}
+            debug={debug}
+            onFinished={handleConfigFinished}
+            onAborted={handleConfigAborted}
+            handlers={handlers}
+          />
         </Box>
       )}
 

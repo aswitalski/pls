@@ -1,30 +1,35 @@
 import { randomUUID } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 
-import {
-  Capability,
-  ComponentDefinition,
-  StatefulComponentDefinition,
-} from '../types/components.js';
 import { App, ComponentName, FeedbackType, Task } from '../types/types.js';
+import { ConfigRequirement } from '../types/skills.js';
+import {
+  AnswerProps,
+  Capability,
+  CommandProps,
+  ComponentDefinition,
+  ConfigProps,
+  ConfirmProps,
+  ExecuteProps,
+  IntrospectProps,
+  PlanProps,
+  RefinementProps,
+  ValidateProps,
+} from '../types/components.js';
+
+import { parse as parseYaml } from 'yaml';
 
 import { LLMService } from './anthropic.js';
-import { CommandOutput } from './shell.js';
-import { ConfigRequirement } from '../types/skills.js';
 import {
   Config,
   ConfigDefinition,
+  getConfigPath,
   getConfigSchema,
   loadConfig,
 } from './configuration.js';
 import { getConfirmationMessage } from './messages.js';
 
 import { ConfigStep, StepType } from '../ui/Config.js';
-
-export function markAsDone<T extends StatefulComponentDefinition>(
-  component: T
-): T {
-  return { ...component, state: { ...component.state, done: true } };
-}
 
 export function createWelcomeDefinition(app: App): ComponentDefinition {
   return {
@@ -42,7 +47,10 @@ export function createConfigSteps(): ConfigStep[] {
 /**
  * Get current config value for a dotted key path
  */
-function getConfigValue(config: Config | null, key: string): unknown {
+function getConfigValue(
+  config: Config | Record<string, unknown> | null,
+  key: string
+): unknown {
   if (!config) return undefined;
 
   const parts = key.split('.');
@@ -85,29 +93,47 @@ function getValidator(
 export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
   const schema = getConfigSchema();
   let currentConfig: Config | null = null;
+  let rawConfig: Record<string, unknown> | null = null;
 
+  // Load validated config (may fail if config has validation errors)
   try {
     currentConfig = loadConfig();
   } catch {
-    // Config doesn't exist yet, use defaults
+    // Config doesn't exist or has validation errors, use defaults
+  }
+
+  // Load raw config separately (for discovered keys not in schema)
+  try {
+    const configFile = getConfigPath();
+    if (existsSync(configFile)) {
+      const content = readFileSync(configFile, 'utf-8');
+      rawConfig = parseYaml(content) as Record<string, unknown>;
+    }
+  } catch {
+    // Config file doesn't exist or can't be parsed
   }
 
   return keys.map((key) => {
     // Check if key is in schema (built-in config)
     if (!(key in schema)) {
-      // Key is not in schema - it's from a skill
-      // Create a simple text step with placeholder description
+      // Key is not in schema - it's from a skill or discovered config
+      // Create a simple text step with the full path as description
       const keyParts = key.split('.');
       const shortKey = keyParts[keyParts.length - 1];
-      const description = keyParts
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ');
+
+      // Load current value if it exists (use rawConfig since discovered keys aren't in validated config)
+      const currentValue = getConfigValue(rawConfig, key);
+      const value =
+        currentValue !== undefined && typeof currentValue === 'string'
+          ? currentValue
+          : null;
 
       return {
-        description: `${description} {${key}}`,
+        description: key,
         key: shortKey,
+        path: key,
         type: StepType.Text,
-        value: null,
+        value,
         validate: () => true, // Accept any string for now
       };
     }
@@ -131,6 +157,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Text,
           value,
           validate: getValidator(definition),
@@ -148,6 +175,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Text,
           value,
           validate: getValidator(definition),
@@ -167,6 +195,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Selection,
           options: definition.values.map((value) => ({
             label: value,
@@ -186,6 +215,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Selection,
           options: [
             { label: 'Yes', value: 'true' },
@@ -201,17 +231,17 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
 
 export function createConfigDefinition(
   onFinished: (config: Record<string, string>) => void,
-  onAborted: () => void
+  onAborted: (operation: string) => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Config,
-    state: { done: false },
+    state: {},
     props: {
       steps: createConfigSteps(),
       onFinished,
       onAborted,
-    },
+    } satisfies ConfigProps,
   };
 }
 
@@ -221,55 +251,44 @@ export function createConfigDefinition(
 export function createConfigDefinitionWithKeys(
   keys: string[],
   onFinished: (config: Record<string, string>) => void,
-  onAborted: () => void
+  onAborted: (operation: string) => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Config,
-    state: { done: false },
+    state: {},
     props: {
       steps: createConfigStepsFromSchema(keys),
       onFinished,
       onAborted,
-    },
+    } satisfies ConfigProps,
   };
 }
 
 export function createCommandDefinition(
   command: string,
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (message: string, tasks: Task[]) => void,
-  onAborted: () => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Command,
-    state: {
-      done: false,
-      isLoading: true,
-    },
+    state: {},
     props: {
       command,
       service,
-      onError,
-      onComplete,
-      onAborted,
-    },
+    } satisfies CommandProps,
   };
 }
 
 export function createPlanDefinition(
   message: string,
   tasks: Task[],
-  onAborted: () => void,
   onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Plan,
     state: {
-      done: false,
       highlightedIndex: null,
       currentDefineGroupIndex: 0,
       completedSelections: [],
@@ -278,8 +297,7 @@ export function createPlanDefinition(
       message,
       tasks,
       onSelectionConfirmed,
-      onAborted,
-    },
+    } satisfies PlanProps,
   };
 }
 
@@ -309,16 +327,16 @@ export function createMessage(text: string): ComponentDefinition {
 
 export function createRefinement(
   text: string,
-  onAborted: () => void
+  onAborted: (operation: string) => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Refinement,
-    state: { done: false },
+    state: {},
     props: {
       text,
       onAborted,
-    },
+    } satisfies RefinementProps,
   };
 }
 
@@ -329,36 +347,27 @@ export function createConfirmDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Confirm,
-    state: { done: false },
+    state: {},
     props: {
       message: getConfirmationMessage(),
       onConfirmed,
       onCancelled,
-    },
+    } satisfies ConfirmProps,
   };
 }
 
 export function createIntrospectDefinition(
   tasks: Task[],
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (message: string, capabilities: Capability[]) => void,
-  onAborted: () => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Introspect,
-    state: {
-      done: false,
-      isLoading: true,
-    },
+    state: {},
     props: {
       tasks,
       service,
-      onError,
-      onComplete,
-      onAborted,
-    },
+    } satisfies IntrospectProps,
   };
 }
 
@@ -378,37 +387,16 @@ export function createReportDefinition(
 
 export function createAnswerDefinition(
   question: string,
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (answer: string) => void,
-  onAborted: () => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Answer,
-    state: {
-      done: false,
-      isLoading: true,
-    },
+    state: {},
     props: {
       question,
       service,
-      onError,
-      onComplete,
-      onAborted,
-    },
-  };
-}
-
-export function createAnswerDisplayDefinition(
-  answer: string
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.AnswerDisplay,
-    props: {
-      answer,
-    },
+    } satisfies AnswerProps,
   };
 }
 
@@ -416,27 +404,30 @@ export function isStateless(component: ComponentDefinition): boolean {
   return !('state' in component);
 }
 
+/**
+ * Mark a component as done. Returns the component to be added to timeline.
+ * Components use handlers.updateState to save their state before completion,
+ * so this function simply returns the component as-is.
+ */
+export function markAsDone(
+  component: ComponentDefinition
+): ComponentDefinition {
+  // State already updated via handlers.updateState
+  return component;
+}
+
 export function createExecuteDefinition(
   tasks: Task[],
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (outputs: CommandOutput[], totalElapsed: number) => void,
-  onAborted: (elapsedTime: number) => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Execute,
-    state: {
-      done: false,
-      isLoading: true,
-    },
+    state: {},
     props: {
       tasks,
       service,
-      onError,
-      onComplete,
-      onAborted,
-    },
+    } satisfies ExecuteProps,
   };
 }
 
@@ -446,15 +437,12 @@ export function createValidateDefinition(
   service: LLMService,
   onError: (error: string) => void,
   onComplete: (configWithDescriptions: ConfigRequirement[]) => void,
-  onAborted: () => void
+  onAborted: (operation: string) => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Validate,
-    state: {
-      done: false,
-      isLoading: true,
-    },
+    state: {},
     props: {
       missingConfig,
       userRequest,
@@ -462,6 +450,6 @@ export function createValidateDefinition(
       onError,
       onComplete,
       onAborted,
-    },
+    } satisfies ValidateProps,
   };
 }

@@ -3,7 +3,7 @@ import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Command } from '../../src/ui/Command.js';
-import { Keys } from '../test-utils.js';
+import { Keys, createMockHandlers } from '../test-utils.js';
 
 const { Escape } = Keys;
 
@@ -13,91 +13,71 @@ const mockOnAborted = vi.fn();
 describe('Command component error handling', () => {
   describe('Error display', () => {
     it('displays error from state', () => {
-      const result = (
+      const { lastFrame } = render(
         <Command
-          onAborted={mockOnAborted}
           command="test command"
-          state={{ done: true, isLoading: false, error: 'Test error' }}
+          state={{ error: 'Test error' }}
+          isActive={false}
         />
       );
 
-      expect(result).toBeDefined();
-      expect(result.props.state?.error).toBe('Test error');
+      expect(lastFrame()).toContain('Error: Test error');
     });
   });
 
-  describe('Loading states', () => {
-    it('displays loading state initially', () => {
-      const result = (
-        <Command
-          onAborted={mockOnAborted}
-          command="test command"
-          state={{ done: false, isLoading: true }}
-        />
-      );
+  describe('Component states', () => {
+    it('displays active state with spinner', () => {
+      const { lastFrame } = render(<Command command="test command" />);
 
-      expect(result.props.state?.isLoading).toBe(true);
-      expect(result.props.state?.done).toBe(false);
+      // Active command shows spinner
+      expect(lastFrame()).toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/);
     });
 
-    it('displays non-loading state when done', () => {
-      const result = (
-        <Command
-          onAborted={mockOnAborted}
-          command="test command"
-          state={{ done: true, isLoading: false }}
-        />
+    it('displays inactive state without spinner', () => {
+      const { lastFrame } = render(
+        <Command command="test command" isActive={false} />
       );
 
-      expect(result.props.state?.isLoading).toBe(false);
-      expect(result.props.state?.done).toBe(true);
+      // Inactive command should not show spinner
+      expect(lastFrame()).not.toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/);
     });
   });
 
   describe('Command variations', () => {
     it('renders command with special characters', () => {
-      const result = (
-        <Command
-          onAborted={mockOnAborted}
-          command="commit changes with message 'add new feature'"
-          state={{ done: true, isLoading: false }}
-        />
+      const { lastFrame } = render(
+        <Command command="commit changes with message 'add new feature'" />
       );
 
-      expect(result.props.command).toBe(
-        "commit changes with message 'add new feature'"
-      );
+      // Command should render without errors
+      expect(lastFrame()).toBeDefined();
     });
   });
 
   describe('Abort handling', () => {
-    it('calls onAborted when Esc is pressed during loading', () => {
+    it('calls onAborted when Esc is pressed', () => {
       const onAborted = vi.fn();
       const { stdin } = render(
-        <Command
-          onAborted={onAborted}
-          command="test command"
-          state={{ done: false, isLoading: true }}
-        />
+        <Command onAborted={onAborted} command="test command" />
       );
 
       stdin.write(Escape);
       expect(onAborted).toHaveBeenCalledTimes(1);
     });
 
-    it('stops loading state when aborted', () => {
-      const onAborted = vi.fn();
-      const state = { done: false, isLoading: true };
+    it('calls handler when aborted', () => {
+      const handlers = createMockHandlers();
       const { stdin } = render(
-        <Command onAborted={onAborted} command="test command" state={state} />
+        <Command
+          onAborted={vi.fn()}
+          command="test command"
+          handlers={handlers}
+        />
       );
-
-      expect(state.isLoading).toBe(true);
 
       stdin.write(Escape);
 
-      // onAborted should be called and isLoading is set to false before calling it
-      expect(onAborted).toHaveBeenCalledTimes(1);
+      expect(handlers.onAborted).toHaveBeenCalledTimes(1);
     });
 
     it('does not call onAborted when Esc is pressed after done', () => {
@@ -106,7 +86,7 @@ describe('Command component error handling', () => {
         <Command
           onAborted={onAborted}
           command="test command"
-          state={{ done: true, isLoading: false }}
+          isActive={false}
         />
       );
 

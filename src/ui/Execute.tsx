@@ -142,32 +142,39 @@ function CommandStatusDisplay({ item, elapsed }: CommandStatusDisplayProps) {
 export function Execute({
   tasks,
   state,
+  isActive = true,
   service,
-  onError,
-  onComplete,
-  onAborted,
+  handlers,
 }: ExecuteProps) {
-  const done = state?.done ?? false;
-  const isCurrent = done === false;
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
+  // isActive passed as prop
+  const [error, setError] = useState<string | null>(state?.error ?? null);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [commandStatuses, setCommandStatuses] = useState<CommandState[]>([]);
-  const [message, setMessage] = useState<string>('');
+  const [commandStatuses, setCommandStatuses] = useState<CommandState[]>(
+    (state?.commandStatuses as CommandState[]) ?? []
+  );
+  const [message, setMessage] = useState<string>(state?.message ?? '');
   const [currentElapsed, setCurrentElapsed] = useState<number>(0);
   const [runningIndex, setRunningIndex] = useState<number | null>(null);
   const [outputs, setOutputs] = useState<CommandOutput[]>([]);
+  const [hasProcessed, setHasProcessed] = useState(false);
+
+  // Derive loading state from current conditions
+  const isLoading =
+    isActive &&
+    commandStatuses.length === 0 &&
+    !error &&
+    !isExecuting &&
+    !hasProcessed;
 
   useInput(
-    (input, key) => {
-      if (key.escape && (isLoading || isExecuting) && !done) {
-        setIsLoading(false);
+    (_, key) => {
+      if (key.escape && (isLoading || isExecuting) && isActive) {
         setIsExecuting(false);
         setRunningIndex(null);
         // Mark any running command as aborted when cancelled
         const now = Date.now();
-        setCommandStatuses((prev) =>
-          prev.map((item) => {
+        setCommandStatuses((prev) => {
+          const updated = prev.map((item) => {
             if (item.status === ExecutionStatus.Running) {
               const elapsed = item.startTime
                 ? Math.floor((now - item.startTime) / 1000) * 1000
@@ -180,12 +187,21 @@ export function Execute({
               };
             }
             return item;
-          })
-        );
-        onAborted(calculateTotalElapsed(commandStatuses));
+          });
+
+          // Save state after updating
+          handlers?.updateState({
+            commandStatuses: updated,
+            message,
+          });
+
+          return updated;
+        });
+
+        handlers?.onAborted('execution');
       }
     },
-    { isActive: (isLoading || isExecuting) && !done }
+    { isActive: (isLoading || isExecuting) && isActive }
   );
 
   // Update elapsed time for running command
@@ -209,17 +225,23 @@ export function Execute({
   useEffect(() => {
     if (isExecuting || commandStatuses.length === 0 || !outputs.length) return;
 
-    onComplete?.(outputs, calculateTotalElapsed(commandStatuses));
-  }, [isExecuting, commandStatuses, outputs, onComplete]);
+    // Save state before completing
+    handlers?.updateState({
+      message,
+      commandStatuses,
+      error,
+    });
+
+    handlers?.onComplete();
+  }, [isExecuting, commandStatuses, outputs, handlers, message, error]);
 
   useEffect(() => {
-    if (done) {
+    if (!isActive) {
       return;
     }
 
     if (!service) {
       setError('No service available');
-      setIsLoading(false);
       return;
     }
 
@@ -253,9 +275,16 @@ export function Execute({
         if (!mounted) return;
 
         if (!result.commands || result.commands.length === 0) {
-          setIsLoading(false);
           setOutputs([]);
-          onComplete?.([], 0);
+          setHasProcessed(true);
+
+          // Save state before completing
+          handlers?.updateState({
+            message: result.message,
+            commandStatuses: [],
+          });
+
+          handlers?.onComplete();
           return;
         }
 
@@ -275,7 +304,6 @@ export function Execute({
           }))
         );
 
-        setIsLoading(false);
         setIsExecuting(true);
 
         // Execute commands sequentially
@@ -338,13 +366,16 @@ export function Execute({
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
-          setIsLoading(false);
           setIsExecuting(false);
-          if (onError) {
-            onError(errorMessage);
-          } else {
-            setError(errorMessage);
-          }
+          setError(errorMessage);
+          setHasProcessed(true);
+
+          // Save error state
+          handlers?.updateState({
+            error: errorMessage,
+          });
+
+          handlers?.onError(errorMessage);
         }
       }
     }
@@ -354,30 +385,30 @@ export function Execute({
     return () => {
       mounted = false;
     };
-  }, [tasks, done, service, onComplete, onError]);
+  }, [tasks, isActive, service, handlers]);
 
   // Return null only when loading completes with no commands
-  if (done && commandStatuses.length === 0 && !error) {
+  if (!isActive && commandStatuses.length === 0 && !error) {
     return null;
   }
 
-  // Show completed steps when done
-  const showCompletedSteps = done && commandStatuses.length > 0;
+  // Show completed steps when not active
+  const showCompletedSteps = !isActive && commandStatuses.length > 0;
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
       {isLoading && (
-        <Box>
-          <Text color={getTextColor(isCurrent)}>Preparing commands. </Text>
+        <Box marginLeft={1}>
+          <Text color={getTextColor(isActive)}>Preparing commands. </Text>
           <Spinner />
         </Box>
       )}
 
       {(isExecuting || showCompletedSteps) && (
-        <Box flexDirection="column">
+        <Box flexDirection="column" marginLeft={1}>
           {message && (
             <Box marginBottom={1}>
-              <Text color={getTextColor(isCurrent)}>{message}</Text>
+              <Text color={getTextColor(isActive)}>{message}</Text>
               {isExecuting && (
                 <Text>
                   {' '}

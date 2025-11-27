@@ -6,7 +6,10 @@ import { TaskType } from '../../src/types/types.js';
 
 import { Execute } from '../../src/ui/Execute.js';
 
-import { createMockAnthropicService } from '../test-utils.js';
+import {
+  createMockAnthropicService,
+  createMockHandlers,
+} from '../test-utils.js';
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({
@@ -91,16 +94,14 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers()}
       />
     );
 
     expect(lastFrame()).toContain('Preparing commands.');
   });
 
-  it('returns null when done with no commands', () => {
+  it('returns null when done with no commands', async () => {
     const service = createMockAnthropicService({
       message: '',
       commands: [],
@@ -111,18 +112,18 @@ describe('Execute component', () => {
     const { lastFrame } = render(
       <Execute
         tasks={tasks}
-        state={{ done: true }}
+        state={{}}
         service={service}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers()}
       />
     );
 
-    expect(lastFrame()).toBe('');
+    await vi.waitFor(() => {
+      expect(lastFrame()).toBe('');
+    });
   });
 
-  it('calls onComplete with outputs when successful', async () => {
+  it('calls onComplete when successful', async () => {
     const service = createMockAnthropicService({
       message: 'Setting up project.',
       commands: [
@@ -141,9 +142,7 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        onComplete={onComplete}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers({ onComplete })}
       />
     );
 
@@ -153,11 +152,6 @@ describe('Execute component', () => {
       },
       { timeout: 500 }
     );
-
-    const outputs = onComplete.mock.calls[0][0];
-    expect(outputs).toHaveLength(2);
-    expect(outputs[0].description).toBe('Create directory');
-    expect(outputs[1].description).toBe('Initialize git');
   });
 
   it('calls onError when service fails', async () => {
@@ -171,9 +165,7 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        onComplete={vi.fn()}
-        onError={onError}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers({ onError })}
       />
     );
 
@@ -192,9 +184,7 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={undefined}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers()}
       />
     );
 
@@ -216,9 +206,7 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={onAborted}
+        handlers={createMockHandlers({ onAborted })}
       />
     );
 
@@ -227,7 +215,7 @@ describe('Execute component', () => {
     expect(onAborted).toHaveBeenCalled();
   });
 
-  it('calculates elapsed time when aborting execution', async () => {
+  it('calls onAborted when aborting execution', async () => {
     const service = createMockAnthropicService({
       message: 'Processing.',
       commands: [{ description: 'Long task', command: 'sleep 10' }],
@@ -240,9 +228,7 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={onAborted}
+        handlers={createMockHandlers({ onAborted })}
       />
     );
 
@@ -258,11 +244,8 @@ describe('Execute component', () => {
     // Abort during execution
     stdin.write('\x1b'); // Escape key
 
-    // Should have called onAborted with elapsed time
+    // Should have called onAborted
     expect(onAborted).toHaveBeenCalled();
-    const elapsedTime = onAborted.mock.calls[0][0];
-    expect(typeof elapsedTime).toBe('number');
-    expect(elapsedTime).toBeGreaterThanOrEqual(0);
   });
 
   it('sets command status to aborted when cancelled', async () => {
@@ -278,9 +261,7 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={onAborted}
+        handlers={createMockHandlers({ onAborted })}
       />
     );
 
@@ -295,15 +276,11 @@ describe('Execute component', () => {
 
     stdin.write('\x1b'); // Escape key
 
-    // onAborted should be called with elapsed time
-    expect(onAborted).toHaveBeenCalled();
-    const elapsedTime = onAborted.mock.calls[0][0];
-    expect(typeof elapsedTime).toBe('number');
-    // Elapsed time should be non-negative (0 or positive)
-    expect(elapsedTime).toBeGreaterThanOrEqual(0);
+    // onAborted should be called with operation name
+    expect(onAborted).toHaveBeenCalledWith('execution');
   });
 
-  it('calls onComplete with empty outputs when no commands returned', async () => {
+  it('calls onComplete when no commands returned', async () => {
     const service = createMockAnthropicService({
       message: '',
       commands: [],
@@ -316,15 +293,13 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        onComplete={onComplete}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers({ onComplete })}
       />
     );
 
     await vi.waitFor(
       () => {
-        expect(onComplete).toHaveBeenCalledWith([], 0);
+        expect(onComplete).toHaveBeenCalled();
       },
       { timeout: 500 }
     );
@@ -354,9 +329,7 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers()}
       />
     );
 
@@ -397,9 +370,7 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        onComplete={vi.fn()}
-        onError={vi.fn()}
-        onAborted={vi.fn()}
+        handlers={createMockHandlers()}
       />
     );
 

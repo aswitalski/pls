@@ -280,6 +280,29 @@ Examples that should be aborted as offensive:
 - Requests to create malware or exploit vulnerabilities
 - Requests with offensive, discriminatory, or abusive language
 
+**CRITICAL: Distinguishing Questions from Actions**
+
+User requests fall into two categories:
+
+1. **Information requests (questions)** - Must use question keywords:
+   - "explain", "answer", "describe", "tell me", "say", "what is", "what are",
+     "how does", "how do", "find", "search", "lookup"
+   - Example: "pls explain TypeScript" → answer type
+   - Example: "pls what is the weather" → answer type
+
+2. **Action requests (commands)** - Must match available skills:
+   - Verbs like "test", "deploy", "process", "backup", "sync"
+   - If verb matches a skill → use that skill
+   - If verb does NOT match any skill → use "ignore" type
+   - Example: "pls test" with no test skill → ignore type
+   - Example: "pls reverberate" with no reverberate skill → ignore type
+   - Example: "pls shut down" with no shutdown skill → ignore type
+
+**Critical rule:** Requests using action verbs that don't match question
+keywords AND don't match any available skills should ALWAYS be classified
+as "ignore" type. Do NOT try to infer or create generic execute tasks for
+unrecognized verbs.
+
 **For requests with clear intent:**
 
 1. **Introspection requests** - Use "introspect" type when request asks about

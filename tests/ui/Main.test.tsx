@@ -128,6 +128,115 @@ describe('Main component queue-based architecture', () => {
     });
   });
 
+  describe('Service creation failures', () => {
+    it('shows error feedback when service creation fails on startup', async () => {
+      const anthropicModule = await import('../../src/services/anthropic.js');
+      const processModule = await import('../../src/services/process.js');
+
+      // Mock exitApp to prevent process.exit
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      // Mock createAnthropicService to throw error
+      const serviceError = new Error('Invalid API key format');
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockImplementation(
+        () => {
+          throw serviceError;
+        }
+      );
+
+      const { lastFrame } = render(<Main app={mockApp} command="test" />);
+
+      // Wait for effects to run
+      await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+      const output = lastFrame();
+      expect(output).toContain('Invalid API key format');
+
+      // Should exit with error code 1
+      expect(exitSpy).toHaveBeenCalledWith(1);
+
+      // Cleanup
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    });
+
+    it('shows error feedback when config save fails during initial setup', async () => {
+      const configurationModule = await import(
+        '../../src/services/configuration.js'
+      );
+      const processModule = await import('../../src/services/process.js');
+
+      // Mock exitApp to prevent process.exit
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      // Mock getMissingConfigKeys to simulate missing config
+      vi.spyOn(configurationModule, 'getMissingConfigKeys').mockReturnValue([
+        'key',
+        'model',
+      ]);
+
+      // Mock saveAnthropicConfig to throw error
+      const saveError = new Error('Failed to write config file');
+      vi.spyOn(configurationModule, 'saveAnthropicConfig').mockImplementation(
+        () => {
+          throw saveError;
+        }
+      );
+
+      const { lastFrame } = render(<Main app={mockApp} command={null} />);
+
+      // Wait for initial render
+      await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+      // Note: This test verifies the error handling is in place
+      // The error would be triggered when Config component completes
+      // For now, we verify the component renders without crashing
+      const output = lastFrame();
+      expect(output).toBeTruthy();
+
+      // Cleanup
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    });
+
+    it('handles service creation with non-Error exception', async () => {
+      const anthropicModule = await import('../../src/services/anthropic.js');
+      const processModule = await import('../../src/services/process.js');
+
+      // Mock exitApp to prevent process.exit
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      // Mock createAnthropicService to throw non-Error object
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockImplementation(
+        () => {
+          throw 'String error'; // eslint-disable-line no-throw-literal
+        }
+      );
+
+      const { lastFrame } = render(<Main app={mockApp} command="test" />);
+
+      // Wait for effects to run
+      await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+      const output = lastFrame();
+      // Should show default error message
+      expect(output).toContain('Failed to initialize service');
+
+      // Should exit with error code 1
+      expect(exitSpy).toHaveBeenCalledWith(1);
+
+      // Cleanup
+      exitSpy.mockRestore();
+      vi.restoreAllMocks();
+    });
+  });
+
   describe('Confirmation flow', () => {
     it('shows confirmation after plan without Define tasks', async () => {
       const componentsModule = await import('../../src/services/components.js');

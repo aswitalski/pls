@@ -22,10 +22,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps).toHaveLength(1);
-      expect(result.props.state?.done).toBe(false);
     });
 
     it('renders single step with default value', () => {
@@ -39,7 +38,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps[0].value).toBe(AnthropicModel.Haiku);
     });
@@ -57,7 +56,7 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{ done: false }} onFinished={onFinished} />
+        <Config steps={steps} state={{}} onFinished={onFinished} />
       );
 
       expect(result.props.onFinished).toBe(onFinished);
@@ -90,7 +89,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps).toHaveLength(3);
     });
@@ -120,7 +119,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps[0].value).toBeNull();
       expect(result.props.steps[1].value).toBe('claude-haiku-4-5-20251001');
@@ -147,7 +146,7 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{ done: false }} onFinished={onFinished} />
+        <Config steps={steps} state={{}} onFinished={onFinished} />
       );
 
       expect(result.props.onFinished).toBe(onFinished);
@@ -167,9 +166,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = (
-        <Config steps={steps} state={{ done: false }} onAborted={onAborted} />
-      );
+      const result = <Config steps={steps} state={{}} onAborted={onAborted} />;
 
       expect(result.props.onAborted).toBe(onAborted);
     });
@@ -185,7 +182,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.onAborted).toBeUndefined();
     });
@@ -203,9 +200,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: true }} />;
+      const result = <Config steps={steps} state={{}} />;
 
-      expect(result.props.state?.done).toBe(true);
+      expect(result.props.steps[0].value).toBe('sk-ant-test');
     });
 
     it('renders completed multi-step config', () => {
@@ -233,10 +230,12 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: true }} />;
+      const result = <Config steps={steps} state={{}} />;
 
-      expect(result.props.state?.done).toBe(true);
       expect(result.props.steps).toHaveLength(3);
+      expect(result.props.steps[0].value).toBe('testuser');
+      expect(result.props.steps[1].value).toBe('testpass');
+      expect(result.props.steps[2].value).toBe('test@example.com');
     });
   });
 
@@ -252,7 +251,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.onFinished).toBeUndefined();
     });
@@ -273,7 +272,7 @@ describe('Config component interaction flows', () => {
       const result = (
         <Config
           steps={steps}
-          state={{ done: false }}
+          state={{}}
           onFinished={onFinished}
           onAborted={onAborted}
         />
@@ -303,7 +302,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps[0].description).toBe('API Key (required)');
       expect(result.props.steps[1].description).toBe('Model [optional]');
@@ -320,7 +319,7 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{ done: false }} />;
+      const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps[0].value).toBe('你好世界 🌍');
     });
@@ -405,6 +404,99 @@ describe('Config component interaction flows', () => {
       // Check that Haiku (default) is visible in the UI
       const output = lastFrame();
       expect(output).toContain('Haiku 4.5');
+    });
+  });
+
+  describe('State persistence', () => {
+    it('displays all values including last one when not active', () => {
+      const steps: ConfigStep[] = [
+        {
+          description: 'opera.gx.repo',
+          key: 'repo',
+          path: 'opera.gx.repo',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
+        {
+          description: 'opera.neon.repo',
+          key: 'repo',
+          path: 'opera.neon.repo',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
+        {
+          description: 'opera.one.repo',
+          key: 'repo',
+          path: 'opera.one.repo',
+          type: StepType.Text,
+          value: null,
+          validate: mockValidate,
+        },
+      ];
+
+      const { lastFrame } = render(
+        <Config
+          steps={steps}
+          isActive={false}
+          state={{
+            values: {
+              'opera.gx.repo': '~/Developer/gx',
+              'opera.neon.repo': '~/Developer/neon',
+              'opera.one.repo': '~/Developer/one',
+            },
+            completedStep: 3,
+          }}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toContain('~/Developer/gx');
+      expect(output).toContain('~/Developer/neon');
+      expect(output).toContain('~/Developer/one');
+    });
+
+    it('uses state values when not active instead of local values', () => {
+      const steps: ConfigStep[] = [
+        {
+          description: 'First',
+          key: 'first',
+          path: 'section.first',
+          type: StepType.Text,
+          value: 'default1',
+          validate: mockValidate,
+        },
+        {
+          description: 'Second',
+          key: 'second',
+          path: 'section.second',
+          type: StepType.Text,
+          value: 'default2',
+          validate: mockValidate,
+        },
+      ];
+
+      // State values should override defaults when not active
+      const { lastFrame } = render(
+        <Config
+          steps={steps}
+          isActive={false}
+          state={{
+            values: {
+              'section.first': 'saved1',
+              'section.second': 'saved2',
+            },
+            completedStep: 2,
+          }}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toContain('saved1');
+      expect(output).toContain('saved2');
+      expect(output).not.toContain('default1');
+      expect(output).not.toContain('default2');
     });
   });
 });

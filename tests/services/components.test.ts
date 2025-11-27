@@ -68,7 +68,6 @@ describe('Component Types', () => {
       };
 
       expect(def.name).toBe(ComponentName.Config);
-      expect('state' in def && def.state.done).toBe(false);
     });
 
     it('supports multiple configuration steps', () => {
@@ -99,7 +98,7 @@ describe('Component Types', () => {
       const def: ComponentDefinition = {
         id: 'test-config-2',
         name: ComponentName.Config,
-        state: { done: false },
+        state: {},
         props: {
           steps: stepConfigs,
         },
@@ -138,7 +137,7 @@ describe('Component Types', () => {
       const def: ComponentDefinition = {
         id: 'test-config-3',
         name: ComponentName.Config,
-        state: { done: false },
+        state: {},
         props,
       };
 
@@ -148,10 +147,7 @@ describe('Component Types', () => {
 
   describe('Command component definition', () => {
     it('creates valid stateful command definition', () => {
-      const state: CommandState = {
-        done: false,
-        isLoading: true,
-      };
+      const state: CommandState = {};
 
       const def: ComponentDefinition = {
         id: 'test-command-1',
@@ -164,15 +160,11 @@ describe('Component Types', () => {
       };
 
       expect(def.name).toBe(ComponentName.Command);
-      expect('state' in def && def.state.done).toBe(false);
-      expect('state' in def && def.state.isLoading).toBe(true);
       expect(def.props.command).toBe('test command');
     });
 
     it('supports error state', () => {
       const state: CommandState = {
-        done: true,
-        isLoading: false,
         error: 'Test error',
       };
 
@@ -189,23 +181,21 @@ describe('Component Types', () => {
       expect('state' in def && def.state.error).toBe('Test error');
     });
 
-    it('supports optional error and children props', () => {
+    it('supports optional error prop', () => {
       const props: CommandProps = {
         command: 'test',
         error: 'Some error',
-        children: 'Test content',
         onAborted: vi.fn(),
       };
 
       const def: ComponentDefinition = {
         id: 'test-command-3',
         name: ComponentName.Command,
-        state: { done: false },
+        state: {},
         props,
       };
 
       expect(def.props.error).toBe('Some error');
-      expect(def.props.children).toBe('Test content');
     });
   });
 
@@ -227,7 +217,6 @@ describe('Component Types', () => {
       };
 
       expect(def.name).toBe(ComponentName.Confirm);
-      expect('state' in def && def.state.done).toBe(false);
       expect(def.props.message).toBe('Should I execute this plan?');
     });
 
@@ -235,7 +224,7 @@ describe('Component Types', () => {
       const def: ComponentDefinition = {
         id: 'test-confirm-2',
         name: ComponentName.Confirm,
-        state: { done: false },
+        state: {},
         props: {
           message: 'Continue?',
         },
@@ -258,7 +247,7 @@ describe('Component Types', () => {
         {
           id: 'test-config-4',
           name: ComponentName.Config,
-          state: { done: false },
+          state: {},
           props: {
             steps: [
               {
@@ -274,7 +263,7 @@ describe('Component Types', () => {
         {
           id: 'test-command-4',
           name: ComponentName.Command,
-          state: { done: false },
+          state: {},
           props: { command: 'test', onAborted: vi.fn() },
         },
       ];
@@ -288,13 +277,11 @@ describe('Component Types', () => {
           case ComponentName.Config:
             expect('state' in def).toBe(true);
             if ('state' in def) {
-              expect(def.state.done).toBeDefined();
             }
             break;
           case ComponentName.Command:
             expect('state' in def).toBe(true);
             if ('state' in def) {
-              expect(def.state.done).toBeDefined();
             }
             expect(def.props.command).toBeDefined();
             break;
@@ -304,78 +291,32 @@ describe('Component Types', () => {
   });
 
   describe('State lifecycle', () => {
-    it('tracks config component from start to done', () => {
-      const states: BaseState[] = [
-        { done: false },
-        { done: false },
-        { done: true },
-      ];
-
-      states.forEach((state, index) => {
-        const def: ComponentDefinition = {
-          id: `test-config-lifecycle-${String(index)}`,
-          name: ComponentName.Config,
-          state,
-          props: {
-            steps: [
-              {
-                description: 'Step 1',
-                key: 'step1',
-                type: StepType.Text,
-                value: null,
-                validate: () => true,
-              },
-              {
-                description: 'Step 2',
-                key: 'step2',
-                type: StepType.Text,
-                value: null,
-                validate: () => true,
-              },
-            ],
-          },
-        };
-
-        if (index < 2) {
-          expect('state' in def && def.state.done).toBe(false);
-        } else {
-          expect('state' in def && def.state.done).toBe(true);
-        }
-      });
-    });
-
-    it('tracks command component loading states', () => {
-      const loadingState: CommandState = {
-        done: false,
-        isLoading: true,
+    it('tracks command component error states', () => {
+      const errorState: CommandState = {
+        error: 'Processing failed',
       };
 
-      const completedState: CommandState = {
-        done: true,
-        isLoading: false,
-      };
+      const successState: CommandState = {};
 
-      const loadingDef: ComponentDefinition = {
-        id: 'test-command-loading',
+      const errorDef: ComponentDefinition = {
+        id: 'test-command-error',
         name: ComponentName.Command,
-        state: loadingState,
+        state: errorState,
         props: { command: 'test', onAborted: vi.fn() },
       };
 
-      const completedDef: ComponentDefinition = {
-        id: 'test-command-completed',
+      const successDef: ComponentDefinition = {
+        id: 'test-command-success',
         name: ComponentName.Command,
-        state: completedState,
+        state: successState,
         props: { command: 'test', onAborted: vi.fn() },
       };
 
-      expect('state' in loadingDef && loadingDef.state.isLoading).toBe(true);
-      expect('state' in loadingDef && loadingDef.state.done).toBe(false);
-
-      expect('state' in completedDef && completedDef.state.isLoading).toBe(
-        false
+      expect('state' in errorDef && errorDef.state.error).toBe(
+        'Processing failed'
       );
-      expect('state' in completedDef && completedDef.state.done).toBe(true);
+
+      expect('state' in successDef && successDef.state.error).toBeUndefined();
     });
   });
 
@@ -385,7 +326,6 @@ describe('Component Types', () => {
       const def = createRefinement('Processing request', onAborted);
 
       expect(def.name).toBe(ComponentName.Refinement);
-      expect('state' in def && def.state.done).toBe(false);
       if (def.name === ComponentName.Refinement) {
         expect(def.props.text).toBe('Processing request');
         expect(def.props.onAborted).toBe(onAborted);

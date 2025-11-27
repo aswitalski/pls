@@ -5,6 +5,7 @@ import { Capability, IntrospectProps } from '../types/components.js';
 import { Task } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
+import { createReportDefinition } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
@@ -56,38 +57,33 @@ function parseCapabilityFromTask(task: Task): Capability {
 export function Introspect({
   tasks,
   state,
+  isActive = true,
   service,
   children,
   debug = false,
-  onError,
-  onComplete,
-  onAborted,
+  handlers,
 }: IntrospectProps) {
-  const done = state?.done ?? false;
-  const isCurrent = done === false;
+  // isActive passed as prop
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
 
   useInput(
     (input, key) => {
-      if (key.escape && isLoading && !done) {
-        setIsLoading(false);
-        onAborted();
+      if (key.escape && isActive) {
+        handlers?.onAborted('introspection');
       }
     },
-    { isActive: isLoading && !done }
+    { isActive }
   );
 
   useEffect(() => {
-    // Skip processing if done
-    if (done) {
+    // Skip processing if not active
+    if (!isActive) {
       return;
     }
 
     // Skip processing if no service available
     if (!service) {
       setError('No service available');
-      setIsLoading(false);
       return;
     }
 
@@ -122,20 +118,33 @@ export function Introspect({
             );
           }
 
-          setIsLoading(false);
-          onComplete?.(result.message, capabilities);
+          // Save state before completing
+          handlers?.updateState({
+            capabilities,
+            message: result.message,
+          });
+
+          // Add Report component to queue
+          handlers?.addToQueue(
+            createReportDefinition(result.message, capabilities)
+          );
+
+          // Signal completion
+          handlers?.onComplete();
         }
       } catch (err) {
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
-          setIsLoading(false);
-          if (onError) {
-            onError(errorMessage);
-          } else {
-            setError(errorMessage);
-          }
+          setError(errorMessage);
+
+          // Save error state
+          handlers?.updateState({
+            error: errorMessage,
+          });
+
+          handlers?.onError(errorMessage);
         }
       }
     }
@@ -145,24 +154,24 @@ export function Introspect({
     return () => {
       mounted = false;
     };
-  }, [tasks, done, service, debug, onComplete, onError]);
+  }, [tasks, isActive, service, debug, handlers]);
 
   // Don't render wrapper when done and nothing to show
-  if (!isLoading && !error && !children) {
+  if (!isActive && !error && !children) {
     return null;
   }
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
-      {isLoading && (
-        <Box>
-          <Text color={getTextColor(isCurrent)}>Listing capabilities. </Text>
+      {isActive && (
+        <Box marginLeft={1}>
+          <Text color={getTextColor(isActive)}>Listing capabilities. </Text>
           <Spinner />
         </Box>
       )}
 
       {error && (
-        <Box marginTop={1}>
+        <Box marginTop={1} marginLeft={1}>
           <Text color={Colors.Status.Error}>Error: {error}</Text>
         </Box>
       )}

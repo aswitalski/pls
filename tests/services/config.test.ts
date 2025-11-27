@@ -450,6 +450,55 @@ config:
 
         expect(steps).toHaveLength(3);
       });
+
+      it('creates text steps for discovered keys not in schema', () => {
+        // Save some custom config that's not in the schema
+        saveConfig('custom', { mykey: 'myvalue' });
+
+        const steps = createConfigStepsFromSchema(['custom.mykey']);
+
+        expect(steps).toHaveLength(1);
+        expect(steps[0].type).toBe(StepType.Text);
+        expect(steps[0].key).toBe('mykey');
+        expect(steps[0].path).toBe('custom.mykey');
+        expect(steps[0].description).toBe('custom.mykey');
+      });
+
+      it('loads existing values for discovered config keys', () => {
+        // Save config with discovered keys
+        saveConfig('opera', {
+          gx: { repo: '~/Developer/gx' },
+          neon: { repo: '~/Developer/neon' },
+        });
+
+        const steps = createConfigStepsFromSchema([
+          'opera.gx.repo',
+          'opera.neon.repo',
+        ]);
+
+        expect(steps).toHaveLength(2);
+        expect(steps[0].type).toBe(StepType.Text);
+        if (steps[0].type === StepType.Text) {
+          expect(steps[0].value).toBe('~/Developer/gx');
+        }
+        expect(steps[0].path).toBe('opera.gx.repo');
+        expect(steps[1].type).toBe(StepType.Text);
+        if (steps[1].type === StepType.Text) {
+          expect(steps[1].value).toBe('~/Developer/neon');
+        }
+        expect(steps[1].path).toBe('opera.neon.repo');
+      });
+
+      it('uses null value for discovered keys with no existing value', () => {
+        const steps = createConfigStepsFromSchema(['nonexistent.key']);
+
+        expect(steps).toHaveLength(1);
+        expect(steps[0].type).toBe(StepType.Text);
+        if (steps[0].type === StepType.Text) {
+          expect(steps[0].value).toBeNull();
+        }
+        expect(steps[0].path).toBe('nonexistent.key');
+      });
     });
   });
 });

@@ -1,35 +1,30 @@
-import React from 'react';
 import { Box } from 'ink';
 
-import { BaseState } from '../types/components.js';
+import { RefinementProps } from '../types/components.js';
 import { useInput } from '../services/keyboard.js';
 
 import { Message } from './Message.js';
 import { Spinner } from './Spinner.js';
 
-export interface RefinementProps {
-  text: string;
-  state?: BaseState;
-  onAborted: () => void;
-}
-
-export const Refinement = ({ text, state, onAborted }: RefinementProps) => {
-  const isDone = state?.done ?? false;
-
+export const Refinement = ({
+  text,
+  isActive = true,
+  onAborted,
+}: RefinementProps) => {
   useInput(
-    (input, key) => {
-      if (key.escape && !isDone) {
-        onAborted();
+    (_, key) => {
+      if (key.escape && isActive) {
+        onAborted('plan refinement');
         return;
       }
     },
-    { isActive: !isDone }
+    { isActive }
   );
 
   return (
     <Box gap={1}>
       <Message text={text} />
-      {!isDone && <Spinner />}
+      {isActive && <Spinner />}
     </Box>
   );
 };

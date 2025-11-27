@@ -1,6 +1,11 @@
 import { existsSync, rmSync } from 'fs';
+import { vi } from 'vitest';
 
-import type { Capability } from '../src/types/components.js';
+import type {
+  Capability,
+  Handlers,
+  BaseState,
+} from '../src/types/components.js';
 import type { Task } from '../src/types/types.js';
 
 import type { ExecuteCommand, LLMService } from '../src/services/anthropic.js';
@@ -87,4 +92,25 @@ export function safeRemoveDirectory(
     // Log warning for debugging purposes
     console.warn(`Failed to clean up directory ${path}:`, error);
   }
+}
+
+/**
+ * Creates a complete mock Handlers object for testing with all required methods.
+ *
+ * @param overrides - Partial handlers to override default mocks
+ * @returns A complete Handlers mock object
+ */
+export function createMockHandlers<T extends BaseState = BaseState>(
+  overrides?: Partial<Handlers<T>>
+): Handlers<T> {
+  return {
+    onComplete: vi.fn(),
+    onAborted: vi.fn(),
+    onError: vi.fn(),
+    addToQueue: vi.fn(),
+    addToTimeline: vi.fn(),
+    completeActive: vi.fn(),
+    updateState: vi.fn(),
+    ...overrides,
+  };
 }

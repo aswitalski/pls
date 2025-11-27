@@ -1,12 +1,35 @@
-import React from 'react';
+import { ReactNode } from 'react';
 
 import { App, ComponentName, FeedbackType, Task } from './types.js';
-
-import { LLMService } from '../services/anthropic.js';
-import { CommandOutput } from '../services/shell.js';
 import { ConfigRequirement } from './skills.js';
 
+import { LLMService } from '../services/anthropic.js';
+
 import { ConfigStep } from '../ui/Config.js';
+
+// Global handlers passed to all stateful components
+export interface Handlers<TState extends BaseState = BaseState> {
+  onComplete: () => void;
+  onAborted: (operation: string) => void;
+  onError: (error: string) => void;
+  addToQueue: (...items: ComponentDefinition[]) => void;
+  addToTimeline: (...items: ComponentDefinition[]) => void;
+  completeActive: () => void;
+  updateState: (state: Partial<TState>) => void;
+}
+
+// Base state interface - all stateful components extend this
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface BaseState {
+  // Component-specific state only - no 'done' property
+}
+
+// Base props for all stateful components
+export interface BaseStatefulProps<TState extends BaseState = BaseState> {
+  state?: TState;
+  isActive?: boolean;
+  handlers?: Handlers<TState>;
+}
 
 // Props for each component type
 export interface WelcomeProps {
@@ -15,11 +38,10 @@ export interface WelcomeProps {
 
 export interface ConfigProps<
   T extends Record<string, string> = Record<string, string>,
-> {
+> extends BaseStatefulProps {
   steps: ConfigStep[];
-  state?: BaseState;
   onFinished?: (config: T) => void;
-  onAborted?: () => void;
+  onAborted?: (operation: string) => void;
 }
 
 export interface FeedbackProps {
@@ -31,30 +53,27 @@ export interface MessageProps {
   text: string;
 }
 
-export interface ConfirmProps {
+export interface ConfirmProps extends BaseStatefulProps<ConfirmState> {
   message: string;
-  state?: ConfirmState;
   onConfirmed?: () => void;
   onCancelled?: () => void;
 }
 
 export interface ConfirmState extends BaseState {
   confirmed?: boolean;
+  selectedIndex?: number;
 }
 
-export interface RefinementProps {
+export interface RefinementProps extends BaseStatefulProps {
   text: string;
-  state?: BaseState;
-  onAborted: () => void;
+  onAborted: (operation: string) => void;
 }
 
-export interface PlanProps {
+export interface PlanProps extends BaseStatefulProps<PlanState> {
   message?: string;
   tasks: Task[];
-  state?: PlanState;
   debug?: boolean;
   onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>;
-  onAborted: () => void;
 }
 
 export interface PlanState extends BaseState {
@@ -63,15 +82,11 @@ export interface PlanState extends BaseState {
   completedSelections: number[];
 }
 
-export interface CommandProps {
+export interface CommandProps extends BaseStatefulProps<CommandState> {
   command: string;
-  state?: CommandState;
   service?: LLMService;
   error?: string;
-  children?: React.ReactNode;
-  onError?: (error: string) => void;
-  onComplete?: (message: string, tasks: Task[]) => void;
-  onAborted: () => void;
+  onAborted?: (operation: string) => void;
 }
 
 export interface Capability {
@@ -86,79 +101,70 @@ export interface ReportProps {
   capabilities: Capability[];
 }
 
-export interface IntrospectProps {
+export interface IntrospectProps extends BaseStatefulProps<IntrospectState> {
   tasks: Task[];
-  state?: IntrospectState;
   service?: LLMService;
-  children?: React.ReactNode;
+  children?: ReactNode;
   debug?: boolean;
-  onError?: (error: string) => void;
-  onComplete?: (message: string, capabilities: Capability[]) => void;
-  onAborted: () => void;
 }
 
-export interface AnswerProps {
+export interface AnswerProps extends BaseStatefulProps<AnswerState> {
   question: string;
-  state?: AnswerState;
   service?: LLMService;
-  onError?: (error: string) => void;
-  onComplete?: (answer: string) => void;
-  onAborted: () => void;
 }
 
-export interface AnswerDisplayProps {
-  answer: string;
-}
-
-export interface ExecuteProps {
+export interface ExecuteProps extends BaseStatefulProps<ExecuteState> {
   tasks: Task[];
-  state?: ExecuteState;
   service?: LLMService;
-  onError?: (error: string) => void;
-  onComplete?: (outputs: CommandOutput[], totalElapsed: number) => void;
-  onAborted: (elapsedTime: number) => void;
 }
 
-export interface ValidateProps {
+export interface ValidateProps extends BaseStatefulProps<ValidateState> {
   missingConfig: ConfigRequirement[];
   userRequest: string;
-  state?: ValidateState;
   service?: LLMService;
-  children?: React.ReactNode;
+  children?: ReactNode;
+  debug?: boolean;
   onError?: (error: string) => void;
   onComplete?: (configWithDescriptions: ConfigRequirement[]) => void;
-  onAborted: () => void;
-}
-
-// Base state interface - all stateful components extend this
-export interface BaseState {
-  done: boolean;
+  onAborted: (operation: string) => void;
 }
 
 // Component-specific states
 export interface CommandState extends BaseState {
-  isLoading?: boolean;
   error?: string;
+  message?: string;
+  tasks?: Task[];
 }
 
 export interface IntrospectState extends BaseState {
-  isLoading?: boolean;
   error?: string;
+  capabilities?: Capability[];
+  message?: string;
 }
 
 export interface AnswerState extends BaseState {
-  isLoading?: boolean;
   error?: string;
+  answer?: string;
 }
 
 export interface ExecuteState extends BaseState {
-  isLoading?: boolean;
-  error?: string;
+  error?: string | null;
+  message?: string;
+  commandStatuses?: Array<{
+    label: string;
+    command: { description: string; command: string };
+    status: string;
+    output?: unknown;
+    startTime?: number;
+    endTime?: number;
+    elapsed?: number;
+  }>;
 }
 
 export interface ValidateState extends BaseState {
-  isLoading?: boolean;
   error?: string;
+  configRequirements?: ConfigRequirement[];
+  validated?: boolean;
 }
 
 // Generic base definitions with shared properties
@@ -231,10 +237,6 @@ type AnswerDefinition = StatefulDefinition<
   AnswerProps,
   AnswerState
 >;
-type AnswerDisplayDefinition = StatelessDefinition<
-  ComponentName.AnswerDisplay,
-  AnswerDisplayProps
->;
 type ExecuteDefinition = StatefulDefinition<
   ComponentName.Execute,
   ExecuteProps,
@@ -246,22 +248,12 @@ type ValidateDefinition = StatefulDefinition<
   ValidateState
 >;
 
-// Discriminated union of all component definitions
-export type ComponentDefinition =
+// Union of all stateless component definitions
+export type StatelessComponentDefinition =
   | WelcomeDefinition
-  | ConfigDefinition
   | FeedbackDefinition
   | MessageDefinition
-  | RefinementDefinition
-  | PlanDefinition
-  | CommandDefinition
-  | ConfirmDefinition
-  | IntrospectDefinition
-  | ReportDefinition
-  | AnswerDefinition
-  | AnswerDisplayDefinition
-  | ExecuteDefinition
-  | ValidateDefinition;
+  | ReportDefinition;
 
 // Union of all stateful component definitions
 export type StatefulComponentDefinition =
@@ -274,3 +266,8 @@ export type StatefulComponentDefinition =
   | AnswerDefinition
   | ExecuteDefinition
   | ValidateDefinition;
+
+// Discriminated union of all component definitions
+export type ComponentDefinition =
+  | StatelessComponentDefinition
+  | StatefulComponentDefinition;

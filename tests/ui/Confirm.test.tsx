@@ -91,7 +91,8 @@ describe('Confirm component', () => {
       const { stdin } = render(
         <Confirm
           message="Continue?"
-          state={{ done: true }}
+          state={{}}
+          isActive={false}
           onConfirmed={onConfirmed}
           onCancelled={() => {}}
         />
@@ -122,11 +123,7 @@ describe('Confirm component', () => {
   describe('State', () => {
     it('renders with done state', () => {
       const { lastFrame } = render(
-        <Confirm
-          message="Continue?"
-          state={{ done: true }}
-          onCancelled={() => {}}
-        />
+        <Confirm message="Continue?" state={{}} onCancelled={() => {}} />
       );
 
       const output = lastFrame();
@@ -136,11 +133,7 @@ describe('Confirm component', () => {
 
     it('renders with done and confirmed state', () => {
       const { lastFrame } = render(
-        <Confirm
-          message="Continue?"
-          state={{ done: true, confirmed: true }}
-          onCancelled={() => {}}
-        />
+        <Confirm message="Continue?" onCancelled={() => {}} />
       );
 
       const output = lastFrame();

@@ -1,10 +1,6 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 
-import {
-  ComponentDefinition,
-  StatefulComponentDefinition,
-} from '../types/components.js';
-import { HandlerOperations } from '../types/handlers.js';
+import { ComponentDefinition } from '../types/components.js';
 import { App, FeedbackType } from '../types/types.js';
 
 import {
@@ -13,33 +9,22 @@ import {
 } from '../services/anthropic.js';
 import {
   createCommandDefinition,
-  createConfigDefinition,
+  createConfigDefinitionWithKeys,
   createFeedback,
   createMessage,
   createWelcomeDefinition,
-  isStateless,
-  markAsDone,
 } from '../services/components.js';
 import {
   getConfigurationRequiredMessage,
-  hasValidAnthropicKey,
+  getMissingConfigKeys,
   loadConfig,
   loadDebugSetting,
+  saveAnthropicConfig,
   saveDebugSetting,
 } from '../services/configuration.js';
 import { registerGlobalShortcut } from '../services/keyboard.js';
-import { getCancellationMessage } from '../services/messages.js';
-import { exitApp } from '../services/process.js';
 
-import { createAnswerHandlers } from '../handlers/answer.js';
-import { createCommandHandlers } from '../handlers/command.js';
-import { createConfigHandlers } from '../handlers/config.js';
-import { createExecuteHandlers } from '../handlers/execute.js';
-import { createExecutionHandlers } from '../handlers/execution.js';
-import { createIntrospectHandlers } from '../handlers/introspect.js';
-import { createPlanHandlers } from '../handlers/plan.js';
-
-import { Column } from './Column.js';
+import { Workflow } from './Workflow.js';
 
 interface MainProps {
   app: App;
@@ -47,22 +32,15 @@ interface MainProps {
 }
 
 export const Main = ({ app, command }: MainProps) => {
-  const [service, setService] = React.useState<AnthropicService | null>(() => {
-    if (hasValidAnthropicKey()) {
-      const config = loadConfig();
-      return createAnthropicService(config.anthropic);
-    }
-    return null;
-  });
+  const [service, setService] = useState<AnthropicService | null>(null);
 
-  const [timeline, setTimeline] = React.useState<ComponentDefinition[]>([]);
-  const [queue, setQueue] = React.useState<ComponentDefinition[]>([]);
-  const [isDebug, setIsDebug] = React.useState<boolean>(() =>
-    loadDebugSetting()
-  );
+  const [initialQueue, setInitialQueue] = useState<
+    ComponentDefinition[] | null
+  >(null);
+  const [isDebug, setIsDebug] = useState<boolean>(() => loadDebugSetting());
 
   // Register global keyboard shortcuts
-  React.useEffect(() => {
+  useEffect(() => {
     registerGlobalShortcut('shift+tab', () => {
       setIsDebug((prev) => {
         const newValue = !prev;
@@ -72,164 +50,88 @@ export const Main = ({ app, command }: MainProps) => {
     });
   }, []);
 
-  const addToTimeline = React.useCallback((...items: ComponentDefinition[]) => {
-    setTimeline((timeline) => [...timeline, ...items]);
-  }, []);
+  // Initialize service on mount
+  useEffect(() => {
+    if (service !== null) {
+      return;
+    }
 
-  const processNextInQueue = React.useCallback(() => {
-    setQueue((currentQueue) => {
-      if (currentQueue.length === 0) return currentQueue;
+    const missingKeys = getMissingConfigKeys();
 
-      const [first, ...rest] = currentQueue;
-
-      if (isStateless(first)) {
-        addToTimeline(first);
-        return rest;
+    if (missingKeys.length === 0) {
+      // Config exists - create service immediately
+      try {
+        const config = loadConfig();
+        const newService = createAnthropicService(config.anthropic);
+        setService(newService);
+      } catch (error) {
+        // Service creation failed - show error and exit
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to initialize service';
+        setInitialQueue([createFeedback(FeedbackType.Failed, errorMessage)]);
       }
+    }
+    // If config is missing, service will be created after config completes
+  }, [service]);
 
-      return currentQueue;
-    });
-  }, [addToTimeline]);
+  // Initialize queue after service is ready
+  useEffect(() => {
+    // Only set initial queue once
+    if (initialQueue !== null) {
+      return;
+    }
 
-  // Core abort handler
-  const handleAborted = React.useCallback(
-    (operationName: string) => {
-      setQueue((currentQueue) => {
-        if (currentQueue.length === 0) return currentQueue;
-        const [first] = currentQueue;
-        if (!isStateless(first)) {
-          addToTimeline(
-            markAsDone(first as StatefulComponentDefinition),
-            createFeedback(
-              FeedbackType.Aborted,
-              getCancellationMessage(operationName)
-            )
+    const missingKeys = getMissingConfigKeys();
+
+    if (missingKeys.length > 0) {
+      // Missing config - show initial configuration flow
+      const handleConfigFinished = (config: Record<string, string>) => {
+        // Save config and create service
+        try {
+          const newConfig = saveAnthropicConfig(
+            config as { key: string; model: string }
           );
+          const newService = createAnthropicService(newConfig.anthropic);
+          setService(newService);
+        } catch (error) {
+          // Config creation failed - show error
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : 'Failed to save configuration';
+          setInitialQueue([createFeedback(FeedbackType.Failed, errorMessage)]);
         }
-        exitApp(0);
-        return [];
-      });
-    },
-    [addToTimeline]
-  );
+      };
 
-  // Create operations object
-  const ops: HandlerOperations = React.useMemo(
-    () => ({
-      addToTimeline,
-      setQueue,
-      service,
-    }),
-    [addToTimeline, service]
-  );
+      const handleConfigAborted = (operation: string) => {
+        // Config was cancelled - just exit
+      };
 
-  // Create handlers in dependency order
-  const introspectHandlers = React.useMemo(
-    () => createIntrospectHandlers(ops, handleAborted),
-    [ops, handleAborted]
-  );
-
-  const answerHandlers = React.useMemo(
-    () => createAnswerHandlers(ops, handleAborted),
-    [ops, handleAborted]
-  );
-
-  const executeHandlers = React.useMemo(
-    () => createExecuteHandlers(ops, handleAborted),
-    [ops, handleAborted]
-  );
-
-  const executionHandlers = React.useMemo(
-    () =>
-      createExecutionHandlers(ops, {
-        introspect: introspectHandlers,
-        answer: answerHandlers,
-        execute: executeHandlers,
-      }),
-    [ops, introspectHandlers, answerHandlers, executeHandlers]
-  );
-
-  const planHandlers = React.useMemo(
-    () => createPlanHandlers(ops, handleAborted, executionHandlers),
-    [ops, handleAborted, executionHandlers]
-  );
-
-  const commandHandlers = React.useMemo(
-    () =>
-      createCommandHandlers(
-        ops,
-        handleAborted,
-        planHandlers,
-        executionHandlers
-      ),
-    [ops, handleAborted, planHandlers, executionHandlers]
-  );
-
-  const configHandlers = React.useMemo(
-    () =>
-      createConfigHandlers(
-        ops,
-        handleAborted,
-        command,
-        commandHandlers,
-        setService
-      ),
-    [ops, handleAborted, command, commandHandlers]
-  );
-
-  // Initialize queue on mount
-  React.useEffect(() => {
-    const hasConfig = !!service;
-
-    if (command && hasConfig) {
-      setQueue([
-        createCommandDefinition(
-          command,
-          service,
-          commandHandlers.onError,
-          commandHandlers.onComplete,
-          commandHandlers.onAborted
-        ),
-      ]);
-    } else if (command && !hasConfig) {
-      setQueue([
-        createMessage(getConfigurationRequiredMessage()),
-        createConfigDefinition(
-          configHandlers.onFinished,
-          configHandlers.onAborted
-        ),
-      ]);
-    } else if (!command && hasConfig) {
-      setQueue([createWelcomeDefinition(app)]);
-    } else {
-      setQueue([
+      setInitialQueue([
         createWelcomeDefinition(app),
-        createMessage(getConfigurationRequiredMessage(true)),
-        createConfigDefinition(
-          configHandlers.onFinished,
-          configHandlers.onAborted
+        createMessage(getConfigurationRequiredMessage()),
+        createConfigDefinitionWithKeys(
+          missingKeys,
+          handleConfigFinished,
+          handleConfigAborted
         ),
       ]);
+    } else if (service && command) {
+      // Valid service exists and command provided - execute command
+      setInitialQueue([createCommandDefinition(command, service)]);
+    } else if (service && !command) {
+      // Valid service exists, no command - show welcome
+      setInitialQueue([createWelcomeDefinition(app)]);
     }
-  }, []);
+    // Wait for service to be initialized before setting queue
+  }, [app, command, service, initialQueue]);
 
-  // Process queue whenever it changes
-  React.useEffect(() => {
-    processNextInQueue();
-  }, [queue, processNextInQueue]);
+  // Don't render until initial queue is ready
+  if (initialQueue === null) {
+    return null;
+  }
 
-  // Exit when queue is empty and timeline has content
-  React.useEffect(() => {
-    if (queue.length === 0 && timeline.length > 0) {
-      exitApp(0);
-    }
-  }, [queue, timeline]);
-
-  const current = queue.length > 0 ? queue[0] : null;
-  const items = React.useMemo(
-    () => [...timeline, ...(current ? [current] : [])],
-    [timeline, current]
-  );
-
-  return <Column items={items} debug={isDebug} />;
+  return <Workflow initialQueue={initialQueue} debug={isDebug} />;
 };

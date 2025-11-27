@@ -42,6 +42,8 @@ Provide a direct, helpful answer following these strict formatting rules:
 - Break long sentences naturally at phrase boundaries
 - If the answer requires more than 4 lines, prioritize the most essential
   information
+- **Do NOT use citation tags** like `<cite>` or any HTML/XML markup
+- Provide direct answers in plain text only
 
 ## Examples
 
@@ -112,8 +114,10 @@ They enable cleaner, more reusable component logic.
 ❌ Including unnecessary details
 ❌ Using overly technical jargon without explanation
 ❌ Repeating the question in the answer
+❌ Using citation tags like `<cite>` or any HTML/XML markup
 
 ✅ Direct, concise answers
 ✅ Proper line breaks at natural phrase boundaries
 ✅ Essential information only
 ✅ Clear, accessible language
+✅ Plain text only - no markup tags
