@@ -25,7 +25,6 @@ describe('Config component interaction flows', () => {
       const result = <Config steps={steps} state={{}} />;
 
       expect(result.props.steps).toHaveLength(1);
-      expect(result.props.state?.done).toBe(false);
     });
 
     it('renders single step with default value', () => {
@@ -203,7 +202,7 @@ describe('Config component interaction flows', () => {
 
       const result = <Config steps={steps} state={{}} />;
 
-      expect(result.props.state?.done).toBe(true);
+      expect(result.props.steps[0].value).toBe('sk-ant-test');
     });
 
     it('renders completed multi-step config', () => {
@@ -233,8 +232,10 @@ describe('Config component interaction flows', () => {
 
       const result = <Config steps={steps} state={{}} />;
 
-      expect(result.props.state?.done).toBe(true);
       expect(result.props.steps).toHaveLength(3);
+      expect(result.props.steps[0].value).toBe('testuser');
+      expect(result.props.steps[1].value).toBe('testpass');
+      expect(result.props.steps[2].value).toBe('test@example.com');
     });
   });
 

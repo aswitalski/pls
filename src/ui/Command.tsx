@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
 import { CommandProps } from '../types/components.js';
-import { ComponentName, Task, TaskType } from '../types/types.js';
+import { Task, TaskType } from '../types/types.js';
 
 import { Colors } from '../services/colors.js';
 import {
@@ -23,7 +23,7 @@ import { ensureMinimumTime } from '../services/timing.js';
 import { Spinner } from './Spinner.js';
 import { UserQuery } from './UserQuery.js';
 
-const MIN_PROCESSING_TIME = 1000; // purely for visual effect
+const MIN_PROCESSING_TIME = 400; // purely for visual effect
 
 export function Command({
   command,
@@ -32,13 +32,15 @@ export function Command({
   service,
   children,
   handlers,
+  onAborted,
 }: CommandProps) {
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(state?.error ?? null);
 
   useInput(
     (_, key) => {
       if (key.escape && isActive) {
         handlers?.onAborted?.('request');
+        onAborted?.('request');
       }
     },
     { isActive }

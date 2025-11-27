@@ -13,49 +13,44 @@ const mockOnAborted = vi.fn();
 describe('Command component error handling', () => {
   describe('Error display', () => {
     it('displays error from state', () => {
-      const result = (
-        <Command onAborted={mockOnAborted} command="test command" />
-      );
-
-      expect(result).toBeDefined();
-      expect(result.props.state?.error).toBe('Test error');
-    });
-  });
-
-  describe('Component states', () => {
-    it('displays active state', () => {
-      const result = (
-        <Command onAborted={mockOnAborted} command="test command" />
-      );
-
-      expect(result.props.isActive).toBe(true);
-    });
-
-    it('displays inactive state when not active', () => {
-      const result = (
+      const { lastFrame } = render(
         <Command
-          onAborted={mockOnAborted}
           command="test command"
+          state={{ error: 'Test error' }}
           isActive={false}
         />
       );
 
-      expect(result.props.isActive).toBe(false);
+      expect(lastFrame()).toContain('Error: Test error');
+    });
+  });
+
+  describe('Component states', () => {
+    it('displays active state with spinner', () => {
+      const { lastFrame } = render(<Command command="test command" />);
+
+      // Active command shows spinner
+      expect(lastFrame()).toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/);
+    });
+
+    it('displays inactive state without spinner', () => {
+      const { lastFrame } = render(
+        <Command command="test command" isActive={false} />
+      );
+
+      // Inactive command should not show spinner
+      expect(lastFrame()).not.toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/);
     });
   });
 
   describe('Command variations', () => {
     it('renders command with special characters', () => {
-      const result = (
-        <Command
-          onAborted={mockOnAborted}
-          command="commit changes with message 'add new feature'"
-        />
+      const { lastFrame } = render(
+        <Command command="commit changes with message 'add new feature'" />
       );
 
-      expect(result.props.command).toBe(
-        "commit changes with message 'add new feature'"
-      );
+      // Command should render without errors
+      expect(lastFrame()).toBeDefined();
     });
   });
 
@@ -92,7 +87,7 @@ describe('Command component error handling', () => {
     it('does not call onAborted when Esc is pressed after done', () => {
       const onAborted = vi.fn();
       const { stdin } = render(
-        <Command onAborted={onAborted} command="test command" />
+        <Command onAborted={onAborted} command="test command" isActive={false} />
       );
 
       stdin.write(Escape);

@@ -72,6 +72,7 @@ describe('Validate component', () => {
           missingConfig={missingConfig}
           userRequest="build alpha"
           state={{}}
+          isActive={false}
           service={service}
           onComplete={vi.fn()}
           onError={vi.fn()}

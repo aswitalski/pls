@@ -92,6 +92,7 @@ describe('Confirm component', () => {
         <Confirm
           message="Continue?"
           state={{}}
+          isActive={false}
           onConfirmed={onConfirmed}
           onCancelled={() => {}}
         />

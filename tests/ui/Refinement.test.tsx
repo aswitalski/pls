@@ -27,6 +27,7 @@ describe('Refinement', () => {
       <Refinement
         text="Processing complete"
         state={{}}
+        isActive={false}
         onAborted={mockOnAborted}
       />
     );
@@ -60,7 +61,7 @@ describe('Refinement', () => {
   it('does not call onAborted when Escape key is pressed and done', () => {
     const onAborted = vi.fn();
     const { stdin } = render(
-      <Refinement text="Processing" state={{}} onAborted={onAborted} />
+      <Refinement text="Processing" state={{}} isActive={false} onAborted={onAborted} />
     );
 
     stdin.write(Keys.Escape);

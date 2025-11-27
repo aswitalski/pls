@@ -29,7 +29,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} done={false} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.type).toBeDefined();
@@ -62,11 +62,10 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} done={false} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.state).toBeDefined();
-    expect(result.props.def.state.done).toBe(false);
   });
 
   it('renders config component with multiple steps', () => {
@@ -101,11 +100,10 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} done={false} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.steps).toHaveLength(3);
-    expect(result.props.def.state?.done).toBe(false);
   });
 
   it('renders command component', () => {
@@ -119,7 +117,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} done={false} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.command).toBe('test command');
@@ -137,7 +135,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} done={false} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.children).toBe('Some content');
@@ -157,7 +155,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} done={false} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.error).toBe('Something went wrong');
@@ -173,7 +171,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} done={false} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     // Welcome component doesn't have state, but we verify it doesn't break
     expect(result).toBeDefined();
@@ -199,7 +197,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} done={false} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.tasks).toHaveLength(2);
@@ -216,7 +214,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} done={false} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.type).toBe(FeedbackType.Info);
@@ -232,7 +230,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} done={false} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.text).toBe('Processing your request');
@@ -250,12 +248,11 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} done={false} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.text).toBe('Loading data');
     expect(result.props.def.props.onAborted).toBe(onAborted);
-    expect(result.props.def.state.done).toBe(false);
   });
 
   it('renders all component types in sequence', () => {
@@ -328,7 +325,7 @@ describe('Component', () => {
     ];
 
     const results = definitions.map((def) => (
-      <Component def={def} done={false} debug={false} />
+      <Component def={def} isActive={true} debug={false} />
     ));
 
     expect(results).toHaveLength(7);

@@ -87,9 +87,7 @@ export interface CommandProps extends BaseStatefulProps<CommandState> {
   service?: LLMService;
   error?: string;
   children?: React.ReactNode;
-  onError?: (error: string) => void;
-  onComplete?: (message: string, tasks: Task[]) => void;
-  onAborted: (operation: string) => void;
+  onAborted?: (operation: string) => void;
 }
 
 export interface Capability {
