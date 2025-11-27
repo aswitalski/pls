@@ -239,9 +239,9 @@ export function Plan({
   });
 
   return (
-    <Box flexDirection="column" marginLeft={1}>
+    <Box flexDirection="column">
       {message && (
-        <Box marginBottom={1}>
+        <Box marginBottom={1} marginLeft={1}>
           <Label
             description={message}
             taskType={TaskType.Plan}
@@ -250,12 +250,14 @@ export function Plan({
           />
         </Box>
       )}
-      <List
-        items={listItems}
-        highlightedIndex={currentDefineTaskIndex >= 0 ? highlightedIndex : null}
-        highlightedParentIndex={currentDefineTaskIndex}
-        showType={debug}
-      />
+      <Box marginLeft={1}>
+        <List
+          items={listItems}
+          highlightedIndex={currentDefineTaskIndex >= 0 ? highlightedIndex : null}
+          highlightedParentIndex={currentDefineTaskIndex}
+          showType={debug}
+        />
+      </Box>
     </Box>
   );
 }

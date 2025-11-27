@@ -59,8 +59,8 @@ export function Confirm({
   if (!isActive) {
     // When done, show both the message and user's choice in timeline
     return (
-      <Box flexDirection="column" marginLeft={1}>
-        <Box marginBottom={1}>
+      <Box flexDirection="column">
+        <Box marginBottom={1} marginLeft={1}>
           <Text color={undefined}>{message}</Text>
         </Box>
         <UserQuery>&gt; {options[selectedIndex].label}</UserQuery>
@@ -69,13 +69,13 @@ export function Confirm({
   }
 
   return (
-    <Box flexDirection="column" marginLeft={1}>
-      <Box marginBottom={1}>
+    <Box flexDirection="column">
+      <Box marginBottom={1} marginLeft={1}>
         <Text color={isActive ? Colors.Text.Active : Colors.Text.Inactive}>
           {message}
         </Text>
       </Box>
-      <Box>
+      <Box marginLeft={1}>
         <Text color={Colors.Action.Select}>&gt;</Text>
         <Text> </Text>
         <Box>

@@ -133,11 +133,11 @@ export function Command({
   }, [command, isActive, service]);
 
   return (
-    <Box alignSelf="flex-start" flexDirection="column" marginLeft={1}>
+    <Box alignSelf="flex-start" flexDirection="column">
       {!isActive ? (
         <UserQuery>&gt; pls {command}</UserQuery>
       ) : (
-        <Box>
+        <Box marginLeft={1}>
           <Text color={Colors.Text.Active}>&gt; pls {command}</Text>
           <Text> </Text>
           <Spinner />
@@ -145,12 +145,12 @@ export function Command({
       )}
 
       {error && (
-        <Box marginTop={1}>
+        <Box marginTop={1} marginLeft={1}>
           <Text color={Colors.Status.Error}>Error: {error}</Text>
         </Box>
       )}
 
-      {children}
+      {children && <Box marginLeft={1}>{children}</Box>}
     </Box>
   );
 }
