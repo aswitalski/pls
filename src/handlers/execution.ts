@@ -70,15 +70,7 @@ export function createExecutionHandlers(
 
         if (allIntrospect && tasks.length > 0) {
           ops.addToTimeline(first);
-          return [
-            createIntrospectDefinition(
-              tasks,
-              service,
-              taskHandlers.introspect.onError,
-              taskHandlers.introspect.onComplete,
-              taskHandlers.introspect.onAborted
-            ),
-          ];
+          return [createIntrospectDefinition(tasks, service)];
         } else if (allAnswer && tasks.length > 0) {
           const question = tasks[0].action;
           ops.addToTimeline(first);

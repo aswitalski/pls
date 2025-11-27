@@ -329,10 +329,7 @@ export function createConfirmDefinition(
 
 export function createIntrospectDefinition(
   tasks: Task[],
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (message: string, capabilities: Capability[]) => void,
-  onAborted: (operation: string) => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
@@ -343,9 +340,6 @@ export function createIntrospectDefinition(
     props: {
       tasks,
       service,
-      onError,
-      onComplete,
-      onAborted,
     } as any,
   };
 }

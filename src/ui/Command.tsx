@@ -7,6 +7,7 @@ import { Task, TaskType } from '../types/types.js';
 import { Colors, getTextColor } from '../services/colors.js';
 import {
   createConfirmDefinition,
+  createIntrospectDefinition,
   createPlanDefinition,
 } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
@@ -90,6 +91,19 @@ export function Command({
               // Add Confirm component after Plan selections are complete
               if (handlers?.addToQueue) {
                 const onConfirmed = () => {
+                  // Check task types and route to appropriate handler
+                  const taskTypes = refinedTasks.map((t) => t.type);
+                  const allIntrospect = taskTypes.every(
+                    (type) => type === TaskType.Introspect
+                  );
+
+                  if (allIntrospect && service && handlers?.addToQueue) {
+                    // Execute introspection
+                    handlers.addToQueue(
+                      createIntrospectDefinition(refinedTasks, service)
+                    );
+                  }
+
                   handlers?.onComplete?.();
                 };
 
