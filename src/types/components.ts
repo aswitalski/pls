@@ -14,6 +14,8 @@ export interface Handlers {
   onAborted: (operation: string) => void;
   onError: (error: string) => void;
   addToQueue?: (...items: ComponentDefinition[]) => void;
+  addToTimeline?: (...items: ComponentDefinition[]) => void;
+  completeActive?: () => void;
   updateState?: (state: Partial<BaseState>) => void;
 }
 

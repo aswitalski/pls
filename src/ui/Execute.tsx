@@ -159,7 +159,12 @@ export function Execute({
   const [hasProcessed, setHasProcessed] = useState(false);
 
   // Derive loading state from current conditions
-  const isLoading = isActive && commandStatuses.length === 0 && !error && !isExecuting && !hasProcessed;
+  const isLoading =
+    isActive &&
+    commandStatuses.length === 0 &&
+    !error &&
+    !isExecuting &&
+    !hasProcessed;
 
   useInput(
     (_, key) => {

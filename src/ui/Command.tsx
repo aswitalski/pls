@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
 import { CommandProps } from '../types/components.js';
-import { Task, TaskType } from '../types/types.js';
+import { ComponentName, Task, TaskType } from '../types/types.js';
 
 import { Colors } from '../services/colors.js';
 import {
@@ -11,9 +11,13 @@ import {
   createExecuteDefinition,
   createIntrospectDefinition,
   createPlanDefinition,
+  createRefinement,
 } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
-import { formatErrorMessage } from '../services/messages.js';
+import {
+  getRefiningMessage,
+  formatErrorMessage,
+} from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
 
 import { Spinner } from './Spinner.js';
@@ -82,56 +86,165 @@ export function Command({
             state.tasks = result.tasks;
           }
 
-          // Add Plan component to queue if we have tasks, handlers, and service
-          if (result.tasks.length > 0 && handlers?.addToQueue && service) {
-            const { addToQueue, onComplete, onAborted } = handlers;
+          // Check if tasks contain DEFINE type (variant selection needed)
+          const hasDefineTask = result.tasks.some(
+            (task) => task.type === TaskType.Define
+          );
 
-            const handleConfirmed = (refinedTasks: Task[]) => {
-              // Check task types and route to appropriate handler
-              const taskTypes = refinedTasks.map((t) => t.type);
-              const allIntrospect = taskTypes.every(
-                (type) => type === TaskType.Introspect
-              );
-              const allAnswer = taskTypes.every(
-                (type) => type === TaskType.Answer
-              );
-              const allExecute = taskTypes.every(
-                (type) => type === TaskType.Execute
-              );
-
-              const onConfirmed = () => {
-                if (allIntrospect) {
-                  // Execute introspection
-                  addToQueue(
-                    createIntrospectDefinition(refinedTasks, service)
+          // Create Plan definition
+          const planDefinition = createPlanDefinition(
+            result.message,
+            result.tasks,
+            hasDefineTask
+              ? async (selectedTasks: Task[]) => {
+                  // Refinement flow for DEFINE tasks
+                  const refinementDef = createRefinement(
+                    getRefiningMessage(),
+                    (operation: string) => {
+                      handlers?.onAborted?.(operation);
+                    }
                   );
-                } else if (allAnswer) {
-                  // Execute answer
-                  const question = refinedTasks[0].action;
-                  addToQueue(createAnswerDefinition(question, service));
-                } else if (allExecute) {
+
+                  // Add refinement to queue
+                  handlers?.addToQueue?.(refinementDef);
+
+                  try {
+                    // Call LLM to refine plan with selected tasks
+                    const refinedCommand = selectedTasks
+                      .map((task) => {
+                        const action = task.action
+                          .toLowerCase()
+                          .replace(/,/g, ' -');
+                        const type = task.type;
+                        return `${action} (type: ${type})`;
+                      })
+                      .join(', ');
+
+                    const refinedResult = await svc!.processWithTool(
+                      refinedCommand,
+                      'plan'
+                    );
+
+                    // Complete the Refinement component
+                    handlers?.completeActive?.();
+
+                    // Create NEW Plan with refined tasks (no onSelectionConfirmed)
+                    const refinedPlanDefinition = createPlanDefinition(
+                      refinedResult.message,
+                      refinedResult.tasks,
+                      undefined
+                    );
+
+                    // Create Confirm for execution
+                    // Determine operation name based on refined task types
+                    const allIntrospect = refinedResult.tasks.every(
+                      (task) => task.type === TaskType.Introspect
+                    );
+                    const allAnswer = refinedResult.tasks.every(
+                      (task) => task.type === TaskType.Answer
+                    );
+
+                    let operation = 'execution';
+                    if (allIntrospect) {
+                      operation = 'introspection';
+                    } else if (allAnswer) {
+                      operation = 'answer';
+                    }
+
+                    const confirmDefinition = createConfirmDefinition(
+                      () => {
+                        // Complete Confirm and create appropriate component based on task type
+                        handlers?.completeActive?.();
+
+                        if (allAnswer && refinedResult.tasks.length > 0) {
+                          const question = refinedResult.tasks[0].action;
+                          handlers?.addToQueue?.(
+                            createAnswerDefinition(question, svc!)
+                          );
+                        } else if (
+                          allIntrospect &&
+                          refinedResult.tasks.length > 0
+                        ) {
+                          handlers?.addToQueue?.(
+                            createIntrospectDefinition(
+                              refinedResult.tasks,
+                              svc!
+                            )
+                          );
+                        } else if (refinedResult.tasks.length > 0) {
+                          // Execute tasks
+                          handlers?.addToQueue?.(
+                            createExecuteDefinition(refinedResult.tasks, svc!)
+                          );
+                        }
+                      },
+                      () => {
+                        handlers?.onAborted?.(operation);
+                      }
+                    );
+
+                    // Add refined Plan to timeline and Confirm to queue
+                    handlers?.addToTimeline?.(refinedPlanDefinition);
+                    handlers?.addToQueue?.(confirmDefinition);
+                  } catch (err) {
+                    handlers?.completeActive?.();
+                    const errorMessage = formatErrorMessage(err);
+                    handlers?.onError?.(errorMessage);
+                  }
+                }
+              : undefined
+          );
+
+          if (hasDefineTask) {
+            // Has DEFINE tasks: Add Plan to queue for selection
+            handlers?.addToQueue?.(planDefinition);
+          } else {
+            // No DEFINE tasks: Add Plan to timeline and Confirm to queue
+            // Determine operation name based on task types
+            const allIntrospect = result.tasks.every(
+              (task) => task.type === TaskType.Introspect
+            );
+            const allAnswer = result.tasks.every(
+              (task) => task.type === TaskType.Answer
+            );
+
+            let operation = 'execution';
+            if (allIntrospect) {
+              operation = 'introspection';
+            } else if (allAnswer) {
+              operation = 'answer';
+            }
+
+            const confirmDefinition = createConfirmDefinition(
+              () => {
+                // Complete Confirm and create appropriate component based on task type
+                handlers?.completeActive?.();
+
+                if (allAnswer && result.tasks.length > 0) {
+                  const question = result.tasks[0].action;
+                  handlers?.addToQueue?.(
+                    createAnswerDefinition(question, svc!)
+                  );
+                } else if (allIntrospect && result.tasks.length > 0) {
+                  handlers?.addToQueue?.(
+                    createIntrospectDefinition(result.tasks, svc!)
+                  );
+                } else if (result.tasks.length > 0) {
                   // Execute tasks
-                  addToQueue(
-                    createExecuteDefinition(refinedTasks, service)
+                  handlers?.addToQueue?.(
+                    createExecuteDefinition(result.tasks, svc!)
                   );
                 }
-
-                onComplete();
-              };
-
-              const onCancelled = () => {
-                onAborted('confirmation');
-              };
-
-              addToQueue(createConfirmDefinition(onConfirmed, onCancelled));
-            };
-
-            addToQueue(
-              createPlanDefinition(result.message, result.tasks, handleConfirmed)
+              },
+              () => {
+                handlers?.onAborted?.(operation);
+              }
             );
+            handlers?.addToTimeline?.(planDefinition);
+            handlers?.addToQueue?.(confirmDefinition);
           }
 
-          // Signal completion after adding to queue
+          // Move Command to timeline
           handlers?.onComplete?.();
         }
       } catch (err) {
@@ -150,7 +263,7 @@ export function Command({
     return () => {
       mounted = false;
     };
-  }, [command, isActive, service]);
+  }, [command, isActive, service, handlers]);
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">

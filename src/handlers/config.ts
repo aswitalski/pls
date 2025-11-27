@@ -61,10 +61,7 @@ export function createConfigHandlers(
           );
 
           if (command) {
-            return [
-              ...rest,
-              createCommandDefinition(command, newService),
-            ];
+            return [...rest, createCommandDefinition(command, newService)];
           }
 
           exitApp(0);

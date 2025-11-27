@@ -339,8 +339,7 @@ export function getMissingConfigKeys(): string[] {
     let isValid = false;
     switch (definition.type) {
       case 'regexp':
-        isValid =
-          typeof value === 'string' && definition.pattern.test(value);
+        isValid = typeof value === 'string' && definition.pattern.test(value);
         break;
       case 'string':
         isValid = typeof value === 'string';

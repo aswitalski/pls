@@ -12,7 +12,6 @@ export const Refinement = ({
   isActive = true,
   onAborted,
 }: RefinementProps) => {
-
   useInput(
     (_, key) => {
       if (key.escape && isActive) {

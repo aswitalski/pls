@@ -60,7 +60,9 @@ describe('Answer component', () => {
 
     const output = lastFrame();
     expect(output).toContain('What is the price of Samsung The Frame 55 inch?');
-    expect(output).toContain('The 55 inch Samsung The Frame costs around $1,500.');
+    expect(output).toContain(
+      'The 55 inch Samsung The Frame costs around $1,500.'
+    );
   });
 
   it('calls onComplete when successful', async () => {

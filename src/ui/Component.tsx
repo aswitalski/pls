@@ -54,7 +54,12 @@ export const Component = React.memo(function Component({
 
     case ComponentName.Plan:
       return (
-        <Plan {...def.props} state={def.state} isActive={isActive} debug={debug} />
+        <Plan
+          {...def.props}
+          state={def.state}
+          isActive={isActive}
+          debug={debug}
+        />
       );
 
     case ComponentName.Feedback:
@@ -64,7 +69,9 @@ export const Component = React.memo(function Component({
       return <Message {...def.props} />;
 
     case ComponentName.Refinement:
-      return <Refinement {...def.props} state={def.state} isActive={isActive} />;
+      return (
+        <Refinement {...def.props} state={def.state} isActive={isActive} />
+      );
 
     case ComponentName.Confirm:
       return <Confirm {...def.props} state={def.state} isActive={isActive} />;

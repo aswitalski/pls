@@ -9,7 +9,11 @@ interface UserQueryProps {
 
 export function UserQuery({ children }: UserQueryProps) {
   return (
-    <Box paddingX={1} alignSelf="flex-start" backgroundColor={Colors.Background.UserQuery}>
+    <Box
+      paddingX={1}
+      alignSelf="flex-start"
+      backgroundColor={Colors.Background.UserQuery}
+    >
       <Text color={Colors.Text.UserQuery}>{children}</Text>
     </Box>
   );

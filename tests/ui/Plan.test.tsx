@@ -335,7 +335,11 @@ describe('Plan component', () => {
 
       const { lastFrame, stdin } = render(
         <Plan
-          handlers={{ onAborted: mockOnAborted, onComplete: vi.fn(), onError: vi.fn() }}
+          handlers={{
+            onAborted: mockOnAborted,
+            onComplete: vi.fn(),
+            onError: vi.fn(),
+          }}
           state={state}
           tasks={[
             {

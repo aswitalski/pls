@@ -158,13 +158,20 @@ export function Plan({
     if (isActive && defineTaskIndices.length === 0 && onSelectionConfirmed) {
       // No selection needed - all tasks are concrete
       const concreteTasks = tasks.filter(
-        (task) => task.type !== TaskType.Ignore && task.type !== TaskType.Discard
+        (task) =>
+          task.type !== TaskType.Ignore && task.type !== TaskType.Discard
       );
       onSelectionConfirmed(concreteTasks);
       // Signal Plan completion after adding Confirm to queue
       handlers?.onComplete?.();
     }
-  }, [isActive, defineTaskIndices.length, tasks, onSelectionConfirmed, handlers]);
+  }, [
+    isActive,
+    defineTaskIndices.length,
+    tasks,
+    onSelectionConfirmed,
+    handlers,
+  ]);
 
   useInput(
     (input, key) => {
@@ -251,9 +258,15 @@ export function Plan({
             }
           });
 
-          onSelectionConfirmed?.(refinedTasks);
-          // Signal Plan completion after adding Confirm to queue
-          handlers?.onComplete?.();
+          if (onSelectionConfirmed) {
+            // Callback will handle the entire flow (Refinement, refined Plan, Confirm)
+            // So we need to complete the Plan first
+            handlers?.onComplete?.();
+            onSelectionConfirmed(refinedTasks);
+          } else {
+            // No selection callback, just complete normally
+            handlers?.onComplete?.();
+          }
         }
       }
     },
@@ -316,7 +329,9 @@ export function Plan({
       <Box marginLeft={1}>
         <List
           items={listItems}
-          highlightedIndex={currentDefineTaskIndex >= 0 ? highlightedIndex : null}
+          highlightedIndex={
+            currentDefineTaskIndex >= 0 ? highlightedIndex : null
+          }
           highlightedParentIndex={currentDefineTaskIndex}
           showType={debug}
         />
