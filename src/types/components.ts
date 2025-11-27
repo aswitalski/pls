@@ -116,10 +116,6 @@ export interface AnswerProps extends BaseStatefulProps<AnswerState> {
   service?: LLMService;
 }
 
-export interface AnswerDisplayProps {
-  answer: string;
-}
-
 export interface ExecuteProps extends BaseStatefulProps<ExecuteState> {
   tasks: Task[];
   service?: LLMService;
@@ -240,10 +236,6 @@ type AnswerDefinition = StatefulDefinition<
   AnswerProps,
   AnswerState
 >;
-type AnswerDisplayDefinition = StatelessDefinition<
-  ComponentName.AnswerDisplay,
-  AnswerDisplayProps
->;
 type ExecuteDefinition = StatefulDefinition<
   ComponentName.Execute,
   ExecuteProps,
@@ -260,8 +252,7 @@ export type StatelessComponentDefinition =
   | WelcomeDefinition
   | FeedbackDefinition
   | MessageDefinition
-  | ReportDefinition
-  | AnswerDisplayDefinition;
+  | ReportDefinition;
 
 // Union of all stateful component definitions
 export type StatefulComponentDefinition =

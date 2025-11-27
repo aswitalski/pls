@@ -1,7 +1,6 @@
 import { AnswerHandlers, HandlerOperations } from '../types/handlers.js';
 import { ComponentName } from '../types/types.js';
 
-import { createAnswerDisplayDefinition } from '../services/components.js';
 import { createErrorHandler, withQueueHandler } from '../services/queue.js';
 
 /**
@@ -17,12 +16,12 @@ export function createAnswerHandlers(
     );
   };
 
-  const onComplete = (answer: string) => {
+  const onComplete = () => {
     ops.setQueue(
       withQueueHandler(
         ComponentName.Answer,
-        () => {
-          ops.addToTimeline(createAnswerDisplayDefinition(answer));
+        (first) => {
+          ops.addToTimeline(first);
           return undefined;
         },
         true,

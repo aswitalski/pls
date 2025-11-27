@@ -369,18 +369,6 @@ export function createAnswerDefinition(
   };
 }
 
-export function createAnswerDisplayDefinition(
-  answer: string
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.AnswerDisplay,
-    props: {
-      answer,
-    },
-  };
-}
-
 export function isStateless(component: ComponentDefinition): boolean {
   return !('state' in component);
 }

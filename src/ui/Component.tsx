@@ -4,7 +4,6 @@ import { ComponentDefinition } from '../types/components.js';
 import { ComponentName } from '../types/types.js';
 
 import { Answer } from './Answer.js';
-import { AnswerDisplay } from './AnswerDisplay.js';
 import { Command } from './Command.js';
 import { Confirm } from './Confirm.js';
 import { Config } from './Config.js';
@@ -89,9 +88,6 @@ export const Component = React.memo(function Component({
 
     case ComponentName.Answer:
       return <Answer {...def.props} state={def.state} isActive={isActive} />;
-
-    case ComponentName.AnswerDisplay:
-      return <AnswerDisplay {...def.props} />;
 
     case ComponentName.Execute:
       return <Execute {...def.props} state={def.state} isActive={isActive} />;

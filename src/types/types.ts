@@ -18,7 +18,6 @@ export enum ComponentName {
   Introspect = 'introspect',
   Report = 'report',
   Answer = 'answer',
-  AnswerDisplay = 'answerDisplay',
   Execute = 'execute',
   Validate = 'validate',
 }
