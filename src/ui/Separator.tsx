@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { Text } from 'ink';
 
 import { Colors } from '../services/colors.js';
@@ -8,7 +8,7 @@ interface SeparatorProps {
   spaces?: number;
 }
 
-export const Separator: React.FC<SeparatorProps> = ({
+export const Separator: FC<SeparatorProps> = ({
   color = Colors.Label.Discarded,
   spaces = 1,
 }) => {

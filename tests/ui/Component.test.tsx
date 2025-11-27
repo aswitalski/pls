@@ -29,7 +29,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.type).toBeDefined();
@@ -40,9 +40,7 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-config-1',
       name: ComponentName.Config,
-      state: {
-        done: false,
-      },
+      state: {},
       props: {
         steps: [
           {
@@ -64,20 +62,17 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.state).toBeDefined();
-    expect(result.props.def.state.done).toBe(false);
   });
 
   it('renders config component with multiple steps', () => {
     const def: ComponentDefinition = {
       id: 'test-config-2',
       name: ComponentName.Config,
-      state: {
-        done: false,
-      },
+      state: {},
       props: {
         steps: [
           {
@@ -105,42 +100,34 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.steps).toHaveLength(3);
-    expect(result.props.def.state?.done).toBe(false);
   });
 
-  it('renders command component in loading state', () => {
+  it('renders command component', () => {
     const def: ComponentDefinition = {
       id: 'test-command-1',
       name: ComponentName.Command,
-      state: {
-        done: false,
-        isLoading: true,
-      },
+      state: {},
       props: {
         command: 'test command',
         onAborted: vi.fn(),
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.command).toBe('test command');
-    expect(result.props.def.state.isLoading).toBe(true);
   });
 
   it('renders command component with children', () => {
     const def: ComponentDefinition = {
       id: 'test-command-2',
       name: ComponentName.Command,
-      state: {
-        done: true,
-        isLoading: false,
-      },
+      state: {},
       props: {
         command: 'test command',
         children: 'Some content',
@@ -148,11 +135,10 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.children).toBe('Some content');
-    expect(result.props.def.state.done).toBe(true);
   });
 
   it('renders command component with error', () => {
@@ -160,8 +146,6 @@ describe('Component', () => {
       id: 'test-command-3',
       name: ComponentName.Command,
       state: {
-        done: true,
-        isLoading: false,
         error: 'Something went wrong',
       },
       props: {
@@ -171,7 +155,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.error).toBe('Something went wrong');
@@ -187,7 +171,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     // Welcome component doesn't have state, but we verify it doesn't break
     expect(result).toBeDefined();
@@ -199,7 +183,6 @@ describe('Component', () => {
       id: 'test-plan-1',
       name: ComponentName.Plan,
       state: {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -214,7 +197,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.tasks).toHaveLength(2);
@@ -231,7 +214,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.type).toBe(FeedbackType.Info);
@@ -247,7 +230,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.text).toBe('Processing your request');
@@ -258,19 +241,18 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-refinement-1',
       name: ComponentName.Refinement,
-      state: { done: false },
+      state: {},
       props: {
         text: 'Loading data',
         onAborted,
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} isActive={true} debug={false} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.text).toBe('Loading data');
     expect(result.props.def.props.onAborted).toBe(onAborted);
-    expect(result.props.def.state.done).toBe(false);
   });
 
   it('renders all component types in sequence', () => {
@@ -283,7 +265,7 @@ describe('Component', () => {
       {
         id: 'test-config-3',
         name: ComponentName.Config,
-        state: { done: false },
+        state: {},
         props: {
           steps: [
             {
@@ -299,14 +281,13 @@ describe('Component', () => {
       {
         id: 'test-command-4',
         name: ComponentName.Command,
-        state: { done: false, isLoading: true },
+        state: {},
         props: { command: 'test', onAborted: vi.fn() },
       },
       {
         id: 'test-plan-2',
         name: ComponentName.Plan,
         state: {
-          done: false,
           highlightedIndex: null,
           currentDefineGroupIndex: 0,
           completedSelections: [],
@@ -335,7 +316,7 @@ describe('Component', () => {
       {
         id: 'test-refinement-2',
         name: ComponentName.Refinement,
-        state: { done: false },
+        state: {},
         props: {
           text: 'Loading',
           onAborted: vi.fn(),
@@ -344,7 +325,7 @@ describe('Component', () => {
     ];
 
     const results = definitions.map((def) => (
-      <Component def={def} debug={false} />
+      <Component def={def} isActive={true} debug={false} />
     ));
 
     expect(results).toHaveLength(7);

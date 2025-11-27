@@ -12,7 +12,7 @@ describe('Refinement', () => {
     const { lastFrame } = render(
       <Refinement
         text="Processing your request"
-        state={{ done: false }}
+        state={{}}
         onAborted={mockOnAborted}
       />
     );
@@ -26,7 +26,8 @@ describe('Refinement', () => {
     const { lastFrame } = render(
       <Refinement
         text="Processing complete"
-        state={{ done: true }}
+        state={{}}
+        isActive={false}
         onAborted={mockOnAborted}
       />
     );
@@ -49,11 +50,7 @@ describe('Refinement', () => {
   it('calls onAborted when Escape key is pressed and not done', () => {
     const onAborted = vi.fn();
     const { stdin } = render(
-      <Refinement
-        text="Processing"
-        state={{ done: false }}
-        onAborted={onAborted}
-      />
+      <Refinement text="Processing" state={{}} onAborted={onAborted} />
     );
 
     stdin.write(Keys.Escape);
@@ -66,7 +63,8 @@ describe('Refinement', () => {
     const { stdin } = render(
       <Refinement
         text="Processing"
-        state={{ done: true }}
+        state={{}}
+        isActive={false}
         onAborted={onAborted}
       />
     );

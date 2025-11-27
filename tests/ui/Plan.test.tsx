@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { PlanState } from '../../src/types/components.js';
+import { Handlers, PlanState } from '../../src/types/components.js';
 import { Task, TaskType } from '../../src/types/types.js';
 
 import { Plan } from '../../src/ui/Plan.js';
@@ -15,11 +15,27 @@ const WaitTime = 32; // Generous wait time ensuring stability across all hardwar
 // Mock onAborted function for all tests
 const mockOnAborted = vi.fn();
 
+// Helper to create mock handlers with state tracking
+function createMockHandlers(initialState: PlanState): {
+  handlers: Handlers<PlanState>;
+  state: PlanState;
+} {
+  const state = { ...initialState };
+  const handlers: Handlers<PlanState> = {
+    onComplete: vi.fn(),
+    onAborted: vi.fn(),
+    onError: vi.fn(),
+    updateState: vi.fn((newState) => {
+      Object.assign(state, newState);
+    }),
+  };
+  return { handlers, state };
+}
+
 describe('Plan component', () => {
   describe('Interactive behavior', () => {
     it('renders define task without initial highlight', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -45,7 +61,6 @@ describe('Plan component', () => {
 
     it('marks define task with right arrow when no selection made', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -71,16 +86,16 @@ describe('Plan component', () => {
     });
 
     it('removes arrow from parent when child is highlighted', async () => {
-      const state: PlanState = {
-        done: false,
+      const { handlers, state } = createMockHandlers({
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
-      };
+      });
       const { lastFrame, stdin } = render(
         <Plan
           onAborted={mockOnAborted}
           state={state}
+          handlers={handlers}
           tasks={[
             {
               action: 'Choose deployment',
@@ -112,7 +127,6 @@ describe('Plan component', () => {
 
     it('calls onSelectionConfirmed when selection is made', async () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -158,7 +172,6 @@ describe('Plan component', () => {
 
     it('does nothing when Enter pressed without highlighting', async () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -192,17 +205,17 @@ describe('Plan component', () => {
     });
 
     it('supports navigation with arrow keys', async () => {
-      const state: PlanState = {
-        done: false,
+      const { handlers, state } = createMockHandlers({
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
-      };
+      });
 
       const { stdin } = render(
         <Plan
           onAborted={mockOnAborted}
           state={state}
+          handlers={handlers}
           tasks={[
             {
               action: 'Choose deployment',
@@ -230,17 +243,17 @@ describe('Plan component', () => {
     });
 
     it('wraps around when navigating with arrow keys', async () => {
-      const state: PlanState = {
-        done: false,
+      const { handlers, state } = createMockHandlers({
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
-      };
+      });
 
       const { stdin } = render(
         <Plan
           onAborted={mockOnAborted}
           state={state}
+          handlers={handlers}
           tasks={[
             {
               action: 'Choose deployment',
@@ -269,7 +282,6 @@ describe('Plan component', () => {
 
     it('does not handle input when done', () => {
       const state: PlanState = {
-        done: true,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -300,16 +312,16 @@ describe('Plan component', () => {
 
     it('does not handle input when no define tasks exist', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const onSelectionConfirmed = vi.fn();
+      const onComplete = vi.fn();
 
       const { stdin } = render(
         <Plan
-          onAborted={mockOnAborted}
+          handlers={{ onAborted: mockOnAborted, onComplete, onError: vi.fn() }}
           state={state}
           tasks={[
             { action: 'Install dependencies', type: TaskType.Execute },
@@ -319,17 +331,22 @@ describe('Plan component', () => {
         />
       );
 
-      // Try to interact - should do nothing
+      // With no DEFINE tasks, Plan should auto-confirm immediately
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        { action: 'Install dependencies', type: TaskType.Execute },
+        { action: 'Run tests', type: TaskType.Execute },
+      ]);
+      expect(onComplete).toHaveBeenCalled();
+
+      // Try to interact - should do nothing since already completed
       stdin.write(ArrowDown);
       stdin.write(Enter);
 
       expect(state.highlightedIndex).toBeNull();
-      expect(onSelectionConfirmed).not.toHaveBeenCalled();
     });
 
     it('renders selection with correct visual states', async () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -338,7 +355,11 @@ describe('Plan component', () => {
 
       const { lastFrame, stdin } = render(
         <Plan
-          onAborted={mockOnAborted}
+          handlers={{
+            onAborted: mockOnAborted,
+            onComplete: vi.fn(),
+            onError: vi.fn(),
+          }}
           state={state}
           tasks={[
             {
@@ -358,20 +379,15 @@ describe('Plan component', () => {
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
+      const outputBeforeSelection = lastFrame();
+      expect(outputBeforeSelection).toContain('Staging');
+      expect(outputBeforeSelection).toContain(TaskType.Define);
+
       // Confirm selection
       stdin.write(Enter);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
-      const output = lastFrame();
-      expect(output).toBeTruthy();
-
-      // Verify selected item shows as "execute"
-      expect(output).toContain('Staging');
-      expect(output).toContain(TaskType.Execute);
-
-      // Verify non-selected items show as "discard"
-      expect(output).toContain(TaskType.Discard);
-
+      // Verify onSelectionConfirmed was called with the selected item
       expect(onSelectionConfirmed).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
@@ -386,7 +402,6 @@ describe('Plan component', () => {
   describe('Multiple define groups', () => {
     it('initializes state with correct values for multiple groups', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -419,7 +434,6 @@ describe('Plan component', () => {
 
     it('shows arrow on first define group initially', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -449,18 +463,18 @@ describe('Plan component', () => {
     });
 
     it('advances to next group when Enter is pressed', async () => {
-      const state: PlanState = {
-        done: false,
+      const { handlers, state } = createMockHandlers({
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
-      };
+      });
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Plan
           onAborted={mockOnAborted}
           state={state}
+          handlers={handlers}
           tasks={[
             {
               action: 'Choose target',
@@ -496,17 +510,17 @@ describe('Plan component', () => {
     });
 
     it('keeps previous group selection visible when advancing', async () => {
-      const state: PlanState = {
-        done: false,
+      const { handlers, state } = createMockHandlers({
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
-      };
+      });
 
       const { lastFrame, stdin } = render(
         <Plan
           onAborted={mockOnAborted}
           state={state}
+          handlers={handlers}
           tasks={[
             {
               action: 'Choose target',
@@ -541,7 +555,6 @@ describe('Plan component', () => {
 
     it('resets highlightedIndex when advancing to next group', async () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -578,7 +591,6 @@ describe('Plan component', () => {
 
     it('shows arrow on second group after first is completed', async () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -616,7 +628,6 @@ describe('Plan component', () => {
 
     it('calls onSelectionConfirmed only after last group is completed', async () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -672,17 +683,17 @@ describe('Plan component', () => {
     });
 
     it('tracks completedSelections for all groups', async () => {
-      const state: PlanState = {
-        done: false,
+      const { handlers, state } = createMockHandlers({
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
-      };
+      });
 
       const { stdin } = render(
         <Plan
           onAborted={mockOnAborted}
           state={state}
+          handlers={handlers}
           tasks={[
             {
               action: 'Choose target',
@@ -718,18 +729,18 @@ describe('Plan component', () => {
     });
 
     it('handles three sequential define groups', async () => {
-      const state: PlanState = {
-        done: false,
+      const { handlers, state } = createMockHandlers({
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
-      };
+      });
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Plan
           onAborted={mockOnAborted}
           state={state}
+          handlers={handlers}
           tasks={[
             {
               action: 'Choose target',
@@ -778,18 +789,18 @@ describe('Plan component', () => {
     });
 
     it('handles mixed execute and define tasks', async () => {
-      const state: PlanState = {
-        done: false,
+      const { handlers, state } = createMockHandlers({
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
-      };
+      });
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Plan
           onAborted={mockOnAborted}
           state={state}
+          handlers={handlers}
           tasks={[
             { action: 'Build project', type: TaskType.Execute },
             {
@@ -849,17 +860,17 @@ describe('Plan component', () => {
     });
 
     it('navigation only works on current active group', async () => {
-      const state: PlanState = {
-        done: false,
+      const { handlers, state } = createMockHandlers({
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
-      };
+      });
 
       const { stdin } = render(
         <Plan
           onAborted={mockOnAborted}
           state={state}
+          handlers={handlers}
           tasks={[
             {
               action: 'Choose target',
@@ -917,7 +928,6 @@ describe('Plan component', () => {
     it('calls onAborted when Esc is pressed during selection', () => {
       const onAborted = vi.fn();
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -925,7 +935,7 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
-          onAborted={onAborted}
+          handlers={{ onAborted, onComplete: vi.fn(), onError: vi.fn() }}
           state={state}
           tasks={[
             {
@@ -938,13 +948,12 @@ describe('Plan component', () => {
       );
 
       stdin.write(Escape);
-      expect(onAborted).toHaveBeenCalledTimes(1);
+      expect(onAborted).toHaveBeenCalledWith('task selection');
     });
 
     it('does not call onAborted when Esc is pressed after done', () => {
       const onAborted = vi.fn();
       const state: PlanState = {
-        done: true,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -952,8 +961,9 @@ describe('Plan component', () => {
 
       const { stdin } = render(
         <Plan
-          onAborted={onAborted}
+          handlers={{ onAborted, onComplete: vi.fn(), onError: vi.fn() }}
           state={state}
+          isActive={false}
           tasks={[
             {
               action: 'Choose deployment',
@@ -971,7 +981,6 @@ describe('Plan component', () => {
     it('does not call onAborted when there is no define task', () => {
       const onAborted = vi.fn();
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -999,7 +1008,6 @@ describe('Plan component', () => {
     it('excludes Ignore tasks from refined task list', async () => {
       const onSelectionConfirmed = vi.fn();
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -1067,7 +1075,6 @@ describe('Plan component', () => {
     it('excludes Discard tasks from refined task list', async () => {
       const onSelectionConfirmed = vi.fn();
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -1136,7 +1143,6 @@ describe('Plan component', () => {
   describe('Debug mode', () => {
     it('shows action types when debug is true', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -1159,7 +1165,6 @@ describe('Plan component', () => {
 
     it('hides action types when debug is false', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -1182,7 +1187,6 @@ describe('Plan component', () => {
 
     it('hides action types by default when debug prop is omitted', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -1204,7 +1208,6 @@ describe('Plan component', () => {
 
     it('shows action types for all task types when debug is true', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -1232,7 +1235,6 @@ describe('Plan component', () => {
 
     it('shows action types for define task children when debug is true', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -1259,7 +1261,6 @@ describe('Plan component', () => {
 
     it('shows plan type in message when debug is true', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -1282,7 +1283,6 @@ describe('Plan component', () => {
 
     it('hides plan type in message when debug is false', () => {
       const state: PlanState = {
-        done: false,
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -1303,6 +1303,178 @@ describe('Plan component', () => {
       // When debug is false, separator and type should not appear
       const hasTypeIndicator = output!.includes('Review changes ›');
       expect(hasTypeIndicator).toBe(false);
+    });
+
+    it('infers Answer type from explain/describe keywords', async () => {
+      const state: PlanState = {
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const onSelectionConfirmed = vi.fn();
+      const { stdin } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          onSelectionConfirmed={onSelectionConfirmed}
+          tasks={[
+            {
+              action: 'Clarify what you want to know:',
+              type: TaskType.Define,
+              params: {
+                options: ['Explain unit testing'],
+              },
+            },
+          ]}
+          handlers={{
+            onComplete: vi.fn(),
+            onError: vi.fn(),
+            onAborted: vi.fn(),
+          }}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          action: 'Explain unit testing',
+          type: TaskType.Answer,
+        },
+      ]);
+    });
+
+    it('infers Introspect type from list skills keyword', async () => {
+      const state: PlanState = {
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const onSelectionConfirmed = vi.fn();
+      const { stdin } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          onSelectionConfirmed={onSelectionConfirmed}
+          tasks={[
+            {
+              action: 'What do you want to do:',
+              type: TaskType.Define,
+              params: {
+                options: ['List your skills'],
+              },
+            },
+          ]}
+          handlers={{
+            onComplete: vi.fn(),
+            onError: vi.fn(),
+            onAborted: vi.fn(),
+          }}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          action: 'List your skills',
+          type: TaskType.Introspect,
+        },
+      ]);
+    });
+
+    it('infers Config type from configure keyword', async () => {
+      const state: PlanState = {
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const onSelectionConfirmed = vi.fn();
+      const { stdin } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          onSelectionConfirmed={onSelectionConfirmed}
+          tasks={[
+            {
+              action: 'What do you want to do:',
+              type: TaskType.Define,
+              params: {
+                options: ['Configure settings'],
+              },
+            },
+          ]}
+          handlers={{
+            onComplete: vi.fn(),
+            onError: vi.fn(),
+            onAborted: vi.fn(),
+          }}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          action: 'Configure settings',
+          type: TaskType.Config,
+        },
+      ]);
+    });
+
+    it('infers Execute type as default for other actions', async () => {
+      const state: PlanState = {
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      };
+      const onSelectionConfirmed = vi.fn();
+      const { stdin } = render(
+        <Plan
+          onAborted={mockOnAborted}
+          state={state}
+          onSelectionConfirmed={onSelectionConfirmed}
+          tasks={[
+            {
+              action: 'What do you want to do:',
+              type: TaskType.Define,
+              params: {
+                options: ['Build the project'],
+              },
+            },
+          ]}
+          handlers={{
+            onComplete: vi.fn(),
+            onError: vi.fn(),
+            onAborted: vi.fn(),
+          }}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          action: 'Build the project',
+          type: TaskType.Execute,
+        },
+      ]);
     });
   });
 });

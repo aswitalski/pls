@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { Box, Text } from 'ink';
 
 import { Separator } from './Separator.js';
@@ -26,7 +26,7 @@ interface ListProps {
   showType?: boolean;
 }
 
-export const List: React.FC<ListProps> = ({
+export const List: FC<ListProps> = ({
   items,
   level = 0,
   highlightedIndex = null,

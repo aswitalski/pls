@@ -1,11 +1,11 @@
-import React from 'react';
+import { FC, ReactNode } from 'react';
 import { Box } from 'ink';
 
 interface PanelProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export const Panel: React.FC<PanelProps> = ({ children }) => {
+export const Panel: FC<PanelProps> = ({ children }) => {
   return (
     <Box
       borderStyle="round"

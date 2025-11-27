@@ -1,51 +1,63 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { CommandProps } from '../types/components.js';
-import { TaskType } from '../types/types.js';
+import {
+  CommandProps,
+  ComponentDefinition,
+  Handlers,
+} from '../types/components.js';
+import { Task, TaskType } from '../types/types.js';
 
-import { Colors, getTextColor } from '../services/colors.js';
+import { LLMService } from '../services/anthropic.js';
+
+import { Colors } from '../services/colors.js';
+import { routeTasksWithConfirm } from '../services/task-router.js';
+import {
+  createPlanDefinition,
+  createRefinement,
+} from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
-import { formatErrorMessage } from '../services/messages.js';
+import {
+  formatErrorMessage,
+  getRefiningMessage,
+} from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
 
 import { Spinner } from './Spinner.js';
+import { UserQuery } from './UserQuery.js';
 
-const MIN_PROCESSING_TIME = 1000; // purely for visual effect
+const MIN_PROCESSING_TIME = 400; // purely for visual effect
 
 export function Command({
   command,
   state,
+  isActive = true,
   service,
   children,
-  onError,
-  onComplete,
+  handlers,
   onAborted,
 }: CommandProps) {
-  const done = state?.done ?? false;
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? !done);
+  const [error, setError] = useState<string | null>(state?.error ?? null);
 
   useInput(
-    (input, key) => {
-      if (key.escape && isLoading && !done) {
-        setIsLoading(false);
-        onAborted();
+    (_, key) => {
+      if (key.escape && isActive) {
+        handlers?.onAborted?.('request');
+        onAborted?.('request');
       }
     },
-    { isActive: isLoading && !done }
+    { isActive }
   );
 
   useEffect(() => {
-    // Skip processing if done (showing historical/final state)
-    if (done) {
+    // Skip processing if not active (showing historical/final state)
+    if (!isActive) {
       return;
     }
 
     // Skip processing if no service available
     if (!service) {
       setError('No service available');
-      setIsLoading(false);
       return;
     }
 
@@ -73,20 +85,98 @@ export function Command({
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
-          setIsLoading(false);
-          onComplete?.(result.message, result.tasks);
+          // Save result to state for timeline display
+          handlers?.updateState?.({
+            message: result.message,
+            tasks: result.tasks,
+          });
+
+          // Check if tasks contain DEFINE type (variant selection needed)
+          const hasDefineTask = result.tasks.some(
+            (task) => task.type === TaskType.Define
+          );
+
+          // Create Plan definition
+          const planDefinition = createPlanDefinition(
+            result.message,
+            result.tasks,
+            hasDefineTask
+              ? async (selectedTasks: Task[]) => {
+                  // Refinement flow for DEFINE tasks
+                  const refinementDef = createRefinement(
+                    getRefiningMessage(),
+                    (operation: string) => {
+                      handlers?.onAborted?.(operation);
+                    }
+                  );
+
+                  // Add refinement to queue
+                  handlers?.addToQueue?.(refinementDef);
+
+                  try {
+                    // Call LLM to refine plan with selected tasks
+                    const refinedCommand = selectedTasks
+                      .map((task) => {
+                        const action = task.action
+                          .toLowerCase()
+                          .replace(/,/g, ' -');
+                        const type = task.type;
+                        return `${action} (type: ${type})`;
+                      })
+                      .join(', ');
+
+                    const refinedResult = await svc!.processWithTool(
+                      refinedCommand,
+                      'plan'
+                    );
+
+                    // Complete the Refinement component
+                    handlers?.completeActive?.();
+
+                    // Route refined tasks to appropriate components
+                    routeTasksWithConfirm(
+                      refinedResult.tasks,
+                      refinedResult.message,
+                      svc!,
+                      command,
+                      handlers!,
+                      false // No DEFINE tasks in refined result
+                    );
+                  } catch (err) {
+                    handlers?.completeActive?.();
+                    const errorMessage = formatErrorMessage(err);
+                    handlers?.onError?.(errorMessage);
+                  }
+                }
+              : undefined
+          );
+
+          if (hasDefineTask) {
+            // Has DEFINE tasks: Add Plan to queue for selection
+            // The refinement callback will handle routing after user selects
+            handlers?.addToQueue?.(planDefinition);
+          } else {
+            // No DEFINE tasks: Use routing service for Confirm flow
+            routeTasksWithConfirm(
+              result.tasks,
+              result.message,
+              svc!,
+              command,
+              handlers!,
+              false
+            );
+          }
+
+          // Move Command to timeline
+          handlers?.onComplete?.();
         }
       } catch (err) {
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
-          setIsLoading(false);
-          if (onError) {
-            onError(errorMessage);
-          } else {
-            setError(errorMessage);
-          }
+          setError(errorMessage);
+          handlers?.onError?.(errorMessage);
         }
       }
     }
@@ -96,35 +186,27 @@ export function Command({
     return () => {
       mounted = false;
     };
-  }, [command, done, service]);
-
-  const isCurrent = done === false;
+  }, [command, isActive, service, handlers]);
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
-      <Box
-        paddingX={done ? 1 : 0}
-        marginX={done ? -1 : 0}
-        backgroundColor={done ? Colors.Background.UserQuery : undefined}
-      >
-        <Text color={isCurrent ? Colors.Text.Active : Colors.Text.UserQuery}>
-          &gt; pls {command}
-        </Text>
-        {isLoading && (
-          <>
-            <Text> </Text>
-            <Spinner />
-          </>
-        )}
-      </Box>
+      {!isActive ? (
+        <UserQuery>&gt; pls {command}</UserQuery>
+      ) : (
+        <Box marginLeft={1}>
+          <Text color={Colors.Text.Active}>&gt; pls {command}</Text>
+          <Text> </Text>
+          <Spinner />
+        </Box>
+      )}
 
       {error && (
-        <Box marginTop={1}>
+        <Box marginTop={1} marginLeft={1}>
           <Text color={Colors.Status.Error}>Error: {error}</Text>
         </Box>
       )}
 
-      {children}
+      {children && <Box marginLeft={1}>{children}</Box>}
     </Box>
   );
 }

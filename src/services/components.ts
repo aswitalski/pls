@@ -1,15 +1,22 @@
 import { randomUUID } from 'node:crypto';
 
-import {
-  Capability,
-  ComponentDefinition,
-  StatefulComponentDefinition,
-} from '../types/components.js';
 import { App, ComponentName, FeedbackType, Task } from '../types/types.js';
+import { ConfigRequirement } from '../types/skills.js';
+import {
+  AnswerProps,
+  Capability,
+  CommandProps,
+  ComponentDefinition,
+  ConfigProps,
+  ConfirmProps,
+  ExecuteProps,
+  IntrospectProps,
+  PlanProps,
+  RefinementProps,
+  ValidateProps,
+} from '../types/components.js';
 
 import { LLMService } from './anthropic.js';
-import { CommandOutput } from './shell.js';
-import { ConfigRequirement } from '../types/skills.js';
 import {
   Config,
   ConfigDefinition,
@@ -19,12 +26,6 @@ import {
 import { getConfirmationMessage } from './messages.js';
 
 import { ConfigStep, StepType } from '../ui/Config.js';
-
-export function markAsDone<T extends StatefulComponentDefinition>(
-  component: T
-): T {
-  return { ...component, state: { ...component.state, done: true } };
-}
 
 export function createWelcomeDefinition(app: App): ComponentDefinition {
   return {
@@ -131,6 +132,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Text,
           value,
           validate: getValidator(definition),
@@ -148,6 +150,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Text,
           value,
           validate: getValidator(definition),
@@ -167,6 +170,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Selection,
           options: definition.values.map((value) => ({
             label: value,
@@ -186,6 +190,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         return {
           description: definition.description,
           key: shortKey,
+          path: key,
           type: StepType.Selection,
           options: [
             { label: 'Yes', value: 'true' },
@@ -201,17 +206,17 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
 
 export function createConfigDefinition(
   onFinished: (config: Record<string, string>) => void,
-  onAborted: () => void
+  onAborted: (operation: string) => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Config,
-    state: { done: false },
+    state: {},
     props: {
       steps: createConfigSteps(),
       onFinished,
       onAborted,
-    },
+    } satisfies ConfigProps,
   };
 }
 
@@ -221,55 +226,44 @@ export function createConfigDefinition(
 export function createConfigDefinitionWithKeys(
   keys: string[],
   onFinished: (config: Record<string, string>) => void,
-  onAborted: () => void
+  onAborted: (operation: string) => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Config,
-    state: { done: false },
+    state: {},
     props: {
       steps: createConfigStepsFromSchema(keys),
       onFinished,
       onAborted,
-    },
+    } satisfies ConfigProps,
   };
 }
 
 export function createCommandDefinition(
   command: string,
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (message: string, tasks: Task[]) => void,
-  onAborted: () => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Command,
-    state: {
-      done: false,
-      isLoading: true,
-    },
+    state: {},
     props: {
       command,
       service,
-      onError,
-      onComplete,
-      onAborted,
-    },
+    } satisfies CommandProps,
   };
 }
 
 export function createPlanDefinition(
   message: string,
   tasks: Task[],
-  onAborted: () => void,
   onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Plan,
     state: {
-      done: false,
       highlightedIndex: null,
       currentDefineGroupIndex: 0,
       completedSelections: [],
@@ -278,8 +272,7 @@ export function createPlanDefinition(
       message,
       tasks,
       onSelectionConfirmed,
-      onAborted,
-    },
+    } satisfies PlanProps,
   };
 }
 
@@ -309,16 +302,16 @@ export function createMessage(text: string): ComponentDefinition {
 
 export function createRefinement(
   text: string,
-  onAborted: () => void
+  onAborted: (operation: string) => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Refinement,
-    state: { done: false },
+    state: {},
     props: {
       text,
       onAborted,
-    },
+    } satisfies RefinementProps,
   };
 }
 
@@ -329,36 +322,27 @@ export function createConfirmDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Confirm,
-    state: { done: false },
+    state: {},
     props: {
       message: getConfirmationMessage(),
       onConfirmed,
       onCancelled,
-    },
+    } satisfies ConfirmProps,
   };
 }
 
 export function createIntrospectDefinition(
   tasks: Task[],
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (message: string, capabilities: Capability[]) => void,
-  onAborted: () => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Introspect,
-    state: {
-      done: false,
-      isLoading: true,
-    },
+    state: {},
     props: {
       tasks,
       service,
-      onError,
-      onComplete,
-      onAborted,
-    },
+    } satisfies IntrospectProps,
   };
 }
 
@@ -378,37 +362,16 @@ export function createReportDefinition(
 
 export function createAnswerDefinition(
   question: string,
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (answer: string) => void,
-  onAborted: () => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Answer,
-    state: {
-      done: false,
-      isLoading: true,
-    },
+    state: {},
     props: {
       question,
       service,
-      onError,
-      onComplete,
-      onAborted,
-    },
-  };
-}
-
-export function createAnswerDisplayDefinition(
-  answer: string
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.AnswerDisplay,
-    props: {
-      answer,
-    },
+    } satisfies AnswerProps,
   };
 }
 
@@ -416,27 +379,30 @@ export function isStateless(component: ComponentDefinition): boolean {
   return !('state' in component);
 }
 
+/**
+ * Mark a component as done. Returns the component to be added to timeline.
+ * Components use handlers.updateState to save their state before completion,
+ * so this function simply returns the component as-is.
+ */
+export function markAsDone(
+  component: ComponentDefinition
+): ComponentDefinition {
+  // State already updated via handlers.updateState
+  return component;
+}
+
 export function createExecuteDefinition(
   tasks: Task[],
-  service: LLMService,
-  onError: (error: string) => void,
-  onComplete: (outputs: CommandOutput[], totalElapsed: number) => void,
-  onAborted: (elapsedTime: number) => void
+  service: LLMService
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Execute,
-    state: {
-      done: false,
-      isLoading: true,
-    },
+    state: {},
     props: {
       tasks,
       service,
-      onError,
-      onComplete,
-      onAborted,
-    },
+    } satisfies ExecuteProps,
   };
 }
 
@@ -446,15 +412,12 @@ export function createValidateDefinition(
   service: LLMService,
   onError: (error: string) => void,
   onComplete: (configWithDescriptions: ConfigRequirement[]) => void,
-  onAborted: () => void
+  onAborted: (operation: string) => void
 ): ComponentDefinition {
   return {
     id: randomUUID(),
     name: ComponentName.Validate,
-    state: {
-      done: false,
-      isLoading: true,
-    },
+    state: {},
     props: {
       missingConfig,
       userRequest,
@@ -462,6 +425,6 @@ export function createValidateDefinition(
       onError,
       onComplete,
       onAborted,
-    },
+    } satisfies ValidateProps,
   };
 }

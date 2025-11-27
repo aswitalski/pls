@@ -1,6 +1,8 @@
-import React from 'react';
+import { ReactElement, useState } from 'react';
 import { Box, Text, useFocus } from 'ink';
 import TextInput from 'ink-text-input';
+
+import { Handlers } from '../types/components.js';
 
 import { Colors } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
@@ -33,7 +35,8 @@ export type ConfigStep = {
 );
 
 interface ConfigState {
-  done: boolean;
+  values?: Record<string, string>;
+  completedStep?: number;
 }
 
 export interface ConfigProps<
@@ -41,9 +44,11 @@ export interface ConfigProps<
 > {
   steps: ConfigStep[];
   state?: ConfigState;
+  isActive?: boolean;
   debug?: boolean;
+  handlers?: Handlers;
   onFinished?: (config: T) => void;
-  onAborted?: () => void;
+  onAborted?: (operation: string) => void;
 }
 
 interface TextStepProps {
@@ -61,8 +66,8 @@ function TextStep({
   onChange,
   onSubmit,
 }: TextStepProps) {
-  const [inputValue, setInputValue] = React.useState(value);
-  const [validationFailed, setValidationFailed] = React.useState(false);
+  const [inputValue, setInputValue] = useState(value);
+  const [validationFailed, setValidationFailed] = useState(false);
   const { isFocused } = useFocus({ autoFocus: true });
 
   const handleChange = (newValue: string) => {
@@ -150,11 +155,27 @@ function SelectionStep({
 
 export function Config<
   T extends Record<string, string> = Record<string, string>,
->({ steps, state, debug, onFinished, onAborted }: ConfigProps<T>) {
-  const done = state?.done ?? false;
+>({
+  steps,
+  state,
+  isActive = true,
+  debug,
+  handlers,
+  onFinished,
+  onAborted,
+}: ConfigProps<T>) {
+  // isActive passed as prop
 
-  const [step, setStep] = React.useState<number>(done ? steps.length : 0);
-  const [values, setValues] = React.useState<Record<string, string>>(() => {
+  const [step, setStep] = useState<number>(
+    !isActive ? (state?.completedStep ?? steps.length) : 0
+  );
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    // If not active and we have saved state values, use those
+    if (!isActive && state?.values) {
+      return state.values;
+    }
+
+    // Otherwise initialize from step defaults
     const initial: Record<string, string> = {};
     steps.forEach((stepConfig) => {
       switch (stepConfig.type) {
@@ -175,8 +196,8 @@ export function Config<
     });
     return initial;
   });
-  const [inputValue, setInputValue] = React.useState('');
-  const [selectedIndex, setSelectedIndex] = React.useState(() => {
+  const [inputValue, setInputValue] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(() => {
     const firstStep = steps[0];
     return firstStep?.type === StepType.Selection ? firstStep.defaultIndex : 0;
   });
@@ -189,7 +210,7 @@ export function Config<
   };
 
   useInput((input, key) => {
-    if (key.escape && !done && step < steps.length) {
+    if (key.escape && isActive && step < steps.length) {
       // Save current value before aborting
       const currentStepConfig = steps[step];
       if (currentStepConfig) {
@@ -214,13 +235,13 @@ export function Config<
         }
       }
       if (onAborted) {
-        onAborted();
+        onAborted('configuration');
       }
       return;
     }
 
     const currentStep = steps[step];
-    if (!done && step < steps.length && currentStep) {
+    if (isActive && step < steps.length && currentStep) {
       switch (currentStep.type) {
         case StepType.Selection:
           if (key.tab) {
@@ -285,6 +306,18 @@ export function Config<
       if (onFinished) {
         onFinished(newValues as T);
       }
+
+      // Save state before completing
+      handlers?.updateState?.({
+        values: newValues,
+        completedStep: steps.length,
+      });
+
+      // Signal Workflow that config is complete
+      if (handlers?.onComplete) {
+        handlers.onComplete();
+      }
+
       setStep(steps.length);
     } else {
       setStep(step + 1);
@@ -299,7 +332,7 @@ export function Config<
   const renderStepInput = (
     stepConfig: ConfigStep,
     isCurrentStep: boolean
-  ): React.ReactElement => {
+  ): ReactElement => {
     switch (stepConfig.type) {
       case StepType.Text:
         if (isCurrentStep) {
@@ -313,7 +346,11 @@ export function Config<
             />
           );
         }
-        return <Text dimColor>{values[stepConfig.key] || ''}</Text>;
+        return (
+          <Text dimColor wrap="truncate-end">
+            {values[stepConfig.key] || ''}
+          </Text>
+        );
       case StepType.Selection: {
         if (!isCurrentStep) {
           const selectedOption = stepConfig.options.find(
@@ -337,11 +374,11 @@ export function Config<
   };
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" marginLeft={1}>
       {steps.map((stepConfig, index) => {
-        const isCurrentStep = index === step && !done;
+        const isCurrentStep = index === step && isActive;
         const isCompleted = index < step;
-        const wasAborted = index === step && done;
+        const wasAborted = index === step && !isActive;
         const shouldShow = isCompleted || isCurrentStep || wasAborted;
 
         if (!shouldShow) {

@@ -18,7 +18,7 @@ export function Feedback({ type, message }: FeedbackProps) {
   const symbol = getSymbol(type);
 
   return (
-    <Box>
+    <Box marginLeft={1}>
       <Text color={color}>
         {symbol} {message}
       </Text>

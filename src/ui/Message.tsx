@@ -7,7 +7,7 @@ export interface MessageProps {
 
 export const Message = ({ text }: MessageProps) => {
   return (
-    <Box>
+    <Box marginLeft={1}>
       <Text>{text}</Text>
     </Box>
   );
