@@ -166,17 +166,18 @@ export function createExecutionHandlers(
                   // Mark Validate as done and move to timeline
                   ops.addToTimeline(first);
 
+                  // Create Config component with validated steps
                   return [
                     {
                       id: crypto.randomUUID(),
                       name: ComponentName.Config,
-                      state: { done: false },
+                      state: {},
                       props: {
                         steps,
                         onFinished: handleConfigFinished,
                         onAborted: handleConfigAborted,
                       },
-                    },
+                    } as StatefulComponentDefinition,
                   ];
                 })
               );

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box } from 'ink';
 
 import { RefinementProps } from '../types/components.js';

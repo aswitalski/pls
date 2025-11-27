@@ -143,7 +143,6 @@ export interface CommandState extends BaseState {
 }
 
 export interface IntrospectState extends BaseState {
-  isLoading?: boolean;
   error?: string;
 }
 
@@ -169,14 +168,6 @@ export interface ExecuteState extends BaseState {
 export interface ValidateState extends BaseState {
   isLoading?: boolean;
   error?: string;
-}
-
-export interface ProgressProps extends BaseStatefulProps<ProgressState> {
-  message: string;
-}
-
-export interface ProgressState extends BaseState {
-  // No additional state needed for Progress component
 }
 
 // Generic base definitions with shared properties
@@ -263,29 +254,14 @@ type ValidateDefinition = StatefulDefinition<
   ValidateProps,
   ValidateState
 >;
-type ProgressDefinition = StatefulDefinition<
-  ComponentName.Progress,
-  ProgressProps,
-  ProgressState
->;
 
-// Discriminated union of all component definitions
-export type ComponentDefinition =
+// Union of all stateless component definitions
+export type StatelessComponentDefinition =
   | WelcomeDefinition
-  | ConfigDefinition
   | FeedbackDefinition
   | MessageDefinition
-  | RefinementDefinition
-  | PlanDefinition
-  | CommandDefinition
-  | ConfirmDefinition
-  | IntrospectDefinition
   | ReportDefinition
-  | AnswerDefinition
-  | AnswerDisplayDefinition
-  | ExecuteDefinition
-  | ValidateDefinition
-  | ProgressDefinition;
+  | AnswerDisplayDefinition;
 
 // Union of all stateful component definitions
 export type StatefulComponentDefinition =
@@ -297,5 +273,9 @@ export type StatefulComponentDefinition =
   | IntrospectDefinition
   | AnswerDefinition
   | ExecuteDefinition
-  | ValidateDefinition
-  | ProgressDefinition;
+  | ValidateDefinition;
+
+// Discriminated union of all component definitions
+export type ComponentDefinition =
+  | StatelessComponentDefinition
+  | StatefulComponentDefinition;

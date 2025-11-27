@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { ComponentDefinition, Handlers } from '../types/components.js';
-import { App, FeedbackType, Task } from '../types/types.js';
+import { ComponentDefinition } from '../types/components.js';
+import { App } from '../types/types.js';
 
 import {
   AnthropicService,
@@ -11,13 +11,11 @@ import {
   createCommandDefinition,
   createConfigDefinitionWithKeys,
   createMessage,
-  createProgressDefinition,
   createWelcomeDefinition,
 } from '../services/components.js';
 import {
   getConfigurationRequiredMessage,
   getMissingConfigKeys,
-  hasValidAnthropicKey,
   loadConfig,
   loadDebugSetting,
   saveAnthropicConfig,

@@ -65,16 +65,14 @@ export function Introspect({
 }: IntrospectProps) {
   // isActive passed as prop
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
 
   useInput(
     (input, key) => {
-      if (key.escape && isLoading && isActive) {
-        setIsLoading(false);
+      if (key.escape && isActive) {
         handlers?.onAborted?.('introspection');
       }
     },
-    { isActive: isLoading && isActive }
+    { isActive }
   );
 
   useEffect(() => {
@@ -86,7 +84,6 @@ export function Introspect({
     // Skip processing if no service available
     if (!service) {
       setError('No service available');
-      setIsLoading(false);
       return;
     }
 
@@ -121,8 +118,6 @@ export function Introspect({
             );
           }
 
-          setIsLoading(false);
-
           // Add Report component to queue
           if (handlers?.addToQueue) {
             handlers.addToQueue(
@@ -138,7 +133,6 @@ export function Introspect({
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
-          setIsLoading(false);
           setError(errorMessage);
           handlers?.onError?.(errorMessage);
         }
@@ -153,21 +147,21 @@ export function Introspect({
   }, [tasks, isActive, service, debug, handlers]);
 
   // Don't render wrapper when done and nothing to show
-  if (!isLoading && !error && !children) {
+  if (!isActive && !error && !children) {
     return null;
   }
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
-      {isLoading && (
-        <Box>
+      {isActive && (
+        <Box marginLeft={1}>
           <Text color={getTextColor(isActive)}>Listing capabilities. </Text>
           <Spinner />
         </Box>
       )}
 
       {error && (
-        <Box marginTop={1}>
+        <Box marginTop={1} marginLeft={1}>
           <Text color={Colors.Status.Error}>Error: {error}</Text>
         </Box>
       )}

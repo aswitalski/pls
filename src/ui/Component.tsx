@@ -1,5 +1,4 @@
 import React from 'react';
-import { Box } from 'ink';
 
 import { ComponentDefinition } from '../types/components.js';
 import { ComponentName } from '../types/types.js';
@@ -14,7 +13,6 @@ import { Feedback } from './Feedback.js';
 import { Introspect } from './Introspect.js';
 import { Message } from './Message.js';
 import { Plan } from './Plan.js';
-import { Progress } from './Progress.js';
 import { Refinement } from './Refinement.js';
 import { Report } from './Report.js';
 import { Validate } from './Validate.js';
@@ -100,8 +98,5 @@ export const Component = React.memo(function Component({
 
     case ComponentName.Validate:
       return <Validate {...def.props} state={def.state} isActive={isActive} />;
-
-    case ComponentName.Progress:
-      return <Progress {...def.props} state={def.state} isActive={isActive} />;
   }
 });

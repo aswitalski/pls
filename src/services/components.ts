@@ -332,9 +332,7 @@ export function createIntrospectDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Introspect,
-    state: {
-      isLoading: true,
-    },
+    state: {},
     props: {
       tasks,
       service,
@@ -465,20 +463,5 @@ export function createValidateDefinition(
       onComplete,
       onAborted,
     } as any,
-  };
-}
-
-export function createProgressDefinition(
-  message: string,
-  handlers: Handlers
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Progress,
-    state: {},
-    props: {
-      message,
-      handlers,
-    },
   };
 }

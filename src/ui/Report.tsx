@@ -27,8 +27,10 @@ function CapabilityItem({
 export function Report({ message, capabilities }: ReportProps) {
   return (
     <Box flexDirection="column">
-      <Text>{message}</Text>
-      <Box flexDirection="column" marginLeft={2} marginTop={1}>
+      <Box marginLeft={1}>
+        <Text>{message}</Text>
+      </Box>
+      <Box flexDirection="column" marginLeft={3} marginTop={1}>
         {capabilities.map((capability, index) => (
           <CapabilityItem
             key={index}

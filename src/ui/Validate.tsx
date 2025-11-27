@@ -33,7 +33,7 @@ export function Validate({
   );
 
   useInput(
-    (input, key) => {
+    (_, key) => {
       if (key.escape && isLoading && isActive) {
         setIsLoading(false);
         onAborted('validation');
