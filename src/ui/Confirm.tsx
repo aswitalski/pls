@@ -7,7 +7,7 @@ import { useInput } from '../services/keyboard.js';
 export interface ConfirmProps {
   message: string;
   state?: ConfirmState;
-  done?: boolean;
+  isActive?: boolean;
   onConfirmed?: () => void;
   onCancelled?: () => void;
 }
@@ -19,11 +19,11 @@ export interface ConfirmState {
 export function Confirm({
   message,
   state,
-  done = false,
+  isActive = true,
   onConfirmed,
   onCancelled,
 }: ConfirmProps) {
-  const isActive = !done;
+  // isActive passed as prop
   const [selectedIndex, setSelectedIndex] = React.useState(0); // 0 = Yes, 1 = No
 
   useInput(

@@ -10,10 +10,10 @@ import { Spinner } from './Spinner.js';
 export const Refinement = ({
   text,
   state,
-  done = false,
+  isActive = true,
   onAborted,
 }: RefinementProps) => {
-  const isActive = !done;
+  // isActive passed as prop
 
   useInput(
     (input, key) => {

@@ -23,7 +23,7 @@ export interface BaseState {
 // Base props for all stateful components
 export interface BaseStatefulProps<TState extends BaseState = BaseState> {
   state?: TState;
-  done?: boolean;
+  isActive?: boolean;
   handlers?: Handlers;
 }
 

@@ -18,14 +18,14 @@ export function Validate({
   missingConfig,
   userRequest,
   state,
-  done = false,
+  isActive = true,
   service,
   children,
   onError,
   onComplete,
   onAborted,
 }: ValidateProps) {
-  const isActive = !done;
+  // isActive passed as prop
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
   const [completionMessage, setCompletionMessage] = useState<string | null>(

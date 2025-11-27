@@ -142,13 +142,13 @@ function CommandStatusDisplay({ item, elapsed }: CommandStatusDisplayProps) {
 export function Execute({
   tasks,
   state,
-  done = false,
+  isActive = true,
   service,
   onError,
   onComplete,
   onAborted,
 }: ExecuteProps) {
-  const isActive = !done;
+  // isActive passed as prop
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
   const [isExecuting, setIsExecuting] = useState(false);

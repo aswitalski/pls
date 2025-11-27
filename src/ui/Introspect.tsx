@@ -56,7 +56,7 @@ function parseCapabilityFromTask(task: Task): Capability {
 export function Introspect({
   tasks,
   state,
-  done = false,
+  isActive = true,
   service,
   children,
   debug = false,
@@ -64,7 +64,7 @@ export function Introspect({
   onComplete,
   onAborted,
 }: IntrospectProps) {
-  const isActive = !done;
+  // isActive passed as prop
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
 

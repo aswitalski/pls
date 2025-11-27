@@ -76,12 +76,12 @@ export function Plan({
   message,
   tasks,
   state,
-  done = false,
+  isActive = true,
   debug = false,
   onSelectionConfirmed,
   onAborted,
 }: PlanProps) {
-  const isActive = !done;
+  // isActive passed as prop
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(
     state?.highlightedIndex ?? null
   );

@@ -15,13 +15,12 @@ const MINIMUM_PROCESSING_TIME = 400;
 export function Answer({
   question,
   state,
-  done = false,
+  isActive = true,
   service,
   onError,
   onComplete,
   onAborted,
 }: AnswerProps) {
-  const isActive = !done;
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
 

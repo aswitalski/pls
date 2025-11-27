@@ -39,7 +39,7 @@ export interface ConfigProps<
 > {
   steps: ConfigStep[];
   state?: ConfigState;
-  done?: boolean;
+  isActive?: boolean;
   debug?: boolean;
   onFinished?: (config: T) => void;
   onAborted?: (operation: string) => void;
@@ -152,12 +152,12 @@ export function Config<
 >({
   steps,
   state,
-  done = false,
+  isActive = true,
   debug,
   onFinished,
   onAborted,
 }: ConfigProps<T>) {
-  const isActive = !done;
+  // isActive passed as prop
 
   const [step, setStep] = React.useState<number>(!isActive ? steps.length : 0);
   const [values, setValues] = React.useState<Record<string, string>>(() => {

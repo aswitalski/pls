@@ -31,7 +31,7 @@ export const Component = React.memo(function Component({
   done,
   debug,
 }: ComponentProps): React.ReactElement {
-  // For stateless components, always use done=true
+  // For stateless components, always inactive (done=true, isActive=false)
   const isStatelessComponent = !('state' in def);
   const isActive = isStatelessComponent ? false : !done;
 
@@ -44,17 +44,17 @@ export const Component = React.memo(function Component({
         <Config
           {...def.props}
           state={def.state}
-          done={!isActive}
+          isActive={isActive}
           debug={debug}
         />
       );
 
     case ComponentName.Command:
-      return <Command {...def.props} state={def.state} done={!isActive} />;
+      return <Command {...def.props} state={def.state} isActive={isActive} />;
 
     case ComponentName.Plan:
       return (
-        <Plan {...def.props} state={def.state} done={!isActive} debug={debug} />
+        <Plan {...def.props} state={def.state} isActive={isActive} debug={debug} />
       );
 
     case ComponentName.Feedback:
@@ -64,17 +64,17 @@ export const Component = React.memo(function Component({
       return <Message {...def.props} />;
 
     case ComponentName.Refinement:
-      return <Refinement {...def.props} state={def.state} done={!isActive} />;
+      return <Refinement {...def.props} state={def.state} isActive={isActive} />;
 
     case ComponentName.Confirm:
-      return <Confirm {...def.props} state={def.state} done={!isActive} />;
+      return <Confirm {...def.props} state={def.state} isActive={isActive} />;
 
     case ComponentName.Introspect:
       return (
         <Introspect
           {...def.props}
           state={def.state}
-          done={!isActive}
+          isActive={isActive}
           debug={debug}
         />
       );
@@ -83,18 +83,18 @@ export const Component = React.memo(function Component({
       return <Report {...def.props} />;
 
     case ComponentName.Answer:
-      return <Answer {...def.props} state={def.state} done={!isActive} />;
+      return <Answer {...def.props} state={def.state} isActive={isActive} />;
 
     case ComponentName.AnswerDisplay:
       return <AnswerDisplay {...def.props} />;
 
     case ComponentName.Execute:
-      return <Execute {...def.props} state={def.state} done={!isActive} />;
+      return <Execute {...def.props} state={def.state} isActive={isActive} />;
 
     case ComponentName.Validate:
-      return <Validate {...def.props} state={def.state} done={!isActive} />;
+      return <Validate {...def.props} state={def.state} isActive={isActive} />;
 
     case ComponentName.Progress:
-      return <Progress {...def.props} state={def.state} done={!isActive} />;
+      return <Progress {...def.props} state={def.state} isActive={isActive} />;
   }
 });

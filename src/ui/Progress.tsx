@@ -9,10 +9,10 @@ import { Spinner } from './Spinner.js';
 
 export const Progress = ({
   message,
-  done = false,
+  isActive = true,
   handlers,
 }: ProgressProps) => {
-  const isActive = !done;
+  // isActive passed as prop
 
   useInput(
     (input, key) => {

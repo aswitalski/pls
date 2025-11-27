@@ -16,14 +16,13 @@ const MIN_PROCESSING_TIME = 1000; // purely for visual effect
 export function Command({
   command,
   state,
-  done = false,
+  isActive = true,
   service,
   children,
   onError,
   onComplete,
   onAborted,
 }: CommandProps) {
-  const isActive = !done;
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(state?.isLoading ?? isActive);
 
