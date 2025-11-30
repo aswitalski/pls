@@ -195,8 +195,16 @@ The type system provides better tooling and IDE support.`;
       'answer'
     );
 
-    expect(result.answer).toBe(multiLineAnswer);
-    expect(result.answer?.split('\n')).toHaveLength(4);
+    // Answer should be wrapped to 80 characters per line
+    const lines = result.answer?.split('\n') ?? [];
+    expect(lines.every((line) => line.length <= 80)).toBe(true);
+    expect(lines.length).toBeGreaterThan(0);
+
+    // Should contain all the key content
+    expect(result.answer).toContain('TypeScript is a programming language');
+    expect(result.answer).toContain('static typing');
+    expect(result.answer).toContain('catch errors during development');
+    expect(result.answer).toContain('type system provides better tooling');
   });
 });
 

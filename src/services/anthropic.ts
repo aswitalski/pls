@@ -28,6 +28,58 @@ export interface LLMService {
   processWithTool(command: string, toolName: string): Promise<CommandResult>;
 }
 
+/**
+ * Wraps text to ensure no line exceeds the specified width.
+ * Breaks at word boundaries to maintain readability.
+ */
+function wrapText(text: string, maxWidth: number): string {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = '';
+
+  for (const word of words) {
+    // If adding this word would exceed max width, start a new line
+    if (
+      currentLine.length > 0 &&
+      currentLine.length + 1 + word.length > maxWidth
+    ) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = currentLine.length > 0 ? `${currentLine} ${word}` : word;
+    }
+  }
+
+  // Add the last line if not empty
+  if (currentLine.length > 0) {
+    lines.push(currentLine);
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Removes citation tags and other markup from answer text.
+ * Web search responses may include <cite> tags that should be stripped.
+ * Also wraps text to ensure lines don't exceed 80 characters.
+ */
+export function cleanAnswerText(text: string): string {
+  // Remove citation tags like <cite index="1-1">content</cite>
+  // Replace with just the content
+  let cleaned = text.replace(/<cite[^>]*>(.*?)<\/cite>/g, '$1');
+
+  // Remove any other XML/HTML tags that might appear
+  cleaned = cleaned.replace(/<[^>]+>/g, '');
+
+  // Normalize whitespace, converting all whitespace to single spaces
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+  // Wrap text to 80 characters per line
+  cleaned = wrapText(cleaned, 80);
+
+  return cleaned;
+}
+
 export class AnthropicService implements LLMService {
   private client: Anthropic;
   private model: string;
@@ -115,7 +167,7 @@ export class AnthropicService implements LLMService {
         return {
           message: '',
           tasks: [],
-          answer: textContent.text,
+          answer: cleanAnswerText(textContent.text),
         };
       }
     }
@@ -186,7 +238,7 @@ export class AnthropicService implements LLMService {
       return {
         message: '',
         tasks: [],
-        answer: input.answer,
+        answer: cleanAnswerText(input.answer),
       };
     }
 

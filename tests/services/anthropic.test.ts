@@ -3,6 +3,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { cleanAnswerText } from '../../src/services/anthropic.js';
 import {
   hasValidAnthropicKey,
   saveAnthropicConfig,
@@ -179,5 +180,83 @@ describe('Anthropic API key validation', () => {
       const result = hasValidAnthropicKey();
       expect(result).toBe(false);
     });
+  });
+});
+
+describe('Answer text cleaning', () => {
+  it('removes simple citation tags', () => {
+    const input = '<cite index="1-1">Some content</cite>';
+    const result = cleanAnswerText(input);
+    expect(result).toBe('Some content');
+  });
+
+  it('removes multiple citation tags', () => {
+    const input =
+      '<cite index="1-1">First</cite> and <cite index="2-1">second</cite>';
+    const result = cleanAnswerText(input);
+    expect(result).toBe('First and second');
+  });
+
+  it('removes citation tags from complex text', () => {
+    const input =
+      '<cite index="1-1">Rumination is the focused attention on the symptoms of one\'s mental distress.</cite> <cite index="2-1">It involves repetitive thinking or dwelling on negative feelings and distress and their causes and consequences.</cite>';
+    const result = cleanAnswerText(input);
+    expect(result).toBe(
+      "Rumination is the focused attention on the symptoms of one's mental distress. It\ninvolves repetitive thinking or dwelling on negative feelings and distress and\ntheir causes and consequences."
+    );
+  });
+
+  it('removes other HTML/XML tags', () => {
+    const input = '<strong>Bold text</strong> and <em>italic text</em>';
+    const result = cleanAnswerText(input);
+    expect(result).toBe('Bold text and italic text');
+  });
+
+  it('normalizes whitespace', () => {
+    const input = 'Some    text   with   extra    spaces';
+    const result = cleanAnswerText(input);
+    expect(result).toBe('Some text with extra spaces');
+  });
+
+  it('handles text without any tags', () => {
+    const input = 'Plain text without any markup';
+    const result = cleanAnswerText(input);
+    expect(result).toBe('Plain text without any markup');
+  });
+
+  it('handles empty string', () => {
+    const input = '';
+    const result = cleanAnswerText(input);
+    expect(result).toBe('');
+  });
+
+  it('handles nested tags', () => {
+    const input = '<cite index="1-1"><strong>Bold citation</strong></cite>';
+    const result = cleanAnswerText(input);
+    expect(result).toBe('Bold citation');
+  });
+
+  it('wraps long lines to 80 characters', () => {
+    const input =
+      'This is a very long line that exceeds eighty characters and should be wrapped to multiple lines for better readability in the terminal.';
+    const result = cleanAnswerText(input);
+    const lines = result.split('\n');
+    expect(lines.every((line) => line.length <= 80)).toBe(true);
+    expect(lines.length).toBeGreaterThan(1);
+  });
+
+  it('combines citation tags and wraps text', () => {
+    const input = `<cite index="1-1">First line with some content</cite>
+<cite index="2-1">Second line with more content</cite>
+<cite index="3-1">Third line with additional content</cite>`;
+    const result = cleanAnswerText(input);
+    const lines = result.split('\n');
+    // All lines should be <= 80 chars
+    expect(lines.every((line) => line.length <= 80)).toBe(true);
+    // Should contain all the content (may be wrapped across lines)
+    expect(result).toContain('First line with some content');
+    expect(result).toContain('Second line with more content');
+    expect(result).toContain('Third line with');
+    expect(result).toContain('additional content');
   });
 });
