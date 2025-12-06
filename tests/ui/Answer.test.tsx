@@ -60,23 +60,23 @@ describe('Answer component', () => {
     );
   });
 
-  it('calls onComplete when successful', async () => {
+  it('calls completeActive when successful', async () => {
     const answer = 'The 55 inch Samsung The Frame costs around $1,500.';
     const service = createMockAnthropicService({ answer });
-    const onComplete = vi.fn();
+    const completeActive = vi.fn();
 
     const { lastFrame } = render(
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
-        handlers={createMockHandlers({ onComplete })}
+        handlers={createMockHandlers({ completeActive })}
       />
     );
 
     // Wait for async processing
     await vi.waitFor(
       () => {
-        expect(onComplete).toHaveBeenCalled();
+        expect(completeActive).toHaveBeenCalled();
       },
       { timeout: 500 }
     );
@@ -146,20 +146,20 @@ describe('Answer component', () => {
     const { withMinimumTime } = await import('../../src/services/timing.js');
     const answer = 'Quick answer';
     const service = createMockAnthropicService({ answer });
-    const onComplete = vi.fn();
+    const completeActive = vi.fn();
 
     render(
       <Answer
         question="Quick question?"
         service={service}
-        handlers={createMockHandlers({ onComplete })}
+        handlers={createMockHandlers({ completeActive })}
       />
     );
 
     // Wait for completion
     await vi.waitFor(
       () => {
-        expect(onComplete).toHaveBeenCalled();
+        expect(completeActive).toHaveBeenCalled();
       },
       { timeout: 500 }
     );

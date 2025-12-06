@@ -117,7 +117,7 @@ export function Plan({
       );
       onSelectionConfirmed(concreteTasks);
       // Signal Plan completion after adding Confirm to queue
-      handlers?.onComplete();
+      handlers?.completeActive();
     }
   }, [
     isActive,
@@ -200,11 +200,11 @@ export function Plan({
           if (onSelectionConfirmed) {
             // Callback will handle the entire flow (Refinement, refined Plan, Confirm)
             // So we need to complete the Plan first
-            handlers?.onComplete();
+            handlers?.completeActive();
             onSelectionConfirmed(refinedTasks);
           } else {
             // No selection callback, just complete normally
-            handlers?.onComplete();
+            handlers?.completeActive();
           }
         }
       }

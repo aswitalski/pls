@@ -9,12 +9,11 @@ import { ConfigStep } from '../ui/Config.js';
 
 // Global handlers passed to all stateful components
 export interface Handlers<TState extends BaseState = BaseState> {
-  onComplete: () => void;
   onAborted: (operation: string) => void;
   onError: (error: string) => void;
   addToQueue: (...items: ComponentDefinition[]) => void;
   addToTimeline: (...items: ComponentDefinition[]) => void;
-  completeActive: () => void;
+  completeActive: (...items: ComponentDefinition[]) => void;
   updateState: (state: Partial<TState>) => void;
 }
 

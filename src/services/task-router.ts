@@ -1,5 +1,5 @@
 import { Task, TaskType } from '../types/types.js';
-import { Handlers } from '../types/components.js';
+import { ComponentDefinition, Handlers } from '../types/components.js';
 
 import { LLMService } from './anthropic.js';
 import {
@@ -45,7 +45,8 @@ export function routeTasksWithConfirm(
   service: LLMService,
   userRequest: string,
   handlers: Handlers,
-  hasDefineTask: boolean = false
+  hasDefineTask: boolean = false,
+  commandComponent?: ComponentDefinition
 ): void {
   if (tasks.length === 0) return;
 
@@ -84,7 +85,12 @@ export function routeTasksWithConfirm(
       }
     );
 
-    handlers.addToTimeline(planDefinition);
+    // Use atomic update if commandComponent provided, else normal flow
+    if (commandComponent) {
+      handlers.completeActive(planDefinition);
+    } else {
+      handlers.addToTimeline(planDefinition);
+    }
     handlers.addToQueue(confirmDefinition);
   }
 }

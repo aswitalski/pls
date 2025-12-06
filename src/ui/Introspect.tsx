@@ -130,7 +130,7 @@ export function Introspect({
           );
 
           // Signal completion
-          handlers?.onComplete();
+          handlers?.completeActive();
         }
       } catch (err) {
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);

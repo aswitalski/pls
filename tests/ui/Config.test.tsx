@@ -503,12 +503,11 @@ describe('Config component interaction flows', () => {
       const callOrder: string[] = [];
       const mockHandlers = {
         updateState: vi.fn(() => callOrder.push('updateState')),
-        onComplete: vi.fn(() => callOrder.push('onComplete')),
+        completeActive: vi.fn(() => callOrder.push('completeActive')),
         onAborted: vi.fn(),
         onError: vi.fn(),
         addToQueue: vi.fn(),
         addToTimeline: vi.fn(),
-        completeActive: vi.fn(),
       };
       const onFinished = vi.fn(() => callOrder.push('onFinished'));
 

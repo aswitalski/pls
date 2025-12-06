@@ -22,12 +22,11 @@ function createMockHandlers(initialState: PlanState): {
 } {
   const state = { ...initialState };
   const handlers: Handlers<PlanState> = {
-    onComplete: vi.fn(),
+    completeActive: vi.fn(),
     onAborted: vi.fn(),
     onError: vi.fn(),
     addToQueue: vi.fn(),
     addToTimeline: vi.fn(),
-    completeActive: vi.fn(),
     updateState: vi.fn((newState) => {
       Object.assign(state, newState);
     }),
@@ -312,11 +311,11 @@ describe('Plan component', () => {
         completedSelections: [],
       };
       const onSelectionConfirmed = vi.fn();
-      const onComplete = vi.fn();
+      const completeActive = vi.fn();
 
       const { stdin } = render(
         <Plan
-          handlers={createGlobalMockHandlers({ onComplete })}
+          handlers={createGlobalMockHandlers({ completeActive })}
           state={state}
           tasks={[
             { action: 'Install dependencies', type: TaskType.Execute },
@@ -331,7 +330,7 @@ describe('Plan component', () => {
         { action: 'Install dependencies', type: TaskType.Execute },
         { action: 'Run tests', type: TaskType.Execute },
       ]);
-      expect(onComplete).toHaveBeenCalled();
+      expect(completeActive).toHaveBeenCalled();
 
       // Try to interact - should do nothing since already completed
       stdin.write(ArrowDown);

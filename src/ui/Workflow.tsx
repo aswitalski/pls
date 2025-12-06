@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Static } from 'ink';
 
 import {
@@ -29,23 +29,42 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
   const [active, setActive] = useState<ComponentDefinition | null>(null);
   const [queue, setQueue] = useState<ComponentDefinition[]>(initialQueue);
 
-  // Function to move active component to timeline
-  const moveActiveToTimeline = useCallback(() => {
-    setActive((curr) => {
-      if (!curr) return null;
+  // Ref to track active component for synchronous access
+  const activeRef = useRef<ComponentDefinition | null>(null);
+
+  // Keep ref in sync with active state
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
+
+  // Function to move active component to timeline with optional additional items
+  const moveActiveToTimeline = useCallback(
+    (...items: ComponentDefinition[]) => {
+      const curr = activeRef.current;
+      if (!curr) {
+        // No active component, just add items if provided
+        if (items.length > 0) {
+          setTimeline((prev) => [...prev, ...items]);
+        }
+        return;
+      }
 
       const doneComponent = markAsDone(curr);
-      setTimeline((prev) => [...prev, doneComponent]);
-      return null;
-    });
-  }, []);
+
+      // Atomic update: add active component and any additional items
+      setTimeline((prev) =>
+        items.length > 0
+          ? [...prev, doneComponent, ...items]
+          : [...prev, doneComponent]
+      );
+      setActive(null);
+    },
+    []
+  );
 
   // Global handlers for all stateful components
   const handlers: Handlers = useMemo(
     () => ({
-      onComplete: () => {
-        moveActiveToTimeline();
-      },
       onAborted: (operation: string) => {
         moveActiveToTimeline();
         // Add feedback to queue and exit
@@ -69,20 +88,25 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
       addToTimeline: (...items: ComponentDefinition[]) => {
         setTimeline((prev) => [...prev, ...items]);
       },
-      completeActive: () => {
-        moveActiveToTimeline();
+      completeActive: (...items: ComponentDefinition[]) => {
+        moveActiveToTimeline(...items);
       },
       updateState: <T extends BaseState>(newState: Partial<T>) => {
         setActive((curr) => {
           if (!curr || !('state' in curr)) return curr;
           const stateful = curr as StatefulComponentDefinition;
-          return {
+          const updated = {
             ...stateful,
             state: {
               ...stateful.state,
               ...newState,
             },
           } as ComponentDefinition;
+
+          // Update ref synchronously so moveActiveToTimeline sees the latest state
+          activeRef.current = updated;
+
+          return updated;
         });
       },
     }),

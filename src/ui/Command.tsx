@@ -107,22 +107,20 @@ export function Command({
               : undefined
           );
 
-          // Move Command to timeline first
-          handlers?.onComplete();
-
           if (hasDefineTask) {
-            // Has DEFINE tasks: Add Plan to queue for selection
-            // The refinement callback will handle routing after user selects
+            // DEFINE tasks: Move Command to timeline, add Plan to queue
+            handlers?.completeActive();
             handlers?.addToQueue(planDefinition);
           } else {
-            // No DEFINE tasks: Use routing service for Confirm flow
+            // No DEFINE tasks: Pass Plan to be added atomically with Command
             routeTasksWithConfirm(
               result.tasks,
               result.message,
               svc!,
               command,
               handlers!,
-              false
+              false,
+              planDefinition // Pass Plan for atomic update
             );
           }
         }

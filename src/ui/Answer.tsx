@@ -62,7 +62,7 @@ export function Answer({
           handlers?.updateState({ answer: answerText });
 
           // Signal completion
-          handlers?.onComplete();
+          handlers?.completeActive();
         }
       } catch (err) {
         if (mounted) {

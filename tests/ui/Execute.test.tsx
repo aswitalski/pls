@@ -123,7 +123,7 @@ describe('Execute component', () => {
     });
   });
 
-  it('calls onComplete when successful', async () => {
+  it('calls completeActive when successful', async () => {
     const service = createMockAnthropicService({
       message: 'Setting up project.',
       commands: [
@@ -131,7 +131,7 @@ describe('Execute component', () => {
         { description: 'Initialize git', command: 'git init' },
       ],
     });
-    const onComplete = vi.fn();
+    const completeActive = vi.fn();
 
     const tasks = [
       { action: 'Create project directory', type: TaskType.Execute },
@@ -142,13 +142,13 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        handlers={createMockHandlers({ onComplete })}
+        handlers={createMockHandlers({ completeActive })}
       />
     );
 
     await vi.waitFor(
       () => {
-        expect(onComplete).toHaveBeenCalled();
+        expect(completeActive).toHaveBeenCalled();
       },
       { timeout: 500 }
     );
@@ -280,12 +280,12 @@ describe('Execute component', () => {
     expect(onAborted).toHaveBeenCalledWith('execution');
   });
 
-  it('calls onComplete when no commands returned', async () => {
+  it('calls completeActive when no commands returned', async () => {
     const service = createMockAnthropicService({
       message: '',
       commands: [],
     });
-    const onComplete = vi.fn();
+    const completeActive = vi.fn();
 
     const tasks = [{ action: 'Nothing', type: TaskType.Execute }];
 
@@ -293,13 +293,13 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        handlers={createMockHandlers({ onComplete })}
+        handlers={createMockHandlers({ completeActive })}
       />
     );
 
     await vi.waitFor(
       () => {
-        expect(onComplete).toHaveBeenCalled();
+        expect(completeActive).toHaveBeenCalled();
       },
       { timeout: 500 }
     );

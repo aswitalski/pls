@@ -232,7 +232,7 @@ export function Execute({
       error,
     });
 
-    handlers?.onComplete();
+    handlers?.completeActive();
   }, [isExecuting, commandStatuses, outputs, handlers, message, error]);
 
   useEffect(() => {
@@ -284,7 +284,7 @@ export function Execute({
             commandStatuses: [],
           });
 
-          handlers?.onComplete();
+          handlers?.completeActive();
           return;
         }
 
