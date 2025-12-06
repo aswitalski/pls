@@ -5,6 +5,7 @@ import type { Task } from '../types/types.js';
 import {
   AnthropicConfig,
   getAvailableConfigStructure,
+  getConfiguredKeys,
 } from './configuration.js';
 import { formatSkillsForPrompt, loadSkills } from './skills.js';
 import { toolRegistry } from './tool-registry.js';
@@ -115,10 +116,13 @@ export class AnthropicService implements LLMService {
     // Add config structure for config tool only
     if (toolName === 'config') {
       const configStructure = getAvailableConfigStructure();
+      const configuredKeys = getConfiguredKeys();
       const configSection =
         '\n\n## Available Configuration\n\n' +
         'Config structure (key: description):\n' +
-        JSON.stringify(configStructure, null, 2);
+        JSON.stringify(configStructure, null, 2) +
+        '\n\nConfigured keys (keys that exist in config file):\n' +
+        JSON.stringify(configuredKeys, null, 2);
       systemPrompt += configSection;
     }
 

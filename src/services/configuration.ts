@@ -365,23 +365,14 @@ export function getMissingConfigKeys(): string[] {
 }
 
 /**
- * Get available config structure for CONFIG tool
- * Returns keys with descriptions only (no values for privacy)
+ * Get list of configured keys from config file
+ * Returns array of dot-notation keys that exist in the config file
  */
-export function getAvailableConfigStructure(): Record<string, string> {
-  const schema = getConfigSchema();
-  const structure: Record<string, string> = {};
-
-  // Add core schema keys with descriptions
-  for (const [key, definition] of Object.entries(schema)) {
-    structure[key] = definition.description;
-  }
-
-  // Add discovered keys from config file (if it exists)
+export function getConfiguredKeys(): string[] {
   try {
     const configFile = getConfigFile();
     if (!existsSync(configFile)) {
-      return structure;
+      return [];
     }
 
     const content = readFileSync(configFile, 'utf-8');
@@ -411,15 +402,75 @@ export function getAvailableConfigStructure(): Record<string, string> {
     }
 
     const flatConfig = flattenConfig(parsed);
+    return Object.keys(flatConfig);
+  } catch {
+    return [];
+  }
+}
 
-    // Add discovered keys that aren't in schema
-    for (const key of Object.keys(flatConfig)) {
-      if (!structure[key]) {
-        structure[key] = `${key} (discovered)`;
+/**
+ * Get available config structure for CONFIG tool
+ * Returns keys with descriptions only (no values for privacy)
+ * Marks optional keys as "(optional)"
+ */
+export function getAvailableConfigStructure(): Record<string, string> {
+  const schema = getConfigSchema();
+  const structure: Record<string, string> = {};
+
+  // Try to load existing config to see which keys are already set
+  let flatConfig: Record<string, unknown> = {};
+  try {
+    const configFile = getConfigFile();
+    if (existsSync(configFile)) {
+      const content = readFileSync(configFile, 'utf-8');
+      const parsed = YAML.parse(content) as Record<string, unknown>;
+
+      // Flatten nested config to dot notation
+      function flattenConfig(
+        obj: Record<string, unknown>,
+        prefix = ''
+      ): Record<string, unknown> {
+        const result: Record<string, unknown> = {};
+
+        for (const [key, value] of Object.entries(obj)) {
+          const fullKey = prefix ? `${prefix}.${key}` : key;
+
+          if (value && typeof value === 'object' && !Array.isArray(value)) {
+            Object.assign(
+              result,
+              flattenConfig(value as Record<string, unknown>, fullKey)
+            );
+          } else {
+            result[fullKey] = value;
+          }
+        }
+
+        return result;
       }
+
+      flatConfig = flattenConfig(parsed);
     }
   } catch {
-    // Config file doesn't exist or can't be read, only use schema
+    // Config file doesn't exist or can't be read
+  }
+
+  // Add schema keys with descriptions
+  // Mark optional keys as (optional)
+  for (const [key, definition] of Object.entries(schema)) {
+    const isOptional = !definition.required;
+
+    if (isOptional) {
+      structure[key] = `${definition.description} (optional)`;
+    } else {
+      structure[key] = definition.description;
+    }
+  }
+
+  // Add discovered keys that aren't in schema
+  for (const key of Object.keys(flatConfig)) {
+    if (!(key in structure)) {
+      structure[key] = `${key} (discovered)`;
+    }
   }
 
   return structure;

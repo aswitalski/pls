@@ -7,7 +7,8 @@ based on their query.
 ## Input
 
 You will receive:
-- `configStructure`: Object mapping config keys to descriptions (e.g., {"anthropic.key": "Anthropic API key"})
+- `configStructure`: Object mapping config keys to descriptions (e.g., {"anthropic.key": "Anthropic API key", "settings.debug": "Debug mode (optional)"})
+- `configuredKeys`: Array of keys that exist in the user's config file (e.g., ["anthropic.key", "anthropic.model", "settings.debug"])
 - `query`: User's request (e.g., "app", "mode", "anthropic", or empty)
 
 ## Task
@@ -18,7 +19,8 @@ Determine which config keys the user wants to configure and return them as tasks
 
 ### Query: "app" or empty/unclear
 - Return all **required** config keys (those needed for the app to work)
-- Also include any **optional** config keys that are marked as "(discovered)" (they exist in user's config file)
+- Also include any keys marked as "(optional)" that appear in `configuredKeys` (optional settings that exist in user's config file)
+- Also include any keys marked as "(discovered)" (they exist in user's config file but aren't in schema)
 - Required keys: `anthropic.key`, `anthropic.model`
 
 ### Query: "mode"

@@ -107,6 +107,9 @@ export function Command({
               : undefined
           );
 
+          // Move Command to timeline first
+          handlers?.onComplete();
+
           if (hasDefineTask) {
             // Has DEFINE tasks: Add Plan to queue for selection
             // The refinement callback will handle routing after user selects
@@ -122,9 +125,6 @@ export function Command({
               false
             );
           }
-
-          // Move Command to timeline
-          handlers?.onComplete();
         }
       } catch (err) {
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);

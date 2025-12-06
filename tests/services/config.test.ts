@@ -8,8 +8,10 @@ import {
   ConfigError,
   configExists,
   getAvailableConfigStructure,
+  getConfigPath,
   getConfigSchema,
   getConfigurationRequiredMessage,
+  getConfiguredKeys,
   loadConfig,
   loadDebugSetting,
   mergeConfig,
@@ -373,9 +375,134 @@ config:
       it('works when no config file exists', () => {
         const structure = getAvailableConfigStructure();
 
+        // Required keys should always be present
         expect(structure['anthropic.key']).toBeDefined();
         expect(structure['anthropic.model']).toBeDefined();
-        expect(structure['settings.debug']).toBeDefined();
+
+        // Optional keys should be present and marked
+        expect(structure['settings.debug']).toBe('Debug mode (optional)');
+      });
+
+      it('includes all optional keys marked as (optional)', () => {
+        // Save required config only
+        saveAnthropicConfig({
+          key: 'sk-ant-api03-' + 'A'.repeat(95),
+          model: AnthropicModel.Haiku,
+        });
+
+        const structure = getAvailableConfigStructure();
+
+        // Required keys should be included
+        expect(structure['anthropic.key']).toBe('Anthropic API key');
+        expect(structure['anthropic.model']).toBe('Anthropic model');
+
+        // Optional key should be in structure marked as optional
+        expect(structure['settings.debug']).toBe('Debug mode (optional)');
+      });
+
+      it('includes optional configured keys marked with (optional)', () => {
+        // Save required config
+        saveAnthropicConfig({
+          key: 'sk-ant-api03-' + 'A'.repeat(95),
+          model: AnthropicModel.Haiku,
+        });
+
+        // Save optional debug setting
+        saveDebugSetting(true);
+
+        const structure = getAvailableConfigStructure();
+
+        // Required keys should not be marked
+        expect(structure['anthropic.key']).toBe('Anthropic API key');
+        expect(structure['anthropic.model']).toBe('Anthropic model');
+
+        // Optional configured key should be included and marked
+        expect(structure['settings.debug']).toBe('Debug mode (optional)');
+      });
+    });
+
+    describe('Configured keys tracking', () => {
+      it('uses temporary directory for tests', () => {
+        // Verify we're not using the real home directory
+        const configPath = getConfigPath();
+        expect(configPath).toContain(tempHome);
+        expect(configPath).not.toContain(originalHome || '');
+      });
+
+      it('returns empty array when no config file exists', () => {
+        const keys = getConfiguredKeys();
+
+        expect(keys).toEqual([]);
+      });
+
+      it('returns configured keys from config file', () => {
+        saveAnthropicConfig({
+          key: 'sk-ant-api03-' + 'A'.repeat(95),
+          model: AnthropicModel.Haiku,
+        });
+
+        const keys = getConfiguredKeys();
+
+        expect(keys).toContain('anthropic.key');
+        expect(keys).toContain('anthropic.model');
+      });
+
+      it('returns optional configured keys', () => {
+        saveAnthropicConfig({
+          key: 'sk-ant-api03-' + 'A'.repeat(95),
+          model: AnthropicModel.Haiku,
+        });
+        saveDebugSetting(true);
+
+        const keys = getConfiguredKeys();
+
+        expect(keys).toContain('anthropic.key');
+        expect(keys).toContain('anthropic.model');
+        expect(keys).toContain('settings.debug');
+      });
+
+      it('returns discovered keys from config file', () => {
+        saveConfig('custom', { mykey: 'myvalue' });
+
+        const keys = getConfiguredKeys();
+
+        expect(keys).toContain('custom.mykey');
+      });
+
+      it('handles nested config structures', () => {
+        saveConfig('product', {
+          alpha: { path: '/path/to/alpha', enabled: true },
+          beta: { path: '/path/to/beta', enabled: false },
+        });
+
+        const keys = getConfiguredKeys();
+
+        expect(keys).toContain('product.alpha.path');
+        expect(keys).toContain('product.alpha.enabled');
+        expect(keys).toContain('product.beta.path');
+        expect(keys).toContain('product.beta.enabled');
+      });
+
+      it('returns all keys from mixed configuration', () => {
+        // Required config
+        saveAnthropicConfig({
+          key: 'sk-ant-api03-' + 'A'.repeat(95),
+          model: AnthropicModel.Haiku,
+        });
+        // Optional config
+        saveDebugSetting(true);
+        // Discovered config
+        saveConfig('custom', { setting: 'value' });
+
+        const keys = getConfiguredKeys();
+
+        // Required keys
+        expect(keys).toContain('anthropic.key');
+        expect(keys).toContain('anthropic.model');
+        // Optional key
+        expect(keys).toContain('settings.debug');
+        // Discovered key
+        expect(keys).toContain('custom.setting');
       });
     });
 
