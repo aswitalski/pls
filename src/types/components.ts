@@ -7,12 +7,21 @@ import { LLMService } from '../services/anthropic.js';
 
 import { ConfigStep } from '../ui/Config.js';
 
+// Component lifecycle status
+export enum ComponentStatus {
+  Awaiting = 'awaiting', // In queue, not rendered
+  Active = 'active', // Currently interactive, accepts input
+  Pending = 'pending', // Visible but waiting for next action
+  Done = 'done', // Completed, in Static timeline
+}
+
 // Global handlers passed to all stateful components
 export interface Handlers<TState extends BaseState = BaseState> {
   onAborted: (operation: string) => void;
   onError: (error: string) => void;
   addToQueue: (...items: ComponentDefinition[]) => void;
   addToTimeline: (...items: ComponentDefinition[]) => void;
+  moveToPending: () => void;
   completeActive: (...items: ComponentDefinition[]) => void;
   updateState: (state: Partial<TState>) => void;
 }
@@ -26,6 +35,7 @@ export interface BaseState {
 // Runtime-only props (injected during rendering)
 export interface BaseRuntimeProps<TState extends BaseState = BaseState> {
   state?: TState;
+  status?: ComponentStatus;
   isActive?: boolean;
   handlers?: Handlers<TState>;
 }
@@ -209,6 +219,7 @@ interface StatelessDefinition<ComponentName extends string, ComponentProps> {
   id: string;
   name: ComponentName;
   props: ComponentProps;
+  status?: ComponentStatus;
 }
 
 // For components with state tracking
@@ -221,6 +232,7 @@ interface StatefulDefinition<
   name: ComponentName;
   state: ComponentState;
   props: ComponentProps;
+  status?: ComponentStatus;
 }
 
 // Specific component definitions

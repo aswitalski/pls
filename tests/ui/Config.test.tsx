@@ -508,6 +508,7 @@ describe('Config component interaction flows', () => {
         onError: vi.fn(),
         addToQueue: vi.fn(),
         addToTimeline: vi.fn(),
+        moveToPending: vi.fn(),
       };
       const onFinished = vi.fn(() => callOrder.push('onFinished'));
 

@@ -27,6 +27,7 @@ function createMockHandlers(initialState: PlanState): {
     onError: vi.fn(),
     addToQueue: vi.fn(),
     addToTimeline: vi.fn(),
+    moveToPending: vi.fn(),
     updateState: vi.fn((newState) => {
       Object.assign(state, newState);
     }),

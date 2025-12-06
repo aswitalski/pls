@@ -109,6 +109,7 @@ export function createMockHandlers<T extends BaseState = BaseState>(
     onError: vi.fn(),
     addToQueue: vi.fn(),
     addToTimeline: vi.fn(),
+    moveToPending: vi.fn(),
     updateState: vi.fn(),
     ...overrides,
   };

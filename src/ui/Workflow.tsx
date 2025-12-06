@@ -26,38 +26,49 @@ interface WorkflowProps {
 
 export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
   const [timeline, setTimeline] = useState<ComponentDefinition[]>([]);
-  const [active, setActive] = useState<ComponentDefinition | null>(null);
+  const [current, setCurrent] = useState<{
+    active: ComponentDefinition | null;
+    pending: ComponentDefinition | null;
+  }>({ active: null, pending: null });
   const [queue, setQueue] = useState<ComponentDefinition[]>(initialQueue);
 
-  // Ref to track active component for synchronous access
-  const activeRef = useRef<ComponentDefinition | null>(null);
+  // Ref to track current components for synchronous access
+  const currentRef = useRef<{
+    active: ComponentDefinition | null;
+    pending: ComponentDefinition | null;
+  }>({ active: null, pending: null });
 
-  // Keep ref in sync with active state
+  // Keep ref in sync with current state
   useEffect(() => {
-    activeRef.current = active;
-  }, [active]);
+    currentRef.current = current;
+  }, [current]);
 
-  // Function to move active component to timeline with optional additional items
+  // Function to move active and pending components to timeline with optional additional items
   const moveActiveToTimeline = useCallback(
     (...items: ComponentDefinition[]) => {
-      const curr = activeRef.current;
-      if (!curr) {
-        // No active component, just add items if provided
-        if (items.length > 0) {
-          setTimeline((prev) => [...prev, ...items]);
-        }
-        return;
+      const { active, pending } = currentRef.current;
+
+      // Move pending to timeline if exists
+      if (pending) {
+        const doneComponent = markAsDone(pending);
+        setTimeline((prev) => [...prev, doneComponent]);
       }
 
-      const doneComponent = markAsDone(curr);
+      // Move active to timeline
+      if (active) {
+        const doneComponent = markAsDone(active);
+        setTimeline((prev) =>
+          items.length > 0
+            ? [...prev, doneComponent, ...items]
+            : [...prev, doneComponent]
+        );
+      } else if (!pending && items.length > 0) {
+        // No active or pending, just add items
+        setTimeline((prev) => [...prev, ...items]);
+      }
 
-      // Atomic update: add active component and any additional items
-      setTimeline((prev) =>
-        items.length > 0
-          ? [...prev, doneComponent, ...items]
-          : [...prev, doneComponent]
-      );
-      setActive(null);
+      // Clear current group
+      setCurrent({ active: null, pending: null });
     },
     []
   );
@@ -88,13 +99,21 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
       addToTimeline: (...items: ComponentDefinition[]) => {
         setTimeline((prev) => [...prev, ...items]);
       },
+      moveToPending: () => {
+        const { active } = currentRef.current;
+        if (!active) return;
+
+        // Move active to pending without marking as done
+        setCurrent({ active: null, pending: active });
+      },
       completeActive: (...items: ComponentDefinition[]) => {
         moveActiveToTimeline(...items);
       },
       updateState: <T extends BaseState>(newState: Partial<T>) => {
-        setActive((curr) => {
-          if (!curr || !('state' in curr)) return curr;
-          const stateful = curr as StatefulComponentDefinition;
+        setCurrent((curr) => {
+          const { active } = curr;
+          if (!active || !('state' in active)) return curr;
+          const stateful = active as StatefulComponentDefinition;
           const updated = {
             ...stateful,
             state: {
@@ -104,9 +123,10 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
           } as ComponentDefinition;
 
           // Update ref synchronously so moveActiveToTimeline sees the latest state
-          activeRef.current = updated;
+          const newCurrent = { ...curr, active: updated };
+          currentRef.current = newCurrent;
 
-          return updated;
+          return newCurrent;
         });
       },
     }),
@@ -117,28 +137,34 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
 
   // Move next item from queue to active
   useEffect(() => {
-    if (queue.length > 0 && active === null) {
+    if (queue.length > 0 && current.active === null) {
       const [first, ...rest] = queue;
       setQueue(rest);
-      setActive(first);
+      setCurrent((prev) => ({ ...prev, active: first }));
     }
-  }, [queue, active]);
+  }, [queue, current.active]);
 
   // Process active component - stateless components auto-move to timeline
   useEffect(() => {
+    const { active } = current;
     if (!active) return;
 
     if (isStateless(active)) {
       const doneComponent = markAsDone(active);
       setTimeline((prev) => [...prev, doneComponent]);
-      setActive(null);
+      setCurrent((prev) => ({ ...prev, active: null }));
     }
     // Stateful components stay in active until handlers move them to timeline
-  }, [active]);
+  }, [current]);
 
   // Exit when all done
   useEffect(() => {
-    if (active === null && queue.length === 0 && timeline.length > 0) {
+    if (
+      current.active === null &&
+      current.pending === null &&
+      queue.length === 0 &&
+      timeline.length > 0
+    ) {
       // Check if last item in timeline is a failed feedback
       const lastItem = timeline[timeline.length - 1];
       const isFailed =
@@ -147,10 +173,11 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
 
       exitApp(isFailed ? 1 : 0);
     }
-  }, [active, queue, timeline]);
+  }, [current.active, current.pending, queue, timeline]);
 
-  // Inject global handlers into active component
+  // Render active and pending components
   const activeComponent = useMemo(() => {
+    const { active } = current;
     if (!active) return null;
 
     // For stateless components, render as-is with isActive=true
@@ -178,18 +205,37 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
         debug={debug}
       />
     );
-  }, [active, debug, handlers]);
+  }, [current, debug, handlers]);
+
+  const pendingComponent = useMemo(() => {
+    const { pending } = current;
+    if (!pending) return null;
+
+    // Pending components don't receive input, so isActive=false
+    return (
+      <Component
+        key={pending.id}
+        def={pending}
+        isActive={false}
+        debug={debug}
+      />
+    );
+  }, [current, debug]);
 
   return (
     <Box flexDirection="column">
+      {/* Timeline: Only Done components (Static, never re-renders) */}
       <Static key="timeline" items={timeline}>
         {(item) => (
           <Box key={item.id} marginTop={1}>
-            <Component def={item} isActive={false} debug={debug} />
+            <Component def={item} isActive={false} debug={false} />
           </Box>
         )}
       </Static>
-      <Box marginTop={1}>{activeComponent}</Box>
+
+      {/* Current work: Pending + Active together (dynamic) */}
+      {pendingComponent && <Box marginTop={1}>{pendingComponent}</Box>}
+      {activeComponent && <Box marginTop={1}>{activeComponent}</Box>}
     </Box>
   );
 };
