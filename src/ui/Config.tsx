@@ -200,8 +200,15 @@ export function Config<
   });
   const [inputValue, setInputValue] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(() => {
-    const firstStep = steps[0];
-    return firstStep?.type === StepType.Selection ? firstStep.defaultIndex : 0;
+    // Initialize selectedIndex based on current step's defaultIndex
+    if (
+      isActive &&
+      step < steps.length &&
+      steps[step].type === StepType.Selection
+    ) {
+      return steps[step].defaultIndex;
+    }
+    return 0;
   });
 
   const normalizeValue = (value: string | null | undefined) => {
@@ -211,10 +218,13 @@ export function Config<
     return value.replace(/\n/g, '').trim();
   };
 
-  useInput((input, key) => {
-    if (key.escape && isActive && step < steps.length) {
+  useInput((_, key) => {
+    if (!isActive || step >= steps.length) return;
+
+    const currentStepConfig = steps[step];
+
+    if (key.escape) {
       // Save current value before aborting
-      const currentStepConfig = steps[step];
       if (currentStepConfig) {
         const configKey = currentStepConfig.path || currentStepConfig.key;
         let currentValue = '';
@@ -223,10 +233,7 @@ export function Config<
             currentValue = inputValue || values[configKey] || '';
             break;
           case StepType.Selection:
-            currentValue =
-              currentStepConfig.options[selectedIndex]?.value ||
-              values[configKey] ||
-              '';
+            currentValue = values[configKey] || '';
             break;
           default: {
             const exhaustiveCheck: never = currentStepConfig;
@@ -243,23 +250,14 @@ export function Config<
       return;
     }
 
-    const currentStep = steps[step];
-    if (isActive && step < steps.length && currentStep) {
-      switch (currentStep.type) {
-        case StepType.Selection:
-          if (key.tab) {
-            setSelectedIndex((prev) => (prev + 1) % currentStep.options.length);
-          } else if (key.return) {
-            handleSubmit(currentStep.options[selectedIndex].value);
-          }
-          break;
-        case StepType.Text:
-          // Text input handled by TextInput component
-          break;
-        default: {
-          const exhaustiveCheck: never = currentStep;
-          throw new Error(`Unsupported step type: ${exhaustiveCheck}`);
-        }
+    // Handle selection step navigation
+    if (currentStepConfig.type === StepType.Selection) {
+      if (key.tab) {
+        setSelectedIndex(
+          (prev) => (prev + 1) % currentStepConfig.options.length
+        );
+      } else if (key.return) {
+        handleSubmit(currentStepConfig.options[selectedIndex].value);
       }
     }
   });
@@ -308,32 +306,38 @@ export function Config<
 
     if (step === steps.length - 1) {
       // Last step completed
+
+      // IMPORTANT: Update state BEFORE calling onFinished
+      // onFinished may call handlers.completeActive(), so state must be saved first
+      const stateUpdate = {
+        values: newValues,
+        completedStep: steps.length,
+      };
+      handlers?.updateState(stateUpdate);
+
+      // Now call onFinished - this may trigger completeActive()
       if (onFinished) {
         onFinished(newValues as T);
       }
 
-      // Save state before completing
-      handlers?.updateState({
-        values: newValues,
-        completedStep: steps.length,
-      });
-
-      // Signal Workflow that config is complete
-      handlers?.onComplete();
-
       setStep(steps.length);
     } else {
       // Save state after each step
-      handlers?.updateState({
+      const stateUpdate = {
         values: newValues,
         completedStep: step + 1,
-      });
+      };
+      handlers?.updateState(stateUpdate);
 
-      setStep(step + 1);
-      // Reset selection index for next step
-      const nextStep = steps[step + 1];
-      if (nextStep?.type === StepType.Selection) {
-        setSelectedIndex(nextStep.defaultIndex);
+      const nextStep = step + 1;
+      setStep(nextStep);
+
+      // Reset selectedIndex for next step
+      if (
+        nextStep < steps.length &&
+        steps[nextStep].type === StepType.Selection
+      ) {
+        setSelectedIndex(steps[nextStep].defaultIndex);
       }
     }
   };
@@ -343,7 +347,7 @@ export function Config<
     isCurrentStep: boolean
   ): ReactElement => {
     const configKey = stepConfig.path || stepConfig.key;
-    // Use state values if not active (in timeline), otherwise use local values
+    // Use state values when inactive, local values when active
     const displayValue =
       !isActive && state?.values ? state.values[configKey] : values[configKey];
 
@@ -367,16 +371,17 @@ export function Config<
         );
       case StepType.Selection: {
         if (!isCurrentStep) {
-          const selectedOption = stepConfig.options.find(
+          // Find the option that matches the saved/current value
+          const option = stepConfig.options.find(
             (opt) => opt.value === displayValue
           );
-          return <Text dimColor>{selectedOption?.label || ''}</Text>;
+          return <Text dimColor>{option?.label || ''}</Text>;
         }
         return (
           <SelectionStep
             options={stepConfig.options}
             selectedIndex={selectedIndex}
-            isCurrentStep={isCurrentStep}
+            isCurrentStep={true}
           />
         );
       }

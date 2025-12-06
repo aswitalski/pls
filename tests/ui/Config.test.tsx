@@ -498,5 +498,116 @@ describe('Config component interaction flows', () => {
       expect(output).not.toContain('default1');
       expect(output).not.toContain('default2');
     });
+
+    it('calls updateState BEFORE onFinished to preserve state', () => {
+      const callOrder: string[] = [];
+      const mockHandlers = {
+        updateState: vi.fn(() => callOrder.push('updateState')),
+        onComplete: vi.fn(() => callOrder.push('onComplete')),
+        onAborted: vi.fn(),
+        onError: vi.fn(),
+        addToQueue: vi.fn(),
+        addToTimeline: vi.fn(),
+        completeActive: vi.fn(),
+      };
+      const onFinished = vi.fn(() => callOrder.push('onFinished'));
+
+      const steps: ConfigStep[] = [
+        {
+          description: 'Debug mode',
+          key: 'debug',
+          path: 'settings.debug',
+          type: StepType.Selection,
+          options: [
+            { label: 'yes', value: 'true' },
+            { label: 'no', value: 'false' },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config steps={steps} handlers={mockHandlers} onFinished={onFinished} />
+      );
+
+      // Press Enter to submit default value
+      stdin.write(Keys.Enter);
+
+      // Verify updateState was called BEFORE onFinished
+      expect(callOrder).toEqual(['updateState', 'onFinished']);
+      expect(mockHandlers.updateState).toHaveBeenCalledWith({
+        values: { 'settings.debug': 'true' },
+        completedStep: 1,
+      });
+    });
+
+    it('preserves selection state when rendered in timeline', () => {
+      const steps: ConfigStep[] = [
+        {
+          description: 'Debug mode',
+          key: 'debug',
+          path: 'settings.debug',
+          type: StepType.Selection,
+          options: [
+            { label: 'yes', value: 'true' },
+            { label: 'no', value: 'false' },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+      ];
+
+      // Render as inactive (in timeline) with saved state
+      const { lastFrame } = render(
+        <Config
+          steps={steps}
+          isActive={false}
+          state={{
+            values: { 'settings.debug': 'false' },
+            completedStep: 1,
+          }}
+        />
+      );
+
+      const output = lastFrame();
+      // Should show 'no' (the saved value), not 'yes' (the default)
+      expect(output).toContain('no');
+      expect(output).not.toContain('yes');
+    });
+
+    it('displays changed boolean selection in timeline', () => {
+      const steps: ConfigStep[] = [
+        {
+          description: 'Enable feature',
+          key: 'enabled',
+          path: 'feature.enabled',
+          type: StepType.Selection,
+          options: [
+            { label: 'yes', value: 'true' },
+            { label: 'no', value: 'false' },
+          ],
+          defaultIndex: 1, // Default is 'no' (false)
+          validate: () => true,
+        },
+      ];
+
+      // User changed from default 'no' to 'yes'
+      const { lastFrame } = render(
+        <Config
+          steps={steps}
+          isActive={false}
+          state={{
+            values: { 'feature.enabled': 'true' },
+            completedStep: 1,
+          }}
+        />
+      );
+
+      const output = lastFrame();
+      // Should show 'yes' (the changed value), not 'no' (the default)
+      expect(output).toContain('yes');
+      expect(output).not.toContain('no');
+    });
   });
 });

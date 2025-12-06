@@ -426,15 +426,51 @@ export function getAvailableConfigStructure(): Record<string, string> {
 }
 
 /**
+ * Convert string value to appropriate type based on schema definition
+ */
+function parseConfigValue(
+  key: string,
+  stringValue: string,
+  schema: Record<string, ConfigDefinition>
+): unknown {
+  // If we have a schema definition, use its type
+  if (key in schema) {
+    const definition = schema[key];
+    switch (definition.type) {
+      case 'boolean':
+        return stringValue === 'true';
+      case 'number':
+        return Number(stringValue);
+      case 'string':
+      case 'regexp':
+      case 'enum':
+        return stringValue;
+    }
+  }
+
+  // No schema definition - try to infer type from string value
+  // This handles skill-defined configs that may not be in schema yet
+  if (stringValue === 'true' || stringValue === 'false') {
+    return stringValue === 'true';
+  }
+  if (!isNaN(Number(stringValue)) && stringValue.trim() !== '') {
+    return Number(stringValue);
+  }
+  return stringValue;
+}
+
+/**
  * Unflatten dotted keys into nested structure
  * Example: { "product.alpha.path": "value" } -> { product: { alpha: { path: "value" } } }
+ * Converts string values to appropriate types based on config schema
  */
 export function unflattenConfig(
   dotted: Record<string, string>
 ): Record<string, Record<string, unknown>> {
   const result: Record<string, Record<string, unknown>> = {};
+  const schema = getConfigSchema();
 
-  for (const [dottedKey, value] of Object.entries(dotted)) {
+  for (const [dottedKey, stringValue] of Object.entries(dotted)) {
     const parts = dottedKey.split('.');
     const section = parts[0];
 
@@ -448,8 +484,9 @@ export function unflattenConfig(
       current = current[parts[i]] as Record<string, unknown>;
     }
 
-    // Set final value
-    current[parts[parts.length - 1]] = value;
+    // Convert string value to appropriate type and set
+    const typedValue = parseConfigValue(dottedKey, stringValue, schema);
+    current[parts[parts.length - 1]] = typedValue;
   }
 
   return result;

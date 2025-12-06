@@ -218,8 +218,8 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
           path: key,
           type: StepType.Selection,
           options: [
-            { label: 'Yes', value: 'true' },
-            { label: 'No', value: 'false' },
+            { label: 'yes', value: 'true' },
+            { label: 'no', value: 'false' },
           ],
           defaultIndex: currentBool !== undefined ? (currentBool ? 0 : 1) : 0,
           validate: getValidator(definition),
