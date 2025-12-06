@@ -162,13 +162,13 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
 
     // For stateful components, inject global handlers
     const statefulActive = active as StatefulComponentDefinition;
-    const wrappedDef: ComponentDefinition = {
+    const wrappedDef = {
       ...statefulActive,
       props: {
         ...statefulActive.props,
         handlers,
       },
-    } as ComponentDefinition;
+    } as unknown as ComponentDefinition;
 
     return (
       <Component

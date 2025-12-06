@@ -4,17 +4,17 @@ import { existsSync, readFileSync } from 'node:fs';
 import { App, ComponentName, FeedbackType, Task } from '../types/types.js';
 import { ConfigRequirement } from '../types/skills.js';
 import {
-  AnswerProps,
+  AnswerDefinitionProps,
   Capability,
-  CommandProps,
+  CommandDefinitionProps,
   ComponentDefinition,
-  ConfigProps,
-  ConfirmProps,
-  ExecuteProps,
-  IntrospectProps,
-  PlanProps,
-  RefinementProps,
-  ValidateProps,
+  ConfigDefinitionProps,
+  ConfirmDefinitionProps,
+  ExecuteDefinitionProps,
+  IntrospectDefinitionProps,
+  PlanDefinitionProps,
+  RefinementDefinitionProps,
+  ValidateDefinitionProps,
 } from '../types/components.js';
 
 import { parse as parseYaml } from 'yaml';
@@ -241,7 +241,7 @@ export function createConfigDefinition(
       steps: createConfigSteps(),
       onFinished,
       onAborted,
-    } satisfies ConfigProps,
+    } satisfies ConfigDefinitionProps,
   };
 }
 
@@ -261,7 +261,7 @@ export function createConfigDefinitionWithKeys(
       steps: createConfigStepsFromSchema(keys),
       onFinished,
       onAborted,
-    } satisfies ConfigProps,
+    } satisfies ConfigDefinitionProps,
   };
 }
 
@@ -276,7 +276,7 @@ export function createCommandDefinition(
     props: {
       command,
       service,
-    } satisfies CommandProps,
+    } satisfies CommandDefinitionProps,
   };
 }
 
@@ -297,7 +297,7 @@ export function createPlanDefinition(
       message,
       tasks,
       onSelectionConfirmed,
-    } satisfies PlanProps,
+    } satisfies PlanDefinitionProps,
   };
 }
 
@@ -336,7 +336,7 @@ export function createRefinement(
     props: {
       text,
       onAborted,
-    } satisfies RefinementProps,
+    } satisfies RefinementDefinitionProps,
   };
 }
 
@@ -352,7 +352,7 @@ export function createConfirmDefinition(
       message: getConfirmationMessage(),
       onConfirmed,
       onCancelled,
-    } satisfies ConfirmProps,
+    } satisfies ConfirmDefinitionProps,
   };
 }
 
@@ -367,7 +367,7 @@ export function createIntrospectDefinition(
     props: {
       tasks,
       service,
-    } satisfies IntrospectProps,
+    } satisfies IntrospectDefinitionProps,
   };
 }
 
@@ -396,7 +396,7 @@ export function createAnswerDefinition(
     props: {
       question,
       service,
-    } satisfies AnswerProps,
+    } satisfies AnswerDefinitionProps,
   };
 }
 
@@ -427,7 +427,7 @@ export function createExecuteDefinition(
     props: {
       tasks,
       service,
-    } satisfies ExecuteProps,
+    } satisfies ExecuteDefinitionProps,
   };
 }
 
@@ -450,6 +450,6 @@ export function createValidateDefinition(
       onError,
       onComplete,
       onAborted,
-    } satisfies ValidateProps,
+    } satisfies ValidateDefinitionProps,
   };
 }
