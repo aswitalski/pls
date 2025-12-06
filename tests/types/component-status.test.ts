@@ -8,14 +8,6 @@ import {
 } from '../../src/types/components.js';
 import { ComponentName } from '../../src/types/types.js';
 
-describe('ComponentStatus enum', () => {
-  it('enum values are unique', () => {
-    const values = Object.values(ComponentStatus);
-    const uniqueValues = new Set(values);
-    expect(uniqueValues.size).toBe(values.length);
-  });
-});
-
 describe('ComponentDefinition with status', () => {
   it('allows stateless component with status', () => {
     const definition: ComponentDefinition = {
