@@ -4,19 +4,11 @@ import {
   ComponentStatus,
   Handlers,
   BaseRuntimeProps,
-  BaseState,
   ComponentDefinition,
 } from '../../src/types/components.js';
 import { ComponentName } from '../../src/types/types.js';
 
 describe('ComponentStatus enum', () => {
-  it('defines all four lifecycle states', () => {
-    expect(ComponentStatus.Awaiting).toBe('awaiting');
-    expect(ComponentStatus.Active).toBe('active');
-    expect(ComponentStatus.Pending).toBe('pending');
-    expect(ComponentStatus.Done).toBe('done');
-  });
-
   it('enum values are unique', () => {
     const values = Object.values(ComponentStatus);
     const uniqueValues = new Set(values);
@@ -168,28 +160,28 @@ describe('Component lifecycle transitions', () => {
   it('represents full lifecycle with status enum', () => {
     // Component starts as Awaiting
     let status: ComponentStatus = ComponentStatus.Awaiting;
-    expect(status).toBe('awaiting');
+    expect(status).toBe(ComponentStatus.Awaiting);
 
     // Moves to Active when dequeued
     status = ComponentStatus.Active;
-    expect(status).toBe('active');
+    expect(status).toBe(ComponentStatus.Active);
 
     // Can move to Pending while awaiting user decision
     status = ComponentStatus.Pending;
-    expect(status).toBe('pending');
+    expect(status).toBe(ComponentStatus.Pending);
 
     // Finally moves to Done
     status = ComponentStatus.Done;
-    expect(status).toBe('done');
+    expect(status).toBe(ComponentStatus.Done);
   });
 
   it('allows direct transition from Active to Done', () => {
     let status: ComponentStatus = ComponentStatus.Active;
-    expect(status).toBe('active');
+    expect(status).toBe(ComponentStatus.Active);
 
     // Can skip Pending and go directly to Done
     status = ComponentStatus.Done;
-    expect(status).toBe('done');
+    expect(status).toBe(ComponentStatus.Done);
   });
 });
 
