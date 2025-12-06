@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { AnswerProps, ComponentStatus } from '../types/components.js';
+import { AnswerProps } from '../types/components.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
@@ -15,11 +15,10 @@ const MINIMUM_PROCESSING_TIME = 400;
 export function Answer({
   question,
   state,
-  status,
+  isActive = true,
   service,
   handlers,
 }: AnswerProps) {
-  const isActive = status === ComponentStatus.Active;
   const [error, setError] = useState<string | null>(null);
   const [answer, setAnswer] = useState<string | null>(state?.answer ?? null);
 

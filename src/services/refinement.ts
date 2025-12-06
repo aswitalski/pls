@@ -49,8 +49,7 @@ export async function handleRefinement(
       service,
       originalCommand,
       handlers,
-      false, // No DEFINE tasks in refined result
-      undefined // No commandComponent - use normal flow
+      false // No DEFINE tasks in refined result
     );
   } catch (err) {
     handlers.completeActive();

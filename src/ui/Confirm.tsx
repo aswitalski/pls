@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { ConfirmProps, ConfirmState } from '../types/components.js';
+import {
+  ComponentStatus,
+  ConfirmProps,
+  ConfirmState,
+} from '../types/components.js';
 
 import { Colors, Palette } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
@@ -11,12 +15,12 @@ import { UserQuery } from './UserQuery.js';
 export function Confirm({
   message,
   state,
-  isActive = true,
+  status,
   handlers,
   onConfirmed,
   onCancelled,
 }: ConfirmProps) {
-  // isActive passed as prop
+  const isActive = status === ComponentStatus.Active;
   const [selectedIndex, setSelectedIndex] = useState(state?.selectedIndex ?? 0); // 0 = Yes, 1 = No
 
   useInput(
@@ -30,11 +34,9 @@ export function Confirm({
         onCancelled?.();
       } else if (key.tab) {
         // Toggle between Yes (0) and No (1)
-        setSelectedIndex((prev) => {
-          const newIndex = prev === 0 ? 1 : 0;
-          handlers?.updateState({ selectedIndex: newIndex });
-          return newIndex;
-        });
+        const newIndex = selectedIndex === 0 ? 1 : 0;
+        setSelectedIndex(newIndex);
+        handlers?.updateState({ selectedIndex: newIndex });
       } else if (key.return) {
         // Confirm selection
         handlers?.updateState({ selectedIndex, confirmed: true });

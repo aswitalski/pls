@@ -1,3 +1,4 @@
+import { ComponentStatus } from '../../src/types/components.js';
 import { render } from 'ink-testing-library';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -77,6 +78,7 @@ describe('Validate component', () => {
           onComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -103,7 +105,7 @@ describe('Validate component', () => {
           missingConfig={missingConfig}
           userRequest="build alpha"
           state={{}}
-          isActive={false}
+          status={ComponentStatus.Done}
           service={service}
           onComplete={vi.fn()}
           onError={vi.fn()}
@@ -140,6 +142,7 @@ describe('Validate component', () => {
           onComplete={onComplete}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -180,6 +183,7 @@ describe('Validate component', () => {
           onComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -230,6 +234,7 @@ describe('Validate component', () => {
           onComplete={onComplete}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -281,6 +286,7 @@ describe('Validate component', () => {
           onComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -318,6 +324,7 @@ describe('Validate component', () => {
           onComplete={vi.fn()}
           onError={onError}
           onAborted={vi.fn()}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -356,6 +363,7 @@ describe('Validate component', () => {
           onComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={onAborted}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -393,6 +401,7 @@ describe('Validate component', () => {
           onComplete={onComplete}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -433,6 +442,7 @@ describe('Validate component', () => {
           onComplete={onComplete}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -474,6 +484,7 @@ describe('Validate component', () => {
           onComplete={onComplete}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          status={ComponentStatus.Active}
         />
       );
 

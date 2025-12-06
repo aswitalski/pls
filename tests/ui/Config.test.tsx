@@ -1,3 +1,4 @@
+import { ComponentStatus } from '../../src/types/components.js';
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
@@ -22,7 +23,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{}} />;
+      const result = (
+        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+      );
 
       expect(result.props.steps).toHaveLength(1);
     });
@@ -38,7 +41,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{}} />;
+      const result = (
+        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+      );
 
       expect(result.props.steps[0].value).toBe(AnthropicModel.Haiku);
     });
@@ -56,7 +61,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} onFinished={onFinished} />
+        <Config
+          steps={steps}
+          state={{}}
+          onFinished={onFinished}
+          status={ComponentStatus.Active}
+        />
       );
 
       expect(result.props.onFinished).toBe(onFinished);
@@ -89,7 +99,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{}} />;
+      const result = (
+        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+      );
 
       expect(result.props.steps).toHaveLength(3);
     });
@@ -119,7 +131,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{}} />;
+      const result = (
+        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+      );
 
       expect(result.props.steps[0].value).toBeNull();
       expect(result.props.steps[1].value).toBe('claude-haiku-4-5-20251001');
@@ -146,7 +160,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} onFinished={onFinished} />
+        <Config
+          steps={steps}
+          state={{}}
+          onFinished={onFinished}
+          status={ComponentStatus.Active}
+        />
       );
 
       expect(result.props.onFinished).toBe(onFinished);
@@ -166,7 +185,14 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{}} onAborted={onAborted} />;
+      const result = (
+        <Config
+          steps={steps}
+          state={{}}
+          onAborted={onAborted}
+          status={ComponentStatus.Active}
+        />
+      );
 
       expect(result.props.onAborted).toBe(onAborted);
     });
@@ -182,7 +208,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{}} />;
+      const result = (
+        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+      );
 
       expect(result.props.onAborted).toBeUndefined();
     });
@@ -200,7 +228,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{}} />;
+      const result = (
+        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+      );
 
       expect(result.props.steps[0].value).toBe('sk-ant-test');
     });
@@ -230,7 +260,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{}} />;
+      const result = (
+        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+      );
 
       expect(result.props.steps).toHaveLength(3);
       expect(result.props.steps[0].value).toBe('testuser');
@@ -251,7 +283,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{}} />;
+      const result = (
+        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+      );
 
       expect(result.props.onFinished).toBeUndefined();
     });
@@ -275,6 +309,7 @@ describe('Config component interaction flows', () => {
           state={{}}
           onFinished={onFinished}
           onAborted={onAborted}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -302,7 +337,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{}} />;
+      const result = (
+        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+      );
 
       expect(result.props.steps[0].description).toBe('API Key (required)');
       expect(result.props.steps[1].description).toBe('Model [optional]');
@@ -319,7 +356,9 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const result = <Config steps={steps} state={{}} />;
+      const result = (
+        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+      );
 
       expect(result.props.steps[0].value).toBe('你好世界 🌍');
     });
@@ -344,7 +383,11 @@ describe('Config component interaction flows', () => {
       ];
 
       const { stdin } = render(
-        <Config steps={steps} onFinished={onFinished} />
+        <Config
+          steps={steps}
+          onFinished={onFinished}
+          status={ComponentStatus.Active}
+        />
       );
 
       // Press enter to accept default (Haiku)
@@ -367,7 +410,13 @@ describe('Config component interaction flows', () => {
         },
       ];
 
-      const { stdin } = render(<Config steps={steps} onAborted={onAborted} />);
+      const { stdin } = render(
+        <Config
+          steps={steps}
+          onAborted={onAborted}
+          status={ComponentStatus.Active}
+        />
+      );
 
       // Press Escape
       stdin.write(Keys.Escape);
@@ -393,7 +442,11 @@ describe('Config component interaction flows', () => {
       ];
 
       const { stdin, lastFrame } = render(
-        <Config steps={steps} onAborted={onAborted} />
+        <Config
+          steps={steps}
+          onAborted={onAborted}
+          status={ComponentStatus.Active}
+        />
       );
 
       // Press Escape immediately (preserves default)
@@ -439,7 +492,7 @@ describe('Config component interaction flows', () => {
       const { lastFrame } = render(
         <Config
           steps={steps}
-          isActive={false}
+          status={ComponentStatus.Done}
           state={{
             values: {
               'opera.gx.repo': '~/Developer/gx',
@@ -481,7 +534,7 @@ describe('Config component interaction flows', () => {
       const { lastFrame } = render(
         <Config
           steps={steps}
-          isActive={false}
+          status={ComponentStatus.Done}
           state={{
             values: {
               'section.first': 'saved1',
@@ -502,12 +555,13 @@ describe('Config component interaction flows', () => {
     it('calls updateState BEFORE onFinished to preserve state', () => {
       const callOrder: string[] = [];
       const mockHandlers = {
+        addToQueue: vi.fn(),
         updateState: vi.fn(() => callOrder.push('updateState')),
         completeActive: vi.fn(() => callOrder.push('completeActive')),
+        completeActiveAndPending: vi.fn(),
+        addToTimeline: vi.fn(),
         onAborted: vi.fn(),
         onError: vi.fn(),
-        addToQueue: vi.fn(),
-        addToTimeline: vi.fn(),
       };
       const onFinished = vi.fn(() => callOrder.push('onFinished'));
 
@@ -527,7 +581,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const { stdin } = render(
-        <Config steps={steps} handlers={mockHandlers} onFinished={onFinished} />
+        <Config
+          steps={steps}
+          handlers={mockHandlers}
+          onFinished={onFinished}
+          status={ComponentStatus.Active}
+        />
       );
 
       // Press Enter to submit default value
@@ -561,7 +620,7 @@ describe('Config component interaction flows', () => {
       const { lastFrame } = render(
         <Config
           steps={steps}
-          isActive={false}
+          status={ComponentStatus.Done}
           state={{
             values: { 'settings.debug': 'false' },
             completedStep: 1,
@@ -595,7 +654,7 @@ describe('Config component interaction flows', () => {
       const { lastFrame } = render(
         <Config
           steps={steps}
-          isActive={false}
+          status={ComponentStatus.Done}
           state={{
             values: { 'feature.enabled': 'true' },
             completedStep: 1,

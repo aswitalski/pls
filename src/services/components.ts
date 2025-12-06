@@ -8,6 +8,7 @@ import {
   Capability,
   CommandDefinitionProps,
   ComponentDefinition,
+  ComponentStatus,
   ConfigDefinitionProps,
   ConfirmDefinitionProps,
   ExecuteDefinitionProps,
@@ -236,6 +237,7 @@ export function createConfigDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Config,
+    status: ComponentStatus.Awaiting,
     state: {},
     props: {
       steps: createConfigSteps(),
@@ -256,6 +258,7 @@ export function createConfigDefinitionWithKeys(
   return {
     id: randomUUID(),
     name: ComponentName.Config,
+    status: ComponentStatus.Awaiting,
     state: {},
     props: {
       steps: createConfigStepsFromSchema(keys),
@@ -272,6 +275,7 @@ export function createCommandDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Command,
+    status: ComponentStatus.Awaiting,
     state: {},
     props: {
       command,
@@ -288,6 +292,7 @@ export function createPlanDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Plan,
+    status: ComponentStatus.Awaiting,
     state: {
       highlightedIndex: null,
       currentDefineGroupIndex: 0,
@@ -332,6 +337,7 @@ export function createRefinement(
   return {
     id: randomUUID(),
     name: ComponentName.Refinement,
+    status: ComponentStatus.Awaiting,
     state: {},
     props: {
       text,
@@ -347,6 +353,7 @@ export function createConfirmDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Confirm,
+    status: ComponentStatus.Awaiting,
     state: {},
     props: {
       message: getConfirmationMessage(),
@@ -363,6 +370,7 @@ export function createIntrospectDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Introspect,
+    status: ComponentStatus.Awaiting,
     state: {},
     props: {
       tasks,
@@ -392,6 +400,7 @@ export function createAnswerDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Answer,
+    status: ComponentStatus.Awaiting,
     state: {},
     props: {
       question,
@@ -407,13 +416,12 @@ export function isStateless(component: ComponentDefinition): boolean {
 /**
  * Mark a component as done. Returns the component to be added to timeline.
  * Components use handlers.updateState to save their state before completion,
- * so this function simply returns the component as-is.
+ * so this function sets the status to Done and returns the updated component.
  */
 export function markAsDone(
   component: ComponentDefinition
 ): ComponentDefinition {
-  // State already updated via handlers.updateState
-  return component;
+  return { ...component, status: ComponentStatus.Done };
 }
 
 export function createExecuteDefinition(
@@ -423,6 +431,7 @@ export function createExecuteDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Execute,
+    status: ComponentStatus.Awaiting,
     state: {},
     props: {
       tasks,
@@ -442,6 +451,7 @@ export function createValidateDefinition(
   return {
     id: randomUUID(),
     name: ComponentName.Validate,
+    status: ComponentStatus.Awaiting,
     state: {},
     props: {
       missingConfig,

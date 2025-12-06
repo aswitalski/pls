@@ -19,85 +19,79 @@ import { Welcome } from './Welcome.js';
 
 interface ComponentProps {
   def: ComponentDefinition;
-  isActive: boolean;
   debug: boolean;
 }
 
 export const Component = memo(function Component({
   def,
-  isActive,
   debug,
 }: ComponentProps): ReactElement {
-  // For stateless components, always inactive
-  const isStatelessComponent = !('state' in def);
-  const componentIsActive = isStatelessComponent ? false : isActive;
-
   switch (def.name) {
     case ComponentName.Welcome:
-      return <Welcome {...def.props} />;
+      return <Welcome {...def.props} status={def.status} />;
 
     case ComponentName.Config:
       return (
         <Config
           {...def.props}
           state={def.state}
-          isActive={componentIsActive}
+          status={def.status}
           debug={debug}
         />
       );
 
     case ComponentName.Command:
-      return <Command {...def.props} state={def.state} isActive={isActive} />;
+      return <Command {...def.props} state={def.state} status={def.status} />;
 
     case ComponentName.Plan:
       return (
         <Plan
           {...def.props}
           state={def.state}
-          isActive={componentIsActive}
+          status={def.status}
           debug={debug}
         />
       );
 
     case ComponentName.Feedback:
-      return <Feedback {...def.props} />;
+      return <Feedback {...def.props} status={def.status} />;
 
     case ComponentName.Message:
-      return <Message {...def.props} />;
+      return <Message {...def.props} status={def.status} />;
 
     case ComponentName.Refinement:
       return (
-        <Refinement {...def.props} state={def.state} isActive={isActive} />
+        <Refinement {...def.props} state={def.state} status={def.status} />
       );
 
     case ComponentName.Confirm:
-      return <Confirm {...def.props} state={def.state} isActive={isActive} />;
+      return <Confirm {...def.props} state={def.state} status={def.status} />;
 
     case ComponentName.Introspect:
       return (
         <Introspect
           {...def.props}
           state={def.state}
-          isActive={componentIsActive}
+          status={def.status}
           debug={debug}
         />
       );
 
     case ComponentName.Report:
-      return <Report {...def.props} />;
+      return <Report {...def.props} status={def.status} />;
 
     case ComponentName.Answer:
-      return <Answer {...def.props} state={def.state} isActive={isActive} />;
+      return <Answer {...def.props} state={def.state} status={def.status} />;
 
     case ComponentName.Execute:
-      return <Execute {...def.props} state={def.state} isActive={isActive} />;
+      return <Execute {...def.props} state={def.state} status={def.status} />;
 
     case ComponentName.Validate:
       return (
         <Validate
           {...def.props}
           state={def.state}
-          isActive={isActive}
+          status={def.status}
           debug={debug}
         />
       );

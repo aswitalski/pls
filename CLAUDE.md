@@ -293,14 +293,64 @@ This design achieves determinism through layering:
 
 #### Component Lifecycle
 
-The main interface uses a queue-based execution model with two arrays: queue
-(pending components) and timeline (completed components). The first item in
-queue is active. Stateless components move to timeline immediately; stateful
-components wait for user interaction or async completion. Components signal
-completion via callbacks (onFinished, onComplete), which mark them as done and
-move them to timeline. BaseState interface requires `done: boolean` for
-lifecycle tracking. Factory functions in `services/components.ts` create
-properly-typed component definitions with unique IDs.
+The interface operates like a conversation timeline, where components represent
+turns in a dialogue between the user and the concierge. Components flow through
+distinct lifecycle stages, from planning to active execution to completed
+history.
+
+**Lifecycle Stages:**
+
+Components progress through four stages:
+- **Awaiting**: Queued, waiting for their turn
+- **Active**: Currently executing, receiving user input
+- **Pending**: Parked and visible, awaiting user confirmation or next action
+- **Done**: Finished and archived in the timeline
+
+**Flow Concept:**
+
+The lifecycle follows a natural conversation pattern:
+
+1. **Queue to Active**: Components wait their turn in a queue. When ready, one
+   becomes active - the current focus of interaction.
+
+2. **Active to Timeline**: After finishing their execution, components either
+   move to the permanent timeline or remain in pending state:
+   - Simple display components (messages, feedback) finish immediately and move
+     straight to timeline
+   - Interactive components (plan, confirmation, configuration) may be held as
+     pending while awaiting subsequent actions
+   - Failed or cancelled components move directly to timeline with appropriate
+     feedback
+
+3. **Context Preservation**: Some interactions benefit from seeing previous
+   context. For example, when confirming a plan, the plan waits in pending
+   state - visible so users know what they're approving. Once the user confirms
+   or cancels, both the plan and the confirmation decision move to timeline
+   together in logical order.
+
+4. **Timeline Order**: The timeline preserves the logical sequence of
+   interaction. When related components complete together, they're archived in
+   the order that tells the clearest story - for instance, a plan appears
+   before the user's decision to proceed.
+
+**Component Types:**
+
+- **Stateless**: Display-only components that render once and complete
+  immediately (messages, feedback, status displays)
+- **Stateful**: Interactive components that track user interaction and maintain
+  state across their lifecycle (plan selection, confirmation prompts,
+  configuration wizards)
+
+**Design Principles:**
+
+- Progressive disclosure: Only one interactive component is active at a time,
+  keeping the interface focused
+- Context awareness: Components can be parked in pending state to provide
+  context for subsequent interactions
+- Timeline integrity: Archived components preserve their final state in the
+  timeline, creating an accurate interaction history
+- Clean separation: Queue (future), active/pending (present), and timeline
+  (past) are distinct areas with clear transitions between them
 
 ### Interface
 

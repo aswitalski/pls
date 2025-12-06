@@ -7,14 +7,23 @@ import { LLMService } from '../services/anthropic.js';
 
 import { ConfigStep } from '../ui/Config.js';
 
+// Component lifecycle status
+export enum ComponentStatus {
+  Awaiting = 'awaiting', // In queue, not rendered
+  Active = 'active', // Currently interactive, accepts input
+  Pending = 'pending', // Visible but waiting for next action
+  Done = 'done', // Completed, in Static timeline
+}
+
 // Global handlers passed to all stateful components
 export interface Handlers<TState extends BaseState = BaseState> {
+  addToQueue: (...items: ComponentDefinition[]) => void;
+  updateState: (state: Partial<TState>) => void;
+  completeActive: (...items: ComponentDefinition[]) => void;
+  completeActiveAndPending: (...items: ComponentDefinition[]) => void;
+  addToTimeline: (...items: ComponentDefinition[]) => void;
   onAborted: (operation: string) => void;
   onError: (error: string) => void;
-  addToQueue: (...items: ComponentDefinition[]) => void;
-  addToTimeline: (...items: ComponentDefinition[]) => void;
-  completeActive: (...items: ComponentDefinition[]) => void;
-  updateState: (state: Partial<TState>) => void;
 }
 
 // Base state interface - all stateful components extend this
@@ -26,7 +35,7 @@ export interface BaseState {
 // Runtime-only props (injected during rendering)
 export interface BaseRuntimeProps<TState extends BaseState = BaseState> {
   state?: TState;
-  isActive?: boolean;
+  status?: ComponentStatus;
   handlers?: Handlers<TState>;
 }
 
@@ -37,22 +46,28 @@ export type ComponentProps<
 > = TDefinitionProps & BaseRuntimeProps<TState>;
 
 // Props for each component type
-export interface WelcomeProps {
+export interface WelcomeDefinitionProps {
   app: App;
 }
+
+export type WelcomeProps = WelcomeDefinitionProps & BaseRuntimeProps;
 
 export type ConfigProps<
   T extends Record<string, string> = Record<string, string>,
 > = ComponentProps<ConfigDefinitionProps<T>, BaseState>;
 
-export interface FeedbackProps {
+export interface FeedbackDefinitionProps {
   type: FeedbackType;
   message: string;
 }
 
-export interface MessageProps {
+export type FeedbackProps = FeedbackDefinitionProps & BaseRuntimeProps;
+
+export interface MessageDefinitionProps {
   text: string;
 }
+
+export type MessageProps = MessageDefinitionProps & BaseRuntimeProps;
 
 export type ConfirmProps = ComponentProps<ConfirmDefinitionProps, ConfirmState>;
 
@@ -83,10 +98,12 @@ export interface Capability {
   isIndirect?: boolean;
 }
 
-export interface ReportProps {
+export interface ReportDefinitionProps {
   message: string;
   capabilities: Capability[];
 }
+
+export type ReportProps = ReportDefinitionProps & BaseRuntimeProps;
 
 export type IntrospectProps = ComponentProps<
   IntrospectDefinitionProps,
@@ -209,6 +226,7 @@ interface StatelessDefinition<ComponentName extends string, ComponentProps> {
   id: string;
   name: ComponentName;
   props: ComponentProps;
+  status?: ComponentStatus;
 }
 
 // For components with state tracking
@@ -221,12 +239,13 @@ interface StatefulDefinition<
   name: ComponentName;
   state: ComponentState;
   props: ComponentProps;
+  status?: ComponentStatus;
 }
 
 // Specific component definitions
 type WelcomeDefinition = StatelessDefinition<
   ComponentName.Welcome,
-  WelcomeProps
+  WelcomeDefinitionProps
 >;
 type ConfigDefinition = StatefulDefinition<
   ComponentName.Config,
@@ -235,11 +254,11 @@ type ConfigDefinition = StatefulDefinition<
 >;
 type FeedbackDefinition = StatelessDefinition<
   ComponentName.Feedback,
-  FeedbackProps
+  FeedbackDefinitionProps
 >;
 type MessageDefinition = StatelessDefinition<
   ComponentName.Message,
-  MessageProps
+  MessageDefinitionProps
 >;
 type RefinementDefinition = StatefulDefinition<
   ComponentName.Refinement,
@@ -266,7 +285,10 @@ type IntrospectDefinition = StatefulDefinition<
   IntrospectDefinitionProps,
   IntrospectState
 >;
-type ReportDefinition = StatelessDefinition<ComponentName.Report, ReportProps>;
+type ReportDefinition = StatelessDefinition<
+  ComponentName.Report,
+  ReportDefinitionProps
+>;
 type AnswerDefinition = StatefulDefinition<
   ComponentName.Answer,
   AnswerDefinitionProps,

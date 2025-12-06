@@ -116,7 +116,7 @@ describe('Task Router', () => {
       }
     });
 
-    it('adds Plan to timeline and Confirm to queue when hasDefineTask is false', () => {
+    it('adds Plan to queue, which adds Confirm when completed', () => {
       const tasks = [
         { action: 'npm install', type: TaskType.Execute },
         { action: 'npm test', type: TaskType.Execute },
@@ -132,17 +132,24 @@ describe('Task Router', () => {
         false
       );
 
-      expect(handlers.addToTimeline).toHaveBeenCalledTimes(1);
+      // First call adds Plan only
       expect(handlers.addToQueue).toHaveBeenCalledTimes(1);
+      expect(handlers.addToTimeline).not.toHaveBeenCalled();
 
-      const timelineComponent = (
-        handlers.addToTimeline as ReturnType<typeof vi.fn>
-      ).mock.calls[0][0] as ComponentDefinition;
-      expect(timelineComponent.name).toBe(ComponentName.Plan);
+      const planDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as ComponentDefinition;
+      expect(planDef.name).toBe(ComponentName.Plan);
 
-      const queuedComponent = (handlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
-      expect(queuedComponent.name).toBe(ComponentName.Confirm);
+      // Simulate Plan completing (calls onSelectionConfirmed)
+      if (planDef.name === ComponentName.Plan) {
+        void planDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Second call adds Confirm
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
     });
 
     it('routes to Answer component when all tasks are Answer type', () => {
@@ -159,9 +166,20 @@ describe('Task Router', () => {
         false
       );
 
-      // Get the Confirm definition
-      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+      // Get Plan from first addToQueue call
+      const planDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as ComponentDefinition;
+      expect(planDef.name).toBe(ComponentName.Plan);
+
+      // Simulate Plan completing
+      if (planDef.name === ComponentName.Plan) {
+        void planDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
@@ -169,12 +187,12 @@ describe('Task Router', () => {
         confirmDef.props.onConfirmed();
       }
 
-      // Should complete active and add Answer to queue
-      expect(handlers.completeActive).toHaveBeenCalledTimes(1);
-      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      // Should complete active and pending, then add Answer to queue
+      expect(handlers.completeActiveAndPending).toHaveBeenCalledTimes(1);
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(3);
 
       const answerDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
-        .calls[1][0] as ComponentDefinition;
+        .calls[2][0] as ComponentDefinition;
       expect(answerDef.name).toBe(ComponentName.Answer);
       if (answerDef.name === ComponentName.Answer) {
         expect(answerDef.props.question).toBe('Explain unit testing');
@@ -199,9 +217,21 @@ describe('Task Router', () => {
         false
       );
 
-      // Get the Confirm definition
-      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+      // Get Plan from first addToQueue call
+      const planDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as ComponentDefinition;
+      expect(planDef.name).toBe(ComponentName.Plan);
+
+      // Simulate Plan completing
+      if (planDef.name === ComponentName.Plan) {
+        void planDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
       if (confirmDef.name === ComponentName.Confirm) {
@@ -209,8 +239,9 @@ describe('Task Router', () => {
       }
 
       // Should add Introspect to queue
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(3);
       const introspectDef = (handlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+        .mock.calls[2][0] as ComponentDefinition;
       expect(introspectDef.name).toBe(ComponentName.Introspect);
       if (introspectDef.name === ComponentName.Introspect) {
         expect(introspectDef.props.tasks).toEqual(tasks);
@@ -232,9 +263,21 @@ describe('Task Router', () => {
         false
       );
 
-      // Get the Confirm definition
-      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+      // Get Plan from first addToQueue call
+      const planDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as ComponentDefinition;
+      expect(planDef.name).toBe(ComponentName.Plan);
+
+      // Simulate Plan completing
+      if (planDef.name === ComponentName.Plan) {
+        void planDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
       if (confirmDef.name === ComponentName.Confirm) {
@@ -242,8 +285,9 @@ describe('Task Router', () => {
       }
 
       // Should add Execute to queue (no Validate needed)
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(3);
       const executeDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
-        .calls[1][0] as ComponentDefinition;
+        .calls[2][0] as ComponentDefinition;
       expect(executeDef.name).toBe(ComponentName.Execute);
       if (executeDef.name === ComponentName.Execute) {
         expect(executeDef.props.tasks).toEqual(tasks);
@@ -267,9 +311,21 @@ describe('Task Router', () => {
         false
       );
 
-      // Get the Confirm definition
-      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+      // Get Plan from first addToQueue call
+      const planDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as ComponentDefinition;
+      expect(planDef.name).toBe(ComponentName.Plan);
+
+      // Simulate Plan completing
+      if (planDef.name === ComponentName.Plan) {
+        void planDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
       if (confirmDef.name === ComponentName.Confirm) {
@@ -277,8 +333,9 @@ describe('Task Router', () => {
       }
 
       // Should add Validate to queue
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(3);
       const validateDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
-        .calls[1][0] as ComponentDefinition;
+        .calls[2][0] as ComponentDefinition;
       expect(validateDef.name).toBe(ComponentName.Validate);
       if (validateDef.name === ComponentName.Validate) {
         expect(validateDef.props.missingConfig).toEqual([
@@ -289,7 +346,7 @@ describe('Task Router', () => {
       }
     });
 
-    it('calls onAborted when user cancels confirmation', () => {
+    it('completes both components and shows cancellation when user cancels confirmation', () => {
       const tasks = [{ action: 'npm install', type: TaskType.Execute }];
       const handlers = createMockHandlers();
 
@@ -302,19 +359,38 @@ describe('Task Router', () => {
         false
       );
 
-      // Get the Confirm definition
-      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+      // Get Plan from first addToQueue call
+      const planDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as ComponentDefinition;
+      expect(planDef.name).toBe(ComponentName.Plan);
+
+      // Simulate Plan completing
+      if (planDef.name === ComponentName.Plan) {
+        void planDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user cancelling
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onCancelled();
       }
 
-      expect(handlers.onAborted).toHaveBeenCalledWith('execution');
+      // Should complete both active and pending
+      expect(handlers.completeActiveAndPending).toHaveBeenCalledTimes(1);
+
+      // Should add feedback to queue
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(3);
+      const feedbackDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[2][0] as ComponentDefinition;
+      expect(feedbackDef.name).toBe(ComponentName.Feedback);
     });
 
-    it('calls onAborted with "introspection" when user cancels introspect flow', () => {
+    it('completes both components and shows cancellation when user cancels introspect flow', () => {
       const tasks = [
         { action: 'List capabilities', type: TaskType.Introspect },
       ];
@@ -329,19 +405,38 @@ describe('Task Router', () => {
         false
       );
 
-      // Get the Confirm definition
-      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+      // Get Plan from first addToQueue call
+      const planDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as ComponentDefinition;
+      expect(planDef.name).toBe(ComponentName.Plan);
+
+      // Simulate Plan completing
+      if (planDef.name === ComponentName.Plan) {
+        void planDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user cancelling
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onCancelled();
       }
 
-      expect(handlers.onAborted).toHaveBeenCalledWith('introspection');
+      // Should complete both active and pending
+      expect(handlers.completeActiveAndPending).toHaveBeenCalledTimes(1);
+
+      // Should add feedback to queue
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(3);
+      const feedbackDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[2][0] as ComponentDefinition;
+      expect(feedbackDef.name).toBe(ComponentName.Feedback);
     });
 
-    it('calls onAborted with "answer" when user cancels answer flow', () => {
+    it('completes both components and shows cancellation when user cancels answer flow', () => {
       const tasks = [{ action: 'Explain testing', type: TaskType.Answer }];
       const handlers = createMockHandlers();
 
@@ -354,16 +449,35 @@ describe('Task Router', () => {
         false
       );
 
-      // Get the Confirm definition
-      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+      // Get Plan from first addToQueue call
+      const planDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as ComponentDefinition;
+      expect(planDef.name).toBe(ComponentName.Plan);
+
+      // Simulate Plan completing
+      if (planDef.name === ComponentName.Plan) {
+        void planDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user cancelling
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onCancelled();
       }
 
-      expect(handlers.onAborted).toHaveBeenCalledWith('answer');
+      // Should complete both active and pending
+      expect(handlers.completeActiveAndPending).toHaveBeenCalledTimes(1);
+
+      // Should add feedback to queue
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(3);
+      const feedbackDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[2][0] as ComponentDefinition;
+      expect(feedbackDef.name).toBe(ComponentName.Feedback);
     });
 
     it('shows error after user confirms plan with mixed task types', () => {
@@ -382,16 +496,23 @@ describe('Task Router', () => {
         false
       );
 
-      // Plan should be added to timeline (user sees it)
-      expect(handlers.addToTimeline).toHaveBeenCalledTimes(1);
-      const planDef = (handlers.addToTimeline as ReturnType<typeof vi.fn>).mock
+      // Plan should be added to queue
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(1);
+      expect(handlers.addToTimeline).not.toHaveBeenCalled();
+
+      const planDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as ComponentDefinition;
       expect(planDef.name).toBe(ComponentName.Plan);
 
+      // Simulate Plan completing
+      if (planDef.name === ComponentName.Plan) {
+        void planDef.props.onSelectionConfirmed?.(tasks);
+      }
+
       // Confirm should be added to queue
-      expect(handlers.addToQueue).toHaveBeenCalledTimes(1);
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
       const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
-        .calls[0][0] as ComponentDefinition;
+        .calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
@@ -399,8 +520,8 @@ describe('Task Router', () => {
         confirmDef.props.onConfirmed();
       }
 
-      // Should complete active component
-      expect(handlers.completeActive).toHaveBeenCalledTimes(1);
+      // Should complete active and pending components
+      expect(handlers.completeActiveAndPending).toHaveBeenCalledTimes(1);
 
       // Should call onError with mixed types error message
       expect(handlers.onError).toHaveBeenCalledTimes(1);
@@ -428,9 +549,21 @@ describe('Task Router', () => {
         false
       );
 
-      // Get the Confirm definition
-      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+      // Get Plan from first addToQueue call
+      const planDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as ComponentDefinition;
+      expect(planDef.name).toBe(ComponentName.Plan);
+
+      // Simulate Plan completing
+      if (planDef.name === ComponentName.Plan) {
+        void planDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
       if (confirmDef.name === ComponentName.Confirm) {
@@ -441,8 +574,9 @@ describe('Task Router', () => {
       expect(handlers.onError).not.toHaveBeenCalled();
 
       // Should add Execute component (only valid task type)
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(3);
       const executeDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
-        .calls[1][0] as ComponentDefinition;
+        .calls[2][0] as ComponentDefinition;
       expect(executeDef.name).toBe(ComponentName.Execute);
     });
 
@@ -471,9 +605,21 @@ describe('Task Router', () => {
         false
       );
 
-      // Get the Confirm definition
-      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+      // Get Plan from first addToQueue call
+      const planDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as ComponentDefinition;
+      expect(planDef.name).toBe(ComponentName.Plan);
+
+      // Simulate Plan completing
+      if (planDef.name === ComponentName.Plan) {
+        void planDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
       if (confirmDef.name === ComponentName.Confirm) {
@@ -481,8 +627,9 @@ describe('Task Router', () => {
       }
 
       // Should add Config component to queue
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(3);
       const configDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
-        .calls[1][0] as ComponentDefinition;
+        .calls[2][0] as ComponentDefinition;
       expect(configDef.name).toBe(ComponentName.Config);
       if (configDef.name === ComponentName.Config) {
         // Should have steps for both config keys

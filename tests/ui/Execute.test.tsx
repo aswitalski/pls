@@ -1,3 +1,4 @@
+import { ComponentStatus } from '../../src/types/components.js';
 import { render } from 'ink-testing-library';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -95,6 +96,7 @@ describe('Execute component', () => {
         tasks={tasks}
         service={service}
         handlers={createMockHandlers()}
+        status={ComponentStatus.Active}
       />
     );
 
@@ -115,6 +117,7 @@ describe('Execute component', () => {
         state={{}}
         service={service}
         handlers={createMockHandlers()}
+        status={ComponentStatus.Active}
       />
     );
 
@@ -143,6 +146,7 @@ describe('Execute component', () => {
         tasks={tasks}
         service={service}
         handlers={createMockHandlers({ completeActive })}
+        status={ComponentStatus.Active}
       />
     );
 
@@ -166,6 +170,7 @@ describe('Execute component', () => {
         tasks={tasks}
         service={service}
         handlers={createMockHandlers({ onError })}
+        status={ComponentStatus.Active}
       />
     );
 
@@ -191,6 +196,7 @@ describe('Execute component', () => {
         tasks={tasks}
         service={service}
         handlers={createMockHandlers({ onAborted })}
+        status={ComponentStatus.Active}
       />
     );
 
@@ -213,6 +219,7 @@ describe('Execute component', () => {
         tasks={tasks}
         service={service}
         handlers={createMockHandlers({ onAborted })}
+        status={ComponentStatus.Active}
       />
     );
 
@@ -246,6 +253,7 @@ describe('Execute component', () => {
         tasks={tasks}
         service={service}
         handlers={createMockHandlers({ onAborted })}
+        status={ComponentStatus.Active}
       />
     );
 
@@ -278,6 +286,7 @@ describe('Execute component', () => {
         tasks={tasks}
         service={service}
         handlers={createMockHandlers({ completeActive })}
+        status={ComponentStatus.Active}
       />
     );
 
@@ -314,6 +323,7 @@ describe('Execute component', () => {
         tasks={tasks}
         service={service}
         handlers={createMockHandlers()}
+        status={ComponentStatus.Active}
       />
     );
 
@@ -355,6 +365,7 @@ describe('Execute component', () => {
         tasks={tasks}
         service={service}
         handlers={createMockHandlers()}
+        status={ComponentStatus.Active}
       />
     );
 

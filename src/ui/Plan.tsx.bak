@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { ComponentStatus, PlanProps } from '../types/components.js';
+import { PlanProps } from '../types/components.js';
 import { Task, TaskType } from '../types/types.js';
 import { getTaskColors } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
@@ -76,12 +76,11 @@ export function Plan({
   message,
   tasks,
   state,
-  status,
+  isActive = true,
   debug = false,
   handlers,
   onSelectionConfirmed,
 }: PlanProps) {
-  const isActive = status === ComponentStatus.Active;
   // isActive passed as prop
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(
     state?.highlightedIndex ?? null
@@ -116,10 +115,9 @@ export function Plan({
         (task) =>
           task.type !== TaskType.Ignore && task.type !== TaskType.Discard
       );
-      // Complete the selection phase - it goes to timeline
-      // Callback will create a new Plan showing refined tasks (pending) + Confirm (active)
-      handlers?.completeActive();
       onSelectionConfirmed(concreteTasks);
+      // Signal Plan completion after adding Confirm to queue
+      handlers?.completeActive();
     }
   }, [
     isActive,
@@ -200,8 +198,8 @@ export function Plan({
           });
 
           if (onSelectionConfirmed) {
-            // Complete the selection phase - it goes to timeline
-            // Callback will create a new Plan showing refined tasks (pending) + Confirm (active)
+            // Callback will handle the entire flow (Refinement, refined Plan, Confirm)
+            // So we need to complete the Plan first
             handlers?.completeActive();
             onSelectionConfirmed(refinedTasks);
           } else {

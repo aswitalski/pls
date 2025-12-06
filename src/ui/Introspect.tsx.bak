@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import {
-  Capability,
-  ComponentStatus,
-  IntrospectProps,
-} from '../types/components.js';
+import { Capability, IntrospectProps } from '../types/components.js';
 import { Task } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
@@ -61,13 +57,12 @@ function parseCapabilityFromTask(task: Task): Capability {
 export function Introspect({
   tasks,
   state,
-  status,
+  isActive = true,
   service,
   children,
   debug = false,
   handlers,
 }: IntrospectProps) {
-  const isActive = status === ComponentStatus.Active;
   // isActive passed as prop
   const [error, setError] = useState<string | null>(null);
 

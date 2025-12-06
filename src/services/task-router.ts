@@ -1,5 +1,5 @@
 import { Task, TaskType } from '../types/types.js';
-import { ComponentDefinition, Handlers } from '../types/components.js';
+import { Handlers } from '../types/components.js';
 
 import { LLMService } from './anthropic.js';
 import {
@@ -17,6 +17,7 @@ import { saveConfig, unflattenConfig } from './configuration.js';
 import { FeedbackType } from '../types/types.js';
 import { validateExecuteTasks } from './execution-validator.js';
 import {
+  getCancellationMessage,
   getMixedTaskTypesError,
   getUnknownRequestMessage,
 } from './messages.js';
@@ -45,8 +46,7 @@ export function routeTasksWithConfirm(
   service: LLMService,
   userRequest: string,
   handlers: Handlers,
-  hasDefineTask: boolean = false,
-  commandComponent?: ComponentDefinition
+  hasDefineTask: boolean = false
 ): void {
   if (tasks.length === 0) return;
 
@@ -64,34 +64,35 @@ export function routeTasksWithConfirm(
 
   const operation = getOperationName(validTasks);
 
-  // Create plan definition with valid tasks only
-  const planDefinition = createPlanDefinition(message, validTasks);
-
   if (hasDefineTask) {
     // Has DEFINE tasks - add Plan to queue for user selection
     // Refinement flow will call this function again with refined tasks
+    const planDefinition = createPlanDefinition(message, validTasks);
     handlers.addToQueue(planDefinition);
   } else {
-    // No DEFINE tasks - add Plan to timeline, create Confirm
-    const confirmDefinition = createConfirmDefinition(
-      () => {
-        // User confirmed - route to appropriate component
-        handlers.completeActive();
-        executeTasksAfterConfirm(validTasks, service, userRequest, handlers);
-      },
-      () => {
-        // User cancelled
-        handlers.onAborted(operation);
-      }
-    );
+    // No DEFINE tasks - Plan auto-completes and adds Confirm to queue
+    // When Plan activates, Command moves to timeline
+    // When Plan completes, it moves to pending
+    // When Confirm activates, Plan stays pending (visible for context)
+    const planDefinition = createPlanDefinition(message, validTasks, () => {
+      // Plan completed - add Confirm to queue
+      const confirmDefinition = createConfirmDefinition(
+        () => {
+          // User confirmed - complete both Confirm and Plan, then route to appropriate component
+          handlers.completeActiveAndPending();
+          executeTasksAfterConfirm(validTasks, service, userRequest, handlers);
+        },
+        () => {
+          // User cancelled - complete both Confirm and Plan, then show cancellation
+          handlers.completeActiveAndPending();
+          const message = getCancellationMessage(operation);
+          handlers.addToQueue(createFeedback(FeedbackType.Aborted, message));
+        }
+      );
+      handlers.addToQueue(confirmDefinition);
+    });
 
-    // Use atomic update if commandComponent provided, else normal flow
-    if (commandComponent) {
-      handlers.completeActive(planDefinition);
-    } else {
-      handlers.addToTimeline(planDefinition);
-    }
-    handlers.addToQueue(confirmDefinition);
+    handlers.addToQueue(planDefinition);
   }
 }
 

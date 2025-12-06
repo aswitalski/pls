@@ -1,3 +1,4 @@
+import { ComponentStatus } from '../../src/types/components.js';
 import { render } from 'ink-testing-library';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -14,6 +15,7 @@ describe('Refinement', () => {
         text="Processing your request"
         state={{}}
         onAborted={mockOnAborted}
+        status={ComponentStatus.Active}
       />
     );
 
@@ -27,7 +29,7 @@ describe('Refinement', () => {
       <Refinement
         text="Processing complete"
         state={{}}
-        isActive={false}
+        status={ComponentStatus.Done}
         onAborted={mockOnAborted}
       />
     );
@@ -39,7 +41,11 @@ describe('Refinement', () => {
 
   it('defaults to not done when state is undefined', () => {
     const { lastFrame } = render(
-      <Refinement text="Loading" onAborted={mockOnAborted} />
+      <Refinement
+        text="Loading"
+        onAborted={mockOnAborted}
+        status={ComponentStatus.Active}
+      />
     );
 
     const output = lastFrame();
@@ -50,7 +56,12 @@ describe('Refinement', () => {
   it('calls onAborted when Escape key is pressed and not done', () => {
     const onAborted = vi.fn();
     const { stdin } = render(
-      <Refinement text="Processing" state={{}} onAborted={onAborted} />
+      <Refinement
+        text="Processing"
+        state={{}}
+        onAborted={onAborted}
+        status={ComponentStatus.Active}
+      />
     );
 
     stdin.write(Keys.Escape);
@@ -64,7 +75,7 @@ describe('Refinement', () => {
       <Refinement
         text="Processing"
         state={{}}
-        isActive={false}
+        status={ComponentStatus.Done}
         onAborted={onAborted}
       />
     );

@@ -2,7 +2,7 @@ import { ReactElement, useState } from 'react';
 import { Box, Text, useFocus } from 'ink';
 import TextInput from 'ink-text-input';
 
-import { Handlers } from '../types/components.js';
+import { ComponentStatus, Handlers } from '../types/components.js';
 
 import { Colors } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
@@ -44,7 +44,7 @@ export interface ConfigProps<
 > {
   steps: ConfigStep[];
   state?: ConfigState;
-  isActive?: boolean;
+  status?: ComponentStatus;
   debug?: boolean;
   handlers?: Handlers;
   onFinished?: (config: T) => void;
@@ -158,13 +158,13 @@ export function Config<
 >({
   steps,
   state,
-  isActive = true,
+  status,
   debug,
   handlers,
   onFinished,
   onAborted,
 }: ConfigProps<T>) {
-  // isActive passed as prop
+  const isActive = status === ComponentStatus.Active;
 
   const [step, setStep] = useState<number>(
     !isActive ? (state?.completedStep ?? steps.length) : 0

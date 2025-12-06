@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { ComponentStatus, ValidateProps } from '../types/components.js';
+import { ValidateProps } from '../types/components.js';
 import { ConfigRequirement } from '../types/skills.js';
 import { TaskType } from '../types/types.js';
 
@@ -20,7 +20,7 @@ export function Validate({
   missingConfig,
   userRequest,
   state,
-  status,
+  isActive = true,
   service,
   children,
   debug,
@@ -29,7 +29,7 @@ export function Validate({
   onAborted,
   handlers,
 }: ValidateProps) {
-  const isActive = status === ComponentStatus.Active;
+  // isActive passed as prop
   const [error, setError] = useState<string | null>(null);
   const [completionMessage, setCompletionMessage] = useState<string | null>(
     null
@@ -214,7 +214,7 @@ export function Validate({
         <Box marginTop={1}>
           <Config
             steps={configSteps}
-            status={status}
+            isActive={isActive}
             debug={debug}
             onFinished={handleConfigFinished}
             onAborted={handleConfigAborted}

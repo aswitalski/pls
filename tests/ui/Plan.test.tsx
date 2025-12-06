@@ -1,3 +1,4 @@
+import { ComponentStatus } from '../../src/types/components.js';
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
@@ -22,14 +23,15 @@ function createMockHandlers(initialState: PlanState): {
 } {
   const state = { ...initialState };
   const handlers: Handlers<PlanState> = {
-    completeActive: vi.fn(),
-    onAborted: vi.fn(),
-    onError: vi.fn(),
     addToQueue: vi.fn(),
-    addToTimeline: vi.fn(),
     updateState: vi.fn((newState) => {
       Object.assign(state, newState);
     }),
+    completeActive: vi.fn(),
+    completeActiveAndPending: vi.fn(),
+    addToTimeline: vi.fn(),
+    onAborted: vi.fn(),
+    onError: vi.fn(),
   };
   return { handlers, state };
 }
@@ -53,6 +55,7 @@ describe('Plan component', () => {
               params: { options: ['Production', 'Staging'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -78,6 +81,7 @@ describe('Plan component', () => {
               params: { options: ['Production', 'Staging'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -105,6 +109,7 @@ describe('Plan component', () => {
               params: { options: ['Production', 'Staging'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -147,6 +152,7 @@ describe('Plan component', () => {
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -192,6 +198,7 @@ describe('Plan component', () => {
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -225,6 +232,7 @@ describe('Plan component', () => {
               params: { options: ['Production', 'Staging', 'Development'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -263,6 +271,7 @@ describe('Plan component', () => {
               params: { options: ['Production', 'Staging'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -302,6 +311,7 @@ describe('Plan component', () => {
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -331,10 +341,11 @@ describe('Plan component', () => {
             { action: 'Run tests', type: TaskType.Execute },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
+          status={ComponentStatus.Active}
         />
       );
 
-      // With no DEFINE tasks, Plan should auto-confirm immediately
+      // With no DEFINE tasks, Plan should auto-confirm and complete
       expect(onSelectionConfirmed).toHaveBeenCalledWith([
         { action: 'Install dependencies', type: TaskType.Execute },
         { action: 'Run tests', type: TaskType.Execute },
@@ -370,6 +381,7 @@ describe('Plan component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           debug={true}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -423,6 +435,7 @@ describe('Plan component', () => {
               params: { options: ['Development', 'Production'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -454,6 +467,7 @@ describe('Plan component', () => {
               params: { options: ['Development', 'Production'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -488,6 +502,7 @@ describe('Plan component', () => {
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -533,6 +548,7 @@ describe('Plan component', () => {
               params: { options: ['Development', 'Production'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -576,6 +592,7 @@ describe('Plan component', () => {
               params: { options: ['Development', 'Production'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -612,6 +629,7 @@ describe('Plan component', () => {
               params: { options: ['Development', 'Production'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -651,6 +669,7 @@ describe('Plan component', () => {
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -706,6 +725,7 @@ describe('Plan component', () => {
               params: { options: ['Development', 'Production'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -759,6 +779,7 @@ describe('Plan component', () => {
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -817,6 +838,7 @@ describe('Plan component', () => {
             { action: 'Deploy', type: TaskType.Execute },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -883,6 +905,7 @@ describe('Plan component', () => {
               params: { options: ['Development', 'Production', 'Staging'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -945,6 +968,7 @@ describe('Plan component', () => {
               params: { options: ['Production', 'Staging'] },
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -964,7 +988,7 @@ describe('Plan component', () => {
         <Plan
           handlers={createGlobalMockHandlers({ onAborted })}
           state={state}
-          isActive={false}
+          status={ComponentStatus.Done}
           message=""
           tasks={[
             {
@@ -999,6 +1023,7 @@ describe('Plan component', () => {
               type: TaskType.Execute,
             },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -1031,6 +1056,7 @@ describe('Plan component', () => {
             { action: 'Deploy', type: TaskType.Execute },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -1098,6 +1124,7 @@ describe('Plan component', () => {
             { action: 'Deploy', type: TaskType.Execute },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -1159,6 +1186,7 @@ describe('Plan component', () => {
             { action: 'Run tests', type: TaskType.Execute },
           ]}
           debug={true}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -1181,6 +1209,7 @@ describe('Plan component', () => {
             { action: 'Run tests', type: TaskType.Execute },
           ]}
           debug={false}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -1202,6 +1231,7 @@ describe('Plan component', () => {
             { action: 'Build project', type: TaskType.Execute },
             { action: 'Run tests', type: TaskType.Execute },
           ]}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -1226,6 +1256,7 @@ describe('Plan component', () => {
             { action: 'Configure settings', type: TaskType.Config },
           ]}
           debug={true}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -1254,6 +1285,7 @@ describe('Plan component', () => {
             },
           ]}
           debug={true}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -1274,6 +1306,7 @@ describe('Plan component', () => {
           state={state}
           tasks={[{ action: 'Build project', type: TaskType.Execute }]}
           debug={true}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -1295,6 +1328,7 @@ describe('Plan component', () => {
           state={state}
           tasks={[{ action: 'Build project', type: TaskType.Execute }]}
           debug={false}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -1328,6 +1362,7 @@ describe('Plan component', () => {
             },
           ]}
           handlers={createGlobalMockHandlers()}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -1367,6 +1402,7 @@ describe('Plan component', () => {
             },
           ]}
           handlers={createGlobalMockHandlers()}
+          status={ComponentStatus.Active}
         />
       );
 

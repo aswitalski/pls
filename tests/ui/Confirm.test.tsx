@@ -1,3 +1,4 @@
+import { ComponentStatus } from '../../src/types/components.js';
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
@@ -13,6 +14,7 @@ describe('Confirm component', () => {
           message="Should I execute this plan?"
           onConfirmed={() => {}}
           onCancelled={() => {}}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -26,6 +28,7 @@ describe('Confirm component', () => {
           message="Continue?"
           onConfirmed={() => {}}
           onCancelled={() => {}}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -40,6 +43,7 @@ describe('Confirm component', () => {
           message="Continue?"
           onConfirmed={() => {}}
           onCancelled={() => {}}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -57,6 +61,7 @@ describe('Confirm component', () => {
           message="Continue?"
           onConfirmed={onConfirmed}
           onCancelled={() => {}}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -72,6 +77,7 @@ describe('Confirm component', () => {
           message="Continue?"
           onConfirmed={() => {}}
           onCancelled={onCancelled}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -89,6 +95,7 @@ describe('Confirm component', () => {
           message="Continue?"
           onConfirmed={() => {}}
           onCancelled={() => {}}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -108,7 +115,7 @@ describe('Confirm component', () => {
         <Confirm
           message="Continue?"
           state={{}}
-          isActive={false}
+          status={ComponentStatus.Done}
           onConfirmed={onConfirmed}
           onCancelled={() => {}}
         />
@@ -126,6 +133,7 @@ describe('Confirm component', () => {
           message="Continue?"
           onConfirmed={() => {}}
           onCancelled={onCancelled}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -144,6 +152,7 @@ describe('Confirm component', () => {
           state={{}}
           onConfirmed={() => {}}
           onCancelled={() => {}}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -158,6 +167,7 @@ describe('Confirm component', () => {
           message="Continue?"
           onConfirmed={() => {}}
           onCancelled={() => {}}
+          status={ComponentStatus.Active}
         />
       );
 
@@ -173,6 +183,7 @@ describe('Confirm component', () => {
           message="Continue?"
           onConfirmed={() => {}}
           onCancelled={() => {}}
+          status={ComponentStatus.Active}
         />
       );
 

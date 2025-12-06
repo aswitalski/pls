@@ -1,9 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-export interface MessageProps {
-  text: string;
-}
+import { MessageProps } from '../types/components.js';
 
 export const Message = ({ text }: MessageProps) => {
   return (

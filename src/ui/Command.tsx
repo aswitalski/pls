@@ -4,6 +4,7 @@ import { Box, Text } from 'ink';
 import {
   CommandProps,
   ComponentDefinition,
+  ComponentStatus,
   Handlers,
 } from '../types/components.js';
 import { Task, TaskType } from '../types/types.js';
@@ -26,11 +27,12 @@ const MIN_PROCESSING_TIME = 400; // purely for visual effect
 export function Command({
   command,
   state,
-  isActive = true,
+  status,
   service,
   handlers,
   onAborted,
 }: CommandProps) {
+  const isActive = status === ComponentStatus.Active;
   const [error, setError] = useState<string | null>(state?.error ?? null);
 
   useInput(
@@ -112,15 +114,15 @@ export function Command({
             handlers?.completeActive();
             handlers?.addToQueue(planDefinition);
           } else {
-            // No DEFINE tasks: Pass Plan to be added atomically with Command
+            // No DEFINE tasks: Complete Command, then route to Confirm flow
+            handlers?.completeActive();
             routeTasksWithConfirm(
               result.tasks,
               result.message,
               svc!,
               command,
               handlers!,
-              false,
-              planDefinition // Pass Plan for atomic update
+              false
             );
           }
         }

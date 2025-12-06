@@ -1,3 +1,4 @@
+import { ComponentStatus } from '../../src/types/components.js';
 import { render } from 'ink-testing-library';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -31,6 +32,7 @@ describe('Answer component', () => {
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
+        status={ComponentStatus.Active}
         handlers={createMockHandlers()}
       />
     );
@@ -47,8 +49,8 @@ describe('Answer component', () => {
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         state={{ answer: 'The 55 inch Samsung The Frame costs around $1,500.' }}
-        isActive={false}
         service={service}
+        status={ComponentStatus.Done}
         handlers={createMockHandlers()}
       />
     );
@@ -69,6 +71,7 @@ describe('Answer component', () => {
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
+        status={ComponentStatus.Active}
         handlers={createMockHandlers({ completeActive })}
       />
     );
@@ -95,6 +98,7 @@ describe('Answer component', () => {
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
+        status={ComponentStatus.Active}
         handlers={createMockHandlers({ onError })}
       />
     );
@@ -118,6 +122,7 @@ describe('Answer component', () => {
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
+        status={ComponentStatus.Active}
         handlers={createMockHandlers({ onAborted })}
       />
     );
@@ -137,6 +142,7 @@ describe('Answer component', () => {
       <Answer
         question="Quick question?"
         service={service}
+        status={ComponentStatus.Active}
         handlers={createMockHandlers({ completeActive })}
       />
     );

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { ComponentStatus, ExecuteProps } from '../types/components.js';
+import { ExecuteProps } from '../types/components.js';
 
 import { ExecuteCommand } from '../services/anthropic.js';
 import { Colors, getTextColor, Palette } from '../services/colors.js';
@@ -142,11 +142,10 @@ function CommandStatusDisplay({ item, elapsed }: CommandStatusDisplayProps) {
 export function Execute({
   tasks,
   state,
-  status,
+  isActive = true,
   service,
   handlers,
 }: ExecuteProps) {
-  const isActive = status === ComponentStatus.Active;
   // isActive passed as prop
   const [error, setError] = useState<string | null>(state?.error ?? null);
   const [isExecuting, setIsExecuting] = useState(false);

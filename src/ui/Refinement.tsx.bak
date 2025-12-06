@@ -1,14 +1,16 @@
 import { Box } from 'ink';
 
-import { ComponentStatus, RefinementProps } from '../types/components.js';
+import { RefinementProps } from '../types/components.js';
 import { useInput } from '../services/keyboard.js';
 
 import { Message } from './Message.js';
 import { Spinner } from './Spinner.js';
 
-export const Refinement = ({ text, status, onAborted }: RefinementProps) => {
-  const isActive = status === ComponentStatus.Active;
-
+export const Refinement = ({
+  text,
+  isActive = true,
+  onAborted,
+}: RefinementProps) => {
   useInput(
     (_, key) => {
       if (key.escape && isActive) {

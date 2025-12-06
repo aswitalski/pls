@@ -1,3 +1,4 @@
+import { ComponentStatus } from '../../src/types/components.js';
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
@@ -25,7 +26,7 @@ describe('Command component error handling', () => {
           command="test command"
           service={mockService}
           state={{ error: 'Test error' }}
-          isActive={false}
+          status={ComponentStatus.Done}
         />
       );
 
@@ -36,7 +37,11 @@ describe('Command component error handling', () => {
   describe('Component states', () => {
     it('displays active state with spinner', () => {
       const { lastFrame } = render(
-        <Command service={mockService} command="test command" />
+        <Command
+          service={mockService}
+          command="test command"
+          status={ComponentStatus.Active}
+        />
       );
 
       // Active command shows spinner
@@ -48,7 +53,7 @@ describe('Command component error handling', () => {
         <Command
           service={mockService}
           command="test command"
-          isActive={false}
+          status={ComponentStatus.Done}
         />
       );
 
@@ -62,6 +67,7 @@ describe('Command component error handling', () => {
       const { lastFrame } = render(
         <Command
           service={mockService}
+          status={ComponentStatus.Active}
           command="commit changes with message 'add new feature'"
         />
       );
@@ -78,6 +84,7 @@ describe('Command component error handling', () => {
         <Command
           onAborted={onAborted}
           service={mockService}
+          status={ComponentStatus.Active}
           command="test command"
         />
       );
@@ -92,6 +99,7 @@ describe('Command component error handling', () => {
         <Command
           onAborted={vi.fn()}
           service={mockService}
+          status={ComponentStatus.Active}
           command="test command"
           handlers={handlers}
         />
@@ -109,7 +117,7 @@ describe('Command component error handling', () => {
           onAborted={onAborted}
           service={mockService}
           command="test command"
-          isActive={false}
+          status={ComponentStatus.Done}
         />
       );
 

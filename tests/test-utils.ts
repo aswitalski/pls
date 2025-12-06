@@ -104,12 +104,13 @@ export function createMockHandlers<T extends BaseState = BaseState>(
   overrides?: Partial<Handlers<T>>
 ): Handlers<T> {
   return {
+    addToQueue: vi.fn(),
+    updateState: vi.fn(),
     completeActive: vi.fn(),
+    completeActiveAndPending: vi.fn(),
+    addToTimeline: vi.fn(),
     onAborted: vi.fn(),
     onError: vi.fn(),
-    addToQueue: vi.fn(),
-    addToTimeline: vi.fn(),
-    updateState: vi.fn(),
     ...overrides,
   };
 }
