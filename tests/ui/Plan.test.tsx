@@ -45,6 +45,7 @@ describe('Plan component', () => {
       const { lastFrame } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -69,6 +70,7 @@ describe('Plan component', () => {
       const { lastFrame } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -95,6 +97,7 @@ describe('Plan component', () => {
         <Plan
           state={state}
           handlers={handlers}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -135,6 +138,7 @@ describe('Plan component', () => {
       const { stdin } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -179,6 +183,7 @@ describe('Plan component', () => {
       const { stdin } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -212,6 +217,7 @@ describe('Plan component', () => {
         <Plan
           state={state}
           handlers={handlers}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -249,6 +255,7 @@ describe('Plan component', () => {
         <Plan
           state={state}
           handlers={handlers}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -286,6 +293,7 @@ describe('Plan component', () => {
       const { stdin } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -317,6 +325,7 @@ describe('Plan component', () => {
         <Plan
           handlers={createGlobalMockHandlers({ completeActive })}
           state={state}
+          message=""
           tasks={[
             { action: 'Install dependencies', type: TaskType.Execute },
             { action: 'Run tests', type: TaskType.Execute },
@@ -351,6 +360,7 @@ describe('Plan component', () => {
         <Plan
           handlers={createGlobalMockHandlers()}
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -399,6 +409,7 @@ describe('Plan component', () => {
       const { lastFrame } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose target',
@@ -430,6 +441,7 @@ describe('Plan component', () => {
       const { lastFrame } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose target',
@@ -462,6 +474,7 @@ describe('Plan component', () => {
         <Plan
           state={state}
           handlers={handlers}
+          message=""
           tasks={[
             {
               action: 'Choose target',
@@ -507,6 +520,7 @@ describe('Plan component', () => {
         <Plan
           state={state}
           handlers={handlers}
+          message=""
           tasks={[
             {
               action: 'Choose target',
@@ -549,6 +563,7 @@ describe('Plan component', () => {
       const { stdin } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose target',
@@ -584,6 +599,7 @@ describe('Plan component', () => {
       const { lastFrame, stdin } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose target',
@@ -621,6 +637,7 @@ describe('Plan component', () => {
       const { stdin } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose target',
@@ -676,6 +693,7 @@ describe('Plan component', () => {
         <Plan
           state={state}
           handlers={handlers}
+          message=""
           tasks={[
             {
               action: 'Choose target',
@@ -722,6 +740,7 @@ describe('Plan component', () => {
         <Plan
           state={state}
           handlers={handlers}
+          message=""
           tasks={[
             {
               action: 'Choose target',
@@ -781,6 +800,7 @@ describe('Plan component', () => {
         <Plan
           state={state}
           handlers={handlers}
+          message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute },
             {
@@ -850,6 +870,7 @@ describe('Plan component', () => {
         <Plan
           state={state}
           handlers={handlers}
+          message=""
           tasks={[
             {
               action: 'Choose target',
@@ -916,6 +937,7 @@ describe('Plan component', () => {
         <Plan
           handlers={createGlobalMockHandlers({ onAborted })}
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -943,6 +965,7 @@ describe('Plan component', () => {
           handlers={createGlobalMockHandlers({ onAborted })}
           state={state}
           isActive={false}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -969,6 +992,7 @@ describe('Plan component', () => {
         <Plan
           handlers={createGlobalMockHandlers({ onAborted })}
           state={state}
+          message=""
           tasks={[
             {
               action: 'Deploy application',
@@ -995,6 +1019,7 @@ describe('Plan component', () => {
       const { stdin } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute },
             {
@@ -1061,6 +1086,7 @@ describe('Plan component', () => {
       const { stdin } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute },
             {
@@ -1127,6 +1153,7 @@ describe('Plan component', () => {
       const { lastFrame } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute },
             { action: 'Run tests', type: TaskType.Execute },
@@ -1148,6 +1175,7 @@ describe('Plan component', () => {
       const { lastFrame } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute },
             { action: 'Run tests', type: TaskType.Execute },
@@ -1169,6 +1197,7 @@ describe('Plan component', () => {
       const { lastFrame } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute },
             { action: 'Run tests', type: TaskType.Execute },
@@ -1189,6 +1218,7 @@ describe('Plan component', () => {
       const { lastFrame } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute },
             { action: 'Generate plan', type: TaskType.Plan },
@@ -1215,6 +1245,7 @@ describe('Plan component', () => {
       const { lastFrame } = render(
         <Plan
           state={state}
+          message=""
           tasks={[
             {
               action: 'Choose deployment',
@@ -1286,6 +1317,7 @@ describe('Plan component', () => {
         <Plan
           state={state}
           onSelectionConfirmed={onSelectionConfirmed}
+          message=""
           tasks={[
             {
               action: 'Clarify what you want to know:',
@@ -1324,6 +1356,7 @@ describe('Plan component', () => {
         <Plan
           state={state}
           onSelectionConfirmed={onSelectionConfirmed}
+          message=""
           tasks={[
             {
               action: 'What do you want to do:',

@@ -11,6 +11,8 @@ import {
 import { App, ComponentName } from '../../src/types/types.js';
 import { ConfigStep, StepType } from '../../src/ui/Config.js';
 
+import { createMockAnthropicService } from '../test-utils.js';
+
 describe('Component Types', () => {
   const mockApp: App = {
     name: 'test-app',
@@ -19,6 +21,8 @@ describe('Component Types', () => {
     isDev: true,
     isDebug: false,
   };
+
+  const mockService = createMockAnthropicService();
 
   describe('Welcome component definition', () => {
     it('creates valid stateless welcome definition', () => {
@@ -38,9 +42,7 @@ describe('Component Types', () => {
 
   describe('Config component definition', () => {
     it('creates valid stateful config definition', () => {
-      const state: BaseState = {
-        done: false,
-      };
+      const state: BaseState = {};
 
       const def: ComponentDefinition = {
         id: 'test-config-1',
@@ -64,6 +66,7 @@ describe('Component Types', () => {
             },
           ],
           onFinished: () => {},
+          onAborted: () => {},
         },
       };
 
@@ -101,6 +104,8 @@ describe('Component Types', () => {
         state: {},
         props: {
           steps: stepConfigs,
+          onFinished: () => {},
+          onAborted: () => {},
         },
       };
 
@@ -132,6 +137,7 @@ describe('Component Types', () => {
         onFinished: (config) => {
           expect(config).toBeDefined();
         },
+        onAborted: () => {},
       };
 
       const def: ComponentDefinition = {
@@ -155,6 +161,7 @@ describe('Component Types', () => {
         state,
         props: {
           command: 'test command',
+          service: mockService,
           onAborted: vi.fn(),
         },
       };
@@ -174,6 +181,7 @@ describe('Component Types', () => {
         state,
         props: {
           command: 'failing command',
+          service: mockService,
           onAborted: vi.fn(),
         },
       };
@@ -184,6 +192,7 @@ describe('Component Types', () => {
     it('supports optional error prop', () => {
       const props: CommandProps = {
         command: 'test',
+        service: mockService,
         error: 'Some error',
         onAborted: vi.fn(),
       };
@@ -201,9 +210,7 @@ describe('Component Types', () => {
 
   describe('Confirm component definition', () => {
     it('creates valid stateful confirm definition', () => {
-      const state: BaseState = {
-        done: false,
-      };
+      const state: BaseState = {};
 
       const def: ComponentDefinition = {
         id: 'test-confirm-1',
@@ -218,21 +225,6 @@ describe('Component Types', () => {
 
       expect(def.name).toBe(ComponentName.Confirm);
       expect(def.props.message).toBe('Should I execute this plan?');
-    });
-
-    it('supports optional callbacks', () => {
-      const def: ComponentDefinition = {
-        id: 'test-confirm-2',
-        name: ComponentName.Confirm,
-        state: {},
-        props: {
-          message: 'Continue?',
-        },
-      };
-
-      expect(def.props.message).toBe('Continue?');
-      expect(def.props.onConfirmed).toBeUndefined();
-      expect(def.props.onCancelled).toBeUndefined();
     });
   });
 
@@ -258,13 +250,19 @@ describe('Component Types', () => {
                 validate: () => true,
               },
             ],
+            onFinished: () => {},
+            onAborted: () => {},
           },
         },
         {
           id: 'test-command-4',
           name: ComponentName.Command,
           state: {},
-          props: { command: 'test', onAborted: vi.fn() },
+          props: {
+            command: 'test',
+            service: mockService,
+            onAborted: vi.fn(),
+          },
         },
       ];
 
@@ -302,14 +300,14 @@ describe('Component Types', () => {
         id: 'test-command-error',
         name: ComponentName.Command,
         state: errorState,
-        props: { command: 'test', onAborted: vi.fn() },
+        props: { command: 'test', service: mockService, onAborted: vi.fn() },
       };
 
       const successDef: ComponentDefinition = {
         id: 'test-command-success',
         name: ComponentName.Command,
         state: successState,
-        props: { command: 'test', onAborted: vi.fn() },
+        props: { command: 'test', service: mockService, onAborted: vi.fn() },
       };
 
       expect('state' in errorDef && errorDef.state.error).toBe(

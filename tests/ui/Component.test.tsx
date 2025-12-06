@@ -11,6 +11,8 @@ import {
 import { Component } from '../../src/ui/Component.js';
 import { StepType } from '../../src/ui/Config.js';
 
+import { createMockAnthropicService } from '../test-utils.js';
+
 describe('Component', () => {
   const mockApp: App = {
     name: 'test-app',
@@ -19,6 +21,8 @@ describe('Component', () => {
     isDev: false,
     isDebug: false,
   };
+
+  const mockService = createMockAnthropicService();
 
   it('renders welcome component', () => {
     const def: ComponentDefinition = {
@@ -59,6 +63,7 @@ describe('Component', () => {
           },
         ],
         onFinished: () => {},
+        onAborted: () => {},
       },
     };
 
@@ -97,6 +102,8 @@ describe('Component', () => {
             validate: () => true,
           },
         ],
+        onFinished: () => {},
+        onAborted: () => {},
       },
     };
 
@@ -113,6 +120,7 @@ describe('Component', () => {
       state: {},
       props: {
         command: 'test command',
+        service: mockService,
         onAborted: vi.fn(),
       },
     };
@@ -132,6 +140,7 @@ describe('Component', () => {
       },
       props: {
         command: 'failing command',
+        service: mockService,
         error: 'Something went wrong',
         onAborted: vi.fn(),
       },
@@ -257,13 +266,15 @@ describe('Component', () => {
               validate: () => true,
             },
           ],
+          onFinished: () => {},
+          onAborted: () => {},
         },
       },
       {
         id: 'test-command-4',
         name: ComponentName.Command,
         state: {},
-        props: { command: 'test', onAborted: vi.fn() },
+        props: { command: 'test', service: mockService, onAborted: vi.fn() },
       },
       {
         id: 'test-plan-2',

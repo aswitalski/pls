@@ -108,21 +108,6 @@ describe('Answer component', () => {
     );
   });
 
-  it('shows error message when no service available', async () => {
-    const { lastFrame } = render(
-      <Answer
-        question="What is the price of Samsung The Frame 55 inch?"
-        service={undefined}
-        handlers={createMockHandlers()}
-      />
-    );
-
-    // Wait for useEffect to set error state
-    await vi.waitFor(() => {
-      expect(lastFrame()).toContain('Error: No service available');
-    });
-  });
-
   it('handles escape key to abort', () => {
     const service = createMockAnthropicService({
       answer: 'The 55 inch Samsung The Frame costs around $1,500.',

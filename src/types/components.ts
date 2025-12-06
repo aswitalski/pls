@@ -145,14 +145,14 @@ export interface ConfigDefinitionProps<
   T extends Record<string, string> = Record<string, string>,
 > {
   steps: ConfigStep[];
-  onFinished?: (config: T) => void;
-  onAborted?: (operation: string) => void;
+  onFinished: (config: T) => void;
+  onAborted: (operation: string) => void;
 }
 
 export interface ConfirmDefinitionProps {
   message: string;
-  onConfirmed?: () => void;
-  onCancelled?: () => void;
+  onConfirmed: VoidFunction;
+  onCancelled: VoidFunction;
 }
 
 export interface RefinementDefinitionProps {
@@ -161,7 +161,7 @@ export interface RefinementDefinitionProps {
 }
 
 export interface PlanDefinitionProps {
-  message?: string;
+  message: string;
   tasks: Task[];
   debug?: boolean;
   onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>;
@@ -169,36 +169,36 @@ export interface PlanDefinitionProps {
 
 export interface CommandDefinitionProps {
   command: string;
-  service?: LLMService;
+  service: LLMService;
   error?: string;
   onAborted?: (operation: string) => void;
 }
 
 export interface IntrospectDefinitionProps {
   tasks: Task[];
-  service?: LLMService;
+  service: LLMService;
   children?: ReactNode;
   debug?: boolean;
 }
 
 export interface AnswerDefinitionProps {
   question: string;
-  service?: LLMService;
+  service: LLMService;
 }
 
 export interface ExecuteDefinitionProps {
   tasks: Task[];
-  service?: LLMService;
+  service: LLMService;
 }
 
 export interface ValidateDefinitionProps {
   missingConfig: ConfigRequirement[];
   userRequest: string;
-  service?: LLMService;
+  service: LLMService;
   children?: ReactNode;
   debug?: boolean;
-  onError?: (error: string) => void;
-  onComplete?: (configWithDescriptions: ConfigRequirement[]) => void;
+  onError: (error: string) => void;
+  onComplete: (configWithDescriptions: ConfigRequirement[]) => void;
   onAborted: (operation: string) => void;
 }
 

@@ -328,27 +328,6 @@ describe('Validate component', () => {
         { timeout: 500 }
       );
     });
-
-    it('shows error message when no service available', async () => {
-      const missingConfig: ConfigRequirement[] = [
-        { path: 'api.key', type: 'string' },
-      ];
-
-      const { lastFrame } = render(
-        <Validate
-          missingConfig={missingConfig}
-          userRequest="setup"
-          service={undefined}
-          onComplete={vi.fn()}
-          onError={vi.fn()}
-          onAborted={vi.fn()}
-        />
-      );
-
-      await vi.waitFor(() => {
-        expect(lastFrame()).toContain('Error: No service available');
-      });
-    });
   });
 
   describe('Abort handling', () => {

@@ -9,7 +9,11 @@ describe('Confirm component', () => {
   describe('Rendering', () => {
     it('renders message', () => {
       const { lastFrame } = render(
-        <Confirm message="Should I execute this plan?" onCancelled={() => {}} />
+        <Confirm
+          message="Should I execute this plan?"
+          onConfirmed={() => {}}
+          onCancelled={() => {}}
+        />
       );
 
       const output = lastFrame();
@@ -18,7 +22,11 @@ describe('Confirm component', () => {
 
     it('renders yes and no options', () => {
       const { lastFrame } = render(
-        <Confirm message="Continue?" onCancelled={() => {}} />
+        <Confirm
+          message="Continue?"
+          onConfirmed={() => {}}
+          onCancelled={() => {}}
+        />
       );
 
       const output = lastFrame();
@@ -28,7 +36,11 @@ describe('Confirm component', () => {
 
     it('highlights yes by default', () => {
       const { lastFrame } = render(
-        <Confirm message="Continue?" onCancelled={() => {}} />
+        <Confirm
+          message="Continue?"
+          onConfirmed={() => {}}
+          onCancelled={() => {}}
+        />
       );
 
       const output = lastFrame();
@@ -73,7 +85,11 @@ describe('Confirm component', () => {
 
     it('toggles selection with Tab', () => {
       const { stdin } = render(
-        <Confirm message="Continue?" onCancelled={() => {}} />
+        <Confirm
+          message="Continue?"
+          onConfirmed={() => {}}
+          onCancelled={() => {}}
+        />
       );
 
       // Initially "yes" is selected
@@ -123,7 +139,12 @@ describe('Confirm component', () => {
   describe('State', () => {
     it('renders with done state', () => {
       const { lastFrame } = render(
-        <Confirm message="Continue?" state={{}} onCancelled={() => {}} />
+        <Confirm
+          message="Continue?"
+          state={{}}
+          onConfirmed={() => {}}
+          onCancelled={() => {}}
+        />
       );
 
       const output = lastFrame();
@@ -133,7 +154,11 @@ describe('Confirm component', () => {
 
     it('renders with done and confirmed state', () => {
       const { lastFrame } = render(
-        <Confirm message="Continue?" onCancelled={() => {}} />
+        <Confirm
+          message="Continue?"
+          onConfirmed={() => {}}
+          onCancelled={() => {}}
+        />
       );
 
       const output = lastFrame();
@@ -144,19 +169,14 @@ describe('Confirm component', () => {
   describe('Callbacks', () => {
     it('works without onConfirmed callback', () => {
       const { stdin } = render(
-        <Confirm message="Continue?" onCancelled={() => {}} />
+        <Confirm
+          message="Continue?"
+          onConfirmed={() => {}}
+          onCancelled={() => {}}
+        />
       );
 
       // Should not crash
-      stdin.write(Keys.Enter);
-      expect(true).toBe(true);
-    });
-
-    it('works without onCancelled callback', () => {
-      const { stdin } = render(<Confirm message="Continue?" />);
-
-      // Should not crash
-      stdin.write(Keys.Tab);
       stdin.write(Keys.Enter);
       expect(true).toBe(true);
     });

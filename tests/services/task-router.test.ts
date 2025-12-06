@@ -165,10 +165,7 @@ describe('Task Router', () => {
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
-      if (
-        confirmDef.name === ComponentName.Confirm &&
-        confirmDef.props.onConfirmed
-      ) {
+      if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
@@ -207,10 +204,7 @@ describe('Task Router', () => {
         .calls[0][0] as ComponentDefinition;
 
       // Simulate user confirming
-      if (
-        confirmDef.name === ComponentName.Confirm &&
-        confirmDef.props.onConfirmed
-      ) {
+      if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
@@ -243,10 +237,7 @@ describe('Task Router', () => {
         .calls[0][0] as ComponentDefinition;
 
       // Simulate user confirming
-      if (
-        confirmDef.name === ComponentName.Confirm &&
-        confirmDef.props.onConfirmed
-      ) {
+      if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
@@ -281,10 +272,7 @@ describe('Task Router', () => {
         .calls[0][0] as ComponentDefinition;
 
       // Simulate user confirming
-      if (
-        confirmDef.name === ComponentName.Confirm &&
-        confirmDef.props.onConfirmed
-      ) {
+      if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
@@ -319,10 +307,7 @@ describe('Task Router', () => {
         .calls[0][0] as ComponentDefinition;
 
       // Simulate user cancelling
-      if (
-        confirmDef.name === ComponentName.Confirm &&
-        confirmDef.props.onCancelled
-      ) {
+      if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onCancelled();
       }
 
@@ -349,10 +334,7 @@ describe('Task Router', () => {
         .calls[0][0] as ComponentDefinition;
 
       // Simulate user cancelling
-      if (
-        confirmDef.name === ComponentName.Confirm &&
-        confirmDef.props.onCancelled
-      ) {
+      if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onCancelled();
       }
 
@@ -377,10 +359,7 @@ describe('Task Router', () => {
         .calls[0][0] as ComponentDefinition;
 
       // Simulate user cancelling
-      if (
-        confirmDef.name === ComponentName.Confirm &&
-        confirmDef.props.onCancelled
-      ) {
+      if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onCancelled();
       }
 
@@ -416,10 +395,7 @@ describe('Task Router', () => {
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
-      if (
-        confirmDef.name === ComponentName.Confirm &&
-        confirmDef.props.onConfirmed
-      ) {
+      if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
@@ -457,10 +433,7 @@ describe('Task Router', () => {
         .calls[0][0] as ComponentDefinition;
 
       // Simulate user confirming
-      if (
-        confirmDef.name === ComponentName.Confirm &&
-        confirmDef.props.onConfirmed
-      ) {
+      if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
@@ -503,10 +476,7 @@ describe('Task Router', () => {
         .calls[0][0] as ComponentDefinition;
 
       // Simulate user confirming
-      if (
-        confirmDef.name === ComponentName.Confirm &&
-        confirmDef.props.onConfirmed
-      ) {
+      if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 

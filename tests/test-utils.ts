@@ -40,7 +40,7 @@ export function createMockAnthropicService(
     capabilities?: Capability[];
     answer?: string;
     commands?: ExecuteCommand[];
-  },
+  } = {},
   error?: Error
 ): LLMService {
   return {

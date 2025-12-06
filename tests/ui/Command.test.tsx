@@ -3,9 +3,16 @@ import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Command } from '../../src/ui/Command.js';
-import { Keys, createMockHandlers } from '../test-utils.js';
+import {
+  Keys,
+  createMockAnthropicService,
+  createMockHandlers,
+} from '../test-utils.js';
 
 const { Escape } = Keys;
+
+// Mock service for all tests
+const mockService = createMockAnthropicService();
 
 // Mock onAborted function for all tests
 const mockOnAborted = vi.fn();
@@ -16,6 +23,7 @@ describe('Command component error handling', () => {
       const { lastFrame } = render(
         <Command
           command="test command"
+          service={mockService}
           state={{ error: 'Test error' }}
           isActive={false}
         />
@@ -27,7 +35,9 @@ describe('Command component error handling', () => {
 
   describe('Component states', () => {
     it('displays active state with spinner', () => {
-      const { lastFrame } = render(<Command command="test command" />);
+      const { lastFrame } = render(
+        <Command service={mockService} command="test command" />
+      );
 
       // Active command shows spinner
       expect(lastFrame()).toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/);
@@ -35,7 +45,11 @@ describe('Command component error handling', () => {
 
     it('displays inactive state without spinner', () => {
       const { lastFrame } = render(
-        <Command command="test command" isActive={false} />
+        <Command
+          service={mockService}
+          command="test command"
+          isActive={false}
+        />
       );
 
       // Inactive command should not show spinner
@@ -46,7 +60,10 @@ describe('Command component error handling', () => {
   describe('Command variations', () => {
     it('renders command with special characters', () => {
       const { lastFrame } = render(
-        <Command command="commit changes with message 'add new feature'" />
+        <Command
+          service={mockService}
+          command="commit changes with message 'add new feature'"
+        />
       );
 
       // Command should render without errors
@@ -58,7 +75,11 @@ describe('Command component error handling', () => {
     it('calls onAborted when Esc is pressed', () => {
       const onAborted = vi.fn();
       const { stdin } = render(
-        <Command onAborted={onAborted} command="test command" />
+        <Command
+          onAborted={onAborted}
+          service={mockService}
+          command="test command"
+        />
       );
 
       stdin.write(Escape);
@@ -70,6 +91,7 @@ describe('Command component error handling', () => {
       const { stdin } = render(
         <Command
           onAborted={vi.fn()}
+          service={mockService}
           command="test command"
           handlers={handlers}
         />
@@ -85,6 +107,7 @@ describe('Command component error handling', () => {
       const { stdin } = render(
         <Command
           onAborted={onAborted}
+          service={mockService}
           command="test command"
           isActive={false}
         />

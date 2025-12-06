@@ -177,22 +177,6 @@ describe('Execute component', () => {
     );
   });
 
-  it('shows error when no service available', async () => {
-    const tasks = [{ action: 'Test', type: TaskType.Execute }];
-
-    const { lastFrame } = render(
-      <Execute
-        tasks={tasks}
-        service={undefined}
-        handlers={createMockHandlers()}
-      />
-    );
-
-    await vi.waitFor(() => {
-      expect(lastFrame()).toContain('Error: No service available');
-    });
-  });
-
   it('handles escape key to abort', () => {
     const service = createMockAnthropicService({
       message: 'Setting up.',
