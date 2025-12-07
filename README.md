@@ -98,6 +98,8 @@ Skills let you teach `pls` about your project-specific workflows. Create
 markdown files in `~/.pls/skills/` to define custom operations that `pls` can
 understand and execute.
 
+For complete documentation, see [docs/SKILLS.md](./docs/SKILLS.md).
+
 ### Structure
 
 Each skill file uses a simple markdown format:
