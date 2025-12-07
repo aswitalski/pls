@@ -25,6 +25,14 @@ export interface Config {
   settings?: SettingsConfig;
 }
 
+export enum ConfigDefinitionType {
+  RegExp = 'regexp',
+  String = 'string',
+  Enum = 'enum',
+  Number = 'number',
+  Boolean = 'boolean',
+}
+
 /**
  * Base configuration definition with shared properties
  */
@@ -38,24 +46,24 @@ interface BaseConfigDefinition {
  */
 export type ConfigDefinition =
   | (BaseConfigDefinition & {
-      type: 'regexp';
+      type: ConfigDefinitionType.RegExp;
       pattern: RegExp;
     })
   | (BaseConfigDefinition & {
-      type: 'string';
+      type: ConfigDefinitionType.String;
       default?: string;
     })
   | (BaseConfigDefinition & {
-      type: 'enum';
+      type: ConfigDefinitionType.Enum;
       values: string[];
       default?: string;
     })
   | (BaseConfigDefinition & {
-      type: 'number';
+      type: ConfigDefinitionType.Number;
       default?: number;
     })
   | (BaseConfigDefinition & {
-      type: 'boolean';
+      type: ConfigDefinitionType.Boolean;
     });
 
 export class ConfigError extends Error {
@@ -265,20 +273,20 @@ export function getConfigurationRequiredMessage(forFutureUse = false): string {
  */
 const coreConfigSchema: Record<string, ConfigDefinition> = {
   'anthropic.key': {
-    type: 'regexp',
+    type: ConfigDefinitionType.RegExp,
     required: true,
     pattern: /^sk-ant-api03-[A-Za-z0-9_-]{95}$/,
     description: 'Anthropic API key',
   },
   'anthropic.model': {
-    type: 'enum',
+    type: ConfigDefinitionType.Enum,
     required: true,
     values: SUPPORTED_MODELS,
     default: AnthropicModel.Haiku,
     description: 'Anthropic model',
   },
   'settings.debug': {
-    type: 'boolean',
+    type: ConfigDefinitionType.Boolean,
     required: false,
     description: 'Debug mode',
   },
@@ -338,20 +346,20 @@ export function getMissingConfigKeys(): string[] {
     // Validate based on type
     let isValid = false;
     switch (definition.type) {
-      case 'regexp':
+      case ConfigDefinitionType.RegExp:
         isValid = typeof value === 'string' && definition.pattern.test(value);
         break;
-      case 'string':
+      case ConfigDefinitionType.String:
         isValid = typeof value === 'string';
         break;
-      case 'enum':
+      case ConfigDefinitionType.Enum:
         isValid =
           typeof value === 'string' && definition.values.includes(value);
         break;
-      case 'number':
+      case ConfigDefinitionType.Number:
         isValid = typeof value === 'number';
         break;
-      case 'boolean':
+      case ConfigDefinitionType.Boolean:
         isValid = typeof value === 'boolean';
         break;
     }
@@ -488,13 +496,13 @@ function parseConfigValue(
   if (key in schema) {
     const definition = schema[key];
     switch (definition.type) {
-      case 'boolean':
+      case ConfigDefinitionType.Boolean:
         return stringValue === 'true';
-      case 'number':
+      case ConfigDefinitionType.Number:
         return Number(stringValue);
-      case 'string':
-      case 'regexp':
-      case 'enum':
+      case ConfigDefinitionType.String:
+      case ConfigDefinitionType.RegExp:
+      case ConfigDefinitionType.Enum:
         return stringValue;
     }
   }

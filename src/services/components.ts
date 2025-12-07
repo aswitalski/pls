@@ -24,6 +24,7 @@ import { LLMService } from './anthropic.js';
 import {
   Config,
   ConfigDefinition,
+  ConfigDefinitionType,
   getConfigPath,
   getConfigSchema,
   loadConfig,
@@ -75,15 +76,15 @@ function getValidator(
   definition: ConfigDefinition
 ): (value: string) => boolean {
   switch (definition.type) {
-    case 'regexp':
+    case ConfigDefinitionType.RegExp:
       return (value: string) => definition.pattern.test(value);
-    case 'string':
+    case ConfigDefinitionType.String:
       return () => true; // Strings are always valid
-    case 'enum':
+    case ConfigDefinitionType.Enum:
       return (value: string) => definition.values.includes(value);
-    case 'number':
+    case ConfigDefinitionType.Number:
       return (value: string) => !isNaN(Number(value));
-    case 'boolean':
+    case ConfigDefinitionType.Boolean:
       return (value: string) => value === 'true' || value === 'false';
   }
 }
@@ -146,12 +147,12 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
 
     // Map definition to ConfigStep based on type
     switch (definition.type) {
-      case 'regexp':
-      case 'string': {
+      case ConfigDefinitionType.RegExp:
+      case ConfigDefinitionType.String: {
         const value =
           currentValue !== undefined && typeof currentValue === 'string'
             ? currentValue
-            : definition.type === 'string'
+            : definition.type === ConfigDefinitionType.String
               ? (definition.default ?? '')
               : null;
 
@@ -165,7 +166,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         };
       }
 
-      case 'number': {
+      case ConfigDefinitionType.Number: {
         const value =
           currentValue !== undefined && typeof currentValue === 'number'
             ? String(currentValue)
@@ -183,7 +184,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         };
       }
 
-      case 'enum': {
+      case ConfigDefinitionType.Enum: {
         const currentStr =
           currentValue !== undefined && typeof currentValue === 'string'
             ? currentValue
@@ -207,7 +208,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
         };
       }
 
-      case 'boolean': {
+      case ConfigDefinitionType.Boolean: {
         const currentBool =
           currentValue !== undefined && typeof currentValue === 'boolean'
             ? currentValue
