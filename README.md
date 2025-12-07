@@ -2,8 +2,8 @@
 
 Your personal command-line concierge. Ask politely, and it gets things done.
 
-> **Note:** This project is in early preview. Features and APIs may change as
-> development continues.
+> **Note:** This project is in early preview. Features and APIs will change.
+> See [roadmap](#roadmap).
 
 ## Installation
 
@@ -13,14 +13,14 @@ npm install -g prompt-language-shell
 
 ## Setup
 
-On first run, `pls` walks you through a quick setup. Your settings will be saved to `~/.plsrc`.
+On first run, `pls` walks you through a quick setup.
+Your settings will be saved to `~/.plsrc`.
 
 ## Usage
 
 Type `pls` followed by your request in natural language.
 
-To see what `pls` can
-do, start by listing available capabilities:
+To see what `pls` can do, start by listing available capabilities:
 
 ```
 $ pls list skills
@@ -154,6 +154,13 @@ $ pls build prod
 $ pls build dev
 $ pls build test
 ```
+
+## Roadmap
+
+- **0.7** - Comprehend skill, simplified prompts, better debugging
+- **0.8** - Sequential and interlaced skill execution
+- **0.9** - Learn skill, codebase refinement, complex dependency handling
+- **1.0** - Production release
 
 ## Development
 
