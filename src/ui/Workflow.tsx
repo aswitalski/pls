@@ -138,27 +138,29 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
   useEffect(() => {
     const { active, pending } = current;
 
-    if (queue.length > 0 && active === null) {
-      const [first, ...rest] = queue;
-      const activeComponent = { ...first, status: ComponentStatus.Active };
-
-      // Decision based on component type being activated:
-      // - Confirm: Keep pending as-is (so Plan stays visible for context)
-      // - Other: Move pending to timeline first, then activate
-      if (first.name === ComponentName.Confirm) {
-        // Confirm keeps the pending component visible (Plan showing what will execute)
-        setQueue(rest);
-        setCurrent({ active: activeComponent, pending });
-      } else {
-        // Other components: move pending to timeline first, then activate
-        if (pending) {
-          const donePending = markAsDone(pending);
-          setTimeline((prev) => [...prev, donePending]);
-        }
-        setQueue(rest);
-        setCurrent({ active: activeComponent, pending: null });
-      }
+    // Early return: not ready to activate next
+    if (queue.length === 0 || active !== null) {
+      return;
     }
+
+    const [first, ...rest] = queue;
+    const activeComponent = { ...first, status: ComponentStatus.Active };
+
+    // Confirm - keep pending visible (Plan showing what will execute)
+    if (first.name === ComponentName.Confirm) {
+      setQueue(rest);
+      setCurrent({ active: activeComponent, pending });
+      return;
+    }
+
+    // Other components - move pending to timeline first, then activate
+    if (pending) {
+      const donePending = markAsDone(pending);
+      setTimeline((prev) => [...prev, donePending]);
+    }
+
+    setQueue(rest);
+    setCurrent({ active: activeComponent, pending: null });
   }, [queue, current]);
 
   // Process active component - stateless components auto-move to timeline
@@ -179,22 +181,31 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
   useEffect(() => {
     const { active, pending } = current;
 
-    if (active === null && queue.length === 0) {
-      if (pending) {
-        // Move final pending component to timeline
-        const donePending = markAsDone(pending);
-        setTimeline((prev) => [...prev, donePending]);
-        setCurrent({ active: null, pending: null });
-      } else if (timeline.length > 0) {
-        // Everything is done, exit
-        const lastItem = timeline[timeline.length - 1];
-        const isFailed =
-          lastItem.name === ComponentName.Feedback &&
-          lastItem.props.type === FeedbackType.Failed;
-
-        exitApp(isFailed ? 1 : 0);
-      }
+    // Early return: not ready to finish
+    if (active !== null || queue.length > 0) {
+      return;
     }
+
+    // Handle pending component
+    if (pending) {
+      const donePending = markAsDone(pending);
+      setTimeline((prev) => [...prev, donePending]);
+      setCurrent({ active: null, pending: null });
+      return;
+    }
+
+    // Early return: nothing to exit with
+    if (timeline.length === 0) {
+      return;
+    }
+
+    // Everything is done, exit
+    const lastItem = timeline[timeline.length - 1];
+    const isFailed =
+      lastItem.name === ComponentName.Feedback &&
+      lastItem.props.type === FeedbackType.Failed;
+
+    exitApp(isFailed ? 1 : 0);
   }, [current, queue, timeline]);
 
   // Render active and pending components
@@ -207,13 +218,13 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
       return <Component key={active.id} def={active} debug={debug} />;
     }
 
-    // For stateful components, inject global handlers (mandatory for stateful components)
+    // For stateful components, inject global handlers
     const statefulActive = active as StatefulComponentDefinition;
     const wrappedDef = {
       ...statefulActive,
       props: {
         ...statefulActive.props,
-        handlers, // Handlers are always provided - components should not use optional chaining
+        handlers,
       },
     } as unknown as ComponentDefinition;
 
@@ -230,7 +241,7 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
 
   return (
     <Box flexDirection="column">
-      {/* Timeline: Only Done components (Static, never re-renders) */}
+      {/* Timeline - finished, never re-renders */}
       <Static key="timeline" items={timeline}>
         {(item) => (
           <Box key={item.id} marginTop={1}>
@@ -239,7 +250,7 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
         )}
       </Static>
 
-      {/* Current work: Pending + Active together (dynamic) */}
+      {/* Current - pending and active together */}
       {pendingComponent && <Box marginTop={1}>{pendingComponent}</Box>}
       {activeComponent && <Box marginTop={1}>{activeComponent}</Box>}
     </Box>

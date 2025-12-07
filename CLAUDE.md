@@ -530,7 +530,11 @@ sufficient.
 - Control flow: Reduce nesting by using early returns and guard clauses.
   Prefer returning early when conditions aren't met rather than wrapping the
   entire function body in an if statement. This keeps code flat, readable, and
-  easier to follow.
+  easier to follow. Apply this pattern systematically:
+  - Start with guard clauses that return early for edge cases or preconditions
+  - Handle special cases next, each with their own early return
+  - Place the main/default logic at the end without additional nesting
+  - Avoid if-else chains; use early returns to handle each case independently
 - Test naming: Follow these conventions for clear, readable tests:
   - Use natural language in all `describe` blocks (e.g., "Parsing commands"
     not "parseCommands", "Loading skills" not "loadSkills")
