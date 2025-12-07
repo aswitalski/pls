@@ -46,20 +46,11 @@ export function loadSkills(): string[] {
 
 /**
  * Load and parse all skill definitions
- * Returns structured skill definitions
+ * Returns structured skill definitions (including invalid skills)
  */
 export function loadSkillDefinitions(): SkillDefinition[] {
   const skillContents = loadSkills();
-  const definitions: SkillDefinition[] = [];
-
-  for (const content of skillContents) {
-    const parsed = parseSkillMarkdown(content);
-    if (parsed) {
-      definitions.push(parsed);
-    }
-  }
-
-  return definitions;
+  return skillContents.map((content) => parseSkillMarkdown(content));
 }
 
 /**

@@ -53,11 +53,6 @@ export function expandSkillReferences(
       continue;
     }
 
-    if (!skill.execution || skill.execution.length === 0) {
-      // Referenced skill has no execution, skip
-      continue;
-    }
-
     // Recursively expand referenced skill's execution
     const newVisited = new Set(visited);
     newVisited.add(skillName);
@@ -96,7 +91,7 @@ export function getReferencedSkills(
 
     const skill = skillLookup(skillName);
 
-    if (skill && skill.execution) {
+    if (skill) {
       const newVisited = new Set(visited);
       newVisited.add(skillName);
 

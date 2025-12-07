@@ -183,12 +183,24 @@ function executeTasksAfterConfirm(
     );
   } else {
     // Execute tasks with validation
-    const missingConfig = validateExecuteTasks(tasks);
+    const validation = validateExecuteTasks(tasks);
 
-    if (missingConfig.length > 0) {
+    if (validation.validationErrors.length > 0) {
+      // Show error feedback for invalid skills
+      const errorMessages = validation.validationErrors.map((error) => {
+        const issuesList = error.issues
+          .map((issue) => `  - ${issue}`)
+          .join('\n');
+        return `Invalid skill definition "${error.skill}":\n\n${issuesList}`;
+      });
+
+      handlers.addToQueue(
+        createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
+      );
+    } else if (validation.missingConfig.length > 0) {
       handlers.addToQueue(
         createValidateDefinition(
-          missingConfig,
+          validation.missingConfig,
           userRequest,
           service,
           (error: string) => {

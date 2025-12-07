@@ -7,8 +7,8 @@ stored in `~/.pls/skills/` and loaded dynamically at runtime.
 ### Skill File Format
 
 Each skill is a markdown file containing structured sections that define its
-behavior. Skills have three required sections (Name, Description, Steps) and
-three optional sections (Aliases, Config, Execution).
+behavior. Skills have four required sections (Name, Description, Steps,
+Execution) and two optional sections (Aliases, Config).
 
 #### Required Sections
 
@@ -52,7 +52,7 @@ Human-readable description of the workflow.
 **Purpose**:
 - Bullet list of logical workflow steps
 - Written for human understanding and documentation
-- Must have the same number of items as Execution section (if present)
+- Must have the same number of items as Execution section
 - Used by LLM to understand workflow at a high level
 
 **Example**:
@@ -62,6 +62,31 @@ Human-readable description of the workflow.
 - Install dependencies if needed
 - Run the build script
 - Generate build artifacts
+```
+
+##### Execution
+
+Actual commands that implement the workflow.
+
+**Purpose**:
+- Bullet list of commands to execute
+- Must have the same number of items as Steps section
+- Each line becomes one task in the execution plan
+- Supports three command syntaxes
+
+**Command Syntaxes**:
+
+1. **Direct commands**: `python3 ./script.py --flag`
+2. **Labeled commands**: `Run: npm install`
+3. **Skill references**: `[Other Skill Name]`
+
+**Example**:
+```markdown
+### Execution
+- cd ~/projects/myapp
+- npm install
+- npm run build
+- cp -r dist/ builds/
 ```
 
 #### Optional Sections
@@ -115,31 +140,6 @@ This creates the following config properties:
 - `product.dev.path` and `product.prod.path` (paths)
 - `product.dev.enabled` (true/false)
 - `build.parallel` (true/false) and `build.threads` (number)
-
-##### Execution
-
-Actual commands that implement the workflow.
-
-**Purpose**:
-- Bullet list of commands to execute
-- Must have the same number of items as Steps section
-- Each line becomes one task in the execution plan
-- Supports three command syntaxes
-
-**Command Syntaxes**:
-
-1. **Direct commands**: `python3 ./script.py --flag`
-2. **Labeled commands**: `Run: npm install`
-3. **Skill references**: `[Other Skill Name]`
-
-**Example**:
-```markdown
-### Execution
-- cd ~/projects/myapp
-- npm install
-- npm run build
-- cp -r dist/ builds/
-```
 
 ### Advanced Features
 
@@ -350,8 +350,8 @@ These capabilities are always available and work alongside user-defined skills.
 To create a skill:
 
 1. Create a markdown file in `~/.pls/skills/`
-2. Add required sections: Name, Description, Steps
-3. Add optional sections as needed: Aliases, Config, Execution
+2. Add required sections: Name, Description, Steps, Execution
+3. Add optional sections as needed: Aliases, Config
 4. Test the skill by using natural language that matches the Description or
    Aliases
 

@@ -18,17 +18,22 @@ A test skill for validation
 ### Steps
 - First step
 - Second step
+
+### Execution
+- echo "first"
+- echo "second"
 `;
 
     const skill = parseSkillMarkdown(content);
 
     expect(skill).toBeDefined();
-    expect(skill?.name).toBe('Test Skill');
-    expect(skill?.description).toBe('A test skill for validation');
-    expect(skill?.steps).toEqual(['First step', 'Second step']);
-    expect(skill?.aliases).toBeUndefined();
-    expect(skill?.config).toBeUndefined();
-    expect(skill?.execution).toBeUndefined();
+    expect(skill.isValid).toBe(true);
+    expect(skill.name).toBe('Test Skill');
+    expect(skill.description).toBe('A test skill for validation');
+    expect(skill.steps).toEqual(['First step', 'Second step']);
+    expect(skill.execution).toEqual(['echo "first"', 'echo "second"']);
+    expect(skill.aliases).toBeUndefined();
+    expect(skill.config).toBeUndefined();
   });
 
   it('parses skill with all sections', () => {
@@ -63,10 +68,11 @@ product:
     const skill = parseSkillMarkdown(content);
 
     expect(skill).toBeDefined();
-    expect(skill?.name).toBe('Complete Skill');
-    expect(skill?.description).toBe('A complete skill with all sections');
-    expect(skill?.aliases).toEqual(['do something', 'perform action']);
-    expect(skill?.config).toEqual({
+    expect(skill.isValid).toBe(true);
+    expect(skill.name).toBe('Complete Skill');
+    expect(skill.description).toBe('A complete skill with all sections');
+    expect(skill.aliases).toEqual(['do something', 'perform action']);
+    expect(skill.config).toEqual({
       product: {
         alpha: {
           path: 'string',
@@ -77,14 +83,14 @@ product:
         },
       },
     });
-    expect(skill?.steps).toEqual(['Navigate to product', 'Execute operation']);
-    expect(skill?.execution).toEqual([
+    expect(skill.steps).toEqual(['Navigate to product', 'Execute operation']);
+    expect(skill.execution).toEqual([
       '[Navigate To Product]',
       'operation {product.VARIANT.path}',
     ]);
   });
 
-  it('returns null for skill missing name', () => {
+  it('returns invalid skill for skill missing name', () => {
     const content = `
 ### Description
 Missing name section
@@ -94,10 +100,12 @@ Missing name section
 `;
 
     const skill = parseSkillMarkdown(content);
-    expect(skill).toBeNull();
+    expect(skill).toBeDefined();
+    expect(skill.isValid).toBe(false);
+    expect(skill.validationError).toContain('missing a Name section');
   });
 
-  it('returns null for skill missing description', () => {
+  it('returns invalid skill for skill missing description', () => {
     const content = `
 ### Name
 Test Skill
@@ -107,10 +115,12 @@ Test Skill
 `;
 
     const skill = parseSkillMarkdown(content);
-    expect(skill).toBeNull();
+    expect(skill).toBeDefined();
+    expect(skill.isValid).toBe(false);
+    expect(skill.validationError).toContain('missing a Description section');
   });
 
-  it('returns null for skill missing steps', () => {
+  it('returns invalid skill for skill missing steps', () => {
     const content = `
 ### Name
 Test Skill
@@ -120,10 +130,30 @@ Missing steps
 `;
 
     const skill = parseSkillMarkdown(content);
-    expect(skill).toBeNull();
+    expect(skill).toBeDefined();
+    expect(skill.isValid).toBe(false);
+    expect(skill.validationError).toContain('missing a Steps section');
   });
 
-  it('returns null when execution and steps count mismatch', () => {
+  it('returns invalid skill for skill missing execution', () => {
+    const content = `
+### Name
+Test Skill
+
+### Description
+Missing execution
+
+### Steps
+- Some step
+`;
+
+    const skill = parseSkillMarkdown(content);
+    expect(skill).toBeDefined();
+    expect(skill.isValid).toBe(false);
+    expect(skill.validationError).toContain('missing an Execution section');
+  });
+
+  it('returns invalid skill when execution and steps count mismatch', () => {
     const content = `
 ### Name
 Test Skill
@@ -140,7 +170,9 @@ Mismatched counts
 `;
 
     const skill = parseSkillMarkdown(content);
-    expect(skill).toBeNull();
+    expect(skill).toBeDefined();
+    expect(skill.isValid).toBe(false);
+    expect(skill.validationError).toContain('2 steps but 1 execution');
   });
 
   it('parses execution with labeled commands', () => {
@@ -163,10 +195,7 @@ With labeled commands
     const skill = parseSkillMarkdown(content);
 
     expect(skill).toBeDefined();
-    expect(skill?.execution).toEqual([
-      'Run: npm install',
-      'Run: npm run build',
-    ]);
+    expect(skill.execution).toEqual(['Run: npm install', 'Run: npm run build']);
   });
 
   it('parses skill references in execution', () => {
@@ -189,7 +218,7 @@ With skill reference
     const skill = parseSkillMarkdown(content);
 
     expect(skill).toBeDefined();
-    expect(skill?.execution).toEqual([
+    expect(skill.execution).toEqual([
       '[Navigate To Product]',
       'operation --flag',
     ]);

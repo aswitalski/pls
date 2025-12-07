@@ -17,7 +17,11 @@ export interface SkillDefinition {
   /** Logical workflow steps (from ### Steps section) */
   steps: string[];
   /** Executable commands (from ### Execution section) */
-  execution?: string[];
+  execution: string[];
+  /** Whether the skill passes validation */
+  isValid: boolean;
+  /** Validation error message if skill is invalid */
+  validationError?: string;
 }
 
 /**

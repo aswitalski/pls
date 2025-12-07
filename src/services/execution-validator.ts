@@ -12,21 +12,69 @@ import { expandSkillReferences } from './skill-expander.js';
 import { getConfigType, parseSkillMarkdown } from './skill-parser.js';
 
 /**
- * Validate config requirements for execute tasks
- * Returns missing config requirements
+ * Validation error for a skill
  */
-export function validateExecuteTasks(tasks: Task[]): ConfigRequirement[] {
+export interface ValidationError {
+  skill: string;
+  issues: string[];
+}
+
+/**
+ * Result of validating execute tasks
+ */
+export interface ExecuteValidationResult {
+  /** Missing config requirements */
+  missingConfig: ConfigRequirement[];
+  /** Validation errors for invalid skills */
+  validationErrors: ValidationError[];
+}
+
+/**
+ * Validate config requirements for execute tasks
+ * Returns validation result with missing config and validation errors
+ */
+export function validateExecuteTasks(tasks: Task[]): ExecuteValidationResult {
   const userConfig = loadUserConfig();
   const missing: ConfigRequirement[] = [];
   const seenPaths = new Set<string>();
+  const validationErrors: ValidationError[] = [];
+  const seenSkills = new Set<string>();
 
-  // Load and parse all skills for validation
+  // Load all skills (including invalid ones for validation)
   const skillContents = loadSkills();
-  const parsedSkills = skillContents
-    .map((content) => parseSkillMarkdown(content))
-    .filter((s) => s !== null);
+  const parsedSkills = skillContents.map((content) =>
+    parseSkillMarkdown(content)
+  );
   const skillLookup = (name: string) =>
     parsedSkills.find((s) => s.name === name) || null;
+
+  // Check for invalid skills being used in tasks
+  for (const task of tasks) {
+    const skillName =
+      typeof task.params?.skill === 'string' ? task.params.skill : null;
+
+    if (skillName && !seenSkills.has(skillName)) {
+      seenSkills.add(skillName);
+
+      // Check if this skill is invalid
+      const skill = skillLookup(skillName);
+
+      if (skill && !skill.isValid) {
+        validationErrors.push({
+          skill: skill.name,
+          issues: [skill.validationError || 'Unknown validation error'],
+        });
+      }
+    }
+  }
+
+  // If there are validation errors, return early
+  if (validationErrors.length > 0) {
+    return {
+      missingConfig: [],
+      validationErrors,
+    };
+  }
 
   for (const task of tasks) {
     // Check if task originates from a skill
@@ -36,7 +84,7 @@ export function validateExecuteTasks(tasks: Task[]): ConfigRequirement[] {
     if (skillName) {
       // Task comes from a skill - check skill's Execution section
       const skill = skillLookup(skillName);
-      if (!skill || !skill.execution) {
+      if (!skill) {
         continue;
       }
 
@@ -133,5 +181,8 @@ export function validateExecuteTasks(tasks: Task[]): ConfigRequirement[] {
     }
   }
 
-  return missing;
+  return {
+    missingConfig: missing,
+    validationErrors: [],
+  };
 }

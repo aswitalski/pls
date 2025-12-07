@@ -48,23 +48,21 @@ describe('Expanding skill references', () => {
       description: 'Navigation skill',
       steps: ['Change to directory'],
       execution: ['cd {product.VARIANT.path}'],
+      isValid: true,
     },
     'Build Product': {
       name: 'Build Product',
       description: 'Build skill',
       steps: ['Navigate', 'Compile'],
       execution: ['[Navigate To Product]', 'make build'],
+      isValid: true,
     },
     'Deploy Product': {
       name: 'Deploy Product',
       description: 'Deploy skill',
       steps: ['Build', 'Upload'],
       execution: ['[Build Product]', 'scp dist/* server:/app'],
-    },
-    'No Execution': {
-      name: 'No Execution',
-      description: 'Skill without execution',
-      steps: ['Some step'],
+      isValid: true,
     },
   };
 
@@ -109,13 +107,6 @@ describe('Expanding skill references', () => {
     expect(expanded).toEqual(['[Unknown Skill]', 'other command']);
   });
 
-  it('skips skill without execution', () => {
-    const execution = ['[No Execution]', 'other command'];
-    const expanded = expandSkillReferences(execution, lookup);
-
-    expect(expanded).toEqual(['other command']);
-  });
-
   it('throws error for circular reference', () => {
     const circularSkills: Record<string, SkillDefinition> = {
       A: {
@@ -123,18 +114,21 @@ describe('Expanding skill references', () => {
         description: 'Skill A',
         steps: ['Step'],
         execution: ['[B]'],
+        isValid: true,
       },
       B: {
         name: 'B',
         description: 'Skill B',
         steps: ['Step'],
         execution: ['[C]'],
+        isValid: true,
       },
       C: {
         name: 'C',
         description: 'Skill C',
         steps: ['Step'],
         execution: ['[A]'],
+        isValid: true,
       },
     };
 
@@ -152,6 +146,7 @@ describe('Expanding skill references', () => {
         description: 'Self-referencing skill',
         steps: ['Step'],
         execution: ['[Loop]'],
+        isValid: true,
       },
     };
 
@@ -170,24 +165,28 @@ describe('Getting referenced skills', () => {
       description: 'Skill A',
       steps: ['Step'],
       execution: ['[B]', '[C]'],
+      isValid: true,
     },
     B: {
       name: 'B',
       description: 'Skill B',
       steps: ['Step'],
       execution: ['[D]'],
+      isValid: true,
     },
     C: {
       name: 'C',
       description: 'Skill C',
       steps: ['Step'],
       execution: ['command'],
+      isValid: true,
     },
     D: {
       name: 'D',
       description: 'Skill D',
       steps: ['Step'],
       execution: ['command'],
+      isValid: true,
     },
   };
 
@@ -235,12 +234,14 @@ describe('Validating no cycles', () => {
         description: 'Skill A',
         steps: ['Step'],
         execution: ['[B]'],
+        isValid: true,
       },
       B: {
         name: 'B',
         description: 'Skill B',
         steps: ['Step'],
         execution: ['command'],
+        isValid: true,
       },
     };
 
@@ -256,12 +257,14 @@ describe('Validating no cycles', () => {
         description: 'Skill A',
         steps: ['Step'],
         execution: ['[B]'],
+        isValid: true,
       },
       B: {
         name: 'B',
         description: 'Skill B',
         steps: ['Step'],
         execution: ['[A]'],
+        isValid: true,
       },
     };
 
@@ -277,18 +280,21 @@ describe('Validating no cycles', () => {
         description: 'Skill A',
         steps: ['Step'],
         execution: ['[C]'],
+        isValid: true,
       },
       B: {
         name: 'B',
         description: 'Skill B',
         steps: ['Step'],
         execution: ['[C]'],
+        isValid: true,
       },
       C: {
         name: 'C',
         description: 'Skill C',
         steps: ['Step'],
         execution: ['command'],
+        isValid: true,
       },
     };
 

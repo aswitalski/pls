@@ -13,10 +13,11 @@ describe('Validating execute tasks', () => {
       },
     ];
 
-    const missing = validateExecuteTasks(tasks);
+    const result = validateExecuteTasks(tasks);
 
-    // Should return empty array for tasks without skills
-    expect(missing).toEqual([]);
+    // Should return empty arrays for tasks without skills
+    expect(result.missingConfig).toEqual([]);
+    expect(result.validationErrors).toEqual([]);
   });
 
   it('handles tasks with non-existent skill gracefully', () => {
@@ -48,10 +49,10 @@ describe('Validating execute tasks', () => {
       },
     ];
 
-    const missing = validateExecuteTasks(tasks);
+    const result = validateExecuteTasks(tasks);
 
     // Should not have duplicates
-    const paths = missing.map((req) => req.path);
+    const paths = result.missingConfig.map((req) => req.path);
     const uniquePaths = [...new Set(paths)];
     expect(paths.length).toBe(uniquePaths.length);
   });

@@ -127,18 +127,64 @@ Navigate to the project directory, run the project generation script, run the co
     });
 
     it('formats single skill with header', () => {
-      const skills = ['Skill 1 content'];
+      const skills = [
+        `### Name
+Skill 1
+
+### Description
+First skill
+
+### Steps
+- Step one
+
+### Execution
+- cmd one`,
+      ];
       const formatted = formatSkillsForPrompt(skills);
 
       expect(formatted).toContain('## Available Skills');
       expect(formatted).toContain(
         'The following skills define domain-specific workflows'
       );
-      expect(formatted).toContain('Skill 1 content');
+      expect(formatted).toContain('Skill 1');
     });
 
     it('formats multiple skills separated by blank lines', () => {
-      const skills = ['Skill 1', 'Skill 2', 'Skill 3'];
+      const skills = [
+        `### Name
+Skill 1
+
+### Description
+First skill
+
+### Steps
+- Step one
+
+### Execution
+- cmd one`,
+        `### Name
+Skill 2
+
+### Description
+Second skill
+
+### Steps
+- Step two
+
+### Execution
+- cmd two`,
+        `### Name
+Skill 3
+
+### Description
+Third skill
+
+### Steps
+- Step three
+
+### Execution
+- cmd three`,
+      ];
       const formatted = formatSkillsForPrompt(skills);
 
       expect(formatted).toContain('Skill 1');

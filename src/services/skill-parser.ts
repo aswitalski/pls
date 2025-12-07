@@ -2,39 +2,89 @@ import YAML from 'yaml';
 
 import { ConfigSchema, SkillDefinition } from '../types/skills.js';
 
+export interface SkillValidationError {
+  skillName: string;
+  error: string;
+}
+
+/**
+ * Validate a skill without parsing it fully
+ * Returns validation error if skill is invalid, null if valid
+ */
+export function validateSkill(content: string): SkillValidationError | null {
+  const sections = extractSections(content);
+
+  // Name is required for error reporting
+  const skillName = sections.name || 'Unknown skill';
+
+  // Check required sections
+  if (!sections.name) {
+    return {
+      skillName,
+      error: 'The skill file is missing a Name section',
+    };
+  }
+
+  if (!sections.description) {
+    return {
+      skillName,
+      error: 'The skill file is missing a Description section',
+    };
+  }
+
+  if (!sections.steps || sections.steps.length === 0) {
+    return {
+      skillName,
+      error: 'The skill file is missing a Steps section',
+    };
+  }
+
+  if (!sections.execution || sections.execution.length === 0) {
+    return {
+      skillName,
+      error: 'The skill file is missing an Execution section',
+    };
+  }
+
+  // Execution and steps must have same count
+  if (sections.execution.length !== sections.steps.length) {
+    return {
+      skillName,
+      error: `The skill has ${String(sections.steps.length)} steps but ${String(sections.execution.length)} execution lines`,
+    };
+  }
+
+  return null;
+}
+
 /**
  * Parse a skill markdown file into structured definition
  */
-export function parseSkillMarkdown(content: string): SkillDefinition | null {
+export function parseSkillMarkdown(content: string): SkillDefinition {
   const sections = extractSections(content);
 
-  // Name is required
-  if (!sections.name) {
-    return null;
+  // Validate the skill
+  const validationError = validateSkill(content);
+
+  // For invalid skills, return minimal definition with error
+  if (validationError) {
+    return {
+      name: sections.name || 'Unknown skill',
+      description: sections.description || '',
+      steps: sections.steps || [],
+      execution: sections.execution || [],
+      isValid: false,
+      validationError: validationError.error,
+    };
   }
 
-  // Description is required
-  if (!sections.description) {
-    return null;
-  }
-
-  // Steps are required
-  if (!sections.steps || sections.steps.length === 0) {
-    return null;
-  }
-
-  // Validate execution and steps have same count (if execution exists)
-  if (
-    sections.execution &&
-    sections.execution.length !== sections.steps.length
-  ) {
-    return null;
-  }
-
+  // Valid skill - all required fields are present (validation passed)
   const skill: SkillDefinition = {
-    name: sections.name,
-    description: sections.description,
-    steps: sections.steps,
+    name: sections.name as string,
+    description: sections.description as string,
+    steps: sections.steps as string[],
+    execution: sections.execution as string[],
+    isValid: true,
   };
 
   if (sections.aliases && sections.aliases.length > 0) {
@@ -43,10 +93,6 @@ export function parseSkillMarkdown(content: string): SkillDefinition | null {
 
   if (sections.config) {
     skill.config = sections.config;
-  }
-
-  if (sections.execution && sections.execution.length > 0) {
-    skill.execution = sections.execution;
   }
 
   return skill;
@@ -70,8 +116,8 @@ function extractSections(content: string): {
   let sectionLines: string[] = [];
 
   for (const line of lines) {
-    // Check for section headers (### SectionName)
-    const headerMatch = line.match(/^###\s+(.+)$/);
+    // Check for section headers (any valid markdown header: #, ##, ###, etc.)
+    const headerMatch = line.match(/^#{1,6}\s+(.+)$/);
 
     if (headerMatch) {
       // Process previous section
