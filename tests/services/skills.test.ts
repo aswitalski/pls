@@ -4,9 +4,11 @@ import { join } from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  formatSkillsForComprehension,
   formatSkillsForPrompt,
   getSkillsDirectory,
   loadSkills,
+  loadSkillsForComprehension,
 } from '../../src/services/skills.js';
 
 import { safeRemoveDirectory } from '../test-utils.js';
@@ -191,6 +193,183 @@ Third skill
       expect(formatted).toContain('Skill 2');
       expect(formatted).toContain('Skill 3');
       expect(formatted).toContain('\n\n');
+    });
+  });
+
+  describe('Loading skills for comprehension', () => {
+    it('returns empty array when no skills exist', () => {
+      const skills = loadSkillsForComprehension();
+      expect(skills).toEqual([]);
+    });
+
+    it('extracts only Name and Description sections', () => {
+      const skillsDir = getSkillsDirectory();
+      const skillContent = `### Name
+Build Opera
+
+### Description
+Run Opera Desktop browser build
+
+### Aliases
+- build opera
+- compile opera
+
+### Steps
+- Navigate to project directory
+- Run generation script
+- Compile the project
+
+### Execution
+- cd {project.path}
+- ./generate.sh
+- make build`;
+
+      writeFileSync(join(skillsDir, 'opera.md'), skillContent, 'utf-8');
+
+      const skills = loadSkillsForComprehension();
+      expect(skills).toHaveLength(1);
+
+      // Should include Name and Description
+      expect(skills[0]).toContain('### Name');
+      expect(skills[0]).toContain('Build Opera');
+      expect(skills[0]).toContain('### Description');
+      expect(skills[0]).toContain('Run Opera Desktop browser build');
+
+      // Should NOT include other sections
+      expect(skills[0]).not.toContain('### Aliases');
+      expect(skills[0]).not.toContain('build opera');
+      expect(skills[0]).not.toContain('### Steps');
+      expect(skills[0]).not.toContain('Navigate to project directory');
+      expect(skills[0]).not.toContain('### Execution');
+      expect(skills[0]).not.toContain('cd {project.path}');
+    });
+
+    it('handles skills with only Name section', () => {
+      const skillsDir = getSkillsDirectory();
+      const skillContent = `### Name
+Deploy Service
+
+### Steps
+- Deploy to production`;
+
+      writeFileSync(join(skillsDir, 'deploy.md'), skillContent, 'utf-8');
+
+      const skills = loadSkillsForComprehension();
+      expect(skills).toHaveLength(1);
+      expect(skills[0]).toContain('### Name');
+      expect(skills[0]).toContain('Deploy Service');
+      expect(skills[0]).not.toContain('### Steps');
+    });
+
+    it('handles multiple skills correctly', () => {
+      const skillsDir = getSkillsDirectory();
+
+      const skill1 = `### Name
+Build Project
+
+### Description
+Build the project files
+
+### Steps
+- Compile`;
+
+      const skill2 = `### Name
+Test Project
+
+### Description
+Run all tests
+
+### Execution
+- npm test`;
+
+      writeFileSync(join(skillsDir, 'build.md'), skill1, 'utf-8');
+      writeFileSync(join(skillsDir, 'test.md'), skill2, 'utf-8');
+
+      const skills = loadSkillsForComprehension();
+      expect(skills).toHaveLength(2);
+
+      // Both should have Name and Description only
+      skills.forEach((skill) => {
+        expect(skill).toContain('### Name');
+        expect(skill).toContain('### Description');
+        expect(skill).not.toContain('### Steps');
+        expect(skill).not.toContain('### Execution');
+      });
+    });
+
+    it('handles empty skill file', () => {
+      const skillsDir = getSkillsDirectory();
+      writeFileSync(join(skillsDir, 'empty.md'), '', 'utf-8');
+
+      const skills = loadSkillsForComprehension();
+      expect(skills).toHaveLength(1);
+      expect(skills[0]).toBe('');
+    });
+  });
+
+  describe('Formatting skills for comprehension', () => {
+    it('returns empty string when no skills', () => {
+      const formatted = formatSkillsForComprehension([]);
+      expect(formatted).toBe('');
+    });
+
+    it('formats single skill with comprehension-specific header', () => {
+      const skills = [
+        `### Name
+Build Opera
+
+### Description
+Run Opera Desktop browser build`,
+      ];
+      const formatted = formatSkillsForComprehension(skills);
+
+      expect(formatted).toContain('## Available Skills');
+      expect(formatted).toContain('The following skills are available');
+      expect(formatted).toContain('help you match user requests');
+      expect(formatted).toContain('Build Opera');
+      expect(formatted).toContain('Run Opera Desktop browser build');
+    });
+
+    it('formats multiple skills separated by blank lines', () => {
+      const skills = [
+        `### Name
+Skill 1
+
+### Description
+First skill`,
+        `### Name
+Skill 2
+
+### Description
+Second skill`,
+        `### Name
+Skill 3
+
+### Description
+Third skill`,
+      ];
+      const formatted = formatSkillsForComprehension(skills);
+
+      expect(formatted).toContain('Skill 1');
+      expect(formatted).toContain('Skill 2');
+      expect(formatted).toContain('Skill 3');
+      expect(formatted).toContain('\n\n');
+    });
+
+    it('does not include execution or steps instructions', () => {
+      const skills = [
+        `### Name
+Test Skill
+
+### Description
+A test skill`,
+      ];
+      const formatted = formatSkillsForComprehension(skills);
+
+      // Should not contain planning-specific instructions
+      expect(formatted).not.toContain('incorporate the skill');
+      expect(formatted).not.toContain('workflow');
+      expect(formatted).not.toContain('INCOMPLETE');
     });
   });
 });

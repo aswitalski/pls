@@ -75,13 +75,20 @@ These MUST appear FIRST, in this EXACT sequence:
 3. **Answer** ← ALWAYS THIRD
 4. **Execute** ← ALWAYS FOURTH
 
-### Position 5-7: Indirect Workflow Capabilities
+### Position 5-8: Workflow Tools (Debug Mode Only)
 
-These MUST appear AFTER Execute and BEFORE user skills:
+**IMPORTANT**: These are internal implementation details, shown ONLY when debug
+mode is ENABLED. Users never invoke these directly.
 
-5. **Plan** ← NEVER FIRST, ALWAYS position 5 (after Execute)
-6. **Validate** ← ALWAYS position 6 (after Plan)
-7. **Report** ← NEVER FIRST, ALWAYS position 7 (after Validate)
+When debug mode is ENABLED, include these AFTER Execute and BEFORE user skills:
+
+5. **Comprehend** ← Position 5 (understands queries, debug mode only)
+6. **Plan** ← Position 6 (creates execution plans, debug mode only)
+7. **Validate** ← Position 7 (validates configurations, debug mode only)
+8. **Report** ← Position 8 (generates execution reports, debug mode only)
+
+When debug mode is DISABLED, skip these entirely and go directly from Execute
+to user-defined skills.
 
 ### 3. User-Defined Skills
 
@@ -135,8 +142,8 @@ Examples:
 
 When user asks "list your skills", create an introductory message like "here
 are my capabilities:" followed by tasks for built-in capabilities (Introspect,
-Config, Answer, Execute), then indirect workflow capabilities (Plan, Validate,
-Report).
+Config, Answer, Execute), then indirect workflow capabilities (Comprehend,
+Plan, Validate, Report).
 
 Each task uses type "introspect" with an action describing the capability.
 
@@ -152,8 +159,8 @@ with its description.
 When user asks "what can you do" and user-defined skills like "process data"
 and "backup files" exist, create an introductory message like "i can help with
 these operations:" followed by all built-in capabilities (Introspect, Config,
-Answer, Execute, Validate, Plan, Report) plus the user-defined skills. Each
-capability and skill becomes a task with type "introspect".
+Answer, Execute, Comprehend, Plan, Validate, Report) plus the user-defined
+skills. Each capability and skill becomes a task with type "introspect".
 
 ## Final Validation
 

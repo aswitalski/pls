@@ -3,6 +3,7 @@ import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App, TaskType } from '../../src/types/types.js';
+import { ComprehensionStatus } from '../../src/services/anthropic.js';
 
 import { Main } from '../../src/ui/Main.js';
 import { Keys } from '../test-utils.js';
@@ -18,6 +19,35 @@ vi.mock('../../src/services/timing.js', () => ({
 // Wait times for React render cycles
 const ShortWait = 50; // For simple React updates
 const WorkflowWait = 100; // For complex component workflows
+
+/**
+ * Helper to create mock service with COMPREHEND and PLAN responses
+ */
+function createMockService(planResponse: {
+  message: string;
+  tasks: any[];
+  answer?: string;
+}) {
+  return {
+    processWithTool: vi
+      .fn()
+      .mockImplementation((command: string, tool: string) => {
+        if (tool === 'comprehend') {
+          // Return comprehension result
+          return Promise.resolve({
+            comprehension: {
+              message: 'Understanding your request.',
+              items: [{ verb: 'test', status: ComprehensionStatus.Unknown }],
+              isInformationRequest: false,
+              isIntrospectionRequest: false,
+            },
+          });
+        }
+        // Return plan result
+        return Promise.resolve(planResponse);
+      }),
+  };
+}
 
 describe('End-to-End Flow Integration Tests', () => {
   const mockApp: App = {
@@ -71,12 +101,10 @@ describe('End-to-End Flow Integration Tests', () => {
     it('processes command and creates plan', async () => {
       const anthropicModule = await import('../../src/services/anthropic.js');
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Execute these tasks.',
-          tasks: [{ action: 'Install dependencies', type: TaskType.Execute }],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Execute these tasks.',
+        tasks: [{ action: 'Install dependencies', type: TaskType.Execute }],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -102,12 +130,10 @@ describe('End-to-End Flow Integration Tests', () => {
         'Confirm execution?'
       );
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Execute these tasks.',
-          tasks: [{ action: 'Run tests', type: TaskType.Execute }],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Execute these tasks.',
+        tasks: [{ action: 'Run tests', type: TaskType.Execute }],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -128,15 +154,13 @@ describe('End-to-End Flow Integration Tests', () => {
     it('transforms natural language to Execute tasks', async () => {
       const anthropicModule = await import('../../src/services/anthropic.js');
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Execute these tasks.',
-          tasks: [
-            { action: 'Build the project', type: TaskType.Execute },
-            { action: 'Run tests', type: TaskType.Execute },
-          ],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Execute these tasks.',
+        tasks: [
+          { action: 'Build the project', type: TaskType.Execute },
+          { action: 'Run tests', type: TaskType.Execute },
+        ],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -158,17 +182,15 @@ describe('End-to-End Flow Integration Tests', () => {
     it('creates Introspect tasks for capability queries', async () => {
       const anthropicModule = await import('../../src/services/anthropic.js');
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Here are my capabilities:',
-          tasks: [
-            {
-              action: 'List available capabilities',
-              type: TaskType.Introspect,
-            },
-          ],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Here are my capabilities:',
+        tasks: [
+          {
+            action: 'List available capabilities',
+            type: TaskType.Introspect,
+          },
+        ],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -189,14 +211,10 @@ describe('End-to-End Flow Integration Tests', () => {
     it('creates Answer tasks for information queries', async () => {
       const anthropicModule = await import('../../src/services/anthropic.js');
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: "I'll answer your question.",
-          tasks: [
-            { action: 'Explain Docker containers', type: TaskType.Answer },
-          ],
-        }),
-      };
+      const mockService = createMockService({
+        message: "I'll answer your question.",
+        tasks: [{ action: 'Explain Docker containers', type: TaskType.Answer }],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -217,20 +235,18 @@ describe('End-to-End Flow Integration Tests', () => {
     it('creates Define tasks for ambiguous requests', async () => {
       const anthropicModule = await import('../../src/services/anthropic.js');
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Choose an option:',
-          tasks: [
-            {
-              action: 'Select environment',
-              type: TaskType.Define,
-              params: {
-                options: ['Development', 'Production', 'Staging'],
-              },
+      const mockService = createMockService({
+        message: 'Choose an option:',
+        tasks: [
+          {
+            action: 'Select environment',
+            type: TaskType.Define,
+            params: {
+              options: ['Development', 'Production', 'Staging'],
             },
-          ],
-        }),
-      };
+          },
+        ],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -254,20 +270,18 @@ describe('End-to-End Flow Integration Tests', () => {
     it('allows user to navigate Define task options', async () => {
       const anthropicModule = await import('../../src/services/anthropic.js');
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Choose an option:',
-          tasks: [
-            {
-              action: 'Select environment',
-              type: TaskType.Define,
-              params: {
-                options: ['Development', 'Production', 'Staging'],
-              },
+      const mockService = createMockService({
+        message: 'Choose an option:',
+        tasks: [
+          {
+            action: 'Select environment',
+            type: TaskType.Define,
+            params: {
+              options: ['Development', 'Production', 'Staging'],
             },
-          ],
-        }),
-      };
+          },
+        ],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -353,18 +367,16 @@ describe('End-to-End Flow Integration Tests', () => {
           'Confirm?'
         );
 
-        const mockService = {
-          processWithTool: vi.fn().mockResolvedValue({
-            message: 'Here are my capabilities:',
-            tasks: [
-              {
-                action: 'PLAN: Break down requests',
-                type: TaskType.Introspect,
-              },
-              { action: 'EXECUTE: Run commands', type: TaskType.Introspect },
-            ],
-          }),
-        };
+        const mockService = createMockService({
+          message: 'Here are my capabilities:',
+          tasks: [
+            {
+              action: 'PLAN: Break down requests',
+              type: TaskType.Introspect,
+            },
+            { action: 'EXECUTE: Run commands', type: TaskType.Introspect },
+          ],
+        });
 
         vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
           mockService as any
@@ -388,14 +400,12 @@ describe('End-to-End Flow Integration Tests', () => {
       it('routes answer tasks to Answer component', async () => {
         const anthropicModule = await import('../../src/services/anthropic.js');
 
-        const mockService = {
-          processWithTool: vi.fn().mockResolvedValue({
-            message: "I'll answer your question.",
-            tasks: [
-              { action: 'Explain testing concepts', type: TaskType.Answer },
-            ],
-          }),
-        };
+        const mockService = createMockService({
+          message: "I'll answer your question.",
+          tasks: [
+            { action: 'Explain testing concepts', type: TaskType.Answer },
+          ],
+        });
 
         vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
           mockService as any
@@ -423,15 +433,13 @@ describe('End-to-End Flow Integration Tests', () => {
           'Proceed?'
         );
 
-        const mockService = {
-          processWithTool: vi.fn().mockResolvedValue({
-            message: 'Execute these commands.',
-            tasks: [
-              { action: 'npm install', type: TaskType.Execute },
-              { action: 'npm test', type: TaskType.Execute },
-            ],
-          }),
-        };
+        const mockService = createMockService({
+          message: 'Execute these commands.',
+          tasks: [
+            { action: 'npm install', type: TaskType.Execute },
+            { action: 'npm test', type: TaskType.Execute },
+          ],
+        });
 
         vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
           mockService as any
@@ -505,12 +513,10 @@ describe('End-to-End Flow Integration Tests', () => {
     it('shows cancellation message when aborting confirmation', async () => {
       const anthropicModule = await import('../../src/services/anthropic.js');
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Execute these tasks.',
-          tasks: [{ action: 'Task 1', type: TaskType.Execute }],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Execute these tasks.',
+        tasks: [{ action: 'Task 1', type: TaskType.Execute }],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -536,18 +542,16 @@ describe('End-to-End Flow Integration Tests', () => {
     it('shows cancellation message when aborting plan selection', async () => {
       const anthropicModule = await import('../../src/services/anthropic.js');
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Choose an option:',
-          tasks: [
-            {
-              action: 'Select target',
-              type: TaskType.Define,
-              params: { options: ['Option A', 'Option B'] },
-            },
-          ],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Choose an option:',
+        tasks: [
+          {
+            action: 'Select target',
+            type: TaskType.Define,
+            params: { options: ['Option A', 'Option B'] },
+          },
+        ],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -574,12 +578,10 @@ describe('End-to-End Flow Integration Tests', () => {
     it('exits with code 0 when user cancels', async () => {
       const anthropicModule = await import('../../src/services/anthropic.js');
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Execute these tasks.',
-          tasks: [{ action: 'Task 1', type: TaskType.Execute }],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Execute these tasks.',
+        tasks: [{ action: 'Task 1', type: TaskType.Execute }],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -603,15 +605,13 @@ describe('End-to-End Flow Integration Tests', () => {
     it('handles cancellation during introspection', async () => {
       const anthropicModule = await import('../../src/services/anthropic.js');
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Here are my capabilities:',
-          tasks: [
-            { action: 'Capability 1', type: TaskType.Introspect },
-            { action: 'Capability 2', type: TaskType.Introspect },
-          ],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Here are my capabilities:',
+        tasks: [
+          { action: 'Capability 1', type: TaskType.Introspect },
+          { action: 'Capability 2', type: TaskType.Introspect },
+        ],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -638,12 +638,10 @@ describe('End-to-End Flow Integration Tests', () => {
     it('handles cancellation during answer', async () => {
       const anthropicModule = await import('../../src/services/anthropic.js');
 
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: "I'll answer your question.",
-          tasks: [{ action: 'Explain something', type: TaskType.Answer }],
-        }),
-      };
+      const mockService = createMockService({
+        message: "I'll answer your question.",
+        tasks: [{ action: 'Explain something', type: TaskType.Answer }],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any

@@ -24,6 +24,7 @@ const BUILT_IN_CAPABILITIES = new Set([
   'INTROSPECT',
   'ANSWER',
   'EXECUTE',
+  'COMPREHEND',
   'VALIDATE',
   'REPORT',
 ]);
@@ -126,6 +127,7 @@ export function Introspect({
           if (!debug) {
             capabilities = capabilities.filter(
               (cap) =>
+                cap.name.toUpperCase() !== 'COMPREHEND' &&
                 cap.name.toUpperCase() !== 'PLAN' &&
                 cap.name.toUpperCase() !== 'VALIDATE' &&
                 cap.name.toUpperCase() !== 'REPORT'

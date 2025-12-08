@@ -3,6 +3,7 @@ import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
 import { App } from '../../src/types/types.js';
+import { ComprehensionStatus } from '../../src/services/anthropic.js';
 
 import { Main } from '../../src/ui/Main.js';
 
@@ -18,6 +19,35 @@ vi.mock('../../src/services/timing.js', () => ({
 // With timing helpers mocked, we only need to wait for React render cycles
 const ShortWait = 50; // For simple React updates and mocked anthropic calls
 const WorkflowWait = 100; // For complex component workflows (Command -> Plan -> Confirm)
+
+/**
+ * Helper to create mock service with COMPREHEND and PLAN responses
+ */
+function createMockService(planResponse: {
+  message: string;
+  tasks: any[];
+  answer?: string;
+}) {
+  return {
+    processWithTool: vi
+      .fn()
+      .mockImplementation((command: string, tool: string) => {
+        if (tool === 'comprehend') {
+          // Return comprehension result
+          return Promise.resolve({
+            comprehension: {
+              message: 'Understanding your request.',
+              items: [{ verb: 'test', status: ComprehensionStatus.Unknown }],
+              isInformationRequest: false,
+              isIntrospectionRequest: false,
+            },
+          });
+        }
+        // Return plan result
+        return Promise.resolve(planResponse);
+      }),
+  };
+}
 
 describe('Main component queue-based architecture', () => {
   const mockApp: App = {
@@ -249,15 +279,13 @@ describe('Main component queue-based architecture', () => {
         .mockImplementation(() => {});
 
       // Mock service that returns a plan without Define tasks
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Execute these tasks',
-          tasks: [
-            { action: 'Task 1', type: 'execute' },
-            { action: 'Task 2', type: 'execute' },
-          ],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Execute these tasks',
+        tasks: [
+          { action: 'Task 1', type: 'execute' },
+          { action: 'Task 2', type: 'execute' },
+        ],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -295,15 +323,13 @@ describe('Main component queue-based architecture', () => {
         .mockImplementation(() => {});
 
       // Mock service that returns a plan without Define tasks
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Execute these tasks',
-          tasks: [
-            { action: 'Task 1', type: 'execute' },
-            { action: 'Task 2', type: 'execute' },
-          ],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Execute these tasks',
+        tasks: [
+          { action: 'Task 1', type: 'execute' },
+          { action: 'Task 2', type: 'execute' },
+        ],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -339,15 +365,13 @@ describe('Main component queue-based architecture', () => {
         .mockImplementation(() => {});
 
       // Mock service that returns a plan without Define tasks
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Execute these tasks',
-          tasks: [
-            { action: 'Task 1', type: 'execute' },
-            { action: 'Task 2', type: 'execute' },
-          ],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Execute these tasks',
+        tasks: [
+          { action: 'Task 1', type: 'execute' },
+          { action: 'Task 2', type: 'execute' },
+        ],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -388,18 +412,16 @@ describe('Main component queue-based architecture', () => {
         .mockImplementation(() => {});
 
       // Mock service that returns a plan with Define tasks
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Choose an option',
-          tasks: [
-            {
-              action: 'Select environment',
-              type: 'define',
-              params: { options: ['Dev', 'Prod'] },
-            },
-          ],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Choose an option',
+        tasks: [
+          {
+            action: 'Select environment',
+            type: 'define',
+            params: { options: ['Dev', 'Prod'] },
+          },
+        ],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any
@@ -440,15 +462,13 @@ describe('Main component queue-based architecture', () => {
         .mockImplementation(() => {});
 
       // Mock service that returns a plan with only Introspect tasks
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Here are my capabilities:',
-          tasks: [
-            { action: 'PLAN: Break down requests', type: 'introspect' },
-            { action: 'EXECUTE: Run commands', type: 'introspect' },
-          ],
-        }),
-      };
+      const mockService = createMockService({
+        message: 'Here are my capabilities:',
+        tasks: [
+          { action: 'PLAN: Break down requests', type: 'introspect' },
+          { action: 'EXECUTE: Run commands', type: 'introspect' },
+        ],
+      });
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
         mockService as any

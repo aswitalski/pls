@@ -91,6 +91,46 @@ export function createSkillLookup(
 }
 
 /**
+ * Load skills with only Name and Description sections for comprehension
+ *
+ * The COMPREHEND tool needs to match user requests to skills quickly, but
+ * doesn't need the full skill details (Steps, Execution, Config, Aliases).
+ * This function filters skill files to include only Name and Description
+ * sections, reducing the amount of data sent to the LLM and improving
+ * comprehension speed and accuracy.
+ *
+ * The full skill details are loaded later by the PLAN tool when creating
+ * execution tasks.
+ */
+export function loadSkillsForComprehension(): string[] {
+  const skillContents = loadSkills();
+
+  return skillContents.map((content) => {
+    const lines = content.split('\n');
+    const result: string[] = [];
+    let inNameOrDescription = false;
+
+    for (const line of lines) {
+      const headerMatch = line.match(/^#{1,6}\s+(.+)$/);
+
+      if (headerMatch) {
+        const sectionName = headerMatch[1].trim().toLowerCase();
+        inNameOrDescription =
+          sectionName === 'name' || sectionName === 'description';
+
+        if (inNameOrDescription) {
+          result.push(line);
+        }
+      } else if (inNameOrDescription) {
+        result.push(line);
+      }
+    }
+
+    return result.join('\n');
+  });
+}
+
+/**
  * Format skills for inclusion in the planning prompt
  */
 export function formatSkillsForPrompt(skills: string[]): string {
@@ -113,6 +153,32 @@ introspection with their markers.
 brackets for additional information. Use commas instead. For example:
 - CORRECT: "Build project Alpha, the legacy version"
 - WRONG: "Build project Alpha (the legacy version)"
+
+`;
+
+  const skillsContent = skills.join('\n\n');
+
+  return header + skillsContent;
+}
+
+/**
+ * Format skills for comprehension (only Name + Description)
+ *
+ * Creates a formatted section for the COMPREHEND tool's system prompt.
+ * The header explains that these are filtered skills showing only names
+ * and descriptions, helping the LLM understand the limited context.
+ */
+export function formatSkillsForComprehension(skills: string[]): string {
+  if (skills.length === 0) {
+    return '';
+  }
+
+  const header = `
+
+## Available Skills
+
+The following skills are available. Each skill shows only its name and
+description to help you match user requests to capabilities.
 
 `;
 

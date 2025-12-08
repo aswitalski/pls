@@ -24,6 +24,7 @@ export const Palette = {
   LightCyan: '#5ccccc',
   SteelBlue: '#5c8cbc',
   Purple: '#9c5ccc',
+  Violet: '#aa5cee',
 } as const;
 
 /**
@@ -72,6 +73,7 @@ export const Colors = {
     BuiltIn: Palette.Cyan,
     UserProvided: Palette.Green,
     Indirect: Palette.Purple,
+    Comprehend: Palette.Violet,
   },
 } as const;
 

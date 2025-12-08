@@ -6,8 +6,14 @@ import {
   AnthropicConfig,
   getAvailableConfigStructure,
   getConfiguredKeys,
+  loadDebugSetting,
 } from './configuration.js';
-import { formatSkillsForPrompt, loadSkillsWithValidation } from './skills.js';
+import {
+  formatSkillsForComprehension,
+  formatSkillsForPrompt,
+  loadSkillsForComprehension,
+  loadSkillsWithValidation,
+} from './skills.js';
 import { toolRegistry } from './tool-registry.js';
 
 export interface ExecuteCommand {
@@ -18,15 +24,40 @@ export interface ExecuteCommand {
   critical?: boolean;
 }
 
+export enum ComprehensionStatus {
+  Core = 'core',
+  Custom = 'custom',
+  Unknown = 'unknown',
+}
+
+export interface ComprehensionItem {
+  verb: string;
+  context?: string;
+  name?: string;
+  status: ComprehensionStatus;
+}
+
+export interface ComprehensionResult {
+  message: string;
+  items: ComprehensionItem[];
+  isInformationRequest?: boolean;
+  isIntrospectionRequest?: boolean;
+}
+
 export interface CommandResult {
   message: string;
   tasks: Task[];
   answer?: string;
   commands?: ExecuteCommand[];
+  comprehension?: ComprehensionResult;
 }
 
 export interface LLMService {
-  processWithTool(command: string, toolName: string): Promise<CommandResult>;
+  processWithTool(
+    command: string,
+    toolName: string,
+    comprehensionResult?: ComprehensionResult
+  ): Promise<CommandResult>;
 }
 
 /**
@@ -92,7 +123,8 @@ export class AnthropicService implements LLMService {
 
   async processWithTool(
     command: string,
-    toolName: string
+    toolName: string,
+    comprehensionResult?: ComprehensionResult
   ): Promise<CommandResult> {
     // Load tool from registry
     const tool = toolRegistry.getSchema(toolName);
@@ -101,7 +133,26 @@ export class AnthropicService implements LLMService {
     // Build system prompt with additional context based on tool
     let systemPrompt = instructions;
 
-    // Add skills section for applicable tools
+    /**
+     * Two-step workflow context loading:
+     *
+     * COMPREHEND tool: Load filtered skills (Name + Description only)
+     * - Fast verb matching without full skill details
+     * - Reduces token usage and improves response time
+     *
+     * Other tools (PLAN, etc): Load full skills with all sections
+     * - Complete skill details for execution planning
+     * - Includes Steps, Execution, Config, and Aliases sections
+     */
+
+    // Add skills section for comprehend tool (Name + Description only)
+    if (toolName === 'comprehend') {
+      const skills = loadSkillsForComprehension();
+      const skillsSection = formatSkillsForComprehension(skills);
+      systemPrompt += skillsSection;
+    }
+
+    // Add skills section for other applicable tools (full details)
     if (
       toolName === 'plan' ||
       toolName === 'introspect' ||
@@ -124,6 +175,48 @@ export class AnthropicService implements LLMService {
         '\n\nConfigured keys (keys that exist in config file):\n' +
         JSON.stringify(configuredKeys, null, 2);
       systemPrompt += configSection;
+    }
+
+    // Add debug mode flag for introspect tool
+    if (toolName === 'introspect') {
+      const debugMode = loadDebugSetting();
+      const debugSection =
+        '\n\n## Debug Mode\n\n' +
+        `Debug mode is ${debugMode ? 'ENABLED' : 'DISABLED'}.\n` +
+        (debugMode
+          ? 'Include built-in workflow tools in the listing: Comprehend, Plan, Validate, Report.\n'
+          : 'Do NOT include built-in workflow tools in the listing.\n');
+      systemPrompt += debugSection;
+    }
+
+    /**
+     * Pass comprehension results to PLAN tool:
+     *
+     * The COMPREHEND tool has already categorized the request and matched
+     * verbs to capabilities. PLAN uses these results to create concrete
+     * execution tasks without re-analyzing the request.
+     *
+     * This separation ensures:
+     * - Fast initial feedback to the user (comprehend step)
+     * - Consistent verb matching across the workflow
+     * - Clear responsibility: COMPREHEND matches, PLAN executes
+     */
+
+    // Add comprehension results for plan tool
+    if (toolName === 'plan' && comprehensionResult) {
+      const comprehensionSection =
+        '\n\n## Comprehension Results\n\n' +
+        'The COMPREHEND tool has already matched verbs to capabilities:\n\n' +
+        JSON.stringify(comprehensionResult.items, null, 2) +
+        '\n\n**CRITICAL REQUIREMENT**: For each comprehension item, you MUST handle it as follows:\n\n' +
+        '- **status "unknown"**: You MUST create a task with type "ignore" and action "Ignore unknown \'X\' request" where X is the full command (verb + context).\n' +
+        '  - This is MANDATORY - every unknown command MUST result in an ignore task\n' +
+        '  - DO NOT skip unknown commands\n' +
+        '  - DO NOT try to execute or plan unknown commands\n' +
+        '  - Example: verb "test", context "files" with status "unknown" → task with type "ignore", action "Ignore unknown \'test files\' request"\n\n' +
+        '- **status "core"**: Use name field to determine which core tool to invoke (Answer, Execute, Config, or Introspect). The context field provides the subject.\n\n' +
+        '- **status "custom"**: Use name field to identify the skill, and context field for the subject. Analyze variants and create execution tasks from that skill\'s steps\n';
+      systemPrompt += comprehensionSection;
     }
 
     // Build tools array - add web search for answer tool
@@ -188,7 +281,51 @@ export class AnthropicService implements LLMService {
       question?: string;
       answer?: string;
       commands?: ExecuteCommand[];
+      items?: ComprehensionItem[];
+      isInformationRequest?: boolean;
+      isIntrospectionRequest?: boolean;
     };
+
+    // Handle comprehend tool response
+    if (toolName === 'comprehend') {
+      if (input.message === undefined || typeof input.message !== 'string') {
+        throw new Error(
+          'Invalid tool response: missing or invalid message field'
+        );
+      }
+
+      if (!input.items || !Array.isArray(input.items)) {
+        throw new Error(
+          'Invalid tool response: missing or invalid items array'
+        );
+      }
+
+      // Validate each item
+      input.items.forEach((item, i) => {
+        if (!item.verb || typeof item.verb !== 'string') {
+          throw new Error(
+            `Invalid item at index ${String(i)}: missing or invalid 'verb' field`
+          );
+        }
+        const validStatuses = Object.values(ComprehensionStatus);
+        if (!validStatuses.includes(item.status)) {
+          throw new Error(
+            `Invalid item at index ${String(i)}: missing or invalid 'status' field`
+          );
+        }
+      });
+
+      return {
+        message: input.message,
+        tasks: [],
+        comprehension: {
+          message: input.message,
+          items: input.items,
+          isInformationRequest: input.isInformationRequest,
+          isIntrospectionRequest: input.isIntrospectionRequest,
+        },
+      };
+    }
 
     // Handle execute tool response
     if (toolName === 'execute') {

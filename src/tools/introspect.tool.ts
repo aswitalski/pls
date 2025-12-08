@@ -15,7 +15,7 @@ export const introspectTool: Tool = {
       tasks: {
         type: 'array',
         description:
-          'Array of capabilities, each with type "introspect". Include built-in capabilities (PLAN, INTROSPECT, ANSWER, EXECUTE, REPORT, CONFIG) and user-defined skills from the Available Skills section.',
+          'Array of capabilities, each with type "introspect". Include built-in capabilities (INTROSPECT, CONFIG, ANSWER, EXECUTE, COMPREHEND, PLAN, VALIDATE, REPORT) in that exact order, followed by user-defined skills from the Available Skills section.',
         items: {
           type: 'object',
           properties: {

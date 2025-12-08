@@ -51,11 +51,17 @@ export const toolRegistry = new ToolRegistry();
 
 // Register built-in tools
 import { answerTool } from '../tools/answer.tool.js';
+import { comprehendTool } from '../tools/comprehend.tool.js';
 import { configTool } from '../tools/config.tool.js';
 import { executeTool } from '../tools/execute.tool.js';
 import { introspectTool } from '../tools/introspect.tool.js';
 import { planTool } from '../tools/plan.tool.js';
 import { validateTool } from '../tools/validate.tool.js';
+
+toolRegistry.register('comprehend', {
+  schema: comprehendTool,
+  instructionsPath: 'config/COMPREHEND.md',
+});
 
 toolRegistry.register('plan', {
   schema: planTool,

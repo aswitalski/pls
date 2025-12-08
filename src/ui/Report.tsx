@@ -10,11 +10,14 @@ function CapabilityItem({
   isIndirect,
   isIncomplete,
 }: Capability) {
-  const color = isIndirect
-    ? Colors.Origin.Indirect
-    : isBuiltIn
-      ? Colors.Origin.BuiltIn
-      : Colors.Origin.UserProvided;
+  const color =
+    name.toUpperCase() === 'COMPREHEND'
+      ? Colors.Origin.Comprehend
+      : isIndirect
+        ? Colors.Origin.Indirect
+        : isBuiltIn
+          ? Colors.Origin.BuiltIn
+          : Colors.Origin.UserProvided;
 
   return (
     <Box>

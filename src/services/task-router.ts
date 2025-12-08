@@ -50,37 +50,43 @@ export function routeTasksWithConfirm(
 ): void {
   if (tasks.length === 0) return;
 
-  // Filter out ignore and discard tasks early
-  const validTasks = tasks.filter(
+  // Separate executable tasks from ignore/discard tasks
+  const executableTasks = tasks.filter(
     (task) => task.type !== TaskType.Ignore && task.type !== TaskType.Discard
   );
 
-  // Check if no valid tasks remain after filtering
-  if (validTasks.length === 0) {
+  // Check if no executable tasks remain after filtering
+  if (executableTasks.length === 0) {
     const message = createMessage(getUnknownRequestMessage());
     handlers.addToQueue(message);
     return;
   }
 
-  const operation = getOperationName(validTasks);
+  const operation = getOperationName(executableTasks);
 
   if (hasDefineTask) {
     // Has DEFINE tasks - add Plan to queue for user selection
+    // Show ALL tasks (including ignore) but only pass executable tasks to refinement
     // Refinement flow will call this function again with refined tasks
-    const planDefinition = createPlanDefinition(message, validTasks);
+    const planDefinition = createPlanDefinition(message, tasks);
     handlers.addToQueue(planDefinition);
   } else {
     // No DEFINE tasks - Plan auto-completes and adds Confirm to queue
-    // When Plan activates, Command moves to timeline
-    // When Plan completes, it moves to pending
-    // When Confirm activates, Plan stays pending (visible for context)
-    const planDefinition = createPlanDefinition(message, validTasks, () => {
+    // Show ALL tasks (including ignore) in the plan
+    // But only execute the executable tasks after confirmation
+    const planDefinition = createPlanDefinition(message, tasks, () => {
       // Plan completed - add Confirm to queue
       const confirmDefinition = createConfirmDefinition(
         () => {
           // User confirmed - complete both Confirm and Plan, then route to appropriate component
+          // Only execute the executable tasks (ignore tasks are skipped)
           handlers.completeActiveAndPending();
-          executeTasksAfterConfirm(validTasks, service, userRequest, handlers);
+          executeTasksAfterConfirm(
+            executableTasks,
+            service,
+            userRequest,
+            handlers
+          );
         },
         () => {
           // User cancelled - complete both Confirm and Plan, then show cancellation
