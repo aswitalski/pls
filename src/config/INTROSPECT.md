@@ -88,6 +88,8 @@ These MUST appear AFTER Execute and BEFORE user skills:
 If skills are provided in the "Available Skills" section below, include them
 in the response. For each skill:
 - Extract the skill name from the first heading (# Skill Name)
+- If the skill name contains "(INCOMPLETE)", preserve it exactly in the task
+  action
 - Extract a brief description from the Description or Overview section
 - Keep descriptions concise (1-2 lines maximum)
 - If the user specified a filter (e.g., "skills for deployment"), only include

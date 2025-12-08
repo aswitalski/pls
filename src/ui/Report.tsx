@@ -8,6 +8,7 @@ function CapabilityItem({
   description,
   isBuiltIn,
   isIndirect,
+  isIncomplete,
 }: Capability) {
   const color = isIndirect
     ? Colors.Origin.Indirect
@@ -20,6 +21,7 @@ function CapabilityItem({
       <Text>- </Text>
       <Text color={color}>{name}</Text>
       <Text> - {description}</Text>
+      {isIncomplete && <Text color={Colors.Status.Warning}> (incomplete)</Text>}
     </Box>
   );
 }
@@ -38,6 +40,7 @@ export function Report({ message, capabilities }: ReportProps) {
             description={capability.description}
             isBuiltIn={capability.isBuiltIn}
             isIndirect={capability.isIndirect}
+            isIncomplete={capability.isIncomplete}
           />
         ))}
       </Box>

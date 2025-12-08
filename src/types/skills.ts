@@ -22,6 +22,8 @@ export interface SkillDefinition {
   isValid: boolean;
   /** Validation error message if skill is invalid */
   validationError?: string;
+  /** Whether the skill is incomplete (valid but needs more documentation) */
+  isIncomplete?: boolean;
 }
 
 /**

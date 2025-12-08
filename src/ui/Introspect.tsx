@@ -36,25 +36,34 @@ function parseCapabilityFromTask(task: Task): Capability {
 
   if (colonIndex === -1) {
     const upperName = task.action.toUpperCase();
+    // Check for status markers
+    const isIncomplete = task.action.includes('(INCOMPLETE)');
+    const cleanName = task.action.replace(/\s*\(INCOMPLETE\)\s*/gi, '').trim();
+
     return {
-      name: task.action,
+      name: cleanName,
       description: '',
       isBuiltIn: BUILT_IN_CAPABILITIES.has(upperName),
       isIndirect: INDIRECT_CAPABILITIES.has(upperName),
+      isIncomplete,
     };
   }
 
   const name = task.action.substring(0, colonIndex).trim();
   const description = task.action.substring(colonIndex + 1).trim();
-  const upperName = name.toUpperCase();
+  // Check for status markers
+  const isIncomplete = name.includes('(INCOMPLETE)');
+  const cleanName = name.replace(/\s*\(INCOMPLETE\)\s*/gi, '').trim();
+  const upperName = cleanName.toUpperCase();
   const isBuiltIn = BUILT_IN_CAPABILITIES.has(upperName);
   const isIndirect = INDIRECT_CAPABILITIES.has(upperName);
 
   return {
-    name,
+    name: cleanName,
     description,
     isBuiltIn,
     isIndirect,
+    isIncomplete,
   };
 }
 
