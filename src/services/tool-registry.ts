@@ -92,3 +92,13 @@ toolRegistry.register('validate', {
   schema: validateTool,
   instructionsPath: 'config/VALIDATE.md',
 });
+
+/**
+ * Load a fragment file from the config directory
+ * @param fragmentPath - Relative path from config directory (e.g., 'PLAN/foundation.md')
+ * @returns Contents of the fragment file
+ */
+export function loadFragment(fragmentPath: string): string {
+  const fullPath = resolve(__dirname, '..', 'config', fragmentPath);
+  return readFileSync(fullPath, 'utf-8');
+}

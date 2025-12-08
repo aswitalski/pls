@@ -8,6 +8,7 @@ import {
   hasValidAnthropicKey,
   saveAnthropicConfig,
 } from '../../src/services/configuration.js';
+import { loadFragment } from '../../src/services/tool-registry.js';
 
 import { safeRemoveDirectory } from '../test-utils.js';
 
@@ -258,5 +259,55 @@ describe('Answer text cleaning', () => {
     expect(result).toContain('Second line with more content');
     expect(result).toContain('Third line with');
     expect(result).toContain('additional content');
+  });
+});
+
+describe('PLAN fragment loading', () => {
+  it('loads foundation fragment', () => {
+    const content = loadFragment('PLAN/foundation.md');
+    expect(content).toBeTruthy();
+    expect(content).toContain('## Overview');
+  });
+
+  it('loads routing fragment', () => {
+    const content = loadFragment('PLAN/routing.md');
+    expect(content).toBeTruthy();
+    expect(content).toContain('Core Status Items');
+  });
+
+  it('loads tasks fragment', () => {
+    const content = loadFragment('PLAN/tasks.md');
+    expect(content).toBeTruthy();
+    expect(content).toContain('Task Definition Guidelines');
+  });
+
+  it('loads config fragment', () => {
+    const content = loadFragment('PLAN/config.md');
+    expect(content).toBeTruthy();
+    expect(content).toContain('Configuration Requests');
+  });
+
+  it('loads splitting fragment', () => {
+    const content = loadFragment('PLAN/splitting.md');
+    expect(content).toBeTruthy();
+    expect(content).toContain('Multiple Tasks');
+  });
+
+  it('loads examples-core fragment', () => {
+    const content = loadFragment('PLAN/examples-core.md');
+    expect(content).toBeTruthy();
+    expect(content).toContain('Examples');
+  });
+
+  it('loads skills fragment', () => {
+    const content = loadFragment('PLAN/skills.md');
+    expect(content).toBeTruthy();
+    expect(content).toContain('Skills Integration');
+  });
+
+  it('loads examples-skills fragment', () => {
+    const content = loadFragment('PLAN/examples-skills.md');
+    expect(content).toBeTruthy();
+    expect(content).toContain('Skill-Based');
   });
 });

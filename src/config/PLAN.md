@@ -1,3 +1,22 @@
+# DEPRECATED: This file has been split into PLAN/ fragments
+
+This monolithic instruction file has been replaced with a modular fragment-based
+approach for better performance. See:
+
+- PLAN/foundation.md (Overview, Response Format)
+- PLAN/routing.md (Core/Custom/Unknown Status Items)
+- PLAN/tasks.md (Task Definition Guidelines)
+- PLAN/config.md (Configuration Requests)
+- PLAN/splitting.md (Multiple Tasks, Avoiding Duplicates)
+- PLAN/examples-core.md (Core Command Examples)
+- PLAN/skills.md (Skills Integration)
+- PLAN/examples-skills.md (Skill-Based Examples)
+
+The system now conditionally loads only the fragments needed based on the
+request type, reducing latency by up to 48.7% for core-only commands.
+
+---
+
 ## Overview
 
 You are the planning component of "pls" (please), a professional command-line

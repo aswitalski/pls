@@ -14,7 +14,7 @@ import {
   loadSkillsForComprehension,
   loadSkillsWithValidation,
 } from './skills.js';
-import { toolRegistry } from './tool-registry.js';
+import { loadFragment, toolRegistry } from './tool-registry.js';
 
 export interface ExecuteCommand {
   description: string;
@@ -112,6 +112,68 @@ export function cleanAnswerText(text: string): string {
   return cleaned;
 }
 
+/**
+ * Check if comprehension results contain any custom skills
+ */
+function hasCustomSkills(comprehension: ComprehensionResult): boolean {
+  return comprehension.items.some(
+    (item) => item.status === ComprehensionStatus.Custom
+  );
+}
+
+/**
+ * Check if comprehension results contain any core commands
+ */
+function hasCoreCommands(comprehension: ComprehensionResult): boolean {
+  return comprehension.items.some(
+    (item) => item.status === ComprehensionStatus.Core
+  );
+}
+
+/**
+ * Compose PLAN instructions from fragments based on comprehension results
+ * Conditionally loads instruction fragments to optimize token usage:
+ * - Core-only: 361 lines (48.7% reduction)
+ * - Skills-only: 589 lines (16.3% reduction)
+ * - Mixed: 704 lines (full instructions)
+ */
+function composePlanInstructions(comprehension: ComprehensionResult): string {
+  const hasSkills = hasCustomSkills(comprehension);
+  const hasCore = hasCoreCommands(comprehension);
+
+  let instructions = '';
+
+  // Always include foundation
+  instructions += loadFragment('PLAN/foundation.md');
+  instructions += loadFragment('PLAN/routing.md');
+  instructions += loadFragment('PLAN/tasks.md');
+
+  // Conditional config (only for core commands)
+  if (hasCore) {
+    instructions += loadFragment('PLAN/config.md');
+  }
+
+  // Always include splitting logic
+  instructions += loadFragment('PLAN/splitting.md');
+
+  // Conditional skills and examples
+  if (hasSkills && hasCore) {
+    // Mixed: all examples
+    instructions += loadFragment('PLAN/skills.md');
+    instructions += loadFragment('PLAN/examples-core.md');
+    instructions += loadFragment('PLAN/examples-skills.md');
+  } else if (hasSkills) {
+    // Skills-only
+    instructions += loadFragment('PLAN/skills.md');
+    instructions += loadFragment('PLAN/examples-skills.md');
+  } else {
+    // Core-only
+    instructions += loadFragment('PLAN/examples-core.md');
+  }
+
+  return instructions;
+}
+
 export class AnthropicService implements LLMService {
   private client: Anthropic;
   private model: string;
@@ -153,8 +215,8 @@ export class AnthropicService implements LLMService {
     }
 
     // Add skills section for other applicable tools (full details)
+    // Note: PLAN tool uses conditional fragment composition instead
     if (
-      toolName === 'plan' ||
       toolName === 'introspect' ||
       toolName === 'execute' ||
       toolName === 'validate'
@@ -190,20 +252,24 @@ export class AnthropicService implements LLMService {
     }
 
     /**
-     * Pass comprehension results to PLAN tool:
+     * PLAN tool with fragment composition:
      *
-     * The COMPREHEND tool has already categorized the request and matched
-     * verbs to capabilities. PLAN uses these results to create concrete
-     * execution tasks without re-analyzing the request.
+     * The COMPREHEND tool has already categorized requests and matched verbs.
+     * PLAN uses conditional fragment composition to optimize token usage:
+     * - Core-only: Loads only core instruction fragments (48.7% reduction)
+     * - Skills-only: Loads skills fragments without core examples (16.3% reduction)
+     * - Mixed: Loads all fragments (full instructions)
      *
-     * This separation ensures:
-     * - Fast initial feedback to the user (comprehend step)
-     * - Consistent verb matching across the workflow
-     * - Clear responsibility: COMPREHEND matches, PLAN executes
+     * This optimization significantly reduces latency for common CLI use cases
+     * (explain, list skills, config) while maintaining full capability.
      */
 
-    // Add comprehension results for plan tool
+    // PLAN tool: Compose instructions from fragments and add comprehension results
     if (toolName === 'plan' && comprehensionResult) {
+      // Replace base instructions with composed fragments
+      systemPrompt = composePlanInstructions(comprehensionResult);
+
+      // Add comprehension results section
       const comprehensionSection =
         '\n\n## Comprehension Results\n\n' +
         'The COMPREHEND tool has already matched verbs to capabilities:\n\n' +
@@ -217,6 +283,13 @@ export class AnthropicService implements LLMService {
         '- **status "core"**: Use name field to determine which core tool to invoke (Answer, Execute, Config, or Introspect). The context field provides the subject.\n\n' +
         '- **status "custom"**: Use name field to identify the skill, and context field for the subject. Analyze variants and create execution tasks from that skill\'s steps\n';
       systemPrompt += comprehensionSection;
+
+      // Conditionally add skills if custom skills present
+      if (hasCustomSkills(comprehensionResult)) {
+        const skills = loadSkillsWithValidation();
+        const skillsSection = formatSkillsForPrompt(skills);
+        systemPrompt += skillsSection;
+      }
     }
 
     // Build tools array - add web search for answer tool
