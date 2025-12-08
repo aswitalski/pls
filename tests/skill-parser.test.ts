@@ -294,6 +294,65 @@ This is a detailed description of what the skill does
     expect(skill.isValid).toBe(true);
     expect(skill.isIncomplete).toBeUndefined();
   });
+
+  it('uses 20 characters as incomplete threshold', () => {
+    // Test with exactly 19 characters (should be incomplete)
+    const incomplete19 = `
+### Name
+Test Skill
+
+### Description
+Nineteen characters
+
+### Steps
+- Some step
+
+### Execution
+- echo "test"
+`;
+
+    const skill19 = parseSkillMarkdown(incomplete19);
+    expect(skill19.isValid).toBe(true);
+    expect(skill19.isIncomplete).toBe(true);
+
+    // Test with exactly 20 characters (should be complete)
+    const complete20 = `
+### Name
+Test Skill
+
+### Description
+Twenty characters!!!
+
+### Steps
+- Some step
+
+### Execution
+- echo "test"
+`;
+
+    const skill20 = parseSkillMarkdown(complete20);
+    expect(skill20.isValid).toBe(true);
+    expect(skill20.isIncomplete).toBeUndefined();
+
+    // Test with 21 characters (should be complete)
+    const complete21 = `
+### Name
+Test Skill
+
+### Description
+Twenty-one characters
+
+### Steps
+- Some step
+
+### Execution
+- echo "test"
+`;
+
+    const skill21 = parseSkillMarkdown(complete21);
+    expect(skill21.isValid).toBe(true);
+    expect(skill21.isIncomplete).toBeUndefined();
+  });
 });
 
 describe('Generating config paths', () => {
