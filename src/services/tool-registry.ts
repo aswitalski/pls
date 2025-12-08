@@ -57,32 +57,18 @@ import { introspectTool } from '../tools/introspect.tool.js';
 import { planTool } from '../tools/plan.tool.js';
 import { validateTool } from '../tools/validate.tool.js';
 
-toolRegistry.register('plan', {
-  schema: planTool,
-  instructionsPath: 'config/PLAN.md',
-});
+const tools: Record<string, Tool> = {
+  answer: answerTool,
+  config: configTool,
+  execute: executeTool,
+  introspect: introspectTool,
+  plan: planTool,
+  validate: validateTool,
+};
 
-toolRegistry.register('introspect', {
-  schema: introspectTool,
-  instructionsPath: 'config/INTROSPECT.md',
-});
-
-toolRegistry.register('answer', {
-  schema: answerTool,
-  instructionsPath: 'config/ANSWER.md',
-});
-
-toolRegistry.register('config', {
-  schema: configTool,
-  instructionsPath: 'config/CONFIG.md',
-});
-
-toolRegistry.register('execute', {
-  schema: executeTool,
-  instructionsPath: 'config/EXECUTE.md',
-});
-
-toolRegistry.register('validate', {
-  schema: validateTool,
-  instructionsPath: 'config/VALIDATE.md',
-});
+for (const [name, schema] of Object.entries(tools)) {
+  toolRegistry.register(name, {
+    schema,
+    instructionsPath: `skills/${name}.md`,
+  });
+}

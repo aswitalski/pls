@@ -13,7 +13,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "typecheck": "tsc --project tsconfig.eslint.json",
-    "build": "npm run typecheck && npm run clean && tsc && chmod +x dist/index.js && mkdir -p dist/config && cp src/config/*.md dist/config/",
+    "build": "npm run typecheck && npm run clean && tsc && chmod +x dist/index.js && mkdir -p dist/skills && cp src/skills/*.md dist/skills/",
     "dev": "npm run build && tsc --watch",
     "prepare": "husky",
     "prepublishOnly": "npm run check",
