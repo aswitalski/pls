@@ -54,6 +54,28 @@ export function loadSkillDefinitions(): SkillDefinition[] {
 }
 
 /**
+ * Load skills and mark incomplete ones in their markdown
+ * Returns array of skill markdown with status markers
+ */
+export function loadSkillsWithValidation(): string[] {
+  const skillContents = loadSkills();
+
+  return skillContents.map((content) => {
+    const parsed = parseSkillMarkdown(content);
+
+    // If skill is incomplete (either validation failed or needs more documentation), append (INCOMPLETE) to the name
+    if (parsed.isIncomplete) {
+      return content.replace(
+        /^(#{1,6}\s+Name\s*\n+)(.+?)(\n|$)/im,
+        `$1$2 (INCOMPLETE)$3`
+      );
+    }
+
+    return content;
+  });
+}
+
+/**
  * Create skill lookup function from definitions
  */
 export function createSkillLookup(
@@ -82,6 +104,10 @@ export function formatSkillsForPrompt(skills: string[]): string {
 
 The following skills define domain-specific workflows. When the user's
 query matches a skill, incorporate the skill's steps into your plan.
+
+Skills marked with (INCOMPLETE) have validation errors or need more
+documentation, and cannot be executed. These should be listed in
+introspection with their markers.
 
 **IMPORTANT**: When creating options from skill descriptions, do NOT use
 brackets for additional information. Use commas instead. For example:

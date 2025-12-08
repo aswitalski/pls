@@ -102,6 +102,7 @@ Missing name section
     const skill = parseSkillMarkdown(content);
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(false);
+    expect(skill.isIncomplete).toBe(true);
     expect(skill.validationError).toContain('missing a Name section');
   });
 
@@ -117,6 +118,7 @@ Test Skill
     const skill = parseSkillMarkdown(content);
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(false);
+    expect(skill.isIncomplete).toBe(true);
     expect(skill.validationError).toContain('missing a Description section');
   });
 
@@ -132,6 +134,7 @@ Missing steps
     const skill = parseSkillMarkdown(content);
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(false);
+    expect(skill.isIncomplete).toBe(true);
     expect(skill.validationError).toContain('missing a Steps section');
   });
 
@@ -150,6 +153,7 @@ Missing execution
     const skill = parseSkillMarkdown(content);
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(false);
+    expect(skill.isIncomplete).toBe(true);
     expect(skill.validationError).toContain('missing an Execution section');
   });
 
@@ -172,6 +176,7 @@ Mismatched counts
     const skill = parseSkillMarkdown(content);
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(false);
+    expect(skill.isIncomplete).toBe(true);
     expect(skill.validationError).toContain('2 steps but 1 execution');
   });
 
@@ -222,6 +227,72 @@ With skill reference
       '[Navigate To Product]',
       'operation --flag',
     ]);
+  });
+
+  it('marks skill as incomplete when description is very short', () => {
+    const content = `
+### Name
+Test Skill
+
+### Description
+Brief
+
+### Steps
+- Some step
+
+### Execution
+- echo "test"
+`;
+
+    const skill = parseSkillMarkdown(content);
+
+    expect(skill).toBeDefined();
+    expect(skill.isValid).toBe(true);
+    expect(skill.isIncomplete).toBe(true);
+  });
+
+  it('marks skill as incomplete when description is minimal', () => {
+    const content = `
+### Name
+Test Skill
+
+### Description
+TODO
+
+### Steps
+- Some step
+
+### Execution
+- echo "test"
+`;
+
+    const skill = parseSkillMarkdown(content);
+
+    expect(skill).toBeDefined();
+    expect(skill.isValid).toBe(true);
+    expect(skill.isIncomplete).toBe(true);
+  });
+
+  it('marks skill as complete when description is adequate', () => {
+    const content = `
+### Name
+Test Skill
+
+### Description
+This is a detailed description of what the skill does
+
+### Steps
+- Some step
+
+### Execution
+- echo "test"
+`;
+
+    const skill = parseSkillMarkdown(content);
+
+    expect(skill).toBeDefined();
+    expect(skill.isValid).toBe(true);
+    expect(skill.isIncomplete).toBeUndefined();
   });
 });
 

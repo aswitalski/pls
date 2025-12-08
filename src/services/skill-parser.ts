@@ -75,17 +75,25 @@ export function parseSkillMarkdown(content: string): SkillDefinition {
       execution: sections.execution || [],
       isValid: false,
       validationError: validationError.error,
+      isIncomplete: true,
     };
   }
 
   // Valid skill - all required fields are present (validation passed)
+  const description = sections.description as string;
   const skill: SkillDefinition = {
     name: sections.name as string,
-    description: sections.description as string,
+    description,
     steps: sections.steps as string[],
     execution: sections.execution as string[],
     isValid: true,
   };
+
+  // Check if skill is incomplete (valid but needs more documentation)
+  const MIN_DESCRIPTION_LENGTH = 20;
+  if (description.trim().length < MIN_DESCRIPTION_LENGTH) {
+    skill.isIncomplete = true;
+  }
 
   if (sections.aliases && sections.aliases.length > 0) {
     skill.aliases = sections.aliases;

@@ -96,6 +96,7 @@ export interface Capability {
   description: string;
   isBuiltIn: boolean;
   isIndirect?: boolean;
+  isIncomplete?: boolean;
 }
 
 export interface ReportDefinitionProps {

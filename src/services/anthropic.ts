@@ -7,7 +7,7 @@ import {
   getAvailableConfigStructure,
   getConfiguredKeys,
 } from './configuration.js';
-import { formatSkillsForPrompt, loadSkills } from './skills.js';
+import { formatSkillsForPrompt, loadSkillsWithValidation } from './skills.js';
 import { toolRegistry } from './tool-registry.js';
 
 export interface ExecuteCommand {
@@ -108,7 +108,7 @@ export class AnthropicService implements LLMService {
       toolName === 'execute' ||
       toolName === 'validate'
     ) {
-      const skills = loadSkills();
+      const skills = loadSkillsWithValidation();
       const skillsSection = formatSkillsForPrompt(skills);
       systemPrompt += skillsSection;
     }
