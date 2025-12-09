@@ -66,6 +66,22 @@ export function getUnknownRequestMessage(): string {
 }
 
 /**
+ * Returns an error message for unknown skill references.
+ * Randomly selects from variations to sound natural.
+ * Skill name should be a verb with details (e.g., "Deploy Application")
+ */
+export function getUnknownSkillMessage(skillName: string): string {
+  const templates = [
+    `I don't know how to "${skillName}".`,
+    `I'm not familiar with the "${skillName}" command.`,
+    `I haven't learned how to "${skillName}" yet.`,
+    `I can't "${skillName}".`,
+    `I'm unable to "${skillName}".`,
+  ];
+  return templates[Math.floor(Math.random() * templates.length)];
+}
+
+/**
  * Returns an error message for mixed task types.
  */
 export function getMixedTaskTypesError(types: string[]): string {

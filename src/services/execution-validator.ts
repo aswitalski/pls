@@ -7,9 +7,9 @@ import {
   resolveVariant,
 } from './placeholder-resolver.js';
 import { loadUserConfig, hasConfigPath } from './config-loader.js';
-import { loadSkills } from './skills.js';
+import { loadSkillDefinitions, createSkillLookup } from './skills.js';
 import { expandSkillReferences } from './skill-expander.js';
-import { getConfigType, parseSkillMarkdown } from './skill-parser.js';
+import { getConfigType } from './skill-parser.js';
 
 /**
  * Validation error for a skill
@@ -41,12 +41,8 @@ export function validateExecuteTasks(tasks: Task[]): ExecuteValidationResult {
   const seenSkills = new Set<string>();
 
   // Load all skills (including invalid ones for validation)
-  const skillContents = loadSkills();
-  const parsedSkills = skillContents.map((content) =>
-    parseSkillMarkdown(content)
-  );
-  const skillLookup = (name: string) =>
-    parsedSkills.find((s) => s.name === name) || null;
+  const parsedSkills = loadSkillDefinitions();
+  const skillLookup = createSkillLookup(parsedSkills);
 
   // Check for invalid skills being used in tasks
   for (const task of tasks) {

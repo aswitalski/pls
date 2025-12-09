@@ -183,39 +183,47 @@ function executeTasksAfterConfirm(
     );
   } else {
     // Execute tasks with validation
-    const validation = validateExecuteTasks(tasks);
+    try {
+      const validation = validateExecuteTasks(tasks);
 
-    if (validation.validationErrors.length > 0) {
-      // Show error feedback for invalid skills
-      const errorMessages = validation.validationErrors.map((error) => {
-        const issuesList = error.issues
-          .map((issue) => `  - ${issue}`)
-          .join('\n');
-        return `Invalid skill definition "${error.skill}":\n\n${issuesList}`;
-      });
+      if (validation.validationErrors.length > 0) {
+        // Show error feedback for invalid skills
+        const errorMessages = validation.validationErrors.map((error) => {
+          const issuesList = error.issues
+            .map((issue) => `  - ${issue}`)
+            .join('\n');
+          return `Invalid skill definition "${error.skill}":\n\n${issuesList}`;
+        });
 
-      handlers.addToQueue(
-        createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
-      );
-    } else if (validation.missingConfig.length > 0) {
-      handlers.addToQueue(
-        createValidateDefinition(
-          validation.missingConfig,
-          userRequest,
-          service,
-          (error: string) => {
-            handlers.onError(error);
-          },
-          () => {
-            handlers.addToQueue(createExecuteDefinition(tasks, service));
-          },
-          (operation: string) => {
-            handlers.onAborted(operation);
-          }
-        )
-      );
-    } else {
-      handlers.addToQueue(createExecuteDefinition(tasks, service));
+        handlers.addToQueue(
+          createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
+        );
+      } else if (validation.missingConfig.length > 0) {
+        handlers.addToQueue(
+          createValidateDefinition(
+            validation.missingConfig,
+            userRequest,
+            service,
+            (error: string) => {
+              handlers.onError(error);
+            },
+            () => {
+              handlers.addToQueue(createExecuteDefinition(tasks, service));
+            },
+            (operation: string) => {
+              handlers.onAborted(operation);
+            }
+          )
+        );
+      } else {
+        handlers.addToQueue(createExecuteDefinition(tasks, service));
+      }
+    } catch (error) {
+      // Handle skill reference errors (e.g., unknown skills)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const message = createMessage(errorMessage);
+      handlers.addToQueue(message);
     }
   }
 }

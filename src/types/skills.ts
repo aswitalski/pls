@@ -6,7 +6,9 @@
  * Parsed skill definition from markdown file
  */
 export interface SkillDefinition {
-  /** Unique skill name (from ### Name section) */
+  /** Unique skill key (from filename without extension, e.g., "deploy-app") */
+  key: string;
+  /** Display name (from ### Name section if present, otherwise derived from key) */
   name: string;
   /** Skill description (from ### Description section) */
   description: string;

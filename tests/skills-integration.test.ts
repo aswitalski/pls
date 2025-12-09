@@ -102,7 +102,11 @@ deployment:
 - scp dist/* {deployment.prod.server}:{deployment.prod.path}
 `;
 
-      writeFileSync(join(skillsDir, 'deploy.md'), deploySkill, 'utf-8');
+      writeFileSync(
+        join(skillsDir, 'deploy-application.md'),
+        deploySkill,
+        'utf-8'
+      );
 
       const tasks: Task[] = [
         {
@@ -154,7 +158,7 @@ Execute the test suite
 - Run tests
 
 ### Execution
-- [Navigate To Project]
+- [ Navigate To Project ]
 - npm test
 `;
 
@@ -169,7 +173,7 @@ Build the project with tests
 - Build application
 
 ### Execution
-- [Run Tests]
+- [ Run Tests ]
 - npm run build
 `;
 
@@ -214,7 +218,7 @@ References Skill B
 - Do something
 
 ### Execution
-- [Skill B]
+- [ Skill B ]
 `;
 
       const skillB = `### Name
@@ -227,7 +231,7 @@ References Skill A
 - Do something
 
 ### Execution
-- [Skill A]
+- [ Skill A ]
 `;
 
       writeFileSync(join(skillsDir, 'skill-a.md'), skillA, 'utf-8');
@@ -261,7 +265,7 @@ References Skill B in a longer chain
 - Do something
 
 ### Execution
-- [Skill B]
+- [ Skill B ]
 `;
 
       const skillB = `### Name
@@ -274,7 +278,7 @@ References Skill C in a longer chain
 - Do something
 
 ### Execution
-- [Skill C]
+- [ Skill C ]
 `;
 
       const skillC = `### Name
@@ -287,7 +291,7 @@ References Skill A to complete the cycle
 - Do something
 
 ### Execution
-- [Skill A]
+- [ Skill A ]
 `;
 
       writeFileSync(join(skillsDir, 'skill-a.md'), skillA, 'utf-8');
@@ -415,7 +419,7 @@ Missing execution
 - Step 2
 `;
 
-      writeFileSync(join(skillsDir, 'broken.md'), invalidSkill, 'utf-8');
+      writeFileSync(join(skillsDir, 'broken-skill.md'), invalidSkill, 'utf-8');
 
       const tasks: Task[] = [
         {
@@ -454,7 +458,11 @@ Steps and execution counts do not match
 - command 2
 `;
 
-      writeFileSync(join(skillsDir, 'mismatched.md'), mismatchedSkill, 'utf-8');
+      writeFileSync(
+        join(skillsDir, 'mismatched-skill.md'),
+        mismatchedSkill,
+        'utf-8'
+      );
 
       const tasks: Task[] = [
         {
@@ -633,12 +641,16 @@ Connect and run database query
 - Execute query
 
 ### Execution
-- [Connect To Database]
+- [ Connect To Database ]
 - psql -c "SELECT * FROM users"
 `;
 
-      writeFileSync(join(skillsDir, 'db-connect.md'), baseSkill, 'utf-8');
-      writeFileSync(join(skillsDir, 'db-query.md'), wrapperSkill, 'utf-8');
+      writeFileSync(
+        join(skillsDir, 'connect-to-database.md'),
+        baseSkill,
+        'utf-8'
+      );
+      writeFileSync(join(skillsDir, 'run-query.md'), wrapperSkill, 'utf-8');
 
       const tasks: Task[] = [
         {
@@ -657,6 +669,159 @@ Connect and run database query
       const paths = result.missingConfig.map((c) => c.path);
       expect(paths).toContain('db.host');
       expect(paths).toContain('db.port');
+    });
+  });
+
+  describe('Skill name normalization and lookup', () => {
+    it('handles skills with numbers in names', () => {
+      const buildSkill = `### Name
+Build Project 2
+
+### Description
+Build the second version of the project
+
+### Steps
+- Compile code
+
+### Execution
+- npm run build:v2
+`;
+
+      writeFileSync(join(skillsDir, 'build-project-2.md'), buildSkill, 'utf-8');
+
+      const tasks: Task[] = [
+        {
+          action: 'Build version 2',
+          type: TaskType.Execute,
+          params: {
+            skill: 'Build Project 2',
+          },
+        },
+      ];
+
+      const result = validateExecuteTasks(tasks);
+
+      expect(result.validationErrors).toHaveLength(0);
+      expect(result.missingConfig).toHaveLength(0);
+    });
+
+    it('handles skills with special characters in references', () => {
+      const setupSkill = `### Name
+Setup Node.js Environment
+
+### Description
+Install and configure Node.js development environment
+
+### Steps
+- Install Node
+
+### Execution
+- brew install node
+`;
+
+      const deploySkill = `### Name
+Deploy Web App
+
+### Description
+Deploy the web application after setup
+
+### Steps
+- Setup environment
+- Deploy app
+
+### Execution
+- [ Setup Node.js Environment ]
+- npm run deploy
+`;
+
+      writeFileSync(
+        join(skillsDir, 'setup-nodejs-environment.md'),
+        setupSkill,
+        'utf-8'
+      );
+      writeFileSync(join(skillsDir, 'deploy-web-app.md'), deploySkill, 'utf-8');
+
+      const tasks: Task[] = [
+        {
+          action: 'Deploy application',
+          type: TaskType.Execute,
+          params: {
+            skill: 'Deploy Web App',
+          },
+        },
+      ];
+
+      const result = validateExecuteTasks(tasks);
+
+      expect(result.validationErrors).toHaveLength(0);
+      expect(result.missingConfig).toHaveLength(0);
+    });
+
+    it('handles skills without explicit Name section', () => {
+      const simpleSkill = `### Description
+A skill that relies on filename for its name
+
+### Steps
+- Execute command
+
+### Execution
+- echo "running"
+`;
+
+      writeFileSync(join(skillsDir, 'auto-named.md'), simpleSkill, 'utf-8');
+
+      const skills = loadSkillDefinitions();
+
+      expect(skills).toHaveLength(1);
+      expect(skills[0].key).toBe('auto-named');
+      expect(skills[0].name).toBe('Auto Named'); // Derived from filename
+    });
+
+    it('matches skill references case-insensitively via kebab-case', () => {
+      const baseSkill = `### Name
+Run Tests
+
+### Description
+Execute test suite
+
+### Steps
+- Run tests
+
+### Execution
+- npm test
+`;
+
+      const wrapperSkill = `### Name
+CI Pipeline
+
+### Description
+Run full CI pipeline
+
+### Steps
+- Run tests
+- Build
+
+### Execution
+- [ Run Tests ]
+- npm run build
+`;
+
+      writeFileSync(join(skillsDir, 'run-tests.md'), baseSkill, 'utf-8');
+      writeFileSync(join(skillsDir, 'ci-pipeline.md'), wrapperSkill, 'utf-8');
+
+      const tasks: Task[] = [
+        {
+          action: 'Run CI',
+          type: TaskType.Execute,
+          params: {
+            skill: 'CI Pipeline',
+          },
+        },
+      ];
+
+      const result = validateExecuteTasks(tasks);
+
+      expect(result.validationErrors).toHaveLength(0);
     });
   });
 

@@ -1,25 +1,31 @@
 import { SkillDefinition } from '../types/skills.js';
+import { getUnknownSkillMessage } from './messages.js';
 
 /**
  * Parse skill reference from execution line
- * Returns skill name if line is a reference, otherwise null
+ * Format: [ Display Name ] with mandatory spaces
+ * Returns display name if line matches format, otherwise null
+ * Example: "[ My Skill ]" -> "My Skill"
  */
 export function parseSkillReference(line: string): string | null {
-  const match = line.match(/^\[(.+)\]$/);
-  return match ? match[1].trim() : null;
+  // Must match format: [ content ] with at least one space before and after
+  const match = line.trim().match(/^\[\s+(.+?)\s+\]$/);
+  return match ? match[1] : null;
 }
 
 /**
  * Check if execution line is a skill reference
+ * Must have format: [ content ] with spaces
  */
 export function isSkillReference(line: string): boolean {
-  return /^\[.+\]$/.test(line.trim());
+  return /^\[\s+.+?\s+\]$/.test(line.trim());
 }
 
 /**
  * Expand skill references in execution commands
  * Returns expanded execution lines with references replaced
- * Throws error if circular reference detected
+ * Throws error if circular reference detected or skill not found
+ * Reference format: [ Skill Name ]
  */
 export function expandSkillReferences(
   execution: string[],
@@ -29,10 +35,11 @@ export function expandSkillReferences(
   const expanded: string[] = [];
 
   for (const line of execution) {
+    // First: Detect if line matches [ XXX ] format
     const skillName = parseSkillReference(line);
 
     if (!skillName) {
-      // Not a reference, keep as-is
+      // Not a reference, keep command as-is
       expanded.push(line);
       continue;
     }
@@ -44,13 +51,12 @@ export function expandSkillReferences(
       );
     }
 
-    // Look up referenced skill
+    // Second: Match against skill name
     const skill = skillLookup(skillName);
 
     if (!skill) {
-      // Referenced skill not found, keep as-is
-      expanded.push(line);
-      continue;
+      // Referenced skill not found - throw error to break execution
+      throw new Error(getUnknownSkillMessage(skillName));
     }
 
     // Recursively expand referenced skill's execution

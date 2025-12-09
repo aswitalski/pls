@@ -4,7 +4,47 @@ import { join } from 'path';
 
 import { SkillDefinition } from '../types/skills.js';
 
-import { parseSkillMarkdown } from './skill-parser.js';
+import { parseSkillMarkdown, displayNameToKey } from './skill-parser.js';
+
+/**
+ * Built-in skill names that user skills cannot override
+ */
+const BUILT_IN_SKILLS = new Set([
+  'plan',
+  'execute',
+  'answer',
+  'config',
+  'validate',
+  'introspect',
+]);
+
+/**
+ * Validate filename follows kebab-case pattern
+ * Valid: deploy-app.md, build-project-2.md, copy-files.md
+ * Invalid: Deploy_App.md, buildProject.md, DEPLOY.md, file name.md
+ */
+export function isValidSkillFilename(filename: string): boolean {
+  // Must end with .md or .MD extension
+  if (!filename.endsWith('.md') && !filename.endsWith('.MD')) {
+    return false;
+  }
+
+  // Extract name without extension
+  const name = filename.slice(0, -3);
+
+  // Must match kebab-case pattern: lowercase letters, numbers, and hyphens only
+  // Must start with a letter, and not start or end with a hyphen
+  const kebabCasePattern = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+
+  return kebabCasePattern.test(name);
+}
+
+/**
+ * Check if skill key conflicts with built-in skills
+ */
+export function conflictsWithBuiltIn(key: string): boolean {
+  return BUILT_IN_SKILLS.has(key);
+}
 
 /**
  * Get the path to the skills directory
@@ -15,9 +55,10 @@ export function getSkillsDirectory(): string {
 
 /**
  * Load all skill markdown files from the skills directory
- * Returns an array of skill file contents
+ * Returns an array of objects with filename (key) and content
+ * Filters out invalid filenames and conflicts with built-in skills
  */
-export function loadSkills(): string[] {
+export function loadSkills(): Array<{ key: string; content: string }> {
   const skillsDir = getSkillsDirectory();
 
   // Return empty array if directory doesn't exist
@@ -28,16 +69,32 @@ export function loadSkills(): string[] {
   try {
     const files = readdirSync(skillsDir);
 
-    // Filter for markdown files
-    const skillFiles = files.filter(
-      (file) => file.endsWith('.md') || file.endsWith('.MD')
-    );
+    // Filter and map valid skill files
+    return files
+      .filter((file) => {
+        // Must follow kebab-case naming convention
+        if (!isValidSkillFilename(file)) {
+          return false;
+        }
 
-    // Read and return contents of each skill file
-    return skillFiles.map((file) => {
-      const filePath = join(skillsDir, file);
-      return readFileSync(filePath, 'utf-8');
-    });
+        // Extract key (filename without extension, handles both .md and .MD)
+        const key = file.slice(0, -3);
+
+        // Must not conflict with built-in skills
+        if (conflictsWithBuiltIn(key)) {
+          return false;
+        }
+
+        return true;
+      })
+      .map((file) => {
+        // Extract key (filename without extension, handles both .md and .MD)
+        const key = file.slice(0, -3);
+        const filePath = join(skillsDir, file);
+        const content = readFileSync(filePath, 'utf-8');
+
+        return { key, content };
+      });
   } catch {
     // Return empty array if there's any error reading the directory
     return [];
@@ -49,8 +106,8 @@ export function loadSkills(): string[] {
  * Returns structured skill definitions (including invalid skills)
  */
 export function loadSkillDefinitions(): SkillDefinition[] {
-  const skillContents = loadSkills();
-  return skillContents.map((content) => parseSkillMarkdown(content));
+  const skills = loadSkills();
+  return skills.map(({ key, content }) => parseSkillMarkdown(key, content));
 }
 
 /**
@@ -58,10 +115,10 @@ export function loadSkillDefinitions(): SkillDefinition[] {
  * Returns array of skill markdown with status markers
  */
 export function loadSkillsWithValidation(): string[] {
-  const skillContents = loadSkills();
+  const skills = loadSkills();
 
-  return skillContents.map((content) => {
-    const parsed = parseSkillMarkdown(content);
+  return skills.map(({ key, content }) => {
+    const parsed = parseSkillMarkdown(key, content);
 
     // If skill is incomplete (either validation failed or needs more documentation), append (INCOMPLETE) to the name
     if (parsed.isIncomplete) {
@@ -77,17 +134,23 @@ export function loadSkillsWithValidation(): string[] {
 
 /**
  * Create skill lookup function from definitions
+ * Lookup by key (display name is converted to kebab-case for matching)
+ * Example: "Deploy App" -> "deploy-app" -> matches skill with key "deploy-app"
  */
 export function createSkillLookup(
   definitions: SkillDefinition[]
 ): (name: string) => SkillDefinition | null {
-  const map = new Map<string, SkillDefinition>();
+  const keyMap = new Map<string, SkillDefinition>();
 
   for (const definition of definitions) {
-    map.set(definition.name, definition);
+    keyMap.set(definition.key, definition);
   }
 
-  return (name: string) => map.get(name) || null;
+  return (name: string) => {
+    // Convert display name to kebab-case key for lookup
+    const key = displayNameToKey(name);
+    return keyMap.get(key) || null;
+  };
 }
 
 /**
