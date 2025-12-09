@@ -3,9 +3,9 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { validateExecuteTasks } from '../src/services/execution-validator.js';
-import { expandSkillReferences } from '../src/services/skill-expander.js';
+import { validateExecuteTasks } from '../src/services/validator.js';
 import {
+  expandSkillReferences,
   getSkillsDirectory,
   loadSkillDefinitions,
   loadSkillsWithValidation,

@@ -9,7 +9,7 @@ import {
   replacePlaceholders,
   resolveFromConfig,
   resolveVariant,
-} from '../src/services/placeholder-resolver.js';
+} from '../../src/services/resolver.js';
 
 describe('Parsing placeholders', () => {
   it('parses strict placeholder', () => {

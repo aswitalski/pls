@@ -7,7 +7,7 @@ import { LLMService } from '../../src/services/anthropic.js';
 import {
   getOperationName,
   routeTasksWithConfirm,
-} from '../../src/services/task-router.js';
+} from '../../src/services/router.js';
 
 import { createMockHandlers } from '../test-utils.js';
 

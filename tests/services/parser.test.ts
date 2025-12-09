@@ -4,7 +4,7 @@ import {
   generateConfigPaths,
   getConfigType,
   parseSkillMarkdown,
-} from '../src/services/skill-parser.js';
+} from '../../src/services/parser.js';
 
 describe('Parsing skill markdown', () => {
   it('parses minimal valid skill', () => {

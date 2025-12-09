@@ -4,7 +4,7 @@ import { Task } from '../types/types.js';
 import { LLMService } from './anthropic.js';
 import { createRefinement } from './components.js';
 import { formatErrorMessage, getRefiningMessage } from './messages.js';
-import { routeTasksWithConfirm } from './task-router.js';
+import { routeTasksWithConfirm } from './router.js';
 
 /**
  * Handle refinement flow for DEFINE tasks

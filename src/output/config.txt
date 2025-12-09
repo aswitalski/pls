@@ -1,3 +1,0 @@
-anthropic:
-  api-key: ${YOUR_API_KEY}
-  model: ${SELECTED_MODEL}

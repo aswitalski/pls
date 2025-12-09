@@ -16,7 +16,7 @@ import { createPlanDefinition } from '../services/components.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { useInput } from '../services/keyboard.js';
 import { handleRefinement } from '../services/refinement.js';
-import { routeTasksWithConfirm } from '../services/task-router.js';
+import { routeTasksWithConfirm } from '../services/router.js';
 import { ensureMinimumTime } from '../services/timing.js';
 
 import { Spinner } from './Spinner.js';

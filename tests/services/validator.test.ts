@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { validateExecuteTasks } from '../src/services/execution-validator.js';
-import { Task, TaskType } from '../src/types/types.js';
+import { validateExecuteTasks } from '../../src/services/validator.js';
+import { Task, TaskType } from '../../src/types/types.js';
 
 describe('Validating execute tasks', () => {
   it('handles tasks without skill params', () => {

@@ -15,7 +15,7 @@ import {
 } from './components.js';
 import { saveConfig, unflattenConfig } from './configuration.js';
 import { FeedbackType } from '../types/types.js';
-import { validateExecuteTasks } from './execution-validator.js';
+import { validateExecuteTasks } from './validator.js';
 import {
   getCancellationMessage,
   getMixedTaskTypesError,

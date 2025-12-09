@@ -5,11 +5,14 @@ import {
   extractPlaceholders,
   pathToString,
   resolveVariant,
-} from './placeholder-resolver.js';
-import { loadUserConfig, hasConfigPath } from './config-loader.js';
-import { loadSkillDefinitions, createSkillLookup } from './skills.js';
-import { expandSkillReferences } from './skill-expander.js';
-import { getConfigType } from './skill-parser.js';
+} from './resolver.js';
+import { loadUserConfig, hasConfigPath } from './loader.js';
+import {
+  loadSkillDefinitions,
+  createSkillLookup,
+  expandSkillReferences,
+} from './skills.js';
+import { getConfigType } from './parser.js';
 
 /**
  * Validation error for a skill

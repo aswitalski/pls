@@ -23,7 +23,7 @@ vi.mock('../../src/services/timing.js', () => ({
 vi.useFakeTimers();
 
 // Mock config loader to provide test config
-vi.mock('../../src/services/config-loader.js', () => ({
+vi.mock('../../src/services/loader.js', () => ({
   loadUserConfig: vi.fn().mockReturnValue({
     project: {
       alpha: {

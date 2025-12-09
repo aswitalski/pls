@@ -8,7 +8,7 @@ import {
   getConfiguredKeys,
 } from './configuration.js';
 import { formatSkillsForPrompt, loadSkillsWithValidation } from './skills.js';
-import { toolRegistry } from './tool-registry.js';
+import { toolRegistry } from './registry.js';
 
 export interface ExecuteCommand {
   description: string;

@@ -14,8 +14,8 @@ import {
   ExecutionStatus,
   executeCommands,
 } from '../services/shell.js';
-import { replacePlaceholders } from '../services/placeholder-resolver.js';
-import { loadUserConfig } from '../services/config-loader.js';
+import { replacePlaceholders } from '../services/resolver.js';
+import { loadUserConfig } from '../services/loader.js';
 import { ensureMinimumTime } from '../services/timing.js';
 
 import { Spinner } from './Spinner.js';
