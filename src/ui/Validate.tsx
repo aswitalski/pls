@@ -180,10 +180,17 @@ export function Validate({
       saveConfig(section, sectionConfig);
     }
 
+    // Mark validation component as complete before invoking callback
+    // This allows the workflow to proceed to execution
+    handlers?.completeActive();
+
+    // Invoke callback which will queue the Execute component
     onComplete?.(configRequirements!);
   };
 
   const handleConfigAborted = (operation: string) => {
+    // Mark validation component as complete when aborted
+    handlers?.completeActive();
     onAborted(operation);
   };
 
