@@ -154,7 +154,7 @@ Execute the test suite
 - Run tests
 
 ### Execution
-- [Navigate To Project]
+- [ Navigate To Project ]
 - npm test
 `;
 
@@ -169,7 +169,7 @@ Build the project with tests
 - Build application
 
 ### Execution
-- [Run Tests]
+- [ Run Tests ]
 - npm run build
 `;
 
@@ -214,7 +214,7 @@ References Skill B
 - Do something
 
 ### Execution
-- [Skill B]
+- [ Skill B ]
 `;
 
       const skillB = `### Name
@@ -227,7 +227,7 @@ References Skill A
 - Do something
 
 ### Execution
-- [Skill A]
+- [ Skill A ]
 `;
 
       writeFileSync(join(skillsDir, 'skill-a.md'), skillA, 'utf-8');
@@ -261,7 +261,7 @@ References Skill B in a longer chain
 - Do something
 
 ### Execution
-- [Skill B]
+- [ Skill B ]
 `;
 
       const skillB = `### Name
@@ -274,7 +274,7 @@ References Skill C in a longer chain
 - Do something
 
 ### Execution
-- [Skill C]
+- [ Skill C ]
 `;
 
       const skillC = `### Name
@@ -287,7 +287,7 @@ References Skill A to complete the cycle
 - Do something
 
 ### Execution
-- [Skill A]
+- [ Skill A ]
 `;
 
       writeFileSync(join(skillsDir, 'skill-a.md'), skillA, 'utf-8');
@@ -633,7 +633,7 @@ Connect and run database query
 - Execute query
 
 ### Execution
-- [Connect To Database]
+- [ Connect To Database ]
 - psql -c "SELECT * FROM users"
 `;
 

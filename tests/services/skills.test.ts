@@ -79,7 +79,7 @@ Navigate to the project directory, run the project generation script, run the co
 
       const skills = loadSkills();
       expect(skills).toHaveLength(1);
-      expect(skills[0]).toBe(skillContent);
+      expect(skills[0]).toEqual({ key: 'opera', content: skillContent });
     });
 
     it('loads multiple skill files', () => {
@@ -93,8 +93,8 @@ Navigate to the project directory, run the project generation script, run the co
 
       const skills = loadSkills();
       expect(skills).toHaveLength(2);
-      expect(skills).toContain(skill1);
-      expect(skills).toContain(skill2);
+      expect(skills).toContainEqual({ key: 'skill1', content: skill1 });
+      expect(skills).toContainEqual({ key: 'skill2', content: skill2 });
     });
 
     it('ignores non-markdown files', () => {
@@ -106,7 +106,7 @@ Navigate to the project directory, run the project generation script, run the co
 
       const skills = loadSkills();
       expect(skills).toHaveLength(1);
-      expect(skills[0]).toBe('Skill content');
+      expect(skills[0]).toEqual({ key: 'skill', content: 'Skill content' });
     });
 
     it('handles both .md and .MD extensions', () => {
@@ -117,6 +117,8 @@ Navigate to the project directory, run the project generation script, run the co
 
       const skills = loadSkills();
       expect(skills).toHaveLength(2);
+      expect(skills[0]).toEqual({ key: 'skill1', content: 'Lowercase' });
+      expect(skills[1]).toEqual({ key: 'skill2', content: 'Uppercase' });
     });
   });
 

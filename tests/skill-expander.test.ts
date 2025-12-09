@@ -10,63 +10,74 @@ import {
 import { SkillDefinition } from '../src/types/skills.js';
 
 describe('Parsing skill references', () => {
-  it('parses valid skill reference', () => {
-    expect(parseSkillReference('[Navigate To Product]')).toBe(
+  it('parses valid skill reference with spaces', () => {
+    expect(parseSkillReference('[ Navigate To Product ]')).toBe(
       'Navigate To Product'
     );
-    expect(parseSkillReference('[Simple]')).toBe('Simple');
+    expect(parseSkillReference('[ Simple ]')).toBe('Simple');
+    expect(parseSkillReference('[  Build Project  ]')).toBe('Build Project');
+  });
+
+  it('returns null for references without spaces', () => {
+    expect(parseSkillReference('[NavigateToProduct]')).toBeNull();
+    expect(parseSkillReference('[navigate-to-product]')).toBeNull();
   });
 
   it('returns null for non-reference', () => {
     expect(parseSkillReference('regular command')).toBeNull();
-    expect(parseSkillReference('command [not at start]')).toBeNull();
-    expect(parseSkillReference('[incomplete')).toBeNull();
-    expect(parseSkillReference('incomplete]')).toBeNull();
-  });
-
-  it('trims whitespace from skill name', () => {
-    expect(parseSkillReference('[  Skill Name  ]')).toBe('Skill Name');
+    expect(parseSkillReference('command [ not at start ]')).toBeNull();
+    expect(parseSkillReference('[ incomplete')).toBeNull();
+    expect(parseSkillReference('incomplete ]')).toBeNull();
   });
 });
 
 describe('Checking if line is skill reference', () => {
-  it('returns true for valid reference', () => {
-    expect(isSkillReference('[Navigate To Product]')).toBe(true);
-    expect(isSkillReference('  [Navigate To Product]  ')).toBe(true);
+  it('returns true for valid reference with spaces', () => {
+    expect(isSkillReference('[ Navigate To Product ]')).toBe(true);
+    expect(isSkillReference('  [ Navigate To Product ]  ')).toBe(true);
+    expect(isSkillReference('[  Build  ]')).toBe(true);
+  });
+
+  it('returns false for references without spaces', () => {
+    expect(isSkillReference('[navigate-to-product]')).toBe(false);
+    expect(isSkillReference('[NavigateToProduct]')).toBe(false);
   });
 
   it('returns false for non-reference', () => {
     expect(isSkillReference('regular command')).toBe(false);
-    expect(isSkillReference('command [not at start]')).toBe(false);
+    expect(isSkillReference('command [ not at start ]')).toBe(false);
   });
 });
 
 describe('Expanding skill references', () => {
-  const skills: Record<string, SkillDefinition> = {
-    'Navigate To Product': {
+  const skills: SkillDefinition[] = [
+    {
+      key: 'navigate-to-product',
       name: 'Navigate To Product',
       description: 'Navigation skill',
       steps: ['Change to directory'],
       execution: ['cd {product.VARIANT.path}'],
       isValid: true,
     },
-    'Build Product': {
+    {
+      key: 'build-product',
       name: 'Build Product',
       description: 'Build skill',
       steps: ['Navigate', 'Compile'],
-      execution: ['[Navigate To Product]', 'make build'],
+      execution: ['[ Navigate To Product ]', 'make build'],
       isValid: true,
     },
-    'Deploy Product': {
+    {
+      key: 'deploy-product',
       name: 'Deploy Product',
       description: 'Deploy skill',
       steps: ['Build', 'Upload'],
-      execution: ['[Build Product]', 'scp dist/* server:/app'],
+      execution: ['[ Build Product ]', 'scp dist/* server:/app'],
       isValid: true,
     },
-  };
+  ];
 
-  const lookup = (name: string) => skills[name] ?? null;
+  const lookup = (name: string) => skills.find((s) => s.name === name) || null;
 
   it('keeps non-reference lines as-is', () => {
     const execution = ['regular command', 'another command'];
@@ -76,21 +87,21 @@ describe('Expanding skill references', () => {
   });
 
   it('expands single skill reference', () => {
-    const execution = ['[Navigate To Product]', 'make build'];
+    const execution = ['[ Navigate To Product ]', 'make build'];
     const expanded = expandSkillReferences(execution, lookup);
 
     expect(expanded).toEqual(['cd {product.VARIANT.path}', 'make build']);
   });
 
   it('expands nested skill references', () => {
-    const execution = ['[Build Product]'];
+    const execution = ['[ Build Product ]'];
     const expanded = expandSkillReferences(execution, lookup);
 
     expect(expanded).toEqual(['cd {product.VARIANT.path}', 'make build']);
   });
 
   it('expands deeply nested skill references', () => {
-    const execution = ['[Deploy Product]'];
+    const execution = ['[ Deploy Product ]'];
     const expanded = expandSkillReferences(execution, lookup);
 
     expect(expanded).toEqual([
@@ -100,97 +111,108 @@ describe('Expanding skill references', () => {
     ]);
   });
 
-  it('keeps unknown skill reference as-is', () => {
-    const execution = ['[Unknown Skill]', 'other command'];
-    const expanded = expandSkillReferences(execution, lookup);
+  it('throws error for unknown skill reference', () => {
+    const execution = ['[ Unknown Skill ]', 'other command'];
 
-    expect(expanded).toEqual(['[Unknown Skill]', 'other command']);
+    expect(() => expandSkillReferences(execution, lookup)).toThrow(
+      /unknown skill/i
+    );
   });
 
   it('throws error for circular reference', () => {
-    const circularSkills: Record<string, SkillDefinition> = {
-      A: {
+    const circularSkills: SkillDefinition[] = [
+      {
+        key: 'a',
         name: 'A',
         description: 'Skill A',
         steps: ['Step'],
-        execution: ['[B]'],
+        execution: ['[ B ]'],
         isValid: true,
       },
-      B: {
+      {
+        key: 'b',
         name: 'B',
         description: 'Skill B',
         steps: ['Step'],
-        execution: ['[C]'],
+        execution: ['[ C ]'],
         isValid: true,
       },
-      C: {
+      {
+        key: 'c',
         name: 'C',
         description: 'Skill C',
         steps: ['Step'],
-        execution: ['[A]'],
+        execution: ['[ A ]'],
         isValid: true,
       },
-    };
+    ];
 
-    const circularLookup = (name: string) => circularSkills[name] ?? null;
+    const circularLookup = (name: string) =>
+      circularSkills.find((s) => s.name === name) || null;
 
     expect(() => {
-      expandSkillReferences(['[A]'], circularLookup);
+      expandSkillReferences(['[ A ]'], circularLookup);
     }).toThrow('Circular skill reference detected');
   });
 
   it('throws error for direct self-reference', () => {
-    const selfRefSkills: Record<string, SkillDefinition> = {
-      Loop: {
+    const selfRefSkills: SkillDefinition[] = [
+      {
+        key: 'loop',
         name: 'Loop',
         description: 'Self-referencing skill',
         steps: ['Step'],
-        execution: ['[Loop]'],
+        execution: ['[ Loop ]'],
         isValid: true,
       },
-    };
+    ];
 
-    const selfRefLookup = (name: string) => selfRefSkills[name] ?? null;
+    const selfRefLookup = (name: string) =>
+      selfRefSkills.find((s) => s.name === name) || null;
 
     expect(() => {
-      expandSkillReferences(['[Loop]'], selfRefLookup);
+      expandSkillReferences(['[ Loop ]'], selfRefLookup);
     }).toThrow('Circular skill reference detected');
   });
 });
 
 describe('Getting referenced skills', () => {
-  const skills: Record<string, SkillDefinition> = {
-    A: {
+  const skills: SkillDefinition[] = [
+    {
+      key: 'a',
       name: 'A',
       description: 'Skill A',
       steps: ['Step'],
-      execution: ['[B]', '[C]'],
+      execution: ['[ B ]', '[ C ]'],
       isValid: true,
     },
-    B: {
+    {
+      key: 'b',
       name: 'B',
       description: 'Skill B',
       steps: ['Step'],
-      execution: ['[D]'],
+      execution: ['[ D ]'],
       isValid: true,
     },
-    C: {
+    {
+      key: 'c',
       name: 'C',
       description: 'Skill C',
       steps: ['Step'],
       execution: ['command'],
       isValid: true,
     },
-    D: {
+    {
+      key: 'd',
       name: 'D',
       description: 'Skill D',
       steps: ['Step'],
       execution: ['command'],
       isValid: true,
     },
-  };
+  ];
 
-  const lookup = (name: string) => skills[name] ?? null;
+  const lookup = (name: string) => skills.find((s) => s.name === name) || null;
 
   it('returns empty set for execution without references', () => {
     const referenced = getReferencedSkills(['command1', 'command2'], lookup);
@@ -199,7 +221,7 @@ describe('Getting referenced skills', () => {
   });
 
   it('returns direct references', () => {
-    const referenced = getReferencedSkills(['[B]', '[C]'], lookup);
+    const referenced = getReferencedSkills(['[ B ]', '[ C ]'], lookup);
 
     expect(referenced.has('B')).toBe(true);
     expect(referenced.has('C')).toBe(true);
@@ -208,7 +230,7 @@ describe('Getting referenced skills', () => {
   });
 
   it('returns nested references', () => {
-    const referenced = getReferencedSkills(['[A]'], lookup);
+    const referenced = getReferencedSkills(['[ A ]'], lookup);
 
     expect(referenced.has('A')).toBe(true);
     expect(referenced.has('B')).toBe(true);
@@ -218,7 +240,7 @@ describe('Getting referenced skills', () => {
   });
 
   it('handles unknown skill references', () => {
-    const referenced = getReferencedSkills(['[Unknown]', '[B]'], lookup);
+    const referenced = getReferencedSkills(['[ Unknown ]', '[ B ]'], lookup);
 
     expect(referenced.has('Unknown')).toBe(true);
     expect(referenced.has('B')).toBe(true);
@@ -228,78 +250,88 @@ describe('Getting referenced skills', () => {
 
 describe('Validating no cycles', () => {
   it('returns true for valid skills', () => {
-    const skills: Record<string, SkillDefinition> = {
-      A: {
+    const skills: SkillDefinition[] = [
+      {
+        key: 'a',
         name: 'A',
         description: 'Skill A',
         steps: ['Step'],
-        execution: ['[B]'],
+        execution: ['[ B ]'],
         isValid: true,
       },
-      B: {
+      {
+        key: 'b',
         name: 'B',
         description: 'Skill B',
         steps: ['Step'],
         execution: ['command'],
         isValid: true,
       },
-    };
+    ];
 
-    const lookup = (name: string) => skills[name] ?? null;
+    const lookup = (name: string) =>
+      skills.find((s) => s.name === name) || null;
 
-    expect(validateNoCycles(['[A]'], lookup)).toBe(true);
+    expect(validateNoCycles(['[ A ]'], lookup)).toBe(true);
   });
 
   it('returns false for circular reference', () => {
-    const skills: Record<string, SkillDefinition> = {
-      A: {
+    const skills: SkillDefinition[] = [
+      {
+        key: 'a',
         name: 'A',
         description: 'Skill A',
         steps: ['Step'],
-        execution: ['[B]'],
+        execution: ['[ B ]'],
         isValid: true,
       },
-      B: {
+      {
+        key: 'b',
         name: 'B',
         description: 'Skill B',
         steps: ['Step'],
-        execution: ['[A]'],
+        execution: ['[ A ]'],
         isValid: true,
       },
-    };
+    ];
 
-    const lookup = (name: string) => skills[name] ?? null;
+    const lookup = (name: string) =>
+      skills.find((s) => s.name === name) || null;
 
-    expect(validateNoCycles(['[A]'], lookup)).toBe(false);
+    expect(validateNoCycles(['[ A ]'], lookup)).toBe(false);
   });
 
   it('returns true for non-circular duplicate references', () => {
-    const skills: Record<string, SkillDefinition> = {
-      A: {
+    const skills: SkillDefinition[] = [
+      {
+        key: 'a',
         name: 'A',
         description: 'Skill A',
         steps: ['Step'],
-        execution: ['[C]'],
+        execution: ['[ C ]'],
         isValid: true,
       },
-      B: {
+      {
+        key: 'b',
         name: 'B',
         description: 'Skill B',
         steps: ['Step'],
-        execution: ['[C]'],
+        execution: ['[ C ]'],
         isValid: true,
       },
-      C: {
+      {
+        key: 'c',
         name: 'C',
         description: 'Skill C',
         steps: ['Step'],
         execution: ['command'],
         isValid: true,
       },
-    };
+    ];
 
-    const lookup = (name: string) => skills[name] ?? null;
+    const lookup = (name: string) =>
+      skills.find((s) => s.name === name) || null;
 
-    expect(validateNoCycles(['[A]', '[B]'], lookup)).toBe(true);
+    expect(validateNoCycles(['[ A ]', '[ B ]'], lookup)).toBe(true);
   });
 });

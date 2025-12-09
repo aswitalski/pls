@@ -24,7 +24,7 @@ A test skill for validation
 - echo "second"
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
 
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(true);
@@ -61,11 +61,11 @@ product:
 - Execute operation
 
 ### Execution
-- [Navigate To Product]
+- [ Navigate To Product ]
 - operation {product.VARIANT.path}
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
 
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(true);
@@ -85,25 +85,30 @@ product:
     });
     expect(skill.steps).toEqual(['Navigate to product', 'Execute operation']);
     expect(skill.execution).toEqual([
-      '[Navigate To Product]',
+      '[ Navigate To Product ]',
       'operation {product.VARIANT.path}',
     ]);
   });
 
-  it('returns invalid skill for skill missing name', () => {
+  it('derives name from key when Name section is missing', () => {
     const content = `
 ### Description
-Missing name section
+Skill without explicit name section
 
 ### Steps
-- Some step
+- First step
+- Second step
+
+### Execution
+- echo "first"
+- echo "second"
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
     expect(skill).toBeDefined();
-    expect(skill.isValid).toBe(false);
-    expect(skill.isIncomplete).toBe(true);
-    expect(skill.validationError).toContain('missing a Name section');
+    expect(skill.isValid).toBe(true);
+    expect(skill.name).toBe('Test Skill'); // Derived from key
+    expect(skill.key).toBe('test-skill');
   });
 
   it('returns invalid skill for skill missing description', () => {
@@ -115,7 +120,7 @@ Test Skill
 - Some step
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(false);
     expect(skill.isIncomplete).toBe(true);
@@ -131,7 +136,7 @@ Test Skill
 Missing steps
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(false);
     expect(skill.isIncomplete).toBe(true);
@@ -150,7 +155,7 @@ Missing execution
 - Some step
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(false);
     expect(skill.isIncomplete).toBe(true);
@@ -173,7 +178,7 @@ Mismatched counts
 - Only one execution line
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(false);
     expect(skill.isIncomplete).toBe(true);
@@ -197,7 +202,7 @@ With labeled commands
 - Run: npm run build
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
 
     expect(skill).toBeDefined();
     expect(skill.execution).toEqual(['Run: npm install', 'Run: npm run build']);
@@ -216,15 +221,15 @@ With skill reference
 - Do something
 
 ### Execution
-- [Navigate To Product]
+- [ Navigate To Product ]
 - operation --flag
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
 
     expect(skill).toBeDefined();
     expect(skill.execution).toEqual([
-      '[Navigate To Product]',
+      '[ Navigate To Product ]',
       'operation --flag',
     ]);
   });
@@ -244,7 +249,7 @@ Brief
 - echo "test"
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
 
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(true);
@@ -266,7 +271,7 @@ TODO
 - echo "test"
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
 
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(true);
@@ -288,7 +293,7 @@ This is a detailed description of what the skill does
 - echo "test"
 `;
 
-    const skill = parseSkillMarkdown(content);
+    const skill = parseSkillMarkdown('test-skill', content);
 
     expect(skill).toBeDefined();
     expect(skill.isValid).toBe(true);
@@ -311,7 +316,7 @@ Nineteen characters
 - echo "test"
 `;
 
-    const skill19 = parseSkillMarkdown(incomplete19);
+    const skill19 = parseSkillMarkdown('test-skill', incomplete19);
     expect(skill19.isValid).toBe(true);
     expect(skill19.isIncomplete).toBe(true);
 
@@ -330,7 +335,7 @@ Twenty characters!!!
 - echo "test"
 `;
 
-    const skill20 = parseSkillMarkdown(complete20);
+    const skill20 = parseSkillMarkdown('test-skill', complete20);
     expect(skill20.isValid).toBe(true);
     expect(skill20.isIncomplete).toBeUndefined();
 
@@ -349,7 +354,7 @@ Twenty-one characters
 - echo "test"
 `;
 
-    const skill21 = parseSkillMarkdown(complete21);
+    const skill21 = parseSkillMarkdown('test-skill', complete21);
     expect(skill21.isValid).toBe(true);
     expect(skill21.isIncomplete).toBeUndefined();
   });

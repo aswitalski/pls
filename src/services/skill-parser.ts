@@ -10,21 +10,18 @@ export interface SkillValidationError {
 /**
  * Validate a skill without parsing it fully
  * Returns validation error if skill is invalid, null if valid
+ * Note: Name section is optional - key from filename is used as fallback
  */
-export function validateSkill(content: string): SkillValidationError | null {
+export function validateSkillStructure(
+  content: string,
+  key: string
+): SkillValidationError | null {
   const sections = extractSections(content);
 
-  // Name is required for error reporting
-  const skillName = sections.name || 'Unknown skill';
+  // Use key for error reporting if name not present
+  const skillName = sections.name || key;
 
-  // Check required sections
-  if (!sections.name) {
-    return {
-      skillName,
-      error: 'The skill file is missing a Name section',
-    };
-  }
-
+  // Check required sections (Name is now optional)
   if (!sections.description) {
     return {
       skillName,
@@ -58,18 +55,36 @@ export function validateSkill(content: string): SkillValidationError | null {
 }
 
 /**
+ * Convert kebab-case key to Title Case display name
+ * Examples: "deploy-app" -> "Deploy App", "build-project-2" -> "Build Project 2"
+ */
+function keyToDisplayName(key: string): string {
+  return key
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
  * Parse a skill markdown file into structured definition
  */
-export function parseSkillMarkdown(content: string): SkillDefinition {
+export function parseSkillMarkdown(
+  key: string,
+  content: string
+): SkillDefinition {
   const sections = extractSections(content);
 
-  // Validate the skill
-  const validationError = validateSkill(content);
+  // Determine display name: prefer Name section, otherwise derive from key
+  const displayName = sections.name || keyToDisplayName(key);
+
+  // Validate the skill (Name is no longer required since we have key)
+  const validationError = validateSkillStructure(content, key);
 
   // For invalid skills, return minimal definition with error
   if (validationError) {
     return {
-      name: sections.name || 'Unknown skill',
+      key,
+      name: displayName,
       description: sections.description || '',
       steps: sections.steps || [],
       execution: sections.execution || [],
@@ -82,7 +97,8 @@ export function parseSkillMarkdown(content: string): SkillDefinition {
   // Valid skill - all required fields are present (validation passed)
   const description = sections.description as string;
   const skill: SkillDefinition = {
-    name: sections.name as string,
+    key,
+    name: displayName,
     description,
     steps: sections.steps as string[],
     execution: sections.execution as string[],
