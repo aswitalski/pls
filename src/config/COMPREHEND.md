@@ -61,12 +61,8 @@ For each command phrase, extract the ACTION VERB and determine its status using
 ComprehensionStatus enum:
 
 **Status: "core" (ComprehensionStatus.Core)**
-- Matches ONLY user-invokable built-in tools: Answer, Execute, Config,
-  Introspect
-- NEVER match workflow tools (Comprehend, Plan, Validate, Report)
+- Matches ONLY user-invokable core tools: Answer, Execute, Config, Introspect
 - Always provide name field with core tool name
-- Execute is ONLY for explicit "run command" or "execute" requests, NOT for
-  action verbs that could be shell commands
 
 **Status: "custom" (ComprehensionStatus.Custom)**
 - Matches user-defined skills from Available Skills section
@@ -110,15 +106,13 @@ trusts your categorization completely.
 **Information requests** (questions):
 - Keywords: "explain", "answer", "describe", "tell me", "what is", "how does",
   "find", "search"
-- Set `isInformationRequest: true`
 - Create item with status: "core", name: "Answer"
 - Example: "explain typescript" → {verb: "explain", context: "typescript",
   name: "Answer", status: "core"}
 
 **Introspection requests** (capabilities):
-- Keywords: "list skills", "show skills", "what can you do", "list
-  capabilities", "introspect"
-- Set `isIntrospectionRequest: true`
+- Keywords: "list capabilities", "list skills", "show skills", "introspect",
+  "what can you do", "show off", "flex"
 - Create item with status: "core", name: "Introspect"
 - HIGHER PRIORITY than "answer" when asking about capabilities/skills
 - Example: "list your skills" → {verb: "list", context: "your skills", name:
@@ -136,127 +130,51 @@ trusts your categorization completely.
 
 ## Examples
 
-**Example 1: Core tool match**
-User: "explain typescript"
-```json
-{
-  "message": "Understanding your request.",
-  "items": [{
-    "verb": "explain",
-    "context": "typescript",
-    "name": "Answer",
-    "status": "core"
-  }],
-  "isInformationRequest": true,
-  "isIntrospectionRequest": false
-}
-```
+**Core tool - Information request:**
+- User: "explain typescript"
+- Returns: verb "explain", context "typescript", name "Answer", status "core"
 
-**Example 2: Custom skill match**
-User: "deploy to production"
-Available skills: "Deploy Application" (Deploy the application to various
-environments)
-```json
-{
-  "message": "Checking what I can do.",
-  "items": [{
-    "verb": "deploy",
-    "context": "to production",
-    "name": "Deploy Application",
-    "status": "custom"
-  }],
-  "isInformationRequest": false,
-  "isIntrospectionRequest": false
-}
-```
+**Core tool - Introspection request:**
+- User: "list your skills"
+- Returns: verb "list", context "your skills", name "Introspect", status "core"
 
-**Example 3: Mixed known/unknown**
-User: "backup and verify files"
-Available skills: "Backup Data" (Backup important data)
-```json
-{
-  "message": "Validating the request.",
-  "items": [
-    {
-      "verb": "backup",
-      "context": "files",
-      "name": "Backup Data",
-      "status": "custom"
-    },
-    {
-      "verb": "verify",
-      "context": "files",
-      "status": "unknown"
-    }
-  ],
-  "isInformationRequest": false,
-  "isIntrospectionRequest": false
-}
-```
+**Custom skill match:**
+- User: "deploy to production" with skill "Deploy Application"
+- Returns: verb "deploy", context "to production", name "Deploy Application",
+  status "custom"
 
-**Example 4: Expanded compound query**
-User: "deploy alpha, beta and test them"
-Available skills: "Deploy Service", "Test Service"
-```json
-{
-  "message": "Checking what I can do.",
-  "items": [
-    {"verb": "deploy", "context": "alpha", "name": "Deploy Service", "status":
-"custom"},
-    {"verb": "deploy", "context": "beta", "name": "Deploy Service", "status":
-"custom"},
-    {"verb": "test", "context": "alpha", "name": "Test Service", "status":
-"custom"},
-    {"verb": "test", "context": "beta", "name": "Test Service", "status":
-"custom"}
-  ],
-  "isInformationRequest": false,
-  "isIntrospectionRequest": false
-}
-```
-**Why**: Expand compound query to create all combinations. "deploy" appears
-twice (once per subject), "test" appears twice. This allows PLAN to create four
-tasks in correct order.
+**Mixed known and unknown:**
+- User: "backup and verify files" with skill "Backup Data"
+- Returns two items:
+  - verb "backup", context "files", name "Backup Data", status "custom"
+  - verb "verify", context "files", status "unknown" (no name field)
 
-**Example 5: Verb-only matching**
-User: "debug server"
-Available skills: "Process Server", "Deploy Server"
-```json
-{
-  "message": "Analyzing available options.",
-  "items": [{
-    "verb": "debug",
-    "context": "server",
-    "status": "unknown"
-  }],
-  "isInformationRequest": false,
-  "isIntrospectionRequest": false
-}
-```
-**Why**: The verb is "debug" (NOT "server"). Since no "debug" skill exists,
-it's unknown. The noun "server" is context passed to PLAN. **WRONG**: Matching
-"server" to Server skills - that's PLAN's job, not COMPREHEND's.
+**Expanded compound query:**
+- User: "deploy alpha, beta and test them" with skills "Deploy Service", "Test
+  Service"
+- Returns four items: deploy alpha, deploy beta, test alpha, test beta
+- Each has verb, context, skill name, and status "custom"
+- Why: Expand all combinations so PLAN can create four sequential tasks
+
+**Verb-only matching:**
+- User: "debug server" with skills "Process Server", "Deploy Server"
+- Returns: verb "debug", context "server", status "unknown"
+- Why: The verb is "debug" (not "server"). Match verbs only, pass context to
+  PLAN
 
 ## Critical Rules
 
-1. **Categorize all requests** - YOU determine request type. PLAN trusts your
-   categorization.
-2. **Match ONLY verbs** - Extract action verb, separate from context. "backup
-   data" → verb: "backup", context: "data"
+1. **Categorize all requests** - Determine request type for all commands. 
+2. **Match ONLY verbs** - Extract action verb, separate from context.
+   "backup data" → verb: "backup", context: "data"
 3. **Preserve sequence** - Return commands in EXACT order from user's request.
 4. **Allow duplicates** - If verb appears multiple times, include it multiple
    times.
 5. **Expand compounds** - "deploy alpha, beta and test them" → 4 commands
-6. **Single list output** - All commands in one `items` array with status
-7. **ONLY Name and Description** - You do NOT have access to Steps, Execution,
-   Config, or Aliases. PLAN sees full details.
-8. **Conservative matching** - Only match with clear semantic relationship
+6. **Conservative matching** - Only match with clear semantic relationship
    between ACTION VERB and skill
-9. **No false synonyms** - "process" ≠ "plan", "validate" ≠ "verify" unless
+7. **No false synonyms** - "process" ≠ "plan", "validate" ≠ "verify" unless
    explicitly related
-10. **Unknown for vague** - Mark vague commands as unknown, don't guess
-11. **Core vs custom** - Correctly distinguish built-in tools from user skills
-12. **Brief message** - Maximum 48 characters, single sentence
-
-Your output will be used by the planning component to determine which
-capabilities to invoke and which verbs to ignore.
+8. **Unknown for vague** - Mark vague commands as unknown, don't guess
+9. **Core vs custom** - Correctly distinguish built-in tools from user skills
+10. **Brief message** - Maximum 48 characters, single sentence

@@ -48,8 +48,6 @@ describe('COMPREHEND and PLAN flow', () => {
                   status: ComprehensionStatus.Unknown,
                 },
               ],
-              isInformationRequest: false,
-              isIntrospectionRequest: false,
             },
           },
         ],
@@ -138,8 +136,6 @@ describe('COMPREHEND and PLAN flow', () => {
                   status: ComprehensionStatus.Unknown,
                 },
               ],
-              isInformationRequest: false,
-              isIntrospectionRequest: false,
             },
           },
         ],
@@ -214,8 +210,6 @@ describe('COMPREHEND and PLAN flow', () => {
                   status: ComprehensionStatus.Unknown,
                 },
               ],
-              isInformationRequest: false,
-              isIntrospectionRequest: false,
             },
           },
         ],
@@ -287,8 +281,6 @@ describe('COMPREHEND and PLAN flow', () => {
                   status: ComprehensionStatus.Core,
                 },
               ],
-              isInformationRequest: true,
-              isIntrospectionRequest: false,
             },
           },
         ],
@@ -305,7 +297,6 @@ describe('COMPREHEND and PLAN flow', () => {
         name: 'Answer',
         status: ComprehensionStatus.Core,
       });
-      expect(result.comprehension?.isInformationRequest).toBe(true);
     });
   });
 });

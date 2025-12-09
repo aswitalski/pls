@@ -38,8 +38,6 @@ function createMockService(planResponse: {
             comprehension: {
               message: 'Understanding your request.',
               items: [{ verb: 'test', status: ComprehensionStatus.Unknown }],
-              isInformationRequest: false,
-              isIntrospectionRequest: false,
             },
           });
         }

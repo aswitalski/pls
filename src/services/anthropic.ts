@@ -40,8 +40,6 @@ export interface ComprehensionItem {
 export interface ComprehensionResult {
   message: string;
   items: ComprehensionItem[];
-  isInformationRequest?: boolean;
-  isIntrospectionRequest?: boolean;
 }
 
 export interface CommandResult {
@@ -355,8 +353,6 @@ export class AnthropicService implements LLMService {
       answer?: string;
       commands?: ExecuteCommand[];
       items?: ComprehensionItem[];
-      isInformationRequest?: boolean;
-      isIntrospectionRequest?: boolean;
     };
 
     // Handle comprehend tool response
@@ -394,8 +390,6 @@ export class AnthropicService implements LLMService {
         comprehension: {
           message: input.message,
           items: input.items,
-          isInformationRequest: input.isInformationRequest,
-          isIntrospectionRequest: input.isIntrospectionRequest,
         },
       };
     }

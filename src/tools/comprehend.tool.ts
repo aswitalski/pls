@@ -44,15 +44,6 @@ export const comprehendTool: Tool = {
           required: ['verb', 'status'],
         },
       },
-      isInformationRequest: {
-        type: 'boolean',
-        description:
-          'True if this is a question/information request (not an action)',
-      },
-      isIntrospectionRequest: {
-        type: 'boolean',
-        description: 'True if this is asking about capabilities/skills',
-      },
     },
     required: ['message', 'items'],
   },
