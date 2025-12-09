@@ -6,6 +6,7 @@ import {
   AnthropicConfig,
   getAvailableConfigStructure,
   getConfiguredKeys,
+  loadDebugSetting,
 } from './configuration.js';
 import { formatSkillsForPrompt, loadSkillsWithValidation } from './skills.js';
 import { toolRegistry } from './tool-registry.js';
@@ -126,6 +127,13 @@ export class AnthropicService implements LLMService {
       systemPrompt += configSection;
     }
 
+    // Debug logging for plan prompt
+    if (toolName === 'plan' && loadDebugSetting()) {
+      console.log('\n=== PLAN SYSTEM PROMPT ===');
+      console.log(systemPrompt);
+      console.log('=== END PLAN PROMPT ===\n');
+    }
+
     // Build tools array - add web search for answer tool
     const tools: (Anthropic.Tool | Anthropic.WebSearchTool20250305)[] = [tool];
     if (toolName === 'answer') {
@@ -136,6 +144,7 @@ export class AnthropicService implements LLMService {
     }
 
     // Call API with tool
+    const apiStartTime = Date.now();
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: 1024,
@@ -265,6 +274,17 @@ export class AnthropicService implements LLMService {
         );
       }
     });
+
+    // Debug logging for plan result
+    if (toolName === 'plan' && loadDebugSetting()) {
+      const apiElapsed = Date.now() - apiStartTime;
+      console.log('\n=== PLAN RESULT ===');
+      console.log(`Message: ${input.message}`);
+      console.log(`Tasks: ${input.tasks.length}`);
+      console.log(JSON.stringify(input.tasks, null, 2));
+      console.log(`\nTime: ${apiElapsed}ms`);
+      console.log('===================\n');
+    }
 
     return {
       message: input.message,

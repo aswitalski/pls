@@ -10,6 +10,7 @@ import { loadUserConfig, hasConfigPath } from './config-loader.js';
 import { loadSkills } from './skills.js';
 import { expandSkillReferences } from './skill-expander.js';
 import { getConfigType, parseSkillMarkdown } from './skill-parser.js';
+import { loadDebugSetting } from './configuration.js';
 
 /**
  * Validation error for a skill
@@ -34,6 +35,13 @@ export interface ExecuteValidationResult {
  * Returns validation result with missing config and validation errors
  */
 export function validateExecuteTasks(tasks: Task[]): ExecuteValidationResult {
+  const debug = loadDebugSetting();
+
+  if (debug) {
+    console.log('\n=== CONFIG VALIDATION ===');
+    console.log(`→ Validating ${tasks.length} task(s)`);
+  }
+
   const userConfig = loadUserConfig();
   const missing: ConfigRequirement[] = [];
   const seenPaths = new Set<string>();
@@ -47,6 +55,10 @@ export function validateExecuteTasks(tasks: Task[]): ExecuteValidationResult {
   );
   const skillLookup = (name: string) =>
     parsedSkills.find((s) => s.name === name) || null;
+
+  if (debug) {
+    console.log(`→ Loaded ${parsedSkills.length} skill(s) for validation`);
+  }
 
   // Check for invalid skills being used in tasks
   for (const task of tasks) {
@@ -77,14 +89,25 @@ export function validateExecuteTasks(tasks: Task[]): ExecuteValidationResult {
   }
 
   for (const task of tasks) {
+    if (debug) {
+      console.log(`\n→ Checking task: ${task.action}`);
+    }
+
     // Check if task originates from a skill
     const skillName =
       typeof task.params?.skill === 'string' ? task.params.skill : null;
 
     if (skillName) {
+      if (debug) {
+        console.log(`  → Task uses skill: "${skillName}"`);
+      }
+
       // Task comes from a skill - check skill's Execution section
       const skill = skillLookup(skillName);
       if (!skill) {
+        if (debug) {
+          console.log(`  → Skill "${skillName}" not found`);
+        }
         continue;
       }
 
@@ -106,32 +129,85 @@ export function validateExecuteTasks(tasks: Task[]): ExecuteValidationResult {
         }
       }
 
+      if (debug) {
+        if (variant) {
+          console.log(`  → Extracted variant from params: "${variant}"`);
+        } else {
+          console.log(`  → No variant found in params`);
+        }
+      }
+
       // Expand skill references to get actual commands
       const expanded = expandSkillReferences(skill.execution, skillLookup);
+
+      if (debug) {
+        console.log(
+          `  → Skill execution expanded to ${expanded.length} command(s):`
+        );
+        expanded.forEach((line, idx) => {
+          console.log(`     ${idx + 1}. ${line}`);
+        });
+      }
 
       // Extract placeholders from actual commands
       for (const line of expanded) {
         const placeholders = extractPlaceholders(line);
 
+        if (debug && placeholders.length > 0) {
+          console.log(
+            `  → Found ${placeholders.length} placeholder(s) in: ${line}`
+          );
+        }
+
         for (const placeholder of placeholders) {
+          if (debug) {
+            console.log(
+              `     • Placeholder: ${placeholder.original} (path: ${placeholder.path.join('.')})`
+            );
+          }
+
           let resolvedPath: string;
 
           if (placeholder.hasVariant) {
+            if (debug) {
+              console.log(
+                `       → Has variant at index ${placeholder.variantIndex}`
+              );
+            }
+
             // Variant placeholder - resolve with variant from params
             if (!variant) {
+              if (debug) {
+                console.log(
+                  `       → No variant provided - skipping this placeholder`
+                );
+              }
               // No variant provided - skip this placeholder
               continue;
             }
 
             const resolvedPathArray = resolveVariant(placeholder.path, variant);
             resolvedPath = pathToString(resolvedPathArray);
+
+            if (debug) {
+              console.log(
+                `       → Resolved variant placeholder: ${placeholder.original} → {${resolvedPath}}`
+              );
+            }
           } else {
             // Strict placeholder - use as-is
             resolvedPath = pathToString(placeholder.path);
+
+            if (debug) {
+              console.log(`       → Strict placeholder: {${resolvedPath}}`);
+            }
           }
 
           // Skip if already processed
           if (seenPaths.has(resolvedPath)) {
+            if (debug) {
+              console.log(`       → Already checked - skipping`);
+            }
             continue;
           }
 
@@ -139,6 +215,12 @@ export function validateExecuteTasks(tasks: Task[]): ExecuteValidationResult {
 
           // Check if config exists
           if (!hasConfigPath(userConfig, resolvedPath)) {
+            if (debug) {
+              console.log(
+                `       → ❌ Config path "${resolvedPath}" NOT FOUND in ~/.plsrc`
+              );
+            }
+
             // Get type from skill config
             const type = skill.config
               ? getConfigType(skill.config, resolvedPath)
@@ -148,23 +230,51 @@ export function validateExecuteTasks(tasks: Task[]): ExecuteValidationResult {
               path: resolvedPath,
               type: type || 'string',
             });
+          } else {
+            if (debug) {
+              console.log(
+                `       → ✓ Config path "${resolvedPath}" exists in ~/.plsrc`
+              );
+            }
           }
         }
       }
     } else {
+      if (debug) {
+        console.log(`  → Task does not use a skill`);
+      }
+
       // Task doesn't come from a skill - check task action for placeholders
       const placeholders = extractPlaceholders(task.action);
+
+      if (debug && placeholders.length > 0) {
+        console.log(
+          `  → Found ${placeholders.length} placeholder(s) in task action`
+        );
+      }
 
       for (const placeholder of placeholders) {
         // Skip variant placeholders - they should have been resolved during planning
         if (placeholder.hasVariant) {
+          if (debug) {
+            console.log(
+              `     • Skipping variant placeholder ${placeholder.original} (should be resolved in PLAN)`
+            );
+          }
           continue;
         }
 
         const path = placeholder.path.join('.');
 
+        if (debug) {
+          console.log(`     • Checking placeholder: {${path}}`);
+        }
+
         // Skip if already processed
         if (seenPaths.has(path)) {
+          if (debug) {
+            console.log(`       → Already checked - skipping`);
+          }
           continue;
         }
 
@@ -172,13 +282,34 @@ export function validateExecuteTasks(tasks: Task[]): ExecuteValidationResult {
 
         // Check if config exists
         if (!hasConfigPath(userConfig, path)) {
+          if (debug) {
+            console.log(`       → ❌ Config path "${path}" NOT FOUND`);
+          }
+
           missing.push({
             path,
             type: 'string', // Default to string for now
           });
+        } else {
+          if (debug) {
+            console.log(`       → ✓ Config path "${path}" exists`);
+          }
         }
       }
     }
+  }
+
+  if (debug) {
+    console.log(`\n→ Validation complete`);
+    if (missing.length > 0) {
+      console.log(`→ ❌ Missing ${missing.length} config path(s):`);
+      missing.forEach((req) => {
+        console.log(`   - ${req.path} (type: ${req.type})`);
+      });
+    } else {
+      console.log(`→ ✓ All required config paths exist`);
+    }
+    console.log('========================\n');
   }
 
   return {
