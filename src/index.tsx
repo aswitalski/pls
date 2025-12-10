@@ -5,6 +5,8 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { render } from 'ink';
 
+import { DebugLevel } from './services/configuration.js';
+
 import { Main } from './ui/Main.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,7 +27,7 @@ const app = {
   version: packageJson.version,
   description: packageJson.description,
   isDev,
-  isDebug: false,
+  debug: DebugLevel.None,
 };
 
 // Get command from command-line arguments

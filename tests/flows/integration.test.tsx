@@ -6,6 +6,7 @@ import { App, TaskType } from '../../src/types/types.js';
 
 import { Main } from '../../src/ui/Main.js';
 import { Keys } from '../test-utils.js';
+import { DebugLevel } from '../../src/services/configuration.js';
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({
@@ -25,7 +26,7 @@ describe('End-to-End Flow Integration Tests', () => {
     version: '1.0.0',
     description: 'Test application',
     isDev: false,
-    isDebug: false,
+    debug: DebugLevel.None,
   };
 
   let exitSpy: ReturnType<typeof vi.spyOn>;
@@ -664,6 +665,208 @@ describe('End-to-End Flow Integration Tests', () => {
       expect(output).toMatch(/(cancelled|aborted)/i);
       expect(output).toContain('answer');
 
+      vi.restoreAllMocks();
+    });
+  });
+
+  describe('Debug Mode Integration', () => {
+    it('shows debug components at Verbose level', async () => {
+      const anthropicModule = await import('../../src/services/anthropic.js');
+      const debugModule = await import('../../src/services/logger.js');
+
+      // Set debug level to Verbose
+      debugModule.setDebugLevel(DebugLevel.Verbose);
+
+      const mockService = {
+        processWithTool: vi.fn().mockResolvedValue({
+          message: 'Creating file.',
+          tasks: [{ action: 'Create test.txt', type: TaskType.Execute }],
+          debug: [
+            {
+              id: 'debug-1',
+              name: 'debug' as const,
+              props: {
+                title: 'SYSTEM PROMPT',
+                content: 'Tool: plan\nCommand: create file',
+                color: '#ffffff',
+              },
+            },
+            {
+              id: 'debug-2',
+              name: 'debug' as const,
+              props: {
+                title: 'LLM RESPONSE',
+                content: 'Response: {"message": "Creating file."}',
+                color: '#ffffff',
+              },
+            },
+          ],
+        }),
+      };
+
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+        mockService as any
+      );
+
+      const { lastFrame } = render(
+        <Main
+          app={{ ...mockApp, debug: DebugLevel.Verbose }}
+          command="create file"
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+      const output = lastFrame();
+      expect(output).toContain('SYSTEM PROMPT');
+      expect(output).toContain('LLM RESPONSE');
+      expect(output).toContain('Tool: plan');
+
+      // Reset debug level
+      debugModule.setDebugLevel(DebugLevel.None);
+      vi.restoreAllMocks();
+    });
+
+    it('hides debug components at None level', async () => {
+      const anthropicModule = await import('../../src/services/anthropic.js');
+      const debugModule = await import('../../src/services/logger.js');
+
+      // Set debug level to None
+      debugModule.setDebugLevel(DebugLevel.None);
+
+      const mockService = {
+        processWithTool: vi.fn().mockResolvedValue({
+          message: 'Listing files.',
+          tasks: [{ action: 'List files', type: TaskType.Execute }],
+          debug: [], // No debug components at None level
+        }),
+      };
+
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+        mockService as any
+      );
+
+      const { lastFrame } = render(<Main app={mockApp} command="list files" />);
+
+      await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+      const output = lastFrame();
+      expect(output).not.toContain('SYSTEM PROMPT');
+      expect(output).not.toContain('LLM RESPONSE');
+      expect(output).toContain('List files');
+
+      vi.restoreAllMocks();
+    });
+
+    it('preserves debug components in timeline', async () => {
+      const anthropicModule = await import('../../src/services/anthropic.js');
+      const debugModule = await import('../../src/services/logger.js');
+
+      // Set debug level to Verbose
+      debugModule.setDebugLevel(DebugLevel.Verbose);
+
+      const mockService = {
+        processWithTool: vi.fn().mockResolvedValue({
+          message: 'Task planned.',
+          tasks: [{ action: 'Run command', type: TaskType.Execute }],
+          debug: [
+            {
+              id: 'debug-prompt',
+              name: 'debug' as const,
+              props: {
+                title: 'SYSTEM PROMPT',
+                content: 'Tool: plan\nCommand: run cmd',
+                color: '#ffffff',
+              },
+            },
+          ],
+        }),
+      };
+
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+        mockService as any
+      );
+
+      const { lastFrame } = render(
+        <Main
+          app={{ ...mockApp, debug: DebugLevel.Verbose }}
+          command="run cmd"
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+      const output = lastFrame();
+      // Debug component should be in timeline
+      expect(output).toContain('SYSTEM PROMPT');
+      expect(output).toContain('Tool: plan');
+
+      // Reset debug level
+      debugModule.setDebugLevel(DebugLevel.None);
+      vi.restoreAllMocks();
+    });
+
+    it('handles multiple debug components in sequence', async () => {
+      const anthropicModule = await import('../../src/services/anthropic.js');
+      const debugModule = await import('../../src/services/logger.js');
+
+      debugModule.setDebugLevel(DebugLevel.Verbose);
+
+      const mockService = {
+        processWithTool: vi.fn().mockResolvedValue({
+          message: 'Processing.',
+          tasks: [{ action: 'Process data', type: TaskType.Execute }],
+          debug: [
+            {
+              id: 'debug-1',
+              name: 'debug' as const,
+              props: {
+                title: 'SYSTEM PROMPT',
+                content: 'First prompt',
+                color: '#ffffff',
+              },
+            },
+            {
+              id: 'debug-2',
+              name: 'debug' as const,
+              props: {
+                title: 'LLM RESPONSE',
+                content: 'First response',
+                color: '#ffffff',
+              },
+            },
+            {
+              id: 'debug-3',
+              name: 'debug' as const,
+              props: {
+                title: 'SYSTEM PROMPT',
+                content: 'Second prompt',
+                color: '#ffffff',
+              },
+            },
+          ],
+        }),
+      };
+
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+        mockService as any
+      );
+
+      const { lastFrame } = render(
+        <Main
+          app={{ ...mockApp, debug: DebugLevel.Verbose }}
+          command="process data"
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+      const output = lastFrame();
+      expect(output).toContain('First prompt');
+      expect(output).toContain('First response');
+      expect(output).toContain('Second prompt');
+
+      debugModule.setDebugLevel(DebugLevel.None);
       vi.restoreAllMocks();
     });
   });

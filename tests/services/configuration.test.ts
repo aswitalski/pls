@@ -7,6 +7,7 @@ import {
   AnthropicModel,
   ConfigError,
   configExists,
+  DebugLevel,
   getAvailableConfigStructure,
   getConfigPath,
   getConfigSchema,
@@ -258,29 +259,29 @@ config:
 
   describe('Debug setting', () => {
     it('returns false when no config exists', () => {
-      expect(loadDebugSetting()).toBe(false);
+      expect(loadDebugSetting()).toBe(DebugLevel.None);
     });
 
     it('returns false when config exists but no debug setting', () => {
       saveAnthropicConfig({ key: 'sk-ant-test' });
-      expect(loadDebugSetting()).toBe(false);
+      expect(loadDebugSetting()).toBe(DebugLevel.None);
     });
 
     it('saves debug setting to settings section', () => {
       saveAnthropicConfig({ key: 'sk-ant-test' });
-      saveDebugSetting(true);
+      saveDebugSetting(DebugLevel.Info);
 
       const config = loadConfig();
-      expect(config.settings?.debug).toBe(true);
+      expect(config.settings?.debug).toBe(DebugLevel.Info);
     });
 
     it('loads saved debug setting', () => {
       saveAnthropicConfig({ key: 'sk-ant-test' });
-      saveDebugSetting(true);
-      expect(loadDebugSetting()).toBe(true);
+      saveDebugSetting(DebugLevel.Info);
+      expect(loadDebugSetting()).toBe(DebugLevel.Info);
 
-      saveDebugSetting(false);
-      expect(loadDebugSetting()).toBe(false);
+      saveDebugSetting(DebugLevel.None);
+      expect(loadDebugSetting()).toBe(DebugLevel.None);
     });
 
     it('preserves anthropic config when saving debug setting', () => {
@@ -288,37 +289,37 @@ config:
         key: 'sk-ant-test',
         model: AnthropicModel.Sonnet,
       });
-      saveDebugSetting(true);
+      saveDebugSetting(DebugLevel.Info);
 
       const config = loadConfig();
       expect(config.anthropic.key).toBe('sk-ant-test');
       expect(config.anthropic.model).toBe(AnthropicModel.Sonnet);
-      expect(config.settings?.debug).toBe(true);
+      expect(config.settings?.debug).toBe(DebugLevel.Info);
     });
 
     it('preserves debug setting when saving anthropic config', () => {
-      saveDebugSetting(true);
+      saveDebugSetting(DebugLevel.Info);
       saveAnthropicConfig({
         key: 'sk-ant-test',
         model: AnthropicModel.Haiku,
       });
 
       const config = loadConfig();
-      expect(config.settings?.debug).toBe(true);
+      expect(config.settings?.debug).toBe(DebugLevel.Info);
       expect(config.anthropic.key).toBe('sk-ant-test');
       expect(config.anthropic.model).toBe(AnthropicModel.Haiku);
     });
 
     it('updates debug setting', () => {
       saveAnthropicConfig({ key: 'sk-ant-test' });
-      saveDebugSetting(true);
-      expect(loadDebugSetting()).toBe(true);
+      saveDebugSetting(DebugLevel.Info);
+      expect(loadDebugSetting()).toBe(DebugLevel.Info);
 
-      saveDebugSetting(false);
-      expect(loadDebugSetting()).toBe(false);
+      saveDebugSetting(DebugLevel.None);
+      expect(loadDebugSetting()).toBe(DebugLevel.None);
 
-      saveDebugSetting(true);
-      expect(loadDebugSetting()).toBe(true);
+      saveDebugSetting(DebugLevel.Info);
+      expect(loadDebugSetting()).toBe(DebugLevel.Info);
     });
   });
 
@@ -335,7 +336,7 @@ config:
         expect(schema['anthropic.model'].type).toBe('enum');
 
         expect(schema['settings.debug']).toBeDefined();
-        expect(schema['settings.debug'].type).toBe('boolean');
+        expect(schema['settings.debug'].type).toBe('enum');
       });
 
       it('includes descriptions for all keys', () => {
@@ -408,7 +409,7 @@ config:
         });
 
         // Save optional debug setting
-        saveDebugSetting(true);
+        saveDebugSetting(DebugLevel.Info);
 
         const structure = getAvailableConfigStructure();
 
@@ -452,7 +453,7 @@ config:
           key: 'sk-ant-api03-' + 'A'.repeat(95),
           model: AnthropicModel.Haiku,
         });
-        saveDebugSetting(true);
+        saveDebugSetting(DebugLevel.Info);
 
         const keys = getConfiguredKeys();
 
@@ -490,7 +491,7 @@ config:
           model: AnthropicModel.Haiku,
         });
         // Optional config
-        saveDebugSetting(true);
+        saveDebugSetting(DebugLevel.Info);
         // Discovered config
         saveConfig('custom', { setting: 'value' });
 
@@ -524,13 +525,22 @@ config:
         expect(steps[0].key).toBe('model');
       });
 
-      it('creates selection step for boolean type', () => {
+      it('creates selection step for debug enum type', () => {
         const steps = createConfigStepsFromSchema(['settings.debug']);
 
         expect(steps).toHaveLength(1);
         expect(steps[0].type).toBe(StepType.Selection);
         expect(steps[0].key).toBe('debug');
         expect(steps[0].description).toBe('Debug mode');
+        // Verify it has the three debug level options
+        if ('options' in steps[0]) {
+          expect(steps[0].options).toHaveLength(3);
+          expect(steps[0].options.map((o) => o.value)).toEqual([
+            'none',
+            'info',
+            'verbose',
+          ]);
+        }
       });
 
       it('extracts short key from dotted path', () => {

@@ -3,7 +3,10 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { saveDebugSetting } from '../../src/services/configuration.js';
+import {
+  DebugLevel,
+  saveDebugSetting,
+} from '../../src/services/configuration.js';
 import {
   FeedbackMessages,
   formatErrorMessage,
@@ -42,7 +45,7 @@ describe('formatErrorMessage', () => {
 
   describe('in normal mode', () => {
     beforeEach(() => {
-      saveDebugSetting(false);
+      saveDebugSetting(DebugLevel.None);
     });
 
     it('extracts message from Anthropic API error format', () => {
@@ -93,7 +96,7 @@ describe('formatErrorMessage', () => {
 
   describe('in debug mode', () => {
     beforeEach(() => {
-      saveDebugSetting(true);
+      saveDebugSetting(DebugLevel.Info);
     });
 
     it('returns full error message including JSON', () => {

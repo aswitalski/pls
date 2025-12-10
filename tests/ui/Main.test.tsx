@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/types/types.js';
 
 import { Main } from '../../src/ui/Main.js';
+import { DebugLevel } from '../../src/services/configuration.js';
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({
@@ -25,7 +26,7 @@ describe('Main component queue-based architecture', () => {
     version: '1.0.0',
     description: 'Test application',
     isDev: false,
-    isDebug: false,
+    debug: DebugLevel.None,
   };
 
   describe('Queue initialization', () => {
@@ -68,7 +69,7 @@ describe('Main component queue-based architecture', () => {
         version: '2.0.0',
         description: 'Custom description',
         isDev: true,
-        isDebug: false,
+        debug: DebugLevel.None,
       };
 
       const result = <Main app={customApp} command={null} />;
@@ -92,14 +93,14 @@ describe('Main component queue-based architecture', () => {
     });
 
     it('handles debug mode flag', () => {
-      const debugApp = { ...mockApp, isDebug: true };
-      const normalApp = { ...mockApp, isDebug: false };
+      const debugApp = { ...mockApp, debug: DebugLevel.Info };
+      const normalApp = { ...mockApp, debug: DebugLevel.None };
 
       const debugResult = <Main app={debugApp} command={null} />;
       const normalResult = <Main app={normalApp} command={null} />;
 
-      expect(debugResult.props.app.isDebug).toBe(true);
-      expect(normalResult.props.app.isDebug).toBe(false);
+      expect(debugResult.props.app.debug).toBe(DebugLevel.Info);
+      expect(normalResult.props.app.debug).toBe(DebugLevel.None);
     });
   });
 

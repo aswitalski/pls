@@ -1,4 +1,4 @@
-import { loadDebugSetting } from './configuration.js';
+import { DebugLevel, loadDebugSetting } from './configuration.js';
 
 export { formatDuration } from './utils.js';
 
@@ -108,7 +108,7 @@ export function formatErrorMessage(error: unknown): string {
   const rawMessage =
     error instanceof Error ? error.message : 'Unknown error occurred';
 
-  if (loadDebugSetting()) {
+  if (loadDebugSetting() !== DebugLevel.None) {
     return rawMessage;
   }
 

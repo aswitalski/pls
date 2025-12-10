@@ -7,6 +7,7 @@ import { Handlers, PlanState } from '../../src/types/components.js';
 import { Task, TaskType } from '../../src/types/types.js';
 
 import { Plan } from '../../src/ui/Plan.js';
+import { DebugLevel } from '../../src/services/configuration.js';
 import {
   Keys,
   createMockHandlers as createGlobalMockHandlers,
@@ -380,7 +381,7 @@ describe('Plan component', () => {
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
-          debug={true}
+          debug={DebugLevel.Info}
           status={ComponentStatus.Active}
         />
       );
@@ -1185,7 +1186,7 @@ describe('Plan component', () => {
             { action: 'Build project', type: TaskType.Execute },
             { action: 'Run tests', type: TaskType.Execute },
           ]}
-          debug={true}
+          debug={DebugLevel.Info}
           status={ComponentStatus.Active}
         />
       );
@@ -1208,7 +1209,7 @@ describe('Plan component', () => {
             { action: 'Build project', type: TaskType.Execute },
             { action: 'Run tests', type: TaskType.Execute },
           ]}
-          debug={false}
+          debug={DebugLevel.None}
           status={ComponentStatus.Active}
         />
       );
@@ -1255,7 +1256,7 @@ describe('Plan component', () => {
             { action: 'Get information', type: TaskType.Answer },
             { action: 'Configure settings', type: TaskType.Config },
           ]}
-          debug={true}
+          debug={DebugLevel.Info}
           status={ComponentStatus.Active}
         />
       );
@@ -1284,7 +1285,7 @@ describe('Plan component', () => {
               params: { options: ['Production', 'Staging'] },
             },
           ]}
-          debug={true}
+          debug={DebugLevel.Info}
           status={ComponentStatus.Active}
         />
       );
@@ -1305,7 +1306,7 @@ describe('Plan component', () => {
           message="Review changes"
           state={state}
           tasks={[{ action: 'Build project', type: TaskType.Execute }]}
-          debug={true}
+          debug={DebugLevel.Info}
           status={ComponentStatus.Active}
         />
       );
@@ -1327,7 +1328,7 @@ describe('Plan component', () => {
           message="Review changes"
           state={state}
           tasks={[{ action: 'Build project', type: TaskType.Execute }]}
-          debug={false}
+          debug={DebugLevel.None}
           status={ComponentStatus.Active}
         />
       );

@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { Confirm } from '../../src/ui/Confirm.js';
 import { Keys } from '../test-utils.js';
+import { DebugLevel } from '../../src/services/configuration.js';
 
 describe('Confirm component', () => {
   describe('Rendering', () => {

@@ -5,6 +5,7 @@ import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Command } from '../../src/ui/Command.js';
+import { DebugLevel } from '../../src/services/configuration.js';
 import {
   Keys,
   createMockAnthropicService,

@@ -13,6 +13,7 @@ import {
 } from '../../src/types/types.js';
 
 import { Workflow } from '../../src/ui/Workflow.js';
+import { DebugLevel } from '../../src/services/configuration.js';
 
 // Mock exitApp to prevent process.exit
 vi.mock('../../src/services/process.js', () => ({
@@ -39,7 +40,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame, rerender } = render(
-        <Workflow initialQueue={[messageComponent]} debug={true} />
+        <Workflow initialQueue={[messageComponent]} debug={DebugLevel.Info} />
       );
 
       // Wait for effects to process
@@ -70,7 +71,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[confirmComponent]} debug={true} />
+        <Workflow initialQueue={[confirmComponent]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -95,7 +96,10 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[component1, component2]} debug={true} />
+        <Workflow
+          initialQueue={[component1, component2]}
+          debug={DebugLevel.Info}
+        />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -126,7 +130,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[message, confirm]} debug={true} />
+        <Workflow initialQueue={[message, confirm]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -148,7 +152,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[message]} debug={true} />
+        <Workflow initialQueue={[message]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -178,7 +182,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[message, feedback]} debug={true} />
+        <Workflow initialQueue={[message, feedback]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -206,7 +210,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[message, feedback]} debug={true} />
+        <Workflow initialQueue={[message, feedback]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -240,7 +244,7 @@ describe('Workflow component lifecycle', () => {
       ];
 
       const { lastFrame } = render(
-        <Workflow initialQueue={components} debug={true} />
+        <Workflow initialQueue={components} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -280,7 +284,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[message, confirm]} debug={true} />
+        <Workflow initialQueue={[message, confirm]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -322,7 +326,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[plan]} debug={true} />
+        <Workflow initialQueue={[plan]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -357,7 +361,7 @@ describe('Workflow component lifecycle', () => {
 
       // Start with debug=false
       const { lastFrame, rerender } = render(
-        <Workflow initialQueue={[plan]} debug={false} />
+        <Workflow initialQueue={[plan]} debug={DebugLevel.None} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -369,7 +373,7 @@ describe('Workflow component lifecycle', () => {
       expect(output).not.toContain('› define'); // But not debug type indicator
 
       // Toggle debug to true
-      rerender(<Workflow initialQueue={[plan]} debug={true} />);
+      rerender(<Workflow initialQueue={[plan]} debug={DebugLevel.Info} />);
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
@@ -411,7 +415,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[message, plan]} debug={true} />
+        <Workflow initialQueue={[message, plan]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -434,7 +438,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[message]} debug={true} />
+        <Workflow initialQueue={[message]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -457,7 +461,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[confirm]} debug={true} />
+        <Workflow initialQueue={[confirm]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
@@ -469,7 +473,9 @@ describe('Workflow component lifecycle', () => {
 
   describe('Edge cases', () => {
     it('handles empty queue', async () => {
-      const { lastFrame } = render(<Workflow initialQueue={[]} debug={true} />);
+      const { lastFrame } = render(
+        <Workflow initialQueue={[]} debug={DebugLevel.Info} />
+      );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
@@ -486,7 +492,7 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[message]} debug={true} />
+        <Workflow initialQueue={[message]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));

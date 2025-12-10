@@ -331,6 +331,22 @@ export function createMessage(text: string): ComponentDefinition {
   };
 }
 
+export function createDebugDefinition(
+  title: string,
+  content: string,
+  color: string
+): ComponentDefinition {
+  return {
+    id: randomUUID(),
+    name: ComponentName.Debug,
+    props: {
+      title,
+      content,
+      color,
+    },
+  };
+}
+
 export function createRefinement(
   text: string,
   onAborted: (operation: string) => void

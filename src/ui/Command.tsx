@@ -81,6 +81,11 @@ export function Command({
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
+          // Add debug components to timeline if present
+          if (result.debug && result.debug.length > 0) {
+            handlers?.addToTimeline(...result.debug);
+          }
+
           // Save result to state for timeline display
           handlers?.updateState({
             message: result.message,

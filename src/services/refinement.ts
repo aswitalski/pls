@@ -42,6 +42,11 @@ export async function handleRefinement(
     // Complete the Refinement component
     handlers.completeActive();
 
+    // Add debug components to timeline if present
+    if (refinedResult.debug && refinedResult.debug.length > 0) {
+      handlers.addToTimeline(...refinedResult.debug);
+    }
+
     // Route refined tasks to appropriate components
     routeTasksWithConfirm(
       refinedResult.tasks,

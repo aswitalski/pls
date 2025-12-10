@@ -163,7 +163,6 @@ export function formatSkillsForPrompt(skills: string[]): string {
   }
 
   const header = `
-
 ## Available Skills
 
 The following skills define domain-specific workflows. When the user's
@@ -180,7 +179,7 @@ brackets for additional information. Use commas instead. For example:
 
 `;
 
-  const skillsContent = skills.join('\n\n');
+  const skillsContent = skills.map((s) => s.trim()).join('\n\n');
 
   return header + skillsContent;
 }

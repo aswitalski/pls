@@ -12,6 +12,7 @@ import { App, ComponentName } from '../../src/types/types.js';
 import { ConfigStep, StepType } from '../../src/ui/Config.js';
 
 import { createMockAnthropicService } from '../test-utils.js';
+import { DebugLevel } from '../../src/services/configuration.js';
 
 describe('Component Types', () => {
   const mockApp: App = {
@@ -19,7 +20,7 @@ describe('Component Types', () => {
     version: '1.0.0',
     description: 'Test application',
     isDev: true,
-    isDebug: false,
+    debug: DebugLevel.None,
   };
 
   const mockService = createMockAnthropicService();

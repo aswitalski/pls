@@ -3,6 +3,7 @@ import { Box, Text } from 'ink';
 
 import { ComponentStatus, PlanProps } from '../types/components.js';
 import { Task, TaskType } from '../types/types.js';
+import { DebugLevel } from '../services/configuration.js';
 import { getTaskColors } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 
@@ -77,7 +78,7 @@ export function Plan({
   tasks,
   state,
   status,
-  debug = false,
+  debug = DebugLevel.None,
   handlers,
   onSelectionConfirmed,
 }: PlanProps) {
@@ -268,7 +269,7 @@ export function Plan({
           <Label
             description={message}
             taskType={TaskType.Plan}
-            showType={debug}
+            showType={debug !== DebugLevel.None}
             isCurrent={isActive}
           />
         </Box>
@@ -280,7 +281,7 @@ export function Plan({
             currentDefineTaskIndex >= 0 ? highlightedIndex : null
           }
           highlightedParentIndex={currentDefineTaskIndex}
-          showType={debug}
+          showType={debug !== DebugLevel.None}
         />
       </Box>
     </Box>

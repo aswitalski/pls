@@ -4,6 +4,7 @@ import { Text } from 'ink';
 import React from 'react';
 import type { Key } from 'ink';
 
+import { DebugLevel } from '../../src/services/configuration.js';
 import {
   registerGlobalShortcut,
   isGlobalShortcut,

@@ -9,7 +9,11 @@ import { Colors, getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
-import { saveConfig, unflattenConfig } from '../services/configuration.js';
+import {
+  DebugLevel,
+  saveConfig,
+  unflattenConfig,
+} from '../services/configuration.js';
 
 import { Config, ConfigStep, StepType } from './Config.js';
 import { Spinner } from './Spinner.js';
@@ -23,7 +27,7 @@ export function Validate({
   status,
   service,
   children,
-  debug,
+  debug = DebugLevel.None,
   onError,
   onComplete,
   onAborted,

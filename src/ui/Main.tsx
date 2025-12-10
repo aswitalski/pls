@@ -15,6 +15,7 @@ import {
   createWelcomeDefinition,
 } from '../services/components.js';
 import {
+  DebugLevel,
   getConfigurationRequiredMessage,
   getMissingConfigKeys,
   loadConfig,
@@ -23,6 +24,7 @@ import {
   saveDebugSetting,
 } from '../services/configuration.js';
 import { registerGlobalShortcut } from '../services/keyboard.js';
+import { initializeLogger, setDebugLevel } from '../services/logger.js';
 
 import { Workflow } from './Workflow.js';
 
@@ -37,13 +39,31 @@ export const Main = ({ app, command }: MainProps) => {
   const [initialQueue, setInitialQueue] = useState<
     ComponentDefinition[] | null
   >(null);
-  const [isDebug, setIsDebug] = useState<boolean>(() => loadDebugSetting());
+  const [debug, setDebugLevelState] = useState<DebugLevel>(() =>
+    loadDebugSetting()
+  );
+
+  // Initialize logger on mount
+  useEffect(() => {
+    initializeLogger();
+  }, []);
+
+  // Update logger when debug level changes
+  useEffect(() => {
+    setDebugLevel(debug);
+  }, [debug]);
 
   // Register global keyboard shortcuts
   useEffect(() => {
     registerGlobalShortcut('shift+tab', () => {
-      setIsDebug((prev) => {
-        const newValue = !prev;
+      setDebugLevelState((prev) => {
+        // Cycle through: None -> Info -> Verbose -> None
+        const newValue =
+          prev === DebugLevel.None
+            ? DebugLevel.Info
+            : prev === DebugLevel.Info
+              ? DebugLevel.Verbose
+              : DebugLevel.None;
         saveDebugSetting(newValue);
         return newValue;
       });
@@ -133,5 +153,5 @@ export const Main = ({ app, command }: MainProps) => {
     return null;
   }
 
-  return <Workflow initialQueue={initialQueue} debug={isDebug} />;
+  return <Workflow initialQueue={initialQueue} debug={debug} />;
 };

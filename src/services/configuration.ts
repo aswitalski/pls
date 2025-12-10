@@ -11,13 +11,21 @@ export enum AnthropicModel {
 
 export const SUPPORTED_MODELS = Object.values(AnthropicModel);
 
+export enum DebugLevel {
+  None = 'none',
+  Info = 'info',
+  Verbose = 'verbose',
+}
+
+export const SUPPORTED_DEBUG_LEVELS = Object.values(DebugLevel);
+
 export type AnthropicConfig = {
   key: string;
   model?: string;
 };
 
 export type SettingsConfig = {
-  debug?: boolean;
+  debug?: DebugLevel;
 };
 
 export interface Config {
@@ -125,8 +133,18 @@ function validateConfig(parsed: unknown): Config {
     const settings = config.settings as Record<string, unknown>;
     validatedConfig.settings = {};
 
-    if ('debug' in settings && typeof settings.debug === 'boolean') {
-      validatedConfig.settings.debug = settings.debug;
+    if ('debug' in settings) {
+      // Handle migration from boolean to enum
+      if (typeof settings.debug === 'boolean') {
+        validatedConfig.settings.debug = settings.debug
+          ? DebugLevel.Info
+          : DebugLevel.None;
+      } else if (
+        typeof settings.debug === 'string' &&
+        SUPPORTED_DEBUG_LEVELS.includes(settings.debug as DebugLevel)
+      ) {
+        validatedConfig.settings.debug = settings.debug as DebugLevel;
+      }
     }
   }
 
@@ -222,16 +240,16 @@ export function saveAnthropicConfig(config: AnthropicConfig): Config {
   return loadConfig();
 }
 
-export function saveDebugSetting(debug: boolean): void {
+export function saveDebugSetting(debug: DebugLevel): void {
   saveConfig('settings', { debug });
 }
 
-export function loadDebugSetting(): boolean {
+export function loadDebugSetting(): DebugLevel {
   try {
     const config = loadConfig();
-    return config.settings?.debug ?? false;
+    return config.settings?.debug ?? DebugLevel.None;
   } catch {
-    return false;
+    return DebugLevel.None;
   }
 }
 
@@ -286,8 +304,10 @@ const coreConfigSchema: Record<string, ConfigDefinition> = {
     description: 'Anthropic model',
   },
   'settings.debug': {
-    type: ConfigDefinitionType.Boolean,
+    type: ConfigDefinitionType.Enum,
     required: false,
+    values: SUPPORTED_DEBUG_LEVELS,
+    default: DebugLevel.None,
     description: 'Debug mode',
   },
 };

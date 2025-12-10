@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+import type { ComponentDefinition } from '../types/components.js';
 import type { Task } from '../types/types.js';
 
 import {
@@ -7,6 +8,7 @@ import {
   getAvailableConfigStructure,
   getConfiguredKeys,
 } from './configuration.js';
+import { logPrompt, logResponse } from './logger.js';
 import { formatSkillsForPrompt, loadSkillsWithValidation } from './skills.js';
 import { toolRegistry } from './registry.js';
 
@@ -23,6 +25,7 @@ export interface CommandResult {
   tasks: Task[];
   answer?: string;
   commands?: ExecuteCommand[];
+  debug?: ComponentDefinition[];
 }
 
 export interface LLMService {
@@ -118,7 +121,7 @@ export class AnthropicService implements LLMService {
       const configStructure = getAvailableConfigStructure();
       const configuredKeys = getConfiguredKeys();
       const configSection =
-        '\n\n## Available Configuration\n\n' +
+        '\n## Available Configuration\n\n' +
         'Config structure (key: description):\n' +
         JSON.stringify(configStructure, null, 2) +
         '\n\nConfigured keys (keys that exist in config file):\n' +
@@ -135,7 +138,17 @@ export class AnthropicService implements LLMService {
       });
     }
 
+    // Collect debug components
+    const debug: ComponentDefinition[] = [];
+
+    // Log prompt at Verbose level
+    const promptDebug = logPrompt(toolName, command, systemPrompt);
+    if (promptDebug) {
+      debug.push(promptDebug);
+    }
+
     // Call API with tool
+    const startTime = Date.now();
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: 1024,
@@ -149,6 +162,13 @@ export class AnthropicService implements LLMService {
         },
       ],
     });
+    const duration = Date.now() - startTime;
+
+    // Log response at Verbose level
+    const responseDebug = logResponse(toolName, response, duration);
+    if (responseDebug) {
+      debug.push(responseDebug);
+    }
 
     // Check for truncation
     if (response.stop_reason === 'max_tokens') {
@@ -172,6 +192,7 @@ export class AnthropicService implements LLMService {
           message: '',
           tasks: [],
           answer: cleanAnswerText(textContent.text),
+          debug,
         };
       }
     }
@@ -222,6 +243,7 @@ export class AnthropicService implements LLMService {
         message: input.message,
         tasks: [],
         commands: input.commands,
+        debug,
       };
     }
 
@@ -243,6 +265,7 @@ export class AnthropicService implements LLMService {
         message: '',
         tasks: [],
         answer: cleanAnswerText(input.answer),
+        debug,
       };
     }
 
@@ -269,6 +292,7 @@ export class AnthropicService implements LLMService {
     return {
       message: input.message,
       tasks: input.tasks,
+      debug,
     };
   }
 }

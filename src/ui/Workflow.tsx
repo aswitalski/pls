@@ -15,6 +15,7 @@ import {
   isStateless,
   markAsDone,
 } from '../services/components.js';
+import { DebugLevel } from '../services/configuration.js';
 import { exitApp } from '../services/process.js';
 import { getCancellationMessage } from '../services/messages.js';
 
@@ -22,7 +23,7 @@ import { Component } from './Component.js';
 
 interface WorkflowProps {
   initialQueue: ComponentDefinition[];
-  debug: boolean;
+  debug: DebugLevel;
 }
 
 export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
@@ -245,7 +246,7 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
       <Static key="timeline" items={timeline}>
         {(item) => (
           <Box key={item.id} marginTop={1}>
-            <Component def={item} debug={false} />
+            <Component def={item} debug={DebugLevel.None} />
           </Box>
         )}
       </Static>

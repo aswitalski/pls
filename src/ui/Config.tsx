@@ -5,6 +5,7 @@ import TextInput from 'ink-text-input';
 import { ComponentStatus, Handlers } from '../types/components.js';
 
 import { Colors } from '../services/colors.js';
+import { DebugLevel } from '../services/configuration.js';
 import { useInput } from '../services/keyboard.js';
 
 export enum StepType {
@@ -45,7 +46,7 @@ export interface ConfigProps<
   steps: ConfigStep[];
   state?: ConfigState;
   status?: ComponentStatus;
-  debug?: boolean;
+  debug?: DebugLevel;
   handlers?: Handlers;
   onFinished?: (config: T) => void;
   onAborted?: (operation: string) => void;
@@ -159,7 +160,7 @@ export function Config<
   steps,
   state,
   status,
-  debug,
+  debug = DebugLevel.None,
   handlers,
   onFinished,
   onAborted,
@@ -413,7 +414,7 @@ export function Config<
             <Box>
               <Text>{stepConfig.description}</Text>
               <Text>: </Text>
-              {debug && stepConfig.path && (
+              {debug !== DebugLevel.None && stepConfig.path && (
                 <Text color={Colors.Type.Define}>
                   {'{'}
                   {stepConfig.path}

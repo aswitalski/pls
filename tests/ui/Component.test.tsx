@@ -13,6 +13,7 @@ import { Component } from '../../src/ui/Component.js';
 import { StepType } from '../../src/ui/Config.js';
 
 import { createMockAnthropicService } from '../test-utils.js';
+import { DebugLevel } from '../../src/services/configuration.js';
 
 describe('Component', () => {
   const mockApp: App = {
@@ -20,7 +21,7 @@ describe('Component', () => {
     version: '1.0.0',
     description: 'Test application',
     isDev: false,
-    isDebug: false,
+    debug: DebugLevel.None,
   };
 
   const mockService = createMockAnthropicService();
@@ -34,7 +35,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} debug={DebugLevel.None} />;
 
     expect(result).toBeDefined();
     expect(result.type).toBeDefined();
@@ -68,7 +69,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} debug={DebugLevel.None} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.state).toBeDefined();
@@ -108,7 +109,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} debug={DebugLevel.None} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.steps).toHaveLength(3);
@@ -126,7 +127,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} debug={DebugLevel.None} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.command).toBe('test command');
@@ -147,7 +148,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} debug={DebugLevel.None} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.error).toBe('Something went wrong');
@@ -163,7 +164,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} debug={DebugLevel.None} />;
 
     // Welcome component doesn't have state, but we verify it doesn't break
     expect(result).toBeDefined();
@@ -188,7 +189,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} debug={DebugLevel.None} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.tasks).toHaveLength(2);
@@ -205,7 +206,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} debug={DebugLevel.None} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.type).toBe(FeedbackType.Info);
@@ -221,7 +222,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} debug={DebugLevel.None} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.text).toBe('Processing your request');
@@ -239,7 +240,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={false} />;
+    const result = <Component def={def} debug={DebugLevel.None} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.text).toBe('Loading data');
@@ -317,7 +318,7 @@ describe('Component', () => {
     ];
 
     const results = definitions.map((def) => (
-      <Component def={def} debug={false} />
+      <Component def={def} debug={DebugLevel.None} />
     ));
 
     expect(results).toHaveLength(7);

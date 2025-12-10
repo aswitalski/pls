@@ -4,6 +4,7 @@ import { App, ComponentName, FeedbackType, Task } from './types.js';
 import { ConfigRequirement } from './skills.js';
 
 import { LLMService } from '../services/anthropic.js';
+import { DebugLevel } from '../services/configuration.js';
 
 import { ConfigStep } from '../ui/Config.js';
 
@@ -68,6 +69,14 @@ export interface MessageDefinitionProps {
 }
 
 export type MessageProps = MessageDefinitionProps & BaseRuntimeProps;
+
+export interface DebugDefinitionProps {
+  title: string;
+  content: string;
+  color: string;
+}
+
+export type DebugProps = DebugDefinitionProps & BaseRuntimeProps;
 
 export type ConfirmProps = ComponentProps<ConfirmDefinitionProps, ConfirmState>;
 
@@ -181,7 +190,7 @@ export interface RefinementDefinitionProps {
 export interface PlanDefinitionProps {
   message: string;
   tasks: Task[];
-  debug?: boolean;
+  debug?: DebugLevel;
   onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>;
 }
 
@@ -196,7 +205,7 @@ export interface IntrospectDefinitionProps {
   tasks: Task[];
   service: LLMService;
   children?: ReactNode;
-  debug?: boolean;
+  debug?: DebugLevel;
 }
 
 export interface AnswerDefinitionProps {
@@ -214,7 +223,7 @@ export interface ValidateDefinitionProps {
   userRequest: string;
   service: LLMService;
   children?: ReactNode;
-  debug?: boolean;
+  debug?: DebugLevel;
   onError: (error: string) => void;
   onComplete: (configWithDescriptions: ConfigRequirement[]) => void;
   onAborted: (operation: string) => void;
@@ -260,6 +269,10 @@ type FeedbackDefinition = StatelessDefinition<
 type MessageDefinition = StatelessDefinition<
   ComponentName.Message,
   MessageDefinitionProps
+>;
+type DebugDefinition = StatelessDefinition<
+  ComponentName.Debug,
+  DebugDefinitionProps
 >;
 type RefinementDefinition = StatefulDefinition<
   ComponentName.Refinement,
@@ -311,6 +324,7 @@ export type StatelessComponentDefinition =
   | WelcomeDefinition
   | FeedbackDefinition
   | MessageDefinition
+  | DebugDefinition
   | ReportDefinition;
 
 // Union of all stateful component definitions

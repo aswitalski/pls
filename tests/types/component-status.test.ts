@@ -7,6 +7,7 @@ import {
   ComponentDefinition,
 } from '../../src/types/components.js';
 import { ComponentName } from '../../src/types/types.js';
+import { DebugLevel } from '../../src/services/configuration.js';
 
 describe('ComponentDefinition with status', () => {
   it('allows stateless component with status', () => {
@@ -19,7 +20,7 @@ describe('ComponentDefinition with status', () => {
           version: '1.0.0',
           description: 'Test app',
           isDev: false,
-          isDebug: false,
+          debug: DebugLevel.None,
         },
       },
       status: ComponentStatus.Done,

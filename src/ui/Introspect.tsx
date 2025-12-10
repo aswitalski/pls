@@ -10,6 +10,7 @@ import { Task } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
 import { createReportDefinition } from '../services/components.js';
+import { DebugLevel } from '../services/configuration.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
@@ -73,7 +74,7 @@ export function Introspect({
   status,
   service,
   children,
-  debug = false,
+  debug = DebugLevel.None,
   handlers,
 }: IntrospectProps) {
   const isActive = status === ComponentStatus.Active;
@@ -123,7 +124,7 @@ export function Introspect({
           let capabilities = result.tasks.map(parseCapabilityFromTask);
 
           // Filter out internal capabilities when not in debug mode
-          if (!debug) {
+          if (debug === DebugLevel.None) {
             capabilities = capabilities.filter(
               (cap) =>
                 cap.name.toUpperCase() !== 'PLAN' &&

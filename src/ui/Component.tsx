@@ -3,10 +3,13 @@ import { memo, ReactElement } from 'react';
 import { ComponentDefinition } from '../types/components.js';
 import { ComponentName } from '../types/types.js';
 
+import { DebugLevel } from '../services/configuration.js';
+
 import { Answer } from './Answer.js';
 import { Command } from './Command.js';
 import { Confirm } from './Confirm.js';
 import { Config } from './Config.js';
+import { Debug } from './Debug.js';
 import { Execute } from './Execute.js';
 import { Feedback } from './Feedback.js';
 import { Introspect } from './Introspect.js';
@@ -19,7 +22,7 @@ import { Welcome } from './Welcome.js';
 
 interface ComponentProps {
   def: ComponentDefinition;
-  debug: boolean;
+  debug: DebugLevel;
 }
 
 export const Component = memo(function Component({
@@ -58,6 +61,9 @@ export const Component = memo(function Component({
 
     case ComponentName.Message:
       return <Message {...def.props} status={def.status} />;
+
+    case ComponentName.Debug:
+      return <Debug {...def.props} status={def.status} />;
 
     case ComponentName.Refinement:
       return (

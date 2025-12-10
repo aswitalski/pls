@@ -1,15 +1,18 @@
+import { DebugLevel } from '../services/configuration.js';
+
 export interface App {
   name: string;
   version: string;
   description: string;
   isDev: boolean;
-  isDebug: boolean;
+  debug: DebugLevel;
 }
 
 export enum ComponentName {
   Welcome = 'welcome',
   Config = 'config',
   Message = 'message',
+  Debug = 'debug',
   Command = 'command',
   Plan = 'plan',
   Refinement = 'refinement',
