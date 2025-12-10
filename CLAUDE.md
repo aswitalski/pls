@@ -562,9 +562,27 @@ sufficient.
   (es5, multi-line only), always arrow parens, 2 space indent
 - ESLint rules: Strict TypeScript rules, console allowed, unused vars warn
   (allow if prefixed with an underscore)
-- Markdown formatting: Max 80 chars per line, wrap naturally at word
-  boundaries. For list items that exceed 80 chars, continue on next line with
-  two-space indent to align with the list item content.
+- **Markdown formatting (CRITICAL - MUST BE ENFORCED CONSISTENTLY)**:
+  - **MAXIMUM 80 CHARACTERS PER LINE** - This is a hard limit, not a guideline
+  - **NO EXCEPTIONS** - Every line in every markdown file must respect this
+    limit
+  - Wrap naturally at word boundaries, never mid-word
+  - For list items exceeding 80 chars, continue on next line with two-space
+    indent to align with the list item content
+  - For multi-line explanations in lists, each continuation line must also
+    stay within 80 chars
+  - Task object examples MUST use multi-line format for readability:
+    ```
+    Task: {
+      action: "Create a file",
+      type: "execute",
+      params: { filename: "test.txt" }
+    }
+    ```
+  - Shell command examples should be shortened to fit 80 chars rather than
+    using line continuation characters
+  - **ALWAYS verify line length before writing** - this has been inconsistent
+    and must be fixed
 
 ### Tech stack
 
