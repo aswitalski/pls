@@ -592,12 +592,359 @@ describe('Config component interaction flows', () => {
       // Press Enter to submit default value
       stdin.write(Keys.Enter);
 
-      // Verify updateState was called BEFORE onFinished
-      expect(callOrder).toEqual(['updateState', 'onFinished']);
+      // Verify updateState was called BEFORE onFinished, then completeActive
+      expect(callOrder).toEqual([
+        'updateState',
+        'onFinished',
+        'completeActive',
+      ]);
       expect(mockHandlers.updateState).toHaveBeenCalledWith({
         values: { 'settings.debug': 'true' },
         completedStep: 1,
       });
+    });
+
+    it('completion success: calls handlers.completeActive with success feedback', () => {
+      const callOrder: string[] = [];
+      const mockHandlers = {
+        addToQueue: vi.fn(),
+        updateState: vi.fn(() => callOrder.push('updateState')),
+        completeActive: vi.fn((feedback) => {
+          callOrder.push('completeActive');
+          // Store the feedback for verification
+          (mockHandlers as any).lastFeedback = feedback;
+        }),
+        completeActiveAndPending: vi.fn(),
+        addToTimeline: vi.fn(),
+        onAborted: vi.fn(),
+        onError: vi.fn(),
+      };
+      const onFinished = vi.fn(() => callOrder.push('onFinished'));
+
+      const steps: ConfigStep[] = [
+        {
+          description: 'Model',
+          key: 'model',
+          path: 'anthropic.model',
+          type: StepType.Selection,
+          options: [
+            { label: 'Haiku 4.5', value: AnthropicModel.Haiku },
+            { label: 'Sonnet 4.5', value: AnthropicModel.Sonnet },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config
+          steps={steps}
+          handlers={mockHandlers}
+          onFinished={onFinished}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Press Enter to submit default value
+      stdin.write(Keys.Enter);
+
+      // Verify flow: updateState → onFinished → completeActive
+      expect(callOrder).toEqual([
+        'updateState',
+        'onFinished',
+        'completeActive',
+      ]);
+
+      // Verify completeActive was called with success feedback
+      const feedback = (mockHandlers as any).lastFeedback;
+      expect(feedback).toBeDefined();
+      expect(feedback.name).toBe('feedback');
+      expect(feedback.props.type).toBe('succeeded');
+      expect(feedback.props.message).toContain('saved successfully');
+    });
+
+    it('completion error: calls handlers.completeActive with error feedback when onFinished throws', () => {
+      const callOrder: string[] = [];
+      const mockHandlers = {
+        addToQueue: vi.fn(),
+        updateState: vi.fn(() => callOrder.push('updateState')),
+        completeActive: vi.fn((feedback) => {
+          callOrder.push('completeActive');
+          (mockHandlers as any).lastFeedback = feedback;
+        }),
+        completeActiveAndPending: vi.fn(),
+        addToTimeline: vi.fn(),
+        onAborted: vi.fn(),
+        onError: vi.fn(),
+      };
+      const onFinished = vi.fn(() => {
+        callOrder.push('onFinished');
+        throw new Error('Failed to save configuration');
+      });
+
+      const steps: ConfigStep[] = [
+        {
+          description: 'Model',
+          key: 'model',
+          path: 'anthropic.model',
+          type: StepType.Selection,
+          options: [
+            { label: 'Haiku 4.5', value: AnthropicModel.Haiku },
+            { label: 'Sonnet 4.5', value: AnthropicModel.Sonnet },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config
+          steps={steps}
+          handlers={mockHandlers}
+          onFinished={onFinished}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Press Enter to submit default value
+      stdin.write(Keys.Enter);
+
+      // Verify flow: updateState → onFinished → completeActive (even though error)
+      expect(callOrder).toEqual([
+        'updateState',
+        'onFinished',
+        'completeActive',
+      ]);
+
+      // Verify completeActive was called with error feedback
+      const feedback = (mockHandlers as any).lastFeedback;
+      expect(feedback).toBeDefined();
+      expect(feedback.name).toBe('feedback');
+      expect(feedback.props.type).toBe('failed');
+      expect(feedback.props.message).toBe('Failed to save configuration');
+    });
+
+    it('completion error: handles non-Error exceptions from onFinished', () => {
+      const mockHandlers = {
+        addToQueue: vi.fn(),
+        updateState: vi.fn(),
+        completeActive: vi.fn((feedback) => {
+          (mockHandlers as any).lastFeedback = feedback;
+        }),
+        completeActiveAndPending: vi.fn(),
+        addToTimeline: vi.fn(),
+        onAborted: vi.fn(),
+        onError: vi.fn(),
+      };
+      const onFinished = vi.fn(() => {
+        throw 'String error'; // Non-Error exception
+      });
+
+      const steps: ConfigStep[] = [
+        {
+          description: 'Model',
+          key: 'model',
+          type: StepType.Selection,
+          options: [
+            { label: 'Haiku 4.5', value: AnthropicModel.Haiku },
+            { label: 'Sonnet 4.5', value: AnthropicModel.Sonnet },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config
+          steps={steps}
+          handlers={mockHandlers}
+          onFinished={onFinished}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      stdin.write(Keys.Enter);
+
+      // Should use fallback error message
+      const feedback = (mockHandlers as any).lastFeedback;
+      expect(feedback).toBeDefined();
+      expect(feedback.props.type).toBe('failed');
+      expect(feedback.props.message).toBe('Configuration failed');
+    });
+
+    it('abort: calls onAborted, updateState, and handlers.completeActive with abort feedback', () => {
+      const callOrder: string[] = [];
+      const mockHandlers = {
+        addToQueue: vi.fn(),
+        updateState: vi.fn(() => callOrder.push('updateState')),
+        completeActive: vi.fn((feedback) => {
+          callOrder.push('completeActive');
+          (mockHandlers as any).lastFeedback = feedback;
+        }),
+        completeActiveAndPending: vi.fn(),
+        addToTimeline: vi.fn(),
+        onAborted: vi.fn(),
+        onError: vi.fn(),
+      };
+      const onAborted = vi.fn(() => callOrder.push('onAborted'));
+
+      const steps: ConfigStep[] = [
+        {
+          description: 'API Key',
+          key: 'apiKey',
+          path: 'anthropic.key',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+        {
+          description: 'Model',
+          key: 'model',
+          path: 'anthropic.model',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config
+          steps={steps}
+          handlers={mockHandlers}
+          onAborted={onAborted}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Enter first value
+      stdin.write('sk-ant-test-key');
+      stdin.write(Keys.Enter);
+
+      // Abort on second step
+      stdin.write(Keys.Escape);
+
+      // Verify abort flow: updateState → onAborted → completeActive
+      expect(callOrder).toContain('updateState');
+      expect(callOrder).toContain('onAborted');
+      expect(callOrder).toContain('completeActive');
+
+      // Verify onAborted was called with correct operation name
+      expect(onAborted).toHaveBeenCalledWith('configuration');
+
+      // Verify completeActive was called with abort feedback
+      const feedback = (mockHandlers as any).lastFeedback;
+      expect(feedback).toBeDefined();
+      expect(feedback.name).toBe('feedback');
+      expect(feedback.props.type).toBe('aborted');
+      expect(feedback.props.message).toContain('cancelled');
+    });
+
+    it('abort: saves partial state before aborting', () => {
+      const mockHandlers = {
+        addToQueue: vi.fn(),
+        updateState: vi.fn(),
+        completeActive: vi.fn(),
+        completeActiveAndPending: vi.fn(),
+        addToTimeline: vi.fn(),
+        onAborted: vi.fn(),
+        onError: vi.fn(),
+      };
+
+      const steps: ConfigStep[] = [
+        {
+          description: 'First',
+          key: 'first',
+          path: 'section.first',
+          type: StepType.Selection,
+          options: [
+            { label: 'Option A', value: 'optionA' },
+            { label: 'Option B', value: 'optionB' },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+        {
+          description: 'Second',
+          key: 'second',
+          path: 'section.second',
+          type: StepType.Selection,
+          options: [
+            { label: 'Option C', value: 'optionC' },
+            { label: 'Option D', value: 'optionD' },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config
+          steps={steps}
+          handlers={mockHandlers}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Complete first step
+      stdin.write(Keys.Enter);
+
+      // Abort on second step
+      stdin.write(Keys.Escape);
+
+      // Verify updateState was called at least twice:
+      // 1. After completing first step
+      // 2. Before aborting
+      expect(mockHandlers.updateState).toHaveBeenCalled();
+
+      // Check that the final updateState call saved the first value
+      const lastCall =
+        mockHandlers.updateState.mock.calls[
+          mockHandlers.updateState.mock.calls.length - 1
+        ][0];
+      expect(lastCall.values).toEqual(
+        expect.objectContaining({ 'section.first': 'optionA' })
+      );
+    });
+
+    it('abort: works without onAborted callback', () => {
+      const mockHandlers = {
+        addToQueue: vi.fn(),
+        updateState: vi.fn(),
+        completeActive: vi.fn((feedback) => {
+          (mockHandlers as any).lastFeedback = feedback;
+        }),
+        completeActiveAndPending: vi.fn(),
+        addToTimeline: vi.fn(),
+        onAborted: vi.fn(),
+        onError: vi.fn(),
+      };
+
+      const steps: ConfigStep[] = [
+        {
+          description: 'Test',
+          key: 'test',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config
+          steps={steps}
+          handlers={mockHandlers}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Abort immediately
+      stdin.write(Keys.Escape);
+
+      // Should still complete with abort feedback
+      const feedback = (mockHandlers as any).lastFeedback;
+      expect(feedback).toBeDefined();
+      expect(feedback.props.type).toBe('aborted');
+      expect(mockHandlers.completeActive).toHaveBeenCalled();
     });
 
     it('preserves selection state when rendered in timeline', () => {

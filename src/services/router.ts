@@ -149,7 +149,7 @@ function executeTasksAfterConfirm(
       createConfigDefinitionWithKeys(
         configKeys,
         (config: Record<string, string>) => {
-          // Save config using the same pattern as Validate component
+          // Save config - Config component will handle completion and feedback
           try {
             // Convert flat dotted keys to nested structure grouped by section
             const configBySection = unflattenConfig(config);
@@ -160,20 +160,12 @@ function executeTasksAfterConfirm(
             )) {
               saveConfig(section, sectionConfig);
             }
-
-            handlers.completeActive();
-            handlers.addToQueue(
-              createFeedback(
-                FeedbackType.Succeeded,
-                'Configuration updated successfully.'
-              )
-            );
           } catch (error) {
             const errorMessage =
               error instanceof Error
                 ? error.message
                 : 'Failed to save configuration';
-            handlers.onError(errorMessage);
+            throw new Error(errorMessage);
           }
         },
         (operation: string) => {

@@ -1,11 +1,15 @@
 import React from 'react';
 import { render } from 'ink-testing-library';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../../src/types/types.js';
 
 import { Main } from '../../src/ui/Main.js';
-import { DebugLevel } from '../../src/services/configuration.js';
+import {
+  DebugLevel,
+  getMissingConfigKeys,
+  loadConfig,
+} from '../../src/services/configuration.js';
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({
@@ -14,6 +18,18 @@ vi.mock('../../src/services/timing.js', () => ({
     .fn()
     .mockImplementation(async (operation) => await operation()),
 }));
+
+// Mock configuration module
+vi.mock('../../src/services/configuration.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../src/services/configuration.js')
+  >('../../src/services/configuration.js');
+  return {
+    ...actual,
+    getMissingConfigKeys: vi.fn(),
+    loadConfig: vi.fn(),
+  };
+});
 
 // Wait times for React render cycles
 // With timing helpers mocked, we only need to wait for React render cycles
@@ -28,6 +44,17 @@ describe('Main component queue-based architecture', () => {
     isDev: false,
     debug: DebugLevel.None,
   };
+
+  beforeEach(() => {
+    // Clear all mocks before each test
+    vi.clearAllMocks();
+
+    // Mock configuration system to bypass config checks by default
+    vi.mocked(getMissingConfigKeys).mockReturnValue([]);
+    vi.mocked(loadConfig).mockReturnValue({
+      anthropic: { key: 'test-key', model: 'test-model' },
+    });
+  });
 
   describe('Queue initialization', () => {
     it('initializes with command', () => {

@@ -6,7 +6,12 @@ import { App, TaskType } from '../../src/types/types.js';
 
 import { Main } from '../../src/ui/Main.js';
 import { Keys } from '../test-utils.js';
-import { DebugLevel } from '../../src/services/configuration.js';
+import {
+  DebugLevel,
+  getMissingConfigKeys,
+  loadConfig,
+} from '../../src/services/configuration.js';
+import { exitApp } from '../../src/services/process.js';
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({
@@ -15,6 +20,28 @@ vi.mock('../../src/services/timing.js', () => ({
     .fn()
     .mockImplementation(async (operation) => await operation()),
 }));
+
+// Mock configuration and process modules
+vi.mock('../../src/services/configuration.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../src/services/configuration.js')
+  >('../../src/services/configuration.js');
+  return {
+    ...actual,
+    getMissingConfigKeys: vi.fn(),
+    loadConfig: vi.fn(),
+  };
+});
+
+vi.mock('../../src/services/process.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../src/services/process.js')
+  >('../../src/services/process.js');
+  return {
+    ...actual,
+    exitApp: vi.fn(),
+  };
+});
 
 // Wait times for React render cycles
 const ShortWait = 50; // For simple React updates
@@ -29,16 +56,18 @@ describe('End-to-End Flow Integration Tests', () => {
     debug: DebugLevel.None,
   };
 
-  let exitSpy: ReturnType<typeof vi.spyOn>;
-  let processModule: typeof import('../../src/services/process.js');
-
-  beforeEach(async () => {
+  beforeEach(() => {
     // Clear all mocks before each test
     vi.clearAllMocks();
 
-    // Mock exitApp to prevent process.exit
-    processModule = await import('../../src/services/process.js');
-    exitSpy = vi.spyOn(processModule, 'exitApp').mockImplementation(() => {});
+    // Mock configuration system to bypass config checks by default
+    vi.mocked(getMissingConfigKeys).mockReturnValue([]);
+    vi.mocked(loadConfig).mockReturnValue({
+      anthropic: { key: 'test-key', model: 'test-model' },
+    });
+
+    // exitApp is already mocked at module level
+    vi.mocked(exitApp).mockImplementation(() => {});
   });
 
   describe('Flow 1: Initial Configuration Flow', () => {
@@ -53,7 +82,7 @@ describe('End-to-End Flow Integration Tests', () => {
       expect(output).toBeTruthy();
 
       // Should have called exitApp(0)
-      expect(exitSpy).toHaveBeenCalledWith(0);
+      expect(exitApp).toHaveBeenCalledWith(0);
     });
 
     it('shows welcome and config flow for first-time users', async () => {
@@ -496,7 +525,7 @@ describe('End-to-End Flow Integration Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
 
       // Should have called exitApp with error code
-      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(exitApp).toHaveBeenCalledWith(1);
 
       vi.restoreAllMocks();
     });
@@ -596,7 +625,7 @@ describe('End-to-End Flow Integration Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, ShortWait));
 
       // Should exit with code 0 (successful cancellation)
-      expect(exitSpy).toHaveBeenCalledWith(0);
+      expect(exitApp).toHaveBeenCalledWith(0);
 
       vi.restoreAllMocks();
     });

@@ -20,8 +20,9 @@ import {
   getMissingConfigKeys,
   loadConfig,
   loadDebugSetting,
-  saveAnthropicConfig,
+  saveConfig,
   saveDebugSetting,
+  unflattenConfig,
 } from '../services/configuration.js';
 import { registerGlobalShortcut } from '../services/keyboard.js';
 import { initializeLogger, setDebugLevel } from '../services/logger.js';
@@ -110,23 +111,30 @@ export const Main = ({ app, command }: MainProps) => {
       const handleConfigFinished = (config: Record<string, string>) => {
         // Save config and create service
         try {
-          const newConfig = saveAnthropicConfig(
-            config as { key: string; model: string }
-          );
+          const configBySection = unflattenConfig(config);
+
+          for (const [section, sectionConfig] of Object.entries(
+            configBySection
+          )) {
+            saveConfig(section, sectionConfig);
+          }
+
+          // Load config and create service
+          const newConfig = loadConfig();
           const newService = createAnthropicService(newConfig.anthropic);
           setService(newService);
         } catch (error) {
-          // Config creation failed - show error
+          // Config save failed
           const errorMessage =
             error instanceof Error
               ? error.message
               : 'Failed to save configuration';
-          setInitialQueue([createFeedback(FeedbackType.Failed, errorMessage)]);
+          throw new Error(errorMessage);
         }
       };
 
       const handleConfigAborted = (operation: string) => {
-        // Config was cancelled - just exit
+        // Config was cancelled
       };
 
       setInitialQueue([
