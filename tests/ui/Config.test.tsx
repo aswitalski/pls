@@ -592,8 +592,12 @@ describe('Config component interaction flows', () => {
       // Press Enter to submit default value
       stdin.write(Keys.Enter);
 
-      // Verify updateState was called BEFORE onFinished
-      expect(callOrder).toEqual(['updateState', 'onFinished']);
+      // Verify updateState was called BEFORE onFinished, then completeActive
+      expect(callOrder).toEqual([
+        'updateState',
+        'onFinished',
+        'completeActive',
+      ]);
       expect(mockHandlers.updateState).toHaveBeenCalledWith({
         values: { 'settings.debug': 'true' },
         completedStep: 1,

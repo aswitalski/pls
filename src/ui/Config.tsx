@@ -3,8 +3,10 @@ import { Box, Text, useFocus } from 'ink';
 import TextInput from 'ink-text-input';
 
 import { ComponentStatus, Handlers } from '../types/components.js';
+import { FeedbackType } from '../types/types.js';
 
 import { Colors } from '../services/colors.js';
+import { createFeedback } from '../services/components.js';
 import { DebugLevel } from '../services/configuration.js';
 import { useInput } from '../services/keyboard.js';
 
@@ -248,6 +250,10 @@ export function Config<
       if (onAborted) {
         onAborted('configuration');
       }
+      // Complete with abort feedback
+      handlers?.completeActive(
+        createFeedback(FeedbackType.Aborted, 'Configuration cancelled.')
+      );
       return;
     }
 
@@ -316,9 +322,26 @@ export function Config<
       };
       handlers?.updateState(stateUpdate);
 
-      // Now call onFinished - this may trigger completeActive()
-      if (onFinished) {
-        onFinished(newValues as T);
+      // Call onFinished callback and handle result
+      try {
+        if (onFinished) {
+          onFinished(newValues as T);
+        }
+
+        // Success - complete with success feedback
+        handlers?.completeActive(
+          createFeedback(
+            FeedbackType.Succeeded,
+            'Configuration saved successfully.'
+          )
+        );
+      } catch (error) {
+        // Failure - complete with error feedback
+        const errorMessage =
+          error instanceof Error ? error.message : 'Configuration failed';
+        handlers?.completeActive(
+          createFeedback(FeedbackType.Failed, errorMessage)
+        );
       }
 
       setStep(steps.length);
