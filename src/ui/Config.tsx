@@ -247,6 +247,12 @@ export function Config<
           setValues({ ...values, [configKey]: currentValue });
         }
       }
+      // Save state before aborting
+      handlers?.updateState({
+        values,
+        completedStep: step,
+      });
+
       if (onAborted) {
         onAborted('configuration');
       }
