@@ -21,9 +21,10 @@ You will receive information about missing configuration values:
 Generate a response with two required fields:
 
 1. **message**: An empty string `""`
-2. **tasks**: An array of CONFIG tasks, one for each missing config value
+2. **tasks**: An array of CONFIGURE tasks, one for each missing config
+   value
 
-For each CONFIG task, create a natural language description that:
+For each CONFIGURE task, create a natural language description that:
 
 1. **Explains what the value is for** using context from the skill's
    description
@@ -59,7 +60,7 @@ message: ""
 tasks: [
   {
     action: "Path to Alpha repository",
-    type: "config",
+    type: "configure",
     params: { key: "project.alpha.repo" }
   }
 ]
@@ -78,7 +79,7 @@ message: ""
 tasks: [
   {
     action: "Staging environment URL",
-    type: "config",
+    type: "configure",
     params: { key: "env.staging.url" }
   }
 ]
@@ -97,7 +98,7 @@ message: ""
 tasks: [
   {
     action: "Path to Beta workspace",
-    type: "config",
+    type: "configure",
     params: { key: "workspace.beta.path" }
   }
 ]
@@ -129,14 +130,15 @@ tasks: [
 
 ## Response Format
 
-Return a message field (can be empty string) and an array of CONFIG tasks:
+Return a message field (can be empty string) and an array of CONFIGURE
+tasks:
 
 ```
 message: ""
 tasks: [
   {
     action: "Natural description without config path",
-    type: "config",
+    type: "configure",
     params: { key: "config.path" }
   },
   // ... more tasks
@@ -145,7 +147,7 @@ tasks: [
 
 ## Important Notes
 
-- All tasks must have type "config"
+- All tasks must have type "configure"
 - All tasks must include params.key with the config path
 - Descriptions should be helpful and contextual, not just technical
 - Use information from Available Skills section to provide context

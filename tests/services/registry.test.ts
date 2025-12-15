@@ -163,16 +163,16 @@ describe('Tool registry', () => {
       expect(schema.description).toContain('Answer questions');
     });
 
-    it('has config tool registered', () => {
-      expect(registry.hasTool('config')).toBe(true);
+    it('has configure tool registered', () => {
+      expect(registry.hasTool('configure')).toBe(true);
 
-      const schema = registry.getSchema('config');
-      expect(schema.name).toBe('config');
+      const schema = registry.getSchema('configure');
+      expect(schema.name).toBe('configure');
       expect(schema.description).toContain('configuration settings');
     });
 
-    it('can load config instructions', () => {
-      const instructions = registry.getInstructions('config');
+    it('can load configure instructions', () => {
+      const instructions = registry.getInstructions('configure');
       expect(instructions).toBeTruthy();
       expect(instructions).toContain('Overview');
       expect(instructions).toContain('CONFIG tool');

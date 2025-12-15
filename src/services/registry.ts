@@ -51,7 +51,7 @@ export const toolRegistry = new ToolRegistry();
 
 // Register built-in tools
 import { answerTool } from '../tools/answer.tool.js';
-import { configTool } from '../tools/config.tool.js';
+import { configureTool } from '../tools/configure.tool.js';
 import { executeTool } from '../tools/execute.tool.js';
 import { introspectTool } from '../tools/introspect.tool.js';
 import { planTool } from '../tools/plan.tool.js';
@@ -59,7 +59,7 @@ import { validateTool } from '../tools/validate.tool.js';
 
 const tools: Record<string, Tool> = {
   answer: answerTool,
-  config: configTool,
+  configure: configureTool,
   execute: executeTool,
   introspect: introspectTool,
   plan: planTool,

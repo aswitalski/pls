@@ -117,7 +117,7 @@ export class AnthropicService implements LLMService {
     }
 
     // Add config structure for config tool only
-    if (toolName === 'config') {
+    if (toolName === 'configure') {
       const configStructure = getAvailableConfigStructure();
       const configuredKeys = getConfiguredKeys();
       const configSection =

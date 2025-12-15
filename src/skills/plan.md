@@ -516,7 +516,7 @@ When creating task definitions, focus on:
   characters.**
 
 - **Type**: Categorize the operation using one of these supported types:
-  - `config` - Configuration changes, settings updates
+  - `configure` - Configuration changes, settings updates
   - `plan` - Planning or breaking down tasks
   - `execute` - Shell commands, running programs, scripts, processing
     operations
@@ -551,33 +551,38 @@ unambiguous and executable.
 ## Configuration Requests
 
 When the user wants to configure or change settings (e.g., "pls config",
-"pls configure", "pls change settings", "pls run settings", "pls config
-anthropic", "pls config mode"), create a SINGLE task with type "config".
+"pls cfg", "pls configure", "pls change settings", "pls run settings",
+"pls config anthropic", "pls config mode"), create a SINGLE task with type
+"configure".
 
 **Task format:**
 - **action**: "Configure settings" (or similar natural description)
-- **type**: "config"
+- **type**: "configure"
 - **params**: Include `{ "query": "filter" }` where filter specifies
   which settings to configure:
   - If command contains specific keywords like "anthropic", "mode",
     "debug" → use that keyword
-  - If command is just "config" or "configure" or "settings" with no
-    specific area → use "app"
+  - If command is just "config" or "cfg" or "configure" or "settings"
+    with no specific area → use "app"
   - Extract the relevant context, not the full command
 
 **Examples:**
-- User: "pls config anthropic" → `{ "action": "Configure settings",
-  "type": "config", "params": { "query": "anthropic" } }`
+- User: "pls config" → `{ "action": "Configure settings", "type":
+  "configure", "params": { "query": "app" } }`
+- User: "pls cfg" → `{ "action": "Configure settings", "type":
+  "configure", "params": { "query": "app" } }`
 - User: "pls configure" → `{ "action": "Configure settings", "type":
-  "config", "params": { "query": "app" } }`
+  "configure", "params": { "query": "app" } }`
 - User: "pls run settings" → `{ "action": "Configure settings", "type":
-  "config", "params": { "query": "app" } }`
+  "configure", "params": { "query": "app" } }`
+- User: "pls config anthropic" → `{ "action": "Configure settings",
+  "type": "configure", "params": { "query": "anthropic" } }`
 - User: "pls config mode" → `{ "action": "Configure settings", "type":
-  "config", "params": { "query": "mode" } }`
+  "configure", "params": { "query": "mode" } }`
 - User: "pls change debug settings" → `{ "action": "Configure settings",
-  "type": "config", "params": { "query": "mode" } }`
+  "type": "configure", "params": { "query": "mode" } }`
 
-The CONFIG tool will handle determining which specific config keys to
+The CONFIGURE tool will handle determining which specific config keys to
 show based on the query.
 
 ## Multiple Tasks

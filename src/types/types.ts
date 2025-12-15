@@ -26,7 +26,7 @@ export enum ComponentName {
 }
 
 export enum TaskType {
-  Config = 'config',
+  Config = 'configure',
   Plan = 'plan',
   Execute = 'execute',
   Answer = 'answer',

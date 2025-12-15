@@ -49,14 +49,14 @@ as tasks.
   "tasks": [
     {
       "action": "Anthropic API key",
-      "type": "config",
+      "type": "configure",
       "params": {
         "key": "anthropic.key"
       }
     },
     {
       "action": "Model",
-      "type": "config",
+      "type": "configure",
       "params": {
         "key": "anthropic.model"
       }
@@ -69,7 +69,7 @@ as tasks.
 
 - Use the exact config keys from `configStructure`
 - Use the descriptions from `configStructure` as the action text
-- Always use type "config"
+- Always use type "configure"
 - Always include the key in params
 - Keep message concise (≤64 characters)
 - Return at least one task (required keys if unsure)

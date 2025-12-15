@@ -65,7 +65,7 @@ export function Command({
       try {
         let result = await svc!.processWithTool(command, 'plan');
 
-        // If all tasks are config type, delegate to CONFIG tool
+        // If all tasks are configure type, delegate to CONFIGURE tool
         const allConfig =
           result.tasks.length > 0 &&
           result.tasks.every((task) => task.type === TaskType.Config);
@@ -74,8 +74,8 @@ export function Command({
           // Extract query from first config task params, default to 'app'
           const query =
             (result.tasks[0].params?.query as string | undefined) || 'app';
-          // Call CONFIG tool to get specific config keys
-          result = await svc!.processWithTool(query, 'config');
+          // Call CONFIGURE tool to get specific config keys
+          result = await svc!.processWithTool(query, 'configure');
         }
 
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
