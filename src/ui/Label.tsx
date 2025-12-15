@@ -1,7 +1,8 @@
 import { Box, Text } from 'ink';
 
 import { TaskType } from '../types/types.js';
-import { getTaskColors } from '../services/colors.js';
+import { DebugLevel } from '../services/configuration.js';
+import { getTaskColors, getTaskTypeLabel } from '../services/colors.js';
 
 import { Separator } from './Separator.js';
 
@@ -10,6 +11,7 @@ interface LabelProps {
   taskType: TaskType;
   showType?: boolean;
   isCurrent?: boolean;
+  debug?: DebugLevel;
 }
 
 export function Label({
@@ -17,6 +19,7 @@ export function Label({
   taskType,
   showType = false,
   isCurrent = false,
+  debug = DebugLevel.None,
 }: LabelProps) {
   const colors = getTaskColors(taskType, isCurrent);
 
@@ -26,7 +29,7 @@ export function Label({
       {showType && (
         <>
           <Separator />
-          <Text color={colors.type}>{taskType}</Text>
+          <Text color={colors.type}>{getTaskTypeLabel(taskType, debug)}</Text>
         </>
       )}
     </Box>

@@ -4,7 +4,7 @@ import { Box, Text } from 'ink';
 import { ComponentStatus, PlanProps } from '../types/components.js';
 import { Task, TaskType } from '../types/types.js';
 import { DebugLevel } from '../services/configuration.js';
-import { getTaskColors } from '../services/colors.js';
+import { getTaskColors, getTaskTypeLabel } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 
 import { Label } from './Label.js';
@@ -14,7 +14,8 @@ function taskToListItem(
   task: Task,
   highlightedChildIndex: number | null = null,
   isDefineTaskWithoutSelection: boolean = false,
-  isCurrent: boolean = false
+  isCurrent: boolean = false,
+  debug: DebugLevel = DebugLevel.None
 ) {
   const taskColors = getTaskColors(task.type, isCurrent);
 
@@ -32,7 +33,7 @@ function taskToListItem(
       text: task.action,
       color: taskColors.description,
     },
-    type: { text: task.type, color: taskColors.type },
+    type: { text: getTaskTypeLabel(task.type, debug), color: taskColors.type },
     children: [],
   };
 
@@ -62,7 +63,7 @@ function taskToListItem(
           highlightedColor: planColors.description,
         },
         type: {
-          text: childType,
+          text: getTaskTypeLabel(childType, debug),
           color: colors.type,
           highlightedColor: planColors.type,
         },
@@ -259,7 +260,13 @@ export function Plan({
       highlightedIndex === null &&
       isActive;
 
-    return taskToListItem(task, childIndex, isDefineWithoutSelection, isActive);
+    return taskToListItem(
+      task,
+      childIndex,
+      isDefineWithoutSelection,
+      isActive,
+      debug
+    );
   });
 
   return (
@@ -271,6 +278,7 @@ export function Plan({
             taskType={TaskType.Plan}
             showType={debug !== DebugLevel.None}
             isCurrent={isActive}
+            debug={debug}
           />
         </Box>
       )}

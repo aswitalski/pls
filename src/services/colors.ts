@@ -1,4 +1,5 @@
 import { FeedbackType, TaskType } from '../types/types.js';
+import { DebugLevel } from './configuration.js';
 
 /**
  * Base color palette - raw color values with descriptive names.
@@ -194,4 +195,35 @@ export function getFeedbackColor(
  */
 export function getTextColor(isCurrent: boolean): string {
   return isCurrent ? Colors.Text.Active : Colors.Text.Inactive;
+}
+
+/**
+ * Verbose task type labels - two-word descriptions that start with the same
+ * keyword as the short version
+ */
+const verboseTaskTypeLabels: Record<TaskType, string> = {
+  [TaskType.Config]: 'configure option',
+  [TaskType.Plan]: 'plan tasks',
+  [TaskType.Execute]: 'execute command',
+  [TaskType.Answer]: 'answer question',
+  [TaskType.Introspect]: 'introspect capabilities',
+  [TaskType.Report]: 'report results',
+  [TaskType.Define]: 'define options',
+  [TaskType.Ignore]: 'ignore request',
+  [TaskType.Select]: 'select option',
+  [TaskType.Discard]: 'discard option',
+} as const;
+
+/**
+ * Get task type label based on debug level.
+ *
+ * Returns:
+ * - Verbose label (2 words) in verbose mode
+ * - Short label (1 word) in info mode or when debug is off
+ */
+export function getTaskTypeLabel(type: TaskType, debug: DebugLevel): string {
+  if (debug === DebugLevel.Verbose) {
+    return verboseTaskTypeLabels[type];
+  }
+  return type;
 }

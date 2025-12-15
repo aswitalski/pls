@@ -4,8 +4,10 @@ import {
   Colors,
   getFeedbackColor,
   getTaskColors,
+  getTaskTypeLabel,
   getTextColor,
 } from '../../src/services/colors.js';
+import { DebugLevel } from '../../src/services/configuration.js';
 import { FeedbackType, TaskType } from '../../src/types/types.js';
 
 describe('Color relationships', () => {
@@ -182,6 +184,138 @@ describe('Real-world color scenarios', () => {
       expect(commandColor).toBe(answerColor);
       expect(answerColor).toBe(introspectColor);
       expect(commandColor).toBe(Colors.Text.Active);
+    });
+  });
+});
+
+describe('getTaskTypeLabel', () => {
+  describe('Info mode (debug disabled or info)', () => {
+    it('returns short label when debug is disabled', () => {
+      expect(getTaskTypeLabel(TaskType.Config, DebugLevel.None)).toBe(
+        'configure'
+      );
+      expect(getTaskTypeLabel(TaskType.Execute, DebugLevel.None)).toBe(
+        'execute'
+      );
+    });
+
+    it('returns short label in info mode', () => {
+      expect(getTaskTypeLabel(TaskType.Plan, DebugLevel.Info)).toBe('plan');
+      expect(getTaskTypeLabel(TaskType.Answer, DebugLevel.Info)).toBe('answer');
+    });
+
+    it('returns short labels for all task types', () => {
+      const taskTypes = Object.values(TaskType);
+
+      taskTypes.forEach((type) => {
+        const label = getTaskTypeLabel(type, DebugLevel.Info);
+        expect(label).toBe(type);
+      });
+    });
+  });
+
+  describe('Verbose mode', () => {
+    it('returns verbose label for config type', () => {
+      expect(getTaskTypeLabel(TaskType.Config, DebugLevel.Verbose)).toBe(
+        'configure option'
+      );
+    });
+
+    it('returns verbose label for plan type', () => {
+      expect(getTaskTypeLabel(TaskType.Plan, DebugLevel.Verbose)).toBe(
+        'plan tasks'
+      );
+    });
+
+    it('returns verbose label for execute type', () => {
+      expect(getTaskTypeLabel(TaskType.Execute, DebugLevel.Verbose)).toBe(
+        'execute command'
+      );
+    });
+
+    it('returns verbose label for answer type', () => {
+      expect(getTaskTypeLabel(TaskType.Answer, DebugLevel.Verbose)).toBe(
+        'answer question'
+      );
+    });
+
+    it('returns verbose label for introspect type', () => {
+      expect(getTaskTypeLabel(TaskType.Introspect, DebugLevel.Verbose)).toBe(
+        'introspect capabilities'
+      );
+    });
+
+    it('returns verbose label for report type', () => {
+      expect(getTaskTypeLabel(TaskType.Report, DebugLevel.Verbose)).toBe(
+        'report results'
+      );
+    });
+
+    it('returns verbose label for define type', () => {
+      expect(getTaskTypeLabel(TaskType.Define, DebugLevel.Verbose)).toBe(
+        'define options'
+      );
+    });
+
+    it('returns verbose label for ignore type', () => {
+      expect(getTaskTypeLabel(TaskType.Ignore, DebugLevel.Verbose)).toBe(
+        'ignore request'
+      );
+    });
+
+    it('returns verbose label for select type', () => {
+      expect(getTaskTypeLabel(TaskType.Select, DebugLevel.Verbose)).toBe(
+        'select option'
+      );
+    });
+
+    it('returns verbose label for discard type', () => {
+      expect(getTaskTypeLabel(TaskType.Discard, DebugLevel.Verbose)).toBe(
+        'discard option'
+      );
+    });
+  });
+
+  describe('Label consistency', () => {
+    it('verbose labels start with same or related keyword as short labels', () => {
+      const taskTypes = Object.values(TaskType);
+
+      taskTypes.forEach((type) => {
+        const shortLabel = getTaskTypeLabel(type, DebugLevel.Info);
+        const verboseLabel = getTaskTypeLabel(type, DebugLevel.Verbose);
+
+        // Most labels start with the same keyword
+        // Config is special: "config" -> "configure settings" (related verb form)
+        if (type === TaskType.Config) {
+          expect(verboseLabel.startsWith('configure')).toBe(true);
+        } else {
+          expect(verboseLabel.startsWith(shortLabel)).toBe(true);
+        }
+      });
+    });
+
+    it('verbose labels are longer than short labels', () => {
+      const taskTypes = Object.values(TaskType);
+
+      taskTypes.forEach((type) => {
+        const shortLabel = getTaskTypeLabel(type, DebugLevel.Info);
+        const verboseLabel = getTaskTypeLabel(type, DebugLevel.Verbose);
+
+        expect(verboseLabel.length).toBeGreaterThan(shortLabel.length);
+      });
+    });
+
+    it('verbose labels contain 2-3 words', () => {
+      const taskTypes = Object.values(TaskType);
+
+      taskTypes.forEach((type) => {
+        const verboseLabel = getTaskTypeLabel(type, DebugLevel.Verbose);
+        const wordCount = verboseLabel.split(' ').length;
+
+        // Most labels have 2 words, config has 3 ("configure the setting")
+        expect(wordCount).toBeGreaterThanOrEqual(2);
+        expect(wordCount).toBeLessThanOrEqual(3);
+      });
     });
   });
 });
