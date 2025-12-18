@@ -3,7 +3,7 @@ import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages';
 export const introspectTool: Tool = {
   name: 'introspect',
   description:
-    'Execute a task with type "introspect" to list available capabilities and skills. Called after PLAN has identified an introspection request and user has confirmed. Takes the task action and optional filter parameter to present built-in capabilities and user-defined skills.',
+    'Execute a task with type "introspect" to list available capabilities and skills. Called after SCHEDULE has identified an introspection request and user has confirmed. Takes the task action and optional filter parameter to present built-in capabilities and user-defined skills.',
   input_schema: {
     type: 'object',
     properties: {
@@ -15,14 +15,14 @@ export const introspectTool: Tool = {
       tasks: {
         type: 'array',
         description:
-          'Array of capabilities, each with type "introspect". Include built-in capabilities (PLAN, INTROSPECT, ANSWER, EXECUTE, REPORT, CONFIG) and user-defined skills from the Available Skills section.',
+          'Array of capabilities, each with type "introspect". Include built-in capabilities (SCHEDULE, INTROSPECT, ANSWER, EXECUTE, REPORT, CONFIGURE) and user-defined skills from the Available Skills section.',
         items: {
           type: 'object',
           properties: {
             action: {
               type: 'string',
               description:
-                'Capability name and description. Format: "NAME: Brief description". Maximum 64 characters. Examples: "PLAN: Break down requests into steps", "Deploy App: Build and deploy application".',
+                'Capability name and description. Format: "NAME: Brief description". Maximum 64 characters. Examples: "SCHEDULE: Break down requests into steps", "Deploy App: Build and deploy application".',
             },
             type: {
               type: 'string',

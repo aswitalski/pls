@@ -5,15 +5,21 @@ import { Task, TaskType } from '../../src/types/types.js';
 // Test the parsing logic by importing the component and testing it indirectly
 describe('Introspect capability parsing', () => {
   it('detects built-in capabilities correctly', () => {
-    const builtInNames = ['PLAN', 'Plan', 'plan', 'EXECUTE', 'Execute'];
+    const builtInNames = [
+      'SCHEDULE',
+      'Schedule',
+      'schedule',
+      'EXECUTE',
+      'Execute',
+    ];
 
     builtInNames.forEach((name) => {
       // Built-in capabilities are detected case-insensitively
       const upperName = name.toUpperCase();
       expect([
-        'PLAN',
+        'SCHEDULE',
         'EXECUTE',
-        'CONFIG',
+        'CONFIGURE',
         'ANSWER',
         'INTROSPECT',
         'VALIDATE',
@@ -26,18 +32,18 @@ describe('Introspect capability parsing', () => {
     // Simulate the filtering logic from Introspect component
     const allCapabilities = [
       { name: 'Introspect', description: 'list capabilities' },
-      { name: 'Config', description: 'manage settings' },
+      { name: 'Configure', description: 'manage settings' },
       { name: 'Answer', description: 'provide information' },
       { name: 'Execute', description: 'run commands' },
-      { name: 'Plan', description: 'break down requests' },
+      { name: 'Schedule', description: 'break down requests' },
       { name: 'Validate', description: 'verify operations' },
       { name: 'Report', description: 'summarize outcomes' },
     ];
 
-    // In normal mode, filter out Plan, Validate, Report
+    // In normal mode, filter out Schedule, Validate, Report
     const filteredCapabilities = allCapabilities.filter(
       (cap) =>
-        cap.name.toUpperCase() !== 'PLAN' &&
+        cap.name.toUpperCase() !== 'SCHEDULE' &&
         cap.name.toUpperCase() !== 'VALIDATE' &&
         cap.name.toUpperCase() !== 'REPORT'
     );
@@ -45,7 +51,7 @@ describe('Introspect capability parsing', () => {
     expect(filteredCapabilities.length).toBe(4);
     expect(filteredCapabilities.map((c) => c.name)).toEqual([
       'Introspect',
-      'Config',
+      'Configure',
       'Answer',
       'Execute',
     ]);
@@ -55,10 +61,10 @@ describe('Introspect capability parsing', () => {
     // In debug mode, all capabilities should be included
     const allCapabilities = [
       { name: 'Introspect', description: 'list capabilities' },
-      { name: 'Config', description: 'manage settings' },
+      { name: 'Configure', description: 'manage settings' },
       { name: 'Answer', description: 'provide information' },
       { name: 'Execute', description: 'run commands' },
-      { name: 'Plan', description: 'break down requests' },
+      { name: 'Schedule', description: 'break down requests' },
       { name: 'Validate', description: 'verify operations' },
       { name: 'Report', description: 'summarize outcomes' },
     ];
@@ -67,10 +73,10 @@ describe('Introspect capability parsing', () => {
     expect(allCapabilities.length).toBe(7);
     expect(allCapabilities.map((c) => c.name)).toEqual([
       'Introspect',
-      'Config',
+      'Configure',
       'Answer',
       'Execute',
-      'Plan',
+      'Schedule',
       'Validate',
       'Report',
     ]);
@@ -78,14 +84,14 @@ describe('Introspect capability parsing', () => {
 
   it('handles mixed built-in and user-defined capabilities', () => {
     const tasks: Task[] = [
-      { action: 'Plan: break down requests', type: TaskType.Introspect },
+      { action: 'Schedule: break down requests', type: TaskType.Introspect },
       { action: 'Execute: run commands', type: TaskType.Introspect },
       { action: 'Deploy App: deploy application', type: TaskType.Introspect },
     ];
 
     // First two are built-in (case-insensitive match)
     expect(tasks.length).toBe(3);
-    expect(tasks[0].action).toContain('Plan');
+    expect(tasks[0].action).toContain('Schedule');
     expect(tasks[1].action).toContain('Execute');
     expect(tasks[2].action).toContain('Deploy App');
   });

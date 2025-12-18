@@ -7,11 +7,11 @@ operations when tasks with type "execute" have been planned and confirmed.
 ## Execution Flow
 
 This tool is invoked AFTER:
-1. PLAN created tasks with type "execute" describing operations to perform
-2. User reviewed and confirmed the plan
+1. SCHEDULE created tasks with type "execute" describing operations to perform
+2. User reviewed and confirmed the schedule
 3. The execute tasks are now being executed
 
-Your task is to translate the planned actions into specific shell commands
+Your task is to translate the scheduled actions into specific shell commands
 that can be run in the terminal.
 
 ## Input

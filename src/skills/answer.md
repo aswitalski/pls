@@ -13,8 +13,8 @@ training data.
 ## Execution Flow
 
 This tool is invoked AFTER:
-1. PLAN detected an information request and created a task with type "answer"
-2. User reviewed and confirmed the plan
+1. SCHEDULE detected an information request and created a task with type "answer"
+2. User reviewed and confirmed the schedule
 3. The answer task is now being executed
 
 Your task is to provide a clear, concise answer to the user's question.

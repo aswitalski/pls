@@ -20,7 +20,7 @@ import { Spinner } from './Spinner.js';
 const MIN_PROCESSING_TIME = 1000;
 
 const BUILT_IN_CAPABILITIES = new Set([
-  'CONFIG',
+  'CONFIGURE',
   'SCHEDULE',
   'INTROSPECT',
   'ANSWER',
