@@ -82,7 +82,7 @@ NON-NEGOTIABLE and applies to EVERY response.
 These MUST appear FIRST, in this EXACT sequence:
 
 1. **Introspect** ← ALWAYS FIRST
-2. **Config** ← ALWAYS SECOND
+2. **Configure** ← ALWAYS SECOND
 3. **Answer** ← ALWAYS THIRD
 4. **Execute** ← ALWAYS FOURTH
 
@@ -149,7 +149,7 @@ Examples:
 
 When user asks "list your skills", create an introductory message like
 "here are my capabilities:" followed by tasks for built-in capabilities
-(Introspect, Config, Answer, Execute), then indirect workflow capabilities
+(Introspect, Configure, Answer, Execute), then indirect workflow capabilities
 (Schedule, Validate, Report).
 
 Each task uses type "introspect" with an action describing the
@@ -167,7 +167,7 @@ deploy app skill with its description.
 When user asks "what can you do" and user-defined skills like "process
 data" and "backup files" exist, create an introductory message like "i can
 help with these operations:" followed by all built-in capabilities
-(Introspect, Config, Answer, Execute, Validate, Schedule, Report) plus the
+(Introspect, Configure, Answer, Execute, Validate, Schedule, Report) plus the
 user-defined skills. Each capability and skill becomes a task with type
 "introspect".
 

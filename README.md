@@ -28,7 +28,7 @@ $ pls list skills
 Here's what I can help with:
 
   - Introspect - list available capabilities and skills
-  - Config - manage and configure system settings
+  - Configure - manage and configure system settings
   - Answer - respond to questions and provide information
   - Execute - run shell commands and process operations
   ```
@@ -74,10 +74,10 @@ Run `pls` without arguments to see the welcome screen.
 ## How It Works
 
 When you make a request, `pls` interprets your intent and creates a structured
-plan breaking down the work into individual tasks. You'll see this plan
+plan breaking down the work into individual tasks. You'll see this schedule
 displayed in your terminal before anything executes.
 
-After reviewing the plan, you can confirm to proceed or cancel if something
+After reviewing the schedule, you can confirm to proceed or cancel if something
 doesn't look right. Once confirmed, `pls` executes each task sequentially and
 shows real-time progress and results.
 

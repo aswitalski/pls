@@ -266,20 +266,20 @@ When skill is matched during planning:
 2. Recursively expand skill references
 3. Replace VARIANT with LLM-matched variant name
 4. Check if required properties exist in ~/.plsrc
-5. If missing: Insert CONFIG task before execution tasks
-6. CONFIG task prompts for all missing properties
+5. If missing: Insert CONFIGURE task before execution tasks
+6. CONFIGURE task prompts for all missing properties
 7. User provides values, saved to ~/.plsrc
 8. Execution proceeds with fully resolved config
 
 **Example Workflow:** User runs `pls process alpha`
 
-1. PLAN matches "process" to "Process Product" skill
-2. PLAN extracts "alpha" and matches to variant `alpha`
+1. SCHEDULE matches "process" to "Process Product" skill
+2. SCHEDULE extracts "alpha" and matches to variant `alpha`
 3. Process execution line: `[Navigate To Product]`
    - Expand to: `operation {product.VARIANT.path}`
    - Replace VARIANT with `alpha`: `operation {product.alpha.path}`
    - Check config: Does `product.alpha.path` exist in ~/.plsrc?
-4. If missing: Create CONFIG task
+4. If missing: Create CONFIGURE task
    - Prompt: "Product Alpha path"
    - User enters: `/data/projects/alpha`
    - Save to ~/.plsrc

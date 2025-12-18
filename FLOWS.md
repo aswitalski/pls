@@ -186,24 +186,24 @@ flowchart TD
 - `define` - Presenting options when request is ambiguous
 - `ignore` - Request too vague or no matching skill
 
-**CONFIG Tool Delegation:**
+**CONFIGURE Tool Delegation:**
 
-When the SCHEDULE tool returns tasks that are all of type `config`, the Command
-component automatically delegates to the CONFIG tool for refined configuration
+When the SCHEDULE tool returns tasks that are all of type `configure`, the Command
+component automatically delegates to the CONFIGURE tool for refined configuration
 key extraction. This two-phase approach ensures specific, contextual config
 prompts:
 
-1. **Phase 1 (PLAN):** Identifies request as configuration-related and returns
+1. **Phase 1 (SCHEDULE):** Identifies request as configuration-related and returns
    generic config tasks
-2. **Phase 2 (CONFIG):** Takes the config query (from first task's params or
+2. **Phase 2 (CONFIGURE):** Takes the config query (from first task's params or
    defaults to 'app') and returns specific config keys with validation rules
 
 **Example:**
 ```
 User request: "configure my API settings"
-PLAN returns: [{ type: "config", params: { query: "api" } }]
-CONFIG delegation: processWithTool("api", "config")
-CONFIG returns: [{ type: "config", params: { keys: ["api.endpoint", "api.key"] } }]
+SCHEDULE returns: [{ type: "configure", params: { query: "api" } }]
+CONFIGURE delegation: processWithTool("api", "configure")
+CONFIGURE returns: [{ type: "configure", params: { keys: ["api.endpoint", "api.key"] } }]
 ```
 
 This delegation happens transparently in the Command component before the schedule
@@ -596,7 +596,7 @@ flowchart TD
     SkillLoad --> ReadFiles[Read all .md files]
     ReadFiles --> ParseSections[Parse sections:<br/>Name, Description,<br/>Config, Steps, Execution]
     ParseSections --> Concat[Concatenate into<br/>Available Skills section]
-    Concat --> AppendPlan[Append to PLAN<br/>tool instructions]
+    Concat --> AppendPlan[Append to SCHEDULE<br/>tool instructions]
 
     AppendPlan --> UserReq([User request])
     UserReq --> SkillMatch[LLM matches request<br/>to skill names/aliases]

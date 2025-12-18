@@ -11,10 +11,10 @@ import { parseSkillMarkdown, displayNameToKey } from './parser.js';
  * Built-in skill names that user skills cannot override
  */
 const BUILT_IN_SKILLS = new Set([
-  'plan',
+  'schedule',
   'execute',
   'answer',
-  'config',
+  'configure',
   'validate',
   'introspect',
 ]);

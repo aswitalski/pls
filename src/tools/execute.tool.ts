@@ -3,7 +3,7 @@ import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages';
 export const executeTool: Tool = {
   name: 'execute',
   description:
-    'Execute shell commands from planned tasks. Translates task descriptions into specific shell commands that can be run in the terminal. Called after PLAN has created execute tasks and user has confirmed.',
+    'Execute shell commands from scheduled tasks. Translates task descriptions into specific shell commands that can be run in the terminal. Called after SCHEDULE has created execute tasks and user has confirmed.',
   input_schema: {
     type: 'object',
     properties: {

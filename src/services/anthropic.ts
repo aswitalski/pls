@@ -128,8 +128,8 @@ export class AnthropicService implements LLMService {
         systemPrompt += skillsSection;
       }
 
-      // Add config structure for config tool only
-      if (toolName === 'config') {
+      // Add config structure for configure tool only
+      if (toolName === 'configure') {
         const configStructure = getAvailableConfigStructure();
         const configuredKeys = getConfiguredKeys();
         const configSection =

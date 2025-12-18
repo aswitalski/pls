@@ -3,7 +3,7 @@ import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages';
 export const configureTool: Tool = {
   name: 'configure',
   description:
-    'Determine which configuration settings to show based on user query. Receives available config keys with descriptions and returns which keys the user wants to configure.',
+    'Determine which configuration settings to show based on user query. Receives available configuration keys with descriptions and returns which keys the user wants to configure.',
   input_schema: {
     type: 'object',
     properties: {
