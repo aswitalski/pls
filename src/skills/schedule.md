@@ -56,6 +56,14 @@ Every task MUST have a type field. Use the appropriate type:
 a matching skill in the "Available Skills" section. DO NOT create
 `execute` tasks without a corresponding skill.
 
+**Define task params**: When creating a `define` type task, include:
+- `skill`: the skill name that needs variant selection (REQUIRED)
+- `options`: array of option strings describing each variant (REQUIRED)
+
+Example: User "build" without variant → Task with type "define",
+params { skill: "Build Project", options: ["Build project Alpha, the
+main variant", "Build project Beta, the experimental variant"] }
+
 ## Configuration Requests
 
 When user wants to configure or change settings (e.g., "config",
@@ -130,12 +138,15 @@ components (e.g., {project.VARIANT.path}, {env.TYPE.config},
 
 5. **Extract config expressions**: All leaf tasks must include a
    `config` array listing resolved configuration paths:
-   - After resolving variant placeholders, extract all config
-     expressions from the task's execution commands
+   - After resolving variant placeholders, extract **ALL** config
+     expressions from the task's execution commands (every single
+     placeholder in curly braces)
    - List them in dot notation (e.g., "project.beta.repo",
      "env.production.url")
    - The app will check if these exist in ~/.plsrc and prompt for
      missing values
+   - **CRITICAL**: If a task has multiple config placeholders, ALL
+     must be included in the config array
    - Example: Task with `cd {project.beta.repo}` and `cat
      {project.beta.config}` should include config:
      ["project.beta.repo", "project.beta.config"]
