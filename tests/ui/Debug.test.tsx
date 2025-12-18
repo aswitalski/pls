@@ -258,7 +258,7 @@ RESPONSE:
     });
 
     it('renders debug info for different tools', () => {
-      const tools = ['plan', 'execute', 'answer', 'introspect', 'validate'];
+      const tools = ['schedule', 'execute', 'answer', 'introspect', 'validate'];
 
       tools.forEach((tool) => {
         const content = `Tool: ${tool}\nCommand: test command`;

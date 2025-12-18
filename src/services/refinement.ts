@@ -37,7 +37,10 @@ export async function handleRefinement(
       .join(', ');
 
     // Call LLM to refine plan with selected tasks
-    const refinedResult = await service.processWithTool(refinedCommand, 'plan');
+    const refinedResult = await service.processWithTool(
+      refinedCommand,
+      'schedule'
+    );
 
     // Complete the Refinement component
     handlers.completeActive();

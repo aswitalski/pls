@@ -171,17 +171,17 @@ describe('Component', () => {
     expect('state' in result.props.def).toBe(false);
   });
 
-  it('renders plan component', () => {
+  it('renders schedule component', () => {
     const def: ComponentDefinition = {
-      id: 'test-plan-1',
-      name: ComponentName.Plan,
+      id: 'test-schedule-1',
+      name: ComponentName.Schedule,
       state: {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       },
       props: {
-        message: 'Here is the plan',
+        message: 'Here is the schedule',
         tasks: [
           { action: 'Install dependencies', type: TaskType.Execute },
           { action: 'Run tests', type: TaskType.Execute },
@@ -193,7 +193,7 @@ describe('Component', () => {
 
     expect(result).toBeDefined();
     expect(result.props.def.props.tasks).toHaveLength(2);
-    expect(result.props.def.props.message).toBe('Here is the plan');
+    expect(result.props.def.props.message).toBe('Here is the schedule');
   });
 
   it('renders feedback component', () => {
@@ -279,15 +279,15 @@ describe('Component', () => {
         props: { command: 'test', service: mockService, onAborted: vi.fn() },
       },
       {
-        id: 'test-plan-2',
-        name: ComponentName.Plan,
+        id: 'test-schedule-2',
+        name: ComponentName.Schedule,
         state: {
           highlightedIndex: null,
           currentDefineGroupIndex: 0,
           completedSelections: [],
         },
         props: {
-          message: 'Plan ready',
+          message: 'Schedule ready',
           tasks: [{ action: 'Do something', type: TaskType.Execute }],
         },
       },

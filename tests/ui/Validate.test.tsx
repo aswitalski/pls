@@ -64,6 +64,7 @@ describe('Validate component', () => {
         tasks: [
           {
             type: TaskType.Config,
+            config: [],
             action: 'Product Alpha path',
             params: { key: 'product.alpha.path' },
           },
@@ -94,6 +95,7 @@ describe('Validate component', () => {
         tasks: [
           {
             type: TaskType.Config,
+            config: [],
             action: 'Product Alpha path',
             params: { key: 'product.alpha.path' },
           },
@@ -126,6 +128,7 @@ describe('Validate component', () => {
       const tasks: Task[] = [
         {
           type: TaskType.Config,
+          config: [],
           action: 'Product Alpha path {product.alpha.path}',
           params: { key: 'product.alpha.path' },
         },
@@ -168,6 +171,7 @@ describe('Validate component', () => {
       const tasks: Task[] = [
         {
           type: TaskType.Config,
+          config: [],
           action: 'API Key',
           params: { key: 'api.key' },
         },
@@ -213,11 +217,13 @@ describe('Validate component', () => {
       const tasks: Task[] = [
         {
           type: TaskType.Config,
+          config: [],
           action: 'Product Alpha path',
           params: { key: 'product.alpha.path' },
         },
         {
           type: TaskType.Config,
+          config: [],
           action: 'Product Alpha enabled',
           params: { key: 'product.alpha.enabled' },
         },
@@ -266,11 +272,13 @@ describe('Validate component', () => {
       const tasks: Task[] = [
         {
           type: TaskType.Config,
+          config: [],
           action: 'Product Alpha path',
           params: { key: 'product.alpha.path' },
         },
         {
           type: TaskType.Config,
+          config: [],
           action: 'Product Beta path',
           params: { key: 'product.beta.path' },
         },
@@ -347,6 +355,7 @@ describe('Validate component', () => {
         tasks: [
           {
             type: TaskType.Config,
+            config: [],
             action: 'API Key',
             params: { key: 'api.key' },
           },
@@ -385,6 +394,7 @@ describe('Validate component', () => {
       const tasks: Task[] = [
         {
           type: TaskType.Config,
+          config: [],
           action: 'API Key',
           params: { key: 'api.key' },
         },
@@ -426,6 +436,7 @@ describe('Validate component', () => {
       const tasks: Task[] = [
         {
           type: TaskType.Config,
+          config: [],
           action: 'Feature enabled',
           params: { key: 'feature.enabled' },
         },
@@ -468,6 +479,7 @@ describe('Validate component', () => {
       const tasks: Task[] = [
         {
           type: TaskType.Config,
+          config: [],
           action: 'Unknown setting',
           params: { key: 'unknown.key' },
         },

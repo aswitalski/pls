@@ -54,7 +54,7 @@ import { answerTool } from '../tools/answer.tool.js';
 import { configureTool } from '../tools/configure.tool.js';
 import { executeTool } from '../tools/execute.tool.js';
 import { introspectTool } from '../tools/introspect.tool.js';
-import { planTool } from '../tools/plan.tool.js';
+import { scheduleTool } from '../tools/schedule.tool.js';
 import { validateTool } from '../tools/validate.tool.js';
 
 const tools: Record<string, Tool> = {
@@ -62,7 +62,7 @@ const tools: Record<string, Tool> = {
   configure: configureTool,
   execute: executeTool,
   introspect: introspectTool,
-  plan: planTool,
+  schedule: scheduleTool,
   validate: validateTool,
 };
 

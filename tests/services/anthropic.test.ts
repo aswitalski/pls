@@ -584,7 +584,7 @@ describe('Web search integration', () => {
     expect(result.answer).toBe('Currently 72°F and sunny in New York City.');
   });
 
-  it('does not include web search tool for plan requests', async () => {
+  it('does not include web search tool for schedule requests', async () => {
     let capturedTools: unknown[] = [];
 
     const mockClient = {
@@ -614,7 +614,7 @@ describe('Web search integration', () => {
 
     (service as unknown as { client: typeof mockClient }).client = mockClient;
 
-    await service.processWithTool('do something', 'plan');
+    await service.processWithTool('do something', 'schedule');
 
     expect(capturedTools).toHaveLength(1);
   });

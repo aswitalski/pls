@@ -12,7 +12,7 @@ import {
 export class AnthropicServiceMock extends AnthropicService {
   private responses: Map<string, Task[]> = new Map();
   private defaultResponse: Task[] = [
-    { action: 'mock task', type: TaskType.Execute },
+    { action: 'mock task', type: TaskType.Execute, config: [] },
   ];
   private defaultMessage = 'Mock response';
   private shouldFail = false;
@@ -45,7 +45,9 @@ export class AnthropicServiceMock extends AnthropicService {
    */
   reset(): void {
     this.responses.clear();
-    this.defaultResponse = [{ action: 'mock task', type: TaskType.Execute }];
+    this.defaultResponse = [
+      { action: 'mock task', type: TaskType.Execute, config: [] },
+    ];
     this.shouldFail = false;
     this.errorMessage = 'Mock error';
   }

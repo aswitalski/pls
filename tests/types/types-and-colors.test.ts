@@ -50,12 +50,12 @@ describe('getTaskColors', () => {
   });
 
   it('returns null description as inactive color for historical items', () => {
-    const colors = getTaskColors(TaskType.Plan, false);
+    const colors = getTaskColors(TaskType.Schedule, false);
     expect(colors.description).toBe(Colors.Text.Inactive);
   });
 
   it('returns null description as active color for current items', () => {
-    const colors = getTaskColors(TaskType.Plan, true);
+    const colors = getTaskColors(TaskType.Schedule, true);
     expect(colors.description).toBe(Colors.Text.Active);
   });
 
@@ -200,7 +200,9 @@ describe('getTaskTypeLabel', () => {
     });
 
     it('returns short label in info mode', () => {
-      expect(getTaskTypeLabel(TaskType.Plan, DebugLevel.Info)).toBe('plan');
+      expect(getTaskTypeLabel(TaskType.Schedule, DebugLevel.Info)).toBe(
+        'schedule'
+      );
       expect(getTaskTypeLabel(TaskType.Answer, DebugLevel.Info)).toBe('answer');
     });
 
@@ -221,9 +223,9 @@ describe('getTaskTypeLabel', () => {
       );
     });
 
-    it('returns verbose label for plan type', () => {
-      expect(getTaskTypeLabel(TaskType.Plan, DebugLevel.Verbose)).toBe(
-        'plan tasks'
+    it('returns verbose label for schedule type', () => {
+      expect(getTaskTypeLabel(TaskType.Schedule, DebugLevel.Verbose)).toBe(
+        'schedule tasks'
       );
     });
 

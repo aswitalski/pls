@@ -221,7 +221,7 @@ export function Validate({
         </Box>
       )}
 
-      {configSteps && !error && (
+      {configSteps && configSteps.length > 0 && !error && (
         <Box marginTop={1}>
           <Config
             steps={configSteps}
@@ -231,6 +231,14 @@ export function Validate({
             onAborted={handleConfigAborted}
             handlers={handlers}
           />
+        </Box>
+      )}
+
+      {configSteps && configSteps.length === 0 && !error && (
+        <Box marginTop={1} marginLeft={1}>
+          <Text color={Colors.Status.Error}>
+            Error: No configuration steps generated. Please try again.
+          </Text>
         </Box>
       )}
 

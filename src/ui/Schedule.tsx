@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { ComponentStatus, PlanProps } from '../types/components.js';
-import { Task, TaskType } from '../types/types.js';
+import { ComponentStatus, ScheduleProps } from '../types/components.js';
+import { ScheduledTask, Task, TaskType } from '../types/types.js';
 import { DebugLevel } from '../services/configuration.js';
 import { getTaskColors, getTaskTypeLabel } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
@@ -40,7 +40,7 @@ function taskToListItem(
   // Mark define tasks with right arrow when no selection has been made
   if (isDefineTaskWithoutSelection) {
     item.marker = '  → ';
-    item.markerColor = getTaskColors(TaskType.Plan, isCurrent).type;
+    item.markerColor = getTaskColors(TaskType.Schedule, isCurrent).type;
   }
 
   // Add children for Define tasks with options
@@ -55,7 +55,7 @@ function taskToListItem(
       }
 
       const colors = getTaskColors(childType, isCurrent);
-      const planColors = getTaskColors(TaskType.Plan, isCurrent);
+      const planColors = getTaskColors(TaskType.Schedule, isCurrent);
       return {
         description: {
           text: String(option),
@@ -71,10 +71,33 @@ function taskToListItem(
     });
   }
 
+  // Add children for Group tasks with subtasks
+  const scheduledTask = task as ScheduledTask;
+  if (
+    task.type === TaskType.Group &&
+    scheduledTask.subtasks &&
+    Array.isArray(scheduledTask.subtasks) &&
+    scheduledTask.subtasks.length > 0
+  ) {
+    item.children = scheduledTask.subtasks.map((subtask) => {
+      const subtaskColors = getTaskColors(subtask.type, isCurrent);
+      return {
+        description: {
+          text: subtask.action,
+          color: subtaskColors.description,
+        },
+        type: {
+          text: getTaskTypeLabel(subtask.type, debug),
+          color: subtaskColors.type,
+        },
+      };
+    });
+  }
+
   return item;
 }
 
-export function Plan({
+export function Schedule({
   message,
   tasks,
   state,
@@ -82,7 +105,7 @@ export function Plan({
   debug = DebugLevel.None,
   handlers,
   onSelectionConfirmed,
-}: PlanProps) {
+}: ScheduleProps) {
   const isActive = status === ComponentStatus.Active;
   // isActive passed as prop
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(
@@ -191,6 +214,7 @@ export function Plan({
               refinedTasks.push({
                 action: selectedOption,
                 type: TaskType.Execute,
+                config: [],
               });
             } else if (
               task.type !== TaskType.Ignore &&
@@ -275,7 +299,7 @@ export function Plan({
         <Box marginBottom={1} marginLeft={1}>
           <Label
             description={message}
-            taskType={TaskType.Plan}
+            taskType={TaskType.Schedule}
             showType={debug !== DebugLevel.None}
             isCurrent={isActive}
             debug={debug}

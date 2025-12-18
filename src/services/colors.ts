@@ -59,7 +59,7 @@ export const Colors = {
   },
   Type: {
     Config: Palette.Cyan,
-    Plan: Palette.LightCyan,
+    Schedule: Palette.LightCyan,
     Execute: Palette.Green,
     Answer: Palette.Purple,
     Introspect: Palette.Purple,
@@ -68,6 +68,7 @@ export const Colors = {
     Ignore: Palette.BurntOrange,
     Select: Palette.SteelBlue,
     Discard: Palette.DarkOrange,
+    Group: Palette.Yellow,
   },
   Origin: {
     BuiltIn: Palette.Cyan,
@@ -87,9 +88,9 @@ const taskColors: Record<
     description: Colors.Label.Default,
     type: Colors.Type.Config,
   },
-  [TaskType.Plan]: {
+  [TaskType.Schedule]: {
     description: Colors.Label.Default,
-    type: Colors.Type.Plan,
+    type: Colors.Type.Schedule,
   },
   [TaskType.Execute]: {
     description: Colors.Label.Default,
@@ -122,6 +123,10 @@ const taskColors: Record<
   [TaskType.Discard]: {
     description: Colors.Label.Discarded,
     type: Colors.Type.Discard,
+  },
+  [TaskType.Group]: {
+    description: Colors.Label.Default,
+    type: Colors.Type.Group,
   },
 } as const;
 
@@ -203,7 +208,7 @@ export function getTextColor(isCurrent: boolean): string {
  */
 const verboseTaskTypeLabels: Record<TaskType, string> = {
   [TaskType.Config]: 'configure option',
-  [TaskType.Plan]: 'plan tasks',
+  [TaskType.Schedule]: 'schedule tasks',
   [TaskType.Execute]: 'execute command',
   [TaskType.Answer]: 'answer question',
   [TaskType.Introspect]: 'introspect capabilities',
@@ -212,6 +217,7 @@ const verboseTaskTypeLabels: Record<TaskType, string> = {
   [TaskType.Ignore]: 'ignore request',
   [TaskType.Select]: 'select option',
   [TaskType.Discard]: 'discard option',
+  [TaskType.Group]: 'group tasks',
 } as const;
 
 /**

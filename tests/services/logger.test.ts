@@ -67,19 +67,19 @@ describe('Logger service', () => {
   describe('Logging prompts', () => {
     it('returns null when debug level is None', () => {
       setDebugLevel(DebugLevel.None);
-      const result = logPrompt('plan', 'test command', 'test instructions');
+      const result = logPrompt('schedule', 'test command', 'test instructions');
       expect(result).toBeNull();
     });
 
     it('returns null when debug level is Info', () => {
       setDebugLevel(DebugLevel.Info);
-      const result = logPrompt('plan', 'test command', 'test instructions');
+      const result = logPrompt('schedule', 'test command', 'test instructions');
       expect(result).toBeNull();
     });
 
     it('creates debug component when debug level is Verbose', () => {
       setDebugLevel(DebugLevel.Verbose);
-      const result = logPrompt('plan', 'test command', 'test instructions');
+      const result = logPrompt('schedule', 'test command', 'test instructions');
 
       expect(result).not.toBeNull();
       expect(result?.name).toBe(ComponentName.Debug);
@@ -87,7 +87,7 @@ describe('Logger service', () => {
       const props = getDebugProps(result);
       expect(props.title).toMatch(/^SYSTEM PROMPT \(\d+ lines, \d+ bytes\)$/);
       expect(props.color).toBe(Palette.Gray);
-      expect(props.content).toContain('Tool: plan');
+      expect(props.content).toContain('Tool: schedule');
       expect(props.content).toContain('Command: test command');
       expect(props.content).toContain('test instructions');
     });
@@ -95,12 +95,12 @@ describe('Logger service', () => {
     it('includes full instructions without truncation', () => {
       setDebugLevel(DebugLevel.Verbose);
       const longInstructions = 'A'.repeat(99);
-      const result = logPrompt('plan', 'command', longInstructions);
+      const result = logPrompt('schedule', 'command', longInstructions);
 
       const props = getDebugProps(result);
-      // Content should have: "Tool: plan\nCommand: command\n\n" + full instructions
+      // Content should have: "Tool: schedule\nCommand: command\n\n" + full instructions
       const actualInstructions = props.content.substring(
-        'Tool: plan\nCommand: command\n\n'.length
+        'Tool: schedule\nCommand: command\n\n'.length
       );
       expect(actualInstructions.length).toBe(100);
     });
@@ -108,20 +108,20 @@ describe('Logger service', () => {
     it('handles special characters in tool name and command', () => {
       setDebugLevel(DebugLevel.Verbose);
       const result = logPrompt(
-        'plan-tool',
+        'schedule-tool',
         'test: "command" with quotes',
         'instructions'
       );
 
       const props = getDebugProps(result);
-      expect(props.content).toContain('Tool: plan-tool');
+      expect(props.content).toContain('Tool: schedule-tool');
       expect(props.content).toContain('Command: test: "command" with quotes');
     });
 
     it('creates unique component IDs for each call', () => {
       setDebugLevel(DebugLevel.Verbose);
-      const result1 = logPrompt('plan', 'cmd1', 'instr1');
-      const result2 = logPrompt('plan', 'cmd2', 'instr2');
+      const result1 = logPrompt('schedule', 'cmd1', 'instr1');
+      const result2 = logPrompt('schedule', 'cmd2', 'instr2');
 
       expect(result1?.id).toBeDefined();
       expect(result2?.id).toBeDefined();
@@ -132,20 +132,20 @@ describe('Logger service', () => {
   describe('Logging responses', () => {
     it('returns null when debug level is None', () => {
       setDebugLevel(DebugLevel.None);
-      const result = logResponse('plan', { message: 'test' }, 100);
+      const result = logResponse('schedule', { message: 'test' }, 100);
       expect(result).toBeNull();
     });
 
     it('returns null when debug level is Info', () => {
       setDebugLevel(DebugLevel.Info);
-      const result = logResponse('plan', { message: 'test' }, 100);
+      const result = logResponse('schedule', { message: 'test' }, 100);
       expect(result).toBeNull();
     });
 
     it('creates debug component when debug level is Verbose', () => {
       setDebugLevel(DebugLevel.Verbose);
       const response = { message: 'test message', tasks: [] };
-      const result = logResponse('plan', response, 250);
+      const result = logResponse('schedule', response, 250);
 
       expect(result).not.toBeNull();
       expect(result?.name).toBe(ComponentName.Debug);
@@ -153,7 +153,7 @@ describe('Logger service', () => {
       const props = getDebugProps(result);
       expect(props.title).toMatch(/^LLM RESPONSE \(\d+ ms\)$/);
       expect(props.color).toBe(Palette.AshGray);
-      expect(props.content).toContain('Tool: plan');
+      expect(props.content).toContain('Tool: schedule');
       expect(props.content).toContain('"message": "test message"');
     });
 
@@ -163,7 +163,7 @@ describe('Logger service', () => {
         message: 'A'.repeat(500),
         tasks: [{ action: 'B'.repeat(500) }],
       };
-      const result = logResponse('plan', longResponse, 300);
+      const result = logResponse('schedule', longResponse, 300);
 
       const props = getDebugProps(result);
       // Response should include full JSON stringified content
@@ -193,15 +193,15 @@ describe('Logger service', () => {
     it('handles null response', () => {
       setDebugLevel(DebugLevel.Verbose);
 
-      const nullResult = logResponse('plan', null, 50);
+      const nullResult = logResponse('schedule', null, 50);
       const props = getDebugProps(nullResult);
       expect(props.content).toContain('null');
     });
 
     it('creates unique component IDs for each call', () => {
       setDebugLevel(DebugLevel.Verbose);
-      const result1 = logResponse('plan', { msg: '1' }, 100);
-      const result2 = logResponse('plan', { msg: '2' }, 200);
+      const result1 = logResponse('schedule', { msg: '1' }, 100);
+      const result2 = logResponse('schedule', { msg: '2' }, 200);
 
       expect(result1?.id).toBeDefined();
       expect(result2?.id).toBeDefined();
@@ -214,12 +214,12 @@ describe('Logger service', () => {
       setDebugLevel(DebugLevel.Verbose);
 
       const prompt = logPrompt(
-        'plan',
+        'schedule',
         'create a new file',
         'You are the planning component...'
       );
       const response = logResponse(
-        'plan',
+        'schedule',
         {
           message: 'Creating the file.',
           tasks: [{ action: 'Create file test.txt', type: 'execute' }],
@@ -236,8 +236,8 @@ describe('Logger service', () => {
     it('suppresses all logging when level is None', () => {
       setDebugLevel(DebugLevel.None);
 
-      const prompt = logPrompt('plan', 'cmd', 'instr');
-      const response = logResponse('plan', { msg: 'test' }, 120);
+      const prompt = logPrompt('schedule', 'cmd', 'instr');
+      const response = logResponse('schedule', { msg: 'test' }, 120);
 
       expect(prompt).toBeNull();
       expect(response).toBeNull();
@@ -245,19 +245,23 @@ describe('Logger service', () => {
 
     it('changes debug level mid-operation', () => {
       setDebugLevel(DebugLevel.None);
-      expect(logPrompt('plan', 'cmd1', 'instr1')).toBeNull();
+      expect(logPrompt('schedule', 'cmd1', 'instr1')).toBeNull();
 
       setDebugLevel(DebugLevel.Verbose);
-      expect(logPrompt('plan', 'cmd2', 'instr2')).not.toBeNull();
+      expect(logPrompt('schedule', 'cmd2', 'instr2')).not.toBeNull();
 
       setDebugLevel(DebugLevel.Info);
-      expect(logPrompt('plan', 'cmd3', 'instr3')).toBeNull();
+      expect(logPrompt('schedule', 'cmd3', 'instr3')).toBeNull();
     });
 
     it('logs different tool types with appropriate content', () => {
       setDebugLevel(DebugLevel.Verbose);
 
-      const planPrompt = logPrompt('plan', 'list files', 'Plan instructions');
+      const planPrompt = logPrompt(
+        'schedule',
+        'list files',
+        'Plan instructions'
+      );
       const executePrompt = logPrompt(
         'execute',
         'run command',
@@ -273,7 +277,7 @@ describe('Logger service', () => {
       const executeProps = getDebugProps(executePrompt);
       const answerProps = getDebugProps(answerPrompt);
 
-      expect(planProps.content).toContain('Tool: plan');
+      expect(planProps.content).toContain('Tool: schedule');
       expect(executeProps.content).toContain('Tool: execute');
       expect(answerProps.content).toContain('Tool: answer');
     });
@@ -288,7 +292,7 @@ describe('Logger service', () => {
         },
       };
 
-      const result = logResponse('plan', errorResponse, 400);
+      const result = logResponse('schedule', errorResponse, 400);
       const props = getDebugProps(result);
       expect(props.content).toContain('"error"');
       expect(props.content).toContain('Rate limit exceeded');
@@ -302,7 +306,7 @@ Line 2
 Line 3
 Line 4`;
 
-      const result = logPrompt('plan', 'command', multilineInstructions);
+      const result = logPrompt('schedule', 'command', multilineInstructions);
       const props = getDebugProps(result);
       expect(props.content).toContain('Line 1');
       expect(props.content).toContain('Line 2');

@@ -1,3 +1,5 @@
+import { ScheduledTask } from '../types/types.js';
+
 /**
  * Formats a duration in milliseconds to a human-readable string.
  * Uses correct singular/plural forms.
@@ -21,4 +23,20 @@ export function formatDuration(ms: number): string {
   }
 
   return parts.join(' ');
+}
+
+/**
+ * Recursively extracts all leaf tasks from a hierarchical task structure.
+ * Leaf tasks are tasks without subtasks.
+ */
+export function getAllLeafTasks(tasks: ScheduledTask[]): ScheduledTask[] {
+  const leafTasks: ScheduledTask[] = [];
+  for (const task of tasks) {
+    if (!task.subtasks || task.subtasks.length === 0) {
+      leafTasks.push(task);
+    } else {
+      leafTasks.push(...getAllLeafTasks(task.subtasks));
+    }
+  }
+  return leafTasks;
 }

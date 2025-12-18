@@ -112,6 +112,7 @@ deployment:
         {
           action: 'Deploy to production',
           type: TaskType.Execute,
+          config: ['deployment.prod.server', 'deployment.prod.path'],
           params: {
             skill: 'Deploy Application',
           },
@@ -656,6 +657,7 @@ Connect and run database query
         {
           action: 'Run database query',
           type: TaskType.Execute,
+          config: ['db.host', 'db.port'],
           params: {
             skill: 'Run Query',
           },

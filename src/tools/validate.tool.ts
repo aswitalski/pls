@@ -27,7 +27,7 @@ export const validateTool: Tool = {
             type: {
               type: 'string',
               description:
-                'Must be "config" for all tasks returned by this tool',
+                'Must be "configure" for all tasks returned by this tool',
             },
             params: {
               type: 'object',

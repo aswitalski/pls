@@ -12,13 +12,17 @@ describe('Refinement service', () => {
   describe('handleRefinement', () => {
     it('creates refinement component and adds to queue', async () => {
       const selectedTasks = [
-        { action: 'Deploy to Dev', type: TaskType.Execute },
+        { action: 'Deploy to Dev', type: TaskType.Execute, config: [] },
       ];
       const mockService = {
         processWithTool: vi.fn().mockResolvedValue({
           message: 'Refined plan',
           tasks: [
-            { action: 'Deploy to Dev environment', type: TaskType.Execute },
+            {
+              action: 'Deploy to Dev environment',
+              type: TaskType.Execute,
+              config: [],
+            },
           ],
         }),
       } as unknown as LLMService;
@@ -40,14 +44,18 @@ describe('Refinement service', () => {
 
     it('calls LLM with formatted refined command', async () => {
       const selectedTasks = [
-        { action: 'Deploy to Dev', type: TaskType.Execute },
-        { action: 'Run tests', type: TaskType.Execute },
+        { action: 'Deploy to Dev', type: TaskType.Execute, config: [] },
+        { action: 'Run tests', type: TaskType.Execute, config: [] },
       ];
       const mockProcessWithTool = vi.fn().mockResolvedValue({
         message: 'Refined plan',
         tasks: [
-          { action: 'Deploy to Dev environment', type: TaskType.Execute },
-          { action: 'Run test suite', type: TaskType.Execute },
+          {
+            action: 'Deploy to Dev environment',
+            type: TaskType.Execute,
+            config: [],
+          },
+          { action: 'Run test suite', type: TaskType.Execute, config: [] },
         ],
       });
       const mockService = {
@@ -65,7 +73,7 @@ describe('Refinement service', () => {
       // Should call processWithTool with formatted command
       expect(mockProcessWithTool).toHaveBeenCalledWith(
         'deploy to dev (type: execute), run tests (type: execute)',
-        'plan'
+        'schedule'
       );
     });
 
@@ -75,7 +83,9 @@ describe('Refinement service', () => {
       ];
       const mockProcessWithTool = vi.fn().mockResolvedValue({
         message: 'Refined plan',
-        tasks: [{ action: 'Deploy to Dev Alpha', type: TaskType.Execute }],
+        tasks: [
+          { action: 'Deploy to Dev Alpha', type: TaskType.Execute, config: [] },
+        ],
       });
       const mockService = {
         processWithTool: mockProcessWithTool,
@@ -87,18 +97,20 @@ describe('Refinement service', () => {
       // Should replace commas with dashes
       expect(mockProcessWithTool).toHaveBeenCalledWith(
         'deploy to dev - alpha (type: execute)',
-        'plan'
+        'schedule'
       );
     });
 
     it('completes refinement component after success', async () => {
       const selectedTasks = [
-        { action: 'Build project', type: TaskType.Execute },
+        { action: 'Build project', type: TaskType.Execute, config: [] },
       ];
       const mockService = {
         processWithTool: vi.fn().mockResolvedValue({
           message: 'Refined plan',
-          tasks: [{ action: 'Build the project', type: TaskType.Execute }],
+          tasks: [
+            { action: 'Build the project', type: TaskType.Execute, config: [] },
+          ],
         }),
       } as unknown as LLMService;
       const handlers = createMockHandlers();
@@ -111,9 +123,11 @@ describe('Refinement service', () => {
 
     it('routes refined tasks with routeTasksWithConfirm', async () => {
       const selectedTasks = [
-        { action: 'Install dependencies', type: TaskType.Execute },
+        { action: 'Install dependencies', type: TaskType.Execute, config: [] },
       ];
-      const refinedTasks = [{ action: 'npm install', type: TaskType.Execute }];
+      const refinedTasks = [
+        { action: 'npm install', type: TaskType.Execute, config: [] },
+      ];
       const mockProcessWithTool = vi.fn().mockResolvedValue({
         message: 'Refined plan',
         tasks: refinedTasks,
@@ -138,7 +152,9 @@ describe('Refinement service', () => {
     });
 
     it('handles LLM errors during refinement', async () => {
-      const selectedTasks = [{ action: 'Deploy', type: TaskType.Execute }];
+      const selectedTasks = [
+        { action: 'Deploy', type: TaskType.Execute, config: [] },
+      ];
       const mockService = {
         processWithTool: vi
           .fn()
@@ -159,7 +175,9 @@ describe('Refinement service', () => {
     });
 
     it('handles non-Error exceptions during refinement', async () => {
-      const selectedTasks = [{ action: 'Deploy', type: TaskType.Execute }];
+      const selectedTasks = [
+        { action: 'Deploy', type: TaskType.Execute, config: [] },
+      ];
       const mockService = {
         processWithTool: vi.fn().mockRejectedValue('String error'),
       } as unknown as LLMService;
@@ -178,10 +196,12 @@ describe('Refinement service', () => {
     });
 
     it('passes original command to routing', async () => {
-      const selectedTasks = [{ action: 'Test', type: TaskType.Execute }];
+      const selectedTasks = [
+        { action: 'Test', type: TaskType.Execute, config: [] },
+      ];
       const mockProcessWithTool = vi.fn().mockResolvedValue({
         message: 'Run tests',
-        tasks: [{ action: 'npm test', type: TaskType.Execute }],
+        tasks: [{ action: 'npm test', type: TaskType.Execute, config: [] }],
       });
       const mockService = {
         processWithTool: mockProcessWithTool,
@@ -216,16 +236,18 @@ describe('Refinement service', () => {
       await handleRefinement(selectedTasks, mockService, 'nothing', handlers);
 
       // Should still call processWithTool with empty string
-      expect(mockProcessWithTool).toHaveBeenCalledWith('', 'plan');
+      expect(mockProcessWithTool).toHaveBeenCalledWith('', 'schedule');
       expect(handlers.completeActive).toHaveBeenCalledTimes(1);
     });
 
     it('calls onAborted when refinement is aborted', async () => {
-      const selectedTasks = [{ action: 'Deploy', type: TaskType.Execute }];
+      const selectedTasks = [
+        { action: 'Deploy', type: TaskType.Execute, config: [] },
+      ];
       const mockService = {
         processWithTool: vi.fn().mockResolvedValue({
           message: 'Refined plan',
-          tasks: [{ action: 'Deploy app', type: TaskType.Execute }],
+          tasks: [{ action: 'Deploy app', type: TaskType.Execute, config: [] }],
         }),
       } as unknown as LLMService;
       const handlers = createMockHandlers();

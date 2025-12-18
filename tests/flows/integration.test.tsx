@@ -1,6 +1,7 @@
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { randomUUID } from 'crypto';
 
 import { App, TaskType } from '../../src/types/types.js';
 
@@ -707,30 +708,32 @@ describe('End-to-End Flow Integration Tests', () => {
       debugModule.setDebugLevel(DebugLevel.Verbose);
 
       const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Creating file.',
-          tasks: [{ action: 'Create test.txt', type: TaskType.Execute }],
-          debug: [
-            {
-              id: 'debug-1',
-              name: 'debug' as const,
-              props: {
-                title: 'SYSTEM PROMPT',
-                content: 'Tool: plan\nCommand: create file',
-                color: '#ffffff',
+        processWithTool: vi.fn().mockImplementation(() =>
+          Promise.resolve({
+            message: 'Creating file.',
+            tasks: [{ action: 'Create test.txt', type: TaskType.Execute }],
+            debug: [
+              {
+                id: randomUUID(),
+                name: 'debug' as const,
+                props: {
+                  title: 'SYSTEM PROMPT',
+                  content: 'Tool: plan\nCommand: create file',
+                  color: '#ffffff',
+                },
               },
-            },
-            {
-              id: 'debug-2',
-              name: 'debug' as const,
-              props: {
-                title: 'LLM RESPONSE',
-                content: 'Response: {"message": "Creating file."}',
-                color: '#ffffff',
+              {
+                id: randomUUID(),
+                name: 'debug' as const,
+                props: {
+                  title: 'LLM RESPONSE',
+                  content: 'Response: {"message": "Creating file."}',
+                  color: '#ffffff',
+                },
               },
-            },
-          ],
-        }),
+            ],
+          })
+        ),
       };
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
@@ -795,21 +798,23 @@ describe('End-to-End Flow Integration Tests', () => {
       debugModule.setDebugLevel(DebugLevel.Verbose);
 
       const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Task planned.',
-          tasks: [{ action: 'Run command', type: TaskType.Execute }],
-          debug: [
-            {
-              id: 'debug-prompt',
-              name: 'debug' as const,
-              props: {
-                title: 'SYSTEM PROMPT',
-                content: 'Tool: plan\nCommand: run cmd',
-                color: '#ffffff',
+        processWithTool: vi.fn().mockImplementation(() =>
+          Promise.resolve({
+            message: 'Task planned.',
+            tasks: [{ action: 'Run command', type: TaskType.Execute }],
+            debug: [
+              {
+                id: randomUUID(),
+                name: 'debug' as const,
+                props: {
+                  title: 'SYSTEM PROMPT',
+                  content: 'Tool: plan\nCommand: run cmd',
+                  color: '#ffffff',
+                },
               },
-            },
-          ],
-        }),
+            ],
+          })
+        ),
       };
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
@@ -842,39 +847,41 @@ describe('End-to-End Flow Integration Tests', () => {
       debugModule.setDebugLevel(DebugLevel.Verbose);
 
       const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Processing.',
-          tasks: [{ action: 'Process data', type: TaskType.Execute }],
-          debug: [
-            {
-              id: 'debug-1',
-              name: 'debug' as const,
-              props: {
-                title: 'SYSTEM PROMPT',
-                content: 'First prompt',
-                color: '#ffffff',
+        processWithTool: vi.fn().mockImplementation(() =>
+          Promise.resolve({
+            message: 'Processing.',
+            tasks: [{ action: 'Process data', type: TaskType.Execute }],
+            debug: [
+              {
+                id: randomUUID(),
+                name: 'debug' as const,
+                props: {
+                  title: 'SYSTEM PROMPT',
+                  content: 'First prompt',
+                  color: '#ffffff',
+                },
               },
-            },
-            {
-              id: 'debug-2',
-              name: 'debug' as const,
-              props: {
-                title: 'LLM RESPONSE',
-                content: 'First response',
-                color: '#ffffff',
+              {
+                id: randomUUID(),
+                name: 'debug' as const,
+                props: {
+                  title: 'LLM RESPONSE',
+                  content: 'First response',
+                  color: '#ffffff',
+                },
               },
-            },
-            {
-              id: 'debug-3',
-              name: 'debug' as const,
-              props: {
-                title: 'SYSTEM PROMPT',
-                content: 'Second prompt',
-                color: '#ffffff',
+              {
+                id: randomUUID(),
+                name: 'debug' as const,
+                props: {
+                  title: 'SYSTEM PROMPT',
+                  content: 'Second prompt',
+                  color: '#ffffff',
+                },
               },
-            },
-          ],
-        }),
+            ],
+          })
+        ),
       };
 
       vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(

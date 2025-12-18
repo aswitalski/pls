@@ -90,9 +90,12 @@ export type RefinementProps = ComponentProps<
   BaseState
 >;
 
-export type PlanProps = ComponentProps<PlanDefinitionProps, PlanState>;
+export type ScheduleProps = ComponentProps<
+  ScheduleDefinitionProps,
+  ScheduleState
+>;
 
-export interface PlanState extends BaseState {
+export interface ScheduleState extends BaseState {
   highlightedIndex: number | null;
   currentDefineGroupIndex: number;
   completedSelections: number[];
@@ -187,7 +190,7 @@ export interface RefinementDefinitionProps {
   onAborted: (operation: string) => void;
 }
 
-export interface PlanDefinitionProps {
+export interface ScheduleDefinitionProps {
   message: string;
   tasks: Task[];
   debug?: DebugLevel;
@@ -279,10 +282,10 @@ type RefinementDefinition = StatefulDefinition<
   RefinementDefinitionProps,
   BaseState
 >;
-type PlanDefinition = StatefulDefinition<
-  ComponentName.Plan,
-  PlanDefinitionProps,
-  PlanState
+type ScheduleDefinition = StatefulDefinition<
+  ComponentName.Schedule,
+  ScheduleDefinitionProps,
+  ScheduleState
 >;
 type CommandDefinition = StatefulDefinition<
   ComponentName.Command,
@@ -332,7 +335,7 @@ export type StatefulComponentDefinition =
   | ConfigDefinition
   | RefinementDefinition
   | CommandDefinition
-  | PlanDefinition
+  | ScheduleDefinition
   | ConfirmDefinition
   | IntrospectDefinition
   | AnswerDefinition

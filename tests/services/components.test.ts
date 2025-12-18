@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { createRefinement } from '../../src/services/components.js';
+import {
+  createRefinement,
+  createScheduleDefinition,
+} from '../../src/services/components.js';
 import {
   BaseState,
   CommandProps,
@@ -8,7 +11,7 @@ import {
   ComponentDefinition,
   ConfigProps,
 } from '../../src/types/components.js';
-import { App, ComponentName } from '../../src/types/types.js';
+import { App, ComponentName, TaskType } from '../../src/types/types.js';
 import { ConfigStep, StepType } from '../../src/ui/Config.js';
 
 import { createMockAnthropicService } from '../test-utils.js';
@@ -328,6 +331,61 @@ describe('Component Types', () => {
       if (def.name === ComponentName.Refinement) {
         expect(def.props.text).toBe('Processing request');
         expect(def.props.onAborted).toBe(onAborted);
+      }
+    });
+  });
+
+  describe('Schedule component definition', () => {
+    it('creates definition without callback for DEFINE tasks', () => {
+      const tasks = [
+        {
+          action: 'Choose option',
+          type: TaskType.Define,
+          params: { options: ['A', 'B'] },
+          config: [],
+        },
+      ];
+
+      const def = createScheduleDefinition('Select an option.', tasks);
+
+      expect(def.name).toBe(ComponentName.Schedule);
+      if (def.name === ComponentName.Schedule) {
+        expect(def.props.message).toBe('Select an option.');
+        expect(def.props.tasks).toEqual(tasks);
+        expect(def.props.onSelectionConfirmed).toBeUndefined();
+        expect(def.state).toBeDefined();
+        expect(def.state.highlightedIndex).toBeNull();
+        expect(def.state.currentDefineGroupIndex).toBe(0);
+        expect(def.state.completedSelections).toEqual([]);
+      }
+    });
+
+    it('creates definition with callback for auto-complete', () => {
+      const tasks = [
+        { action: 'Build project', type: TaskType.Execute, config: [] },
+      ];
+      const callback = vi.fn();
+
+      const def = createScheduleDefinition('Building.', tasks, callback);
+
+      expect(def.name).toBe(ComponentName.Schedule);
+      if (def.name === ComponentName.Schedule) {
+        expect(def.props.message).toBe('Building.');
+        expect(def.props.tasks).toEqual(tasks);
+        expect(def.props.onSelectionConfirmed).toBe(callback);
+        expect(def.state).toBeDefined();
+      }
+    });
+
+    it('initializes state with correct default values', () => {
+      const tasks = [{ action: 'Task 1', type: TaskType.Execute, config: [] }];
+
+      const def = createScheduleDefinition('Processing.', tasks);
+
+      if (def.name === ComponentName.Schedule) {
+        expect(def.state.highlightedIndex).toBeNull();
+        expect(def.state.currentDefineGroupIndex).toBe(0);
+        expect(def.state.completedSelections).toEqual([]);
       }
     });
   });

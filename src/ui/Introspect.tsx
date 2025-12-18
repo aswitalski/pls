@@ -21,7 +21,7 @@ const MIN_PROCESSING_TIME = 1000;
 
 const BUILT_IN_CAPABILITIES = new Set([
   'CONFIG',
-  'PLAN',
+  'SCHEDULE',
   'INTROSPECT',
   'ANSWER',
   'EXECUTE',
@@ -29,7 +29,7 @@ const BUILT_IN_CAPABILITIES = new Set([
   'REPORT',
 ]);
 
-const INDIRECT_CAPABILITIES = new Set(['PLAN', 'VALIDATE', 'REPORT']);
+const INDIRECT_CAPABILITIES = new Set(['SCHEDULE', 'VALIDATE', 'REPORT']);
 
 function parseCapabilityFromTask(task: Task): Capability {
   // Parse "NAME: Description" format from task.action
@@ -127,7 +127,7 @@ export function Introspect({
           if (debug === DebugLevel.None) {
             capabilities = capabilities.filter(
               (cap) =>
-                cap.name.toUpperCase() !== 'PLAN' &&
+                cap.name.toUpperCase() !== 'SCHEDULE' &&
                 cap.name.toUpperCase() !== 'VALIDATE' &&
                 cap.name.toUpperCase() !== 'REPORT'
             );

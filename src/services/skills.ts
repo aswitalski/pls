@@ -179,9 +179,12 @@ brackets for additional information. Use commas instead. For example:
 
 `;
 
-  const skillsContent = skills.map((s) => s.trim()).join('\n\n');
+  const separator = '-'.repeat(64);
+  const skillsContent = skills
+    .map((s) => s.trim())
+    .join('\n\n' + separator + '\n\n');
 
-  return header + skillsContent;
+  return header + separator + '\n\n' + skillsContent;
 }
 
 /**

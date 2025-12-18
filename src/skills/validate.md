@@ -21,8 +21,7 @@ You will receive information about missing configuration values:
 Generate a response with two required fields:
 
 1. **message**: An empty string `""`
-2. **tasks**: An array of CONFIGURE tasks, one for each missing config
-   value
+2. **tasks**: An array of CONFIGURE tasks, one for each missing config value
 
 For each CONFIGURE task, create a natural language description that:
 
@@ -147,7 +146,7 @@ tasks: [
 
 ## Important Notes
 
-- All tasks must have type "configure"
+- All tasks must have type: "configure"
 - All tasks must include params.key with the config path
 - Descriptions should be helpful and contextual, not just technical
 - Use information from Available Skills section to provide context

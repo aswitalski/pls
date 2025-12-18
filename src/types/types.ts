@@ -14,7 +14,7 @@ export enum ComponentName {
   Message = 'message',
   Debug = 'debug',
   Command = 'command',
-  Plan = 'plan',
+  Schedule = 'schedule',
   Refinement = 'refinement',
   Feedback = 'feedback',
   Confirm = 'confirm',
@@ -27,7 +27,7 @@ export enum ComponentName {
 
 export enum TaskType {
   Config = 'configure',
-  Plan = 'plan',
+  Schedule = 'schedule',
   Execute = 'execute',
   Answer = 'answer',
   Introspect = 'introspect',
@@ -36,6 +36,7 @@ export enum TaskType {
   Ignore = 'ignore',
   Select = 'select',
   Discard = 'discard',
+  Group = 'group',
 }
 
 export enum FeedbackType {
@@ -52,4 +53,14 @@ export interface Task {
   action: string;
   type: TaskType;
   params?: Record<string, unknown>;
+  config?: string[];
+}
+
+// Hierarchical task definition with recursive subtasks
+export interface ScheduledTask {
+  action: string;
+  type: TaskType;
+  params?: Record<string, unknown>;
+  config?: string[];
+  subtasks?: ScheduledTask[];
 }

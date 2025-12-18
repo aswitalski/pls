@@ -29,7 +29,11 @@ export interface CommandResult {
 }
 
 export interface LLMService {
-  processWithTool(command: string, toolName: string): Promise<CommandResult>;
+  processWithTool(
+    command: string,
+    toolName: string,
+    instructions?: string
+  ): Promise<CommandResult>;
 }
 
 /**
@@ -95,38 +99,47 @@ export class AnthropicService implements LLMService {
 
   async processWithTool(
     command: string,
-    toolName: string
+    toolName: string,
+    customInstructions?: string
   ): Promise<CommandResult> {
     // Load tool from registry
     const tool = toolRegistry.getSchema(toolName);
-    const instructions = toolRegistry.getInstructions(toolName);
 
-    // Build system prompt with additional context based on tool
-    let systemPrompt = instructions;
+    // Use custom instructions if provided, otherwise load from registry
+    let systemPrompt: string;
 
-    // Add skills section for applicable tools
-    if (
-      toolName === 'plan' ||
-      toolName === 'introspect' ||
-      toolName === 'execute' ||
-      toolName === 'validate'
-    ) {
-      const skills = loadSkillsWithValidation();
-      const skillsSection = formatSkillsForPrompt(skills);
-      systemPrompt += skillsSection;
-    }
+    if (customInstructions) {
+      // Custom instructions provided (typically for testing)
+      systemPrompt = customInstructions;
+    } else {
+      // Load and build system prompt automatically (production)
+      const instructions = toolRegistry.getInstructions(toolName);
+      systemPrompt = instructions;
 
-    // Add config structure for config tool only
-    if (toolName === 'configure') {
-      const configStructure = getAvailableConfigStructure();
-      const configuredKeys = getConfiguredKeys();
-      const configSection =
-        '\n## Available Configuration\n\n' +
-        'Config structure (key: description):\n' +
-        JSON.stringify(configStructure, null, 2) +
-        '\n\nConfigured keys (keys that exist in config file):\n' +
-        JSON.stringify(configuredKeys, null, 2);
-      systemPrompt += configSection;
+      // Add skills section for applicable tools
+      if (
+        toolName === 'schedule' ||
+        toolName === 'introspect' ||
+        toolName === 'execute' ||
+        toolName === 'validate'
+      ) {
+        const skills = loadSkillsWithValidation();
+        const skillsSection = formatSkillsForPrompt(skills);
+        systemPrompt += skillsSection;
+      }
+
+      // Add config structure for config tool only
+      if (toolName === 'config') {
+        const configStructure = getAvailableConfigStructure();
+        const configuredKeys = getConfiguredKeys();
+        const configSection =
+          '\n## Available Configuration\n\n' +
+          'Config structure (key: description):\n' +
+          JSON.stringify(configStructure, null, 2) +
+          '\n\nConfigured keys (keys that exist in config file):\n' +
+          JSON.stringify(configuredKeys, null, 2);
+        systemPrompt += configSection;
+      }
     }
 
     // Build tools array - add web search for answer tool
@@ -269,7 +282,7 @@ export class AnthropicService implements LLMService {
       };
     }
 
-    // Handle plan and introspect tool responses
+    // Handle schedule and introspect tool responses
     if (input.message === undefined || typeof input.message !== 'string') {
       throw new Error(
         'Invalid tool response: missing or invalid message field'

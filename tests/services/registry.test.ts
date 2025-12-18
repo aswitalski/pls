@@ -126,12 +126,12 @@ describe('Tool registry', () => {
   });
 
   describe('Built-in tools', () => {
-    it('has plan tool registered', () => {
-      expect(registry.hasTool('plan')).toBe(true);
+    it('has schedule tool registered', () => {
+      expect(registry.hasTool('schedule')).toBe(true);
 
-      const schema = registry.getSchema('plan');
-      expect(schema.name).toBe('plan');
-      expect(schema.description).toContain('Plan and structure tasks');
+      const schema = registry.getSchema('schedule');
+      expect(schema.name).toBe('schedule');
+      expect(schema.description).toContain('hierarchical task structures');
     });
 
     it('has introspect tool registered', () => {
@@ -142,8 +142,8 @@ describe('Tool registry', () => {
       expect(schema.description).toContain('capabilities and skills');
     });
 
-    it('can load plan instructions', () => {
-      const instructions = registry.getInstructions('plan');
+    it('can load schedule instructions', () => {
+      const instructions = registry.getInstructions('schedule');
       expect(instructions).toBeTruthy();
       expect(instructions).toContain('Overview');
     });

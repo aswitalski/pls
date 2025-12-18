@@ -7,8 +7,8 @@ by the pls (prompt-language-shell) command-line concierge.
 
 1. [Initial Configuration Flow](#initial-configuration-flow)
 2. [Command Execution Flow](#command-execution-flow)
-3. [Planning Flow](#planning-flow)
-4. [Plan Selection and Refinement Flow](#plan-selection-and-refinement-flow)
+3. [Scheduling Flow](#scheduling-flow)
+4. [Schedule Selection and Refinement Flow](#schedule-selection-and-refinement-flow)
 5. [Task Execution Flows](#task-execution-flows)
 6. [Configuration Validation Flow](#configuration-validation-flow)
 7. [Skills System Flow](#skills-system-flow)
@@ -76,27 +76,27 @@ flowchart TD
 
 1. User provides natural language command
 2. Main component creates Command definition
-3. Command component calls LLM with PLAN tool
+3. Command component calls LLM with SCHEDULE tool
 4. LLM processes request and returns:
-   - Message introducing the plan
+   - Message introducing the schedule
    - List of structured tasks with actions, types, and parameters
 5. Command handler receives response
 6. Handler analyzes task list:
-   - If contains DEFINE tasks → Show plan and await user selection
-   - If all tasks are concrete → Show plan with confirmation
+   - If contains DEFINE tasks → Show schedule and await user selection
+   - If all tasks are concrete → Show schedule with confirmation
 7. Proceed to appropriate next flow
 
 ```mermaid
 flowchart TD
     Start([pls command]) --> CreateCmd[Create Command component]
-    CreateCmd --> CallLLM[Call LLM with PLAN tool]
+    CreateCmd --> CallLLM[Call LLM with SCHEDULE tool]
     CallLLM --> ProcessReq[LLM processes request]
     ProcessReq --> ReturnPlan[Return message + tasks]
 
     ReturnPlan --> AnalyzeTasks{Analyze<br/>task types}
 
-    AnalyzeTasks -->|Contains DEFINE| ShowPlanSelect[Show Plan component<br/>with selection]
-    AnalyzeTasks -->|All concrete| ShowPlanConf[Show Plan component<br/>with confirmation]
+    AnalyzeTasks -->|Contains DEFINE| ShowPlanSelect[Show Schedule component<br/>with selection]
+    AnalyzeTasks -->|All concrete| ShowPlanConf[Show Schedule component<br/>with confirmation]
 
     ShowPlanSelect --> UserSelect[User selects options]
     UserSelect --> Refinement[Plan Selection &<br/>Refinement Flow]
@@ -117,7 +117,7 @@ flowchart TD
 
 ---
 
-## Planning Flow
+## Scheduling Flow
 
 **Trigger:** Command component processes user request
 
@@ -178,7 +178,7 @@ flowchart TD
 
 **Task Types:**
 - `config` - Configuration changes, settings updates
-- `plan` - Planning or breaking down tasks
+- `schedule` - Planning or breaking down tasks
 - `execute` - Shell commands, running programs, processing operations
 - `answer` - Answering questions, providing information
 - `introspect` - Listing capabilities and skills
@@ -188,7 +188,7 @@ flowchart TD
 
 **CONFIG Tool Delegation:**
 
-When the PLAN tool returns tasks that are all of type `config`, the Command
+When the SCHEDULE tool returns tasks that are all of type `config`, the Command
 component automatically delegates to the CONFIG tool for refined configuration
 key extraction. This two-phase approach ensures specific, contextual config
 prompts:
@@ -206,33 +206,33 @@ CONFIG delegation: processWithTool("api", "config")
 CONFIG returns: [{ type: "config", params: { keys: ["api.endpoint", "api.key"] } }]
 ```
 
-This delegation happens transparently in the Command component before the plan
+This delegation happens transparently in the Command component before the schedule
 is shown to the user, ensuring they see the final, specific configuration
 requirements rather than generic placeholders.
 
 ---
 
-## Plan Selection and Refinement Flow
+## Schedule Selection and Refinement Flow
 
 **Trigger:** Plan contains one or more DEFINE tasks
 
 **Flow:**
 
-1. Plan component displays DEFINE task(s)
+1. Schedule component displays DEFINE task(s)
 2. User navigates options using keyboard:
    - Up/Down arrows to highlight options
    - Enter to select highlighted option
    - Ctrl+C to abort
 3. User selects an option for each DEFINE task
-4. Refinement component shows "refining plan" message
-5. Selected tasks sent to LLM for plan refinement
-6. LLM generates refined plan with concrete tasks
-7. New plan displayed with confirmation prompt
+4. Refinement component shows "refining schedule" message
+5. Selected tasks sent to LLM for schedule refinement
+6. LLM generates refined schedule with concrete tasks
+7. New schedule displayed with confirmation prompt
 8. User confirms or cancels execution
 
 ```mermaid
 flowchart TD
-    Start([Plan with DEFINE tasks]) --> DisplayPlan[Display Plan component]
+    Start([Plan with DEFINE tasks]) --> DisplayPlan[Display Schedule component]
     DisplayPlan --> UserNav[User navigates options<br/>Up/Down/Enter/Ctrl+C]
 
     UserNav --> UserAction{User action}
@@ -244,8 +244,8 @@ flowchart TD
     AllSelected -->|Yes| ShowRefine[Show Refinement component]
 
     ShowRefine --> SendToLLM[Send selections to LLM]
-    SendToLLM --> LLMRefine[LLM generates refined plan]
-    LLMRefine --> DisplayNew[Display new Plan component]
+    SendToLLM --> LLMRefine[LLM generates refined schedule]
+    LLMRefine --> DisplayNew[Display new Schedule component]
 
     DisplayNew --> ShowConfirm[Show Confirm component]
     ShowConfirm --> UserConfirm{User confirms?}
@@ -266,7 +266,7 @@ flowchart TD
 
 ### Overview
 
-After plan confirmation, tasks are routed to appropriate handlers based on type.
+After schedule confirmation, tasks are routed to appropriate handlers based on type.
 
 **Routing Logic:**
 
@@ -562,9 +562,9 @@ Execution resumes
      - Steps (required)
      - Execution (optional but recommended)
    - Skills concatenated into "Available Skills" section
-   - Appended to PLAN tool instructions
+   - Appended to SCHEDULE tool instructions
 
-2. **Skill Matching** (during planning):
+2. **Skill Matching** (during schedulening):
    - LLM compares user request to skill names and aliases
    - Matches action verbs to skill names
    - If match found → Use skill's execution steps
@@ -576,7 +576,7 @@ Execution resumes
      - No LLM interpretation
    - **Variant placeholders** (e.g., {product.VARIANT.path}):
      - LLM matches user intent to variant name (alpha, beta, etc.)
-     - Replaces VARIANT with actual variant in planning
+     - Replaces VARIANT with actual variant in schedulening
      - Config validator then performs strict lookup
    - **Skill references** (e.g., [Navigate To Product]):
      - Referenced skill's execution steps injected inline
@@ -614,7 +614,7 @@ flowchart TD
     StrictCheck -->|Strict| DirectLookup[Direct config lookup:<br/>product.alpha.path]
     StrictCheck -->|Variant| LLMMatch[LLM matches variant:<br/>VARIANT → alpha]
 
-    LLMMatch --> ReplaceVar[Replace in planning:<br/>product.alpha.path]
+    LLMMatch --> ReplaceVar[Replace in schedulening:<br/>product.alpha.path]
     DirectLookup --> ValidateConfig
     ReplaceVar --> ValidateConfig
 
@@ -798,20 +798,20 @@ flowchart LR
 
 Complex request with ambiguity:
 1. User provides ambiguous request
-2. Command creates initial plan with DEFINE tasks
+2. Command creates initial schedule with DEFINE tasks
 3. User selects from options
 4. Refinement component shows progress
-5. New plan generated with concrete tasks
+5. New schedule generated with concrete tasks
 6. Confirmation prompt
 7. Execute tasks sequentially
 
 ```mermaid
 flowchart LR
     Start([pls deploy]) --> Command[Command]
-    Command --> Plan1[Plan:<br/>DEFINE tasks]
+    Command --> Plan1[Schedule:<br/>DEFINE tasks]
     Plan1 --> UserSelect[User selects<br/>option]
     UserSelect --> Refine[Refinement]
-    Refine --> Plan2[Plan:<br/>Concrete tasks]
+    Refine --> Plan2[Schedule:<br/>Concrete tasks]
     Plan2 --> Confirm[Confirm]
     Confirm --> Execute[Execute]
     Execute --> Exit[Exit]
@@ -860,7 +860,7 @@ flowchart TD
 
     InitConfig --> CommandFlow
 
-    CommandFlow --> PlanFlow[Planning Flow]
+    CommandFlow --> PlanFlow[Scheduling Flow]
     PlanFlow --> HasDefine{Has DEFINE<br/>tasks?}
 
     HasDefine -->|Yes| SelectRefine[Plan Selection &<br/>Refinement Flow]

@@ -303,21 +303,22 @@ describe('Workflow component lifecycle', () => {
 
   describe('Debug mode', () => {
     it('passes debug prop to active components with DEFINE tasks', async () => {
-      const plan: ComponentDefinition = {
-        id: 'plan-1',
-        name: ComponentName.Plan,
+      const schedule: ComponentDefinition = {
+        id: 'schedule-1',
+        name: ComponentName.Schedule,
         state: {
           highlightedIndex: null,
           currentDefineGroupIndex: 0,
           completedSelections: [],
         },
         props: {
-          message: 'Test plan',
+          message: 'Test schedule',
           tasks: [
             {
               action: 'Choose option',
               type: TaskType.Define,
               params: { options: ['Option A', 'Option B'] },
+              config: [],
             },
           ],
           onSelectionConfirmed: vi.fn(),
@@ -326,32 +327,33 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[plan]} debug={DebugLevel.Info} />
+        <Workflow initialQueue={[schedule]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
-      // Plan component should show debug info (task types)
+      // Schedule component should show debug info (task types)
       const output = lastFrame();
       expect(output).toContain('define'); // Debug mode shows task types
     });
 
     it('updates debug display for both active and pending when debug changes', async () => {
-      const plan: ComponentDefinition = {
-        id: 'plan-1',
-        name: ComponentName.Plan,
+      const schedule: ComponentDefinition = {
+        id: 'schedule-1',
+        name: ComponentName.Schedule,
         state: {
           highlightedIndex: null,
           currentDefineGroupIndex: 0,
           completedSelections: [],
         },
         props: {
-          message: 'Test plan',
+          message: 'Test schedule',
           tasks: [
             {
               action: 'Choose option',
               type: TaskType.Define,
               params: { options: ['Option A', 'Option B'] },
+              config: [],
             },
           ],
           onSelectionConfirmed: vi.fn(),
@@ -361,25 +363,25 @@ describe('Workflow component lifecycle', () => {
 
       // Start with debug=false
       const { lastFrame, rerender } = render(
-        <Workflow initialQueue={[plan]} debug={DebugLevel.None} />
+        <Workflow initialQueue={[schedule]} debug={DebugLevel.None} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
       // Debug type indicators should NOT be visible (checking for '› define' pattern)
       let output = lastFrame();
-      expect(output).toContain('Test plan'); // Message should be there
+      expect(output).toContain('Test schedule'); // Message should be there
       expect(output).toContain('Choose option'); // Task should be there
       expect(output).not.toContain('› define'); // But not debug type indicator
 
       // Toggle debug to true
-      rerender(<Workflow initialQueue={[plan]} debug={DebugLevel.Info} />);
+      rerender(<Workflow initialQueue={[schedule]} debug={DebugLevel.Info} />);
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
       // Now debug type indicators SHOULD be visible
       output = lastFrame();
-      expect(output).toContain('Test plan'); // Message still there
+      expect(output).toContain('Test schedule'); // Message still there
       expect(output).toContain('Choose option'); // Task still there
       expect(output).toContain('› define'); // Debug type indicator now visible
     });
@@ -392,9 +394,9 @@ describe('Workflow component lifecycle', () => {
         status: ComponentStatus.Awaiting,
       };
 
-      const plan: ComponentDefinition = {
-        id: 'plan-1',
-        name: ComponentName.Plan,
+      const schedule: ComponentDefinition = {
+        id: 'schedule-1',
+        name: ComponentName.Schedule,
         state: {
           highlightedIndex: null,
           currentDefineGroupIndex: 0,
@@ -407,6 +409,7 @@ describe('Workflow component lifecycle', () => {
               action: 'Choose',
               type: TaskType.Define,
               params: { options: ['A', 'B'] },
+              config: [],
             },
           ],
           onSelectionConfirmed: vi.fn(),
@@ -415,16 +418,16 @@ describe('Workflow component lifecycle', () => {
       };
 
       const { lastFrame } = render(
-        <Workflow initialQueue={[message, plan]} debug={DebugLevel.Info} />
+        <Workflow initialQueue={[message, schedule]} debug={DebugLevel.Info} />
       );
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
-      // Active plan should show debug, timeline items should not
+      // Active schedule should show debug, timeline items should not
       const output = lastFrame();
       expect(output).toBeDefined();
       expect(output).toContain('Done message'); // Timeline item present
-      expect(output).toContain('define'); // Active plan shows debug
+      expect(output).toContain('define'); // Active schedule shows debug
     });
   });
 

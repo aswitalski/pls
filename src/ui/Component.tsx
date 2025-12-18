@@ -14,7 +14,7 @@ import { Execute } from './Execute.js';
 import { Feedback } from './Feedback.js';
 import { Introspect } from './Introspect.js';
 import { Message } from './Message.js';
-import { Plan } from './Plan.js';
+import { Schedule } from './Schedule.js';
 import { Refinement } from './Refinement.js';
 import { Report } from './Report.js';
 import { Validate } from './Validate.js';
@@ -46,9 +46,9 @@ export const Component = memo(function Component({
     case ComponentName.Command:
       return <Command {...def.props} state={def.state} status={def.status} />;
 
-    case ComponentName.Plan:
+    case ComponentName.Schedule:
       return (
-        <Plan
+        <Schedule
           {...def.props}
           state={def.state}
           status={def.status}

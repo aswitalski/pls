@@ -1,4 +1,4 @@
-import { Task, TaskType } from '../types/types.js';
+import { ScheduledTask, Task, TaskType } from '../types/types.js';
 import { Handlers } from '../types/components.js';
 
 import { LLMService } from './anthropic.js';
@@ -10,7 +10,7 @@ import {
   createFeedback,
   createIntrospectDefinition,
   createMessage,
-  createPlanDefinition,
+  createScheduleDefinition,
   createValidateDefinition,
 } from './components.js';
 import { saveConfig, unflattenConfig } from './configuration.js';
@@ -65,53 +65,77 @@ export function routeTasksWithConfirm(
   const operation = getOperationName(validTasks);
 
   if (hasDefineTask) {
-    // Has DEFINE tasks - add Plan to queue for user selection
+    // Has DEFINE tasks - add Schedule to queue for user selection
     // Refinement flow will call this function again with refined tasks
-    const planDefinition = createPlanDefinition(message, validTasks);
-    handlers.addToQueue(planDefinition);
+    const scheduleDefinition = createScheduleDefinition(message, validTasks);
+    handlers.addToQueue(scheduleDefinition);
   } else {
-    // No DEFINE tasks - Plan auto-completes and adds Confirm to queue
-    // When Plan activates, Command moves to timeline
-    // When Plan completes, it moves to pending
-    // When Confirm activates, Plan stays pending (visible for context)
-    const planDefinition = createPlanDefinition(message, validTasks, () => {
-      // Plan completed - add Confirm to queue
-      const confirmDefinition = createConfirmDefinition(
-        () => {
-          // User confirmed - complete both Confirm and Plan, then route to appropriate component
-          handlers.completeActiveAndPending();
-          executeTasksAfterConfirm(validTasks, service, userRequest, handlers);
-        },
-        () => {
-          // User cancelled - complete both Confirm and Plan, then show cancellation
-          handlers.completeActiveAndPending();
-          const message = getCancellationMessage(operation);
-          handlers.addToQueue(createFeedback(FeedbackType.Aborted, message));
-        }
-      );
-      handlers.addToQueue(confirmDefinition);
-    });
+    // No DEFINE tasks - Schedule auto-completes and adds Confirm to queue
+    // When Schedule activates, Command moves to timeline
+    // When Schedule completes, it moves to pending
+    // When Confirm activates, Schedule stays pending (visible for context)
+    const scheduleDefinition = createScheduleDefinition(
+      message,
+      validTasks,
+      () => {
+        // Schedule completed - add Confirm to queue
+        const confirmDefinition = createConfirmDefinition(
+          () => {
+            // User confirmed - complete both Confirm and Schedule, then route to appropriate component
+            handlers.completeActiveAndPending();
+            executeTasksAfterConfirm(
+              validTasks,
+              service,
+              userRequest,
+              handlers
+            );
+          },
+          () => {
+            // User cancelled - complete both Confirm and Schedule, then show cancellation
+            handlers.completeActiveAndPending();
+            const message = getCancellationMessage(operation);
+            handlers.addToQueue(createFeedback(FeedbackType.Aborted, message));
+          }
+        );
+        handlers.addToQueue(confirmDefinition);
+      }
+    );
 
-    handlers.addToQueue(planDefinition);
+    handlers.addToQueue(scheduleDefinition);
   }
 }
 
 /**
- * Validate that all tasks have the same type
- * Per FLOWS.md: "Mixed types → Error (not supported)"
+ * Validate task types - allows mixed types at top level with Groups,
+ * but each Group must have uniform subtask types
  */
 function validateTaskTypes(tasks: Task[]): void {
   if (tasks.length === 0) return;
 
-  const types = new Set(tasks.map((task) => task.type));
-  if (types.size > 1) {
-    throw new Error(getMixedTaskTypesError(Array.from(types)));
+  // Cast to ScheduledTask to access subtasks property
+  const scheduledTasks = tasks as unknown as ScheduledTask[];
+
+  // Check each Group task's subtasks for uniform types
+  for (const task of scheduledTasks) {
+    if (
+      task.type === TaskType.Group &&
+      task.subtasks &&
+      task.subtasks.length > 0
+    ) {
+      const subtaskTypes = new Set(task.subtasks.map((t) => t.type));
+      if (subtaskTypes.size > 1) {
+        throw new Error(getMixedTaskTypesError(Array.from(subtaskTypes)));
+      }
+      // Recursively validate nested groups
+      validateTaskTypes(task.subtasks as Task[]);
+    }
   }
 }
 
 /**
  * Execute tasks after confirmation (internal helper)
- * Validates task types after user has seen and confirmed the plan
+ * Validates task types and routes each type appropriately
+ * Supports mixed types at top level with Groups
  */
 function executeTasksAfterConfirm(
   tasks: Task[],
@@ -119,8 +143,7 @@ function executeTasksAfterConfirm(
   userRequest: string,
   handlers: Handlers
 ): void {
-  // Validate all tasks have the same type after user confirmation
-  // Per FLOWS.md: "Confirm component completes → Execution handler analyzes task types"
+  // Validate task types (Groups must have uniform subtasks)
   try {
     validateTaskTypes(tasks);
   } catch (error) {
@@ -128,94 +151,124 @@ function executeTasksAfterConfirm(
     return;
   }
 
-  const allIntrospect = tasks.every(
-    (task) => task.type === TaskType.Introspect
-  );
-  const allAnswer = tasks.every((task) => task.type === TaskType.Answer);
-  const allConfig = tasks.every((task) => task.type === TaskType.Config);
+  // Flatten Group tasks to get actual executable subtasks
+  const flattenedTasks: Task[] = [];
+  const scheduledTasks = tasks as unknown as ScheduledTask[];
 
-  if (allAnswer) {
-    const question = tasks[0].action;
-    handlers.addToQueue(createAnswerDefinition(question, service));
-  } else if (allIntrospect) {
-    handlers.addToQueue(createIntrospectDefinition(tasks, service));
-  } else if (allConfig) {
-    // Route to Config flow - extract keys from task params
-    const configKeys = tasks
-      .map((task) => task.params?.key as string | undefined)
-      .filter((key): key is string => key !== undefined);
+  for (const task of scheduledTasks) {
+    if (task.type === TaskType.Group && task.subtasks) {
+      // Add all subtasks from the group
+      flattenedTasks.push(...(task.subtasks as Task[]));
+    } else {
+      // Add non-group tasks as-is
+      flattenedTasks.push(task as Task);
+    }
+  }
 
-    handlers.addToQueue(
-      createConfigDefinitionWithKeys(
-        configKeys,
-        (config: Record<string, string>) => {
-          // Save config - Config component will handle completion and feedback
-          try {
-            // Convert flat dotted keys to nested structure grouped by section
-            const configBySection = unflattenConfig(config);
+  // Group flattened tasks by type - initialize all TaskType keys with empty arrays
+  const tasksByType: Record<TaskType, Task[]> = {} as Record<TaskType, Task[]>;
+  for (const type of Object.values(TaskType)) {
+    tasksByType[type as TaskType] = [];
+  }
 
-            // Save each section
-            for (const [section, sectionConfig] of Object.entries(
-              configBySection
-            )) {
-              saveConfig(section, sectionConfig);
+  for (const task of flattenedTasks) {
+    tasksByType[task.type].push(task);
+  }
+
+  // Route each type group appropriately
+  for (const [type, typeTasks] of Object.entries(tasksByType)) {
+    const taskType = type as TaskType;
+
+    // Skip empty task groups (pre-initialized but unused)
+    if (typeTasks.length === 0) {
+      continue;
+    }
+
+    if (taskType === TaskType.Answer) {
+      const question = typeTasks[0].action;
+      handlers.addToQueue(createAnswerDefinition(question, service));
+    } else if (taskType === TaskType.Introspect) {
+      handlers.addToQueue(createIntrospectDefinition(typeTasks, service));
+    } else if (taskType === TaskType.Config) {
+      // Route to Config flow - extract keys from task params
+      const configKeys = typeTasks
+        .map((task) => task.params?.key as string | undefined)
+        .filter((key): key is string => key !== undefined);
+
+      handlers.addToQueue(
+        createConfigDefinitionWithKeys(
+          configKeys,
+          (config: Record<string, string>) => {
+            // Save config - Config component will handle completion and feedback
+            try {
+              // Convert flat dotted keys to nested structure grouped by section
+              const configBySection = unflattenConfig(config);
+
+              // Save each section
+              for (const [section, sectionConfig] of Object.entries(
+                configBySection
+              )) {
+                saveConfig(section, sectionConfig);
+              }
+            } catch (error) {
+              const errorMessage =
+                error instanceof Error
+                  ? error.message
+                  : 'Failed to save configuration';
+              throw new Error(errorMessage);
             }
-          } catch (error) {
-            const errorMessage =
-              error instanceof Error
-                ? error.message
-                : 'Failed to save configuration';
-            throw new Error(errorMessage);
+          },
+          (operation: string) => {
+            handlers.onAborted(operation);
           }
-        },
-        (operation: string) => {
-          handlers.onAborted(operation);
+        )
+      );
+    } else if (taskType === TaskType.Execute) {
+      // Execute tasks with validation
+      try {
+        const validation = validateExecuteTasks(typeTasks);
+
+        if (validation.validationErrors.length > 0) {
+          // Show error feedback for invalid skills
+          const errorMessages = validation.validationErrors.map((error) => {
+            const issuesList = error.issues
+              .map((issue) => `  - ${issue}`)
+              .join('\n');
+            return `Invalid skill definition "${error.skill}":\n\n${issuesList}`;
+          });
+
+          handlers.addToQueue(
+            createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
+          );
+        } else if (validation.missingConfig.length > 0) {
+          handlers.addToQueue(
+            createValidateDefinition(
+              validation.missingConfig,
+              userRequest,
+              service,
+              (error: string) => {
+                handlers.onError(error);
+              },
+              () => {
+                handlers.addToQueue(
+                  createExecuteDefinition(typeTasks, service)
+                );
+              },
+              (operation: string) => {
+                handlers.onAborted(operation);
+              }
+            )
+          );
+        } else {
+          handlers.addToQueue(createExecuteDefinition(typeTasks, service));
         }
-      )
-    );
-  } else {
-    // Execute tasks with validation
-    try {
-      const validation = validateExecuteTasks(tasks);
-
-      if (validation.validationErrors.length > 0) {
-        // Show error feedback for invalid skills
-        const errorMessages = validation.validationErrors.map((error) => {
-          const issuesList = error.issues
-            .map((issue) => `  - ${issue}`)
-            .join('\n');
-          return `Invalid skill definition "${error.skill}":\n\n${issuesList}`;
-        });
-
-        handlers.addToQueue(
-          createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
-        );
-      } else if (validation.missingConfig.length > 0) {
-        handlers.addToQueue(
-          createValidateDefinition(
-            validation.missingConfig,
-            userRequest,
-            service,
-            (error: string) => {
-              handlers.onError(error);
-            },
-            () => {
-              handlers.addToQueue(createExecuteDefinition(tasks, service));
-            },
-            (operation: string) => {
-              handlers.onAborted(operation);
-            }
-          )
-        );
-      } else {
-        handlers.addToQueue(createExecuteDefinition(tasks, service));
+      } catch (error) {
+        // Handle skill reference errors (e.g., unknown skills)
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        const message = createMessage(errorMessage);
+        handlers.addToQueue(message);
       }
-    } catch (error) {
-      // Handle skill reference errors (e.g., unknown skills)
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      const message = createMessage(errorMessage);
-      handlers.addToQueue(message);
     }
   }
 }

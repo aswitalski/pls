@@ -159,7 +159,6 @@ $ pls build test
 
 ## Roadmap
 
-- **0.7** - Comprehend skill, simplified prompts, better debugging
 - **0.8** - Sequential and interlaced skill execution
 - **0.9** - Learn skill, codebase refinement, complex dependency handling
 - **1.0** - Production release

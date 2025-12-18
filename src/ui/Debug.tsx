@@ -3,9 +3,8 @@ import { Box, Text } from 'ink';
 
 import { DebugProps } from '../types/components.js';
 
-const MIN_CONTENT_WIDTH = 80;
+const CONTENT_WIDTH = 80;
 const HORIZONTAL_PADDING = 2;
-const BORDER_WIDTH = 1;
 
 export const Debug = ({ title, content, color }: DebugProps) => {
   return (
@@ -15,11 +14,14 @@ export const Debug = ({ title, content, color }: DebugProps) => {
       paddingY={1}
       borderStyle="single"
       borderColor={color}
-      alignSelf="flex-start"
-      minWidth={MIN_CONTENT_WIDTH + 2 * HORIZONTAL_PADDING + 2 * BORDER_WIDTH}
+      width={CONTENT_WIDTH}
     >
-      <Text color={color}>{title}</Text>
-      <Text color={color}>{content}</Text>
+      <Text color={color} wrap="wrap">
+        {title}
+      </Text>
+      <Text color={color} wrap="wrap">
+        {content}
+      </Text>
     </Box>
   );
 };

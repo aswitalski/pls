@@ -45,7 +45,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_123',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'Here is my plan',
               tasks: [
@@ -61,7 +61,10 @@ describe('Anthropic service - Tool-based processing', () => {
         stop_reason: 'end_turn',
       });
 
-      const result = await service.processWithTool('change dir to ~', 'plan');
+      const result = await service.processWithTool(
+        'change dir to ~',
+        'schedule'
+      );
 
       expect(result.tasks).toEqual([
         {
@@ -86,7 +89,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_456',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'Let me help you with that',
               tasks: [
@@ -114,7 +117,7 @@ describe('Anthropic service - Tool-based processing', () => {
 
       const result = await service.processWithTool(
         'install deps, run tests, deploy',
-        'plan'
+        'schedule'
       );
 
       expect(result.tasks).toEqual([
@@ -142,7 +145,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_789',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'I will do these tasks for you',
               tasks: [
@@ -165,7 +168,7 @@ describe('Anthropic service - Tool-based processing', () => {
         stop_reason: 'end_turn',
       });
 
-      const result = await service.processWithTool('some command', 'plan');
+      const result = await service.processWithTool('some command', 'schedule');
 
       expect(result.tasks).toEqual([
         {
@@ -189,7 +192,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_complex',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'Fetching data now',
               tasks: [
@@ -216,7 +219,7 @@ describe('Anthropic service - Tool-based processing', () => {
         stop_reason: 'end_turn',
       });
 
-      const result = await service.processWithTool('fetch data', 'plan');
+      const result = await service.processWithTool('fetch data', 'schedule');
 
       expect(result.tasks[0].params).toEqual({
         url: 'https://api.example.com/data',
@@ -244,7 +247,7 @@ describe('Anthropic service - Tool-based processing', () => {
       });
 
       await expect(
-        service.processWithTool('some command', 'plan')
+        service.processWithTool('some command', 'schedule')
       ).rejects.toThrow('Expected tool_use response from Claude API');
     });
 
@@ -254,7 +257,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_bad',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'Test message',
               // Missing tasks array
@@ -265,7 +268,7 @@ describe('Anthropic service - Tool-based processing', () => {
       });
 
       await expect(
-        service.processWithTool('some command', 'plan')
+        service.processWithTool('some command', 'schedule')
       ).rejects.toThrow(
         'Invalid tool response: missing or invalid tasks array'
       );
@@ -275,7 +278,7 @@ describe('Anthropic service - Tool-based processing', () => {
       mockCreate.mockRejectedValue(new Error('API Error'));
 
       await expect(
-        service.processWithTool('some command', 'plan')
+        service.processWithTool('some command', 'schedule')
       ).rejects.toThrow('API Error');
     });
 
@@ -285,7 +288,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_empty',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'No tasks to perform',
               tasks: [],
@@ -295,7 +298,7 @@ describe('Anthropic service - Tool-based processing', () => {
         stop_reason: 'end_turn',
       });
 
-      const result = await service.processWithTool('do nothing', 'plan');
+      const result = await service.processWithTool('do nothing', 'schedule');
 
       expect(result.tasks).toEqual([]);
     });
@@ -306,7 +309,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_define',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'I need more information',
               tasks: [
@@ -328,7 +331,7 @@ describe('Anthropic service - Tool-based processing', () => {
         stop_reason: 'end_turn',
       });
 
-      const result = await service.processWithTool('do something', 'plan');
+      const result = await service.processWithTool('do something', 'schedule');
 
       expect(result.tasks).toEqual([
         {
@@ -351,7 +354,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_mixed',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'Processing your request',
               tasks: [
@@ -379,7 +382,7 @@ describe('Anthropic service - Tool-based processing', () => {
 
       const result = await service.processWithTool(
         'build project, do something, run tests',
-        'plan'
+        'schedule'
       );
 
       expect(result.tasks).toEqual([
@@ -407,7 +410,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_ignore',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'Cannot process this request',
               tasks: [
@@ -422,7 +425,7 @@ describe('Anthropic service - Tool-based processing', () => {
         stop_reason: 'end_turn',
       });
 
-      const result = await service.processWithTool('do stuff', 'plan');
+      const result = await service.processWithTool('do stuff', 'schedule');
 
       expect(result.tasks).toEqual([
         {
@@ -440,7 +443,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_test',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'Installing now',
               tasks: [
@@ -456,7 +459,7 @@ describe('Anthropic service - Tool-based processing', () => {
         stop_reason: 'end_turn',
       });
 
-      const result = await service.processWithTool('install deps', 'plan');
+      const result = await service.processWithTool('install deps', 'schedule');
 
       expect(result.tasks[0]).toHaveProperty('action', 'install dependencies');
       expect(result.tasks[0]).toHaveProperty('type', 'execute');
@@ -472,7 +475,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_truncated',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'Truncated response',
               tasks: [{ action: 'partial task' }],
@@ -483,7 +486,7 @@ describe('Anthropic service - Tool-based processing', () => {
       });
 
       await expect(
-        service.processWithTool('complex command', 'plan')
+        service.processWithTool('complex command', 'schedule')
       ).rejects.toThrow(
         'Response was truncated due to length. Please simplify your request or break it into smaller parts.'
       );
@@ -496,7 +499,7 @@ describe('Anthropic service - Tool-based processing', () => {
       });
 
       await expect(
-        service.processWithTool('some command', 'plan')
+        service.processWithTool('some command', 'schedule')
       ).rejects.toThrow('Expected tool_use response from Claude API');
     });
 
@@ -506,7 +509,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_bad',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'Invalid task',
               tasks: [{ type: TaskType.Execute }],
@@ -517,7 +520,7 @@ describe('Anthropic service - Tool-based processing', () => {
       });
 
       await expect(
-        service.processWithTool('some command', 'plan')
+        service.processWithTool('some command', 'schedule')
       ).rejects.toThrow(
         "Invalid task at index 0: missing or invalid 'action' field"
       );
@@ -529,7 +532,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_bad',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'Bad task format',
               tasks: ['string task'],
@@ -540,7 +543,7 @@ describe('Anthropic service - Tool-based processing', () => {
       });
 
       await expect(
-        service.processWithTool('some command', 'plan')
+        service.processWithTool('some command', 'schedule')
       ).rejects.toThrow(
         "Invalid task at index 0: missing or invalid 'action' field"
       );
@@ -552,7 +555,7 @@ describe('Anthropic service - Tool-based processing', () => {
           {
             type: 'tool_use',
             id: 'tool_bad',
-            name: 'plan',
+            name: 'schedule',
             input: {
               message: 'Invalid format',
               tasks: 'not an array',
@@ -563,7 +566,7 @@ describe('Anthropic service - Tool-based processing', () => {
       });
 
       await expect(
-        service.processWithTool('some command', 'plan')
+        service.processWithTool('some command', 'schedule')
       ).rejects.toThrow(
         'Invalid tool response: missing or invalid tasks array'
       );

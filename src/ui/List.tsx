@@ -33,7 +33,7 @@ export const List: FC<ListProps> = ({
   highlightedParentIndex = null,
   showType = false,
 }) => {
-  const marginLeft = level > 0 ? 4 : 0;
+  const marginLeft = level > 0 ? 2 : 0;
 
   return (
     <Box flexDirection="column" marginLeft={marginLeft}>
@@ -44,7 +44,8 @@ export const List: FC<ListProps> = ({
           level === 0 ? highlightedParentIndex === index : false;
         const isHighlighted =
           item.highlighted || (level > 0 && index === highlightedIndex);
-        const marker = item.marker || (isHighlighted ? '  → ' : '  - ');
+        const defaultMarker = level > 0 ? '  · ' : '  - ';
+        const marker = item.marker || (isHighlighted ? '  → ' : defaultMarker);
 
         // Use highlighted colors if available and item is highlighted
         const descriptionColor =

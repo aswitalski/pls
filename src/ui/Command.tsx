@@ -12,7 +12,7 @@ import { Task, TaskType } from '../types/types.js';
 import { LLMService } from '../services/anthropic.js';
 
 import { Colors } from '../services/colors.js';
-import { createPlanDefinition } from '../services/components.js';
+import { createScheduleDefinition } from '../services/components.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { useInput } from '../services/keyboard.js';
 import { handleRefinement } from '../services/refinement.js';
@@ -63,7 +63,10 @@ export function Command({
       const startTime = Date.now();
 
       try {
-        let result = await svc!.processWithTool(command, 'plan');
+        let result = await svc!.processWithTool(command, 'schedule');
+
+        // Save schedule debug output before potentially delegating
+        const scheduleDebug = result.debug || [];
 
         // If all tasks are configure type, delegate to CONFIGURE tool
         const allConfig =
@@ -82,8 +85,13 @@ export function Command({
 
         if (mounted) {
           // Add debug components to timeline if present
-          if (result.debug && result.debug.length > 0) {
-            handlers?.addToTimeline(...result.debug);
+          // If we delegated to configure, include both schedule and configure debug
+          // If not, only include schedule debug (result.debug is same as scheduleDebug)
+          const allDebug = allConfig
+            ? [...scheduleDebug, ...(result.debug || [])]
+            : scheduleDebug;
+          if (allDebug.length > 0) {
+            handlers?.addToTimeline(...allDebug);
           }
 
           // Save result to state for timeline display
@@ -97,8 +105,8 @@ export function Command({
             (task) => task.type === TaskType.Define
           );
 
-          // Create Plan definition
-          const planDefinition = createPlanDefinition(
+          // Create Schedule definition
+          const scheduleDefinition = createScheduleDefinition(
             result.message,
             result.tasks,
             hasDefineTask
@@ -115,9 +123,9 @@ export function Command({
           );
 
           if (hasDefineTask) {
-            // DEFINE tasks: Move Command to timeline, add Plan to queue
+            // DEFINE tasks: Move Command to timeline, add Schedule to queue
             handlers?.completeActive();
-            handlers?.addToQueue(planDefinition);
+            handlers?.addToQueue(scheduleDefinition);
           } else {
             // No DEFINE tasks: Complete Command, then route to Confirm flow
             handlers?.completeActive();

@@ -3,10 +3,10 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Handlers, PlanState } from '../../src/types/components.js';
+import { Handlers, ScheduleState } from '../../src/types/components.js';
 import { Task, TaskType } from '../../src/types/types.js';
 
-import { Plan } from '../../src/ui/Plan.js';
+import { Schedule } from '../../src/ui/Schedule.js';
 import { DebugLevel } from '../../src/services/configuration.js';
 import {
   Keys,
@@ -18,12 +18,12 @@ const { ArrowDown, ArrowUp, Enter, Escape } = Keys;
 const WaitTime = 32; // Generous wait time ensuring stability across all hardware and load conditions
 
 // Helper to create mock handlers with state tracking
-function createMockHandlers(initialState: PlanState): {
-  handlers: Handlers<PlanState>;
-  state: PlanState;
+function createMockHandlers(initialState: ScheduleState): {
+  handlers: Handlers<ScheduleState>;
+  state: ScheduleState;
 } {
   const state = { ...initialState };
-  const handlers: Handlers<PlanState> = {
+  const handlers: Handlers<ScheduleState> = {
     addToQueue: vi.fn(),
     updateState: vi.fn((newState) => {
       Object.assign(state, newState);
@@ -37,16 +37,16 @@ function createMockHandlers(initialState: PlanState): {
   return { handlers, state };
 }
 
-describe('Plan component', () => {
+describe('Schedule component', () => {
   describe('Interactive behavior', () => {
     it('renders define task without initial highlight', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const { lastFrame } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
@@ -54,6 +54,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -66,13 +67,13 @@ describe('Plan component', () => {
     });
 
     it('marks define task with right arrow when no selection made', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const { lastFrame } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
@@ -80,6 +81,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -99,7 +101,7 @@ describe('Plan component', () => {
         completedSelections: [],
       });
       const { lastFrame, stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           handlers={handlers}
           message=""
@@ -108,6 +110,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -134,7 +137,7 @@ describe('Plan component', () => {
     });
 
     it('calls onSelectionConfirmed when selection is made', async () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -142,7 +145,7 @@ describe('Plan component', () => {
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
@@ -150,6 +153,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging'] },
+              config: [],
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
@@ -174,13 +178,14 @@ describe('Plan component', () => {
           expect.objectContaining({
             action: 'Production',
             type: TaskType.Execute,
+            config: [],
           }),
         ])
       );
     });
 
     it('does nothing when Enter pressed without highlighting', async () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -188,7 +193,7 @@ describe('Plan component', () => {
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
@@ -196,6 +201,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging'] },
+              config: [],
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
@@ -222,7 +228,7 @@ describe('Plan component', () => {
       });
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           handlers={handlers}
           message=""
@@ -231,6 +237,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging', 'Development'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -261,7 +268,7 @@ describe('Plan component', () => {
       });
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           handlers={handlers}
           message=""
@@ -270,6 +277,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -293,7 +301,7 @@ describe('Plan component', () => {
     });
 
     it('does not handle input when done', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -301,7 +309,7 @@ describe('Plan component', () => {
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
@@ -309,6 +317,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging'] },
+              config: [],
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
@@ -324,7 +333,7 @@ describe('Plan component', () => {
     });
 
     it('does not handle input when no define tasks exist', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -333,13 +342,17 @@ describe('Plan component', () => {
       const completeActive = vi.fn();
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           handlers={createGlobalMockHandlers({ completeActive })}
           state={state}
           message=""
           tasks={[
-            { action: 'Install dependencies', type: TaskType.Execute },
-            { action: 'Run tests', type: TaskType.Execute },
+            {
+              action: 'Install dependencies',
+              type: TaskType.Execute,
+              config: [],
+            },
+            { action: 'Run tests', type: TaskType.Execute, config: [] },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
@@ -348,8 +361,8 @@ describe('Plan component', () => {
 
       // With no DEFINE tasks, Plan should auto-confirm and complete
       expect(onSelectionConfirmed).toHaveBeenCalledWith([
-        { action: 'Install dependencies', type: TaskType.Execute },
-        { action: 'Run tests', type: TaskType.Execute },
+        { action: 'Install dependencies', type: TaskType.Execute, config: [] },
+        { action: 'Run tests', type: TaskType.Execute, config: [] },
       ]);
       expect(completeActive).toHaveBeenCalled();
 
@@ -361,7 +374,7 @@ describe('Plan component', () => {
     });
 
     it('renders selection with correct visual states', async () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -369,7 +382,7 @@ describe('Plan component', () => {
       const onSelectionConfirmed = vi.fn();
 
       const { lastFrame, stdin } = render(
-        <Plan
+        <Schedule
           handlers={createGlobalMockHandlers()}
           state={state}
           message=""
@@ -378,6 +391,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging', 'Development'] },
+              config: [],
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
@@ -406,6 +420,7 @@ describe('Plan component', () => {
           expect.objectContaining({
             action: 'Staging',
             type: TaskType.Execute,
+            config: [],
           }),
         ])
       );
@@ -414,13 +429,13 @@ describe('Plan component', () => {
 
   describe('Multiple define groups', () => {
     it('initializes state with correct values for multiple groups', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const { lastFrame } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
@@ -428,12 +443,14 @@ describe('Plan component', () => {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta'] },
+              config: [],
             },
-            { action: 'Build project', type: TaskType.Execute },
+            { action: 'Build project', type: TaskType.Execute, config: [] },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -447,13 +464,13 @@ describe('Plan component', () => {
     });
 
     it('shows arrow on first define group initially', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const { lastFrame } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
@@ -461,11 +478,13 @@ describe('Plan component', () => {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta'] },
+              config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -486,7 +505,7 @@ describe('Plan component', () => {
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           handlers={handlers}
           message=""
@@ -495,11 +514,13 @@ describe('Plan component', () => {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta'] },
+              config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production'] },
+              config: [],
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
@@ -533,7 +554,7 @@ describe('Plan component', () => {
       });
 
       const { lastFrame, stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           handlers={handlers}
           message=""
@@ -542,11 +563,13 @@ describe('Plan component', () => {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta'] },
+              config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -571,14 +594,14 @@ describe('Plan component', () => {
     });
 
     it('resets highlightedIndex when advancing to next group', async () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
@@ -586,11 +609,13 @@ describe('Plan component', () => {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta'] },
+              config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -608,14 +633,14 @@ describe('Plan component', () => {
     });
 
     it('shows arrow on second group after first is completed', async () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
 
       const { lastFrame, stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
@@ -623,11 +648,13 @@ describe('Plan component', () => {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta'] },
+              config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -646,7 +673,7 @@ describe('Plan component', () => {
     });
 
     it('calls onSelectionConfirmed only after last group is completed', async () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
@@ -654,7 +681,7 @@ describe('Plan component', () => {
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
@@ -662,11 +689,13 @@ describe('Plan component', () => {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta'] },
+              config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production'] },
+              config: [],
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
@@ -693,10 +722,12 @@ describe('Plan component', () => {
           expect.objectContaining({
             action: 'Alpha',
             type: TaskType.Execute,
+            config: [],
           }),
           expect.objectContaining({
             action: 'Development',
             type: TaskType.Execute,
+            config: [],
           }),
         ])
       );
@@ -710,7 +741,7 @@ describe('Plan component', () => {
       });
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           handlers={handlers}
           message=""
@@ -719,11 +750,13 @@ describe('Plan component', () => {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta', 'Gamma'] },
+              config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -758,7 +791,7 @@ describe('Plan component', () => {
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           handlers={handlers}
           message=""
@@ -767,16 +800,19 @@ describe('Plan component', () => {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta'] },
+              config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production'] },
+              config: [],
             },
             {
               action: 'Choose region',
               type: TaskType.Define,
               params: { options: ['US', 'EU', 'Asia'] },
+              config: [],
             },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
@@ -819,24 +855,26 @@ describe('Plan component', () => {
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           handlers={handlers}
           message=""
           tasks={[
-            { action: 'Build project', type: TaskType.Execute },
+            { action: 'Build project', type: TaskType.Execute, config: [] },
             {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta'] },
+              config: [],
             },
-            { action: 'Run tests', type: TaskType.Execute },
+            { action: 'Run tests', type: TaskType.Execute, config: [] },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production'] },
+              config: [],
             },
-            { action: 'Deploy', type: TaskType.Execute },
+            { action: 'Deploy', type: TaskType.Execute, config: [] },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
@@ -861,22 +899,27 @@ describe('Plan component', () => {
           expect.objectContaining({
             action: 'Build project',
             type: TaskType.Execute,
+            config: [],
           }),
           expect.objectContaining({
             action: 'Alpha',
             type: TaskType.Execute,
+            config: [],
           }),
           expect.objectContaining({
             action: 'Run tests',
             type: TaskType.Execute,
+            config: [],
           }),
           expect.objectContaining({
             action: 'Development',
             type: TaskType.Execute,
+            config: [],
           }),
           expect.objectContaining({
             action: 'Deploy',
             type: TaskType.Execute,
+            config: [],
           }),
         ])
       );
@@ -890,7 +933,7 @@ describe('Plan component', () => {
       });
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           handlers={handlers}
           message=""
@@ -899,11 +942,13 @@ describe('Plan component', () => {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta'] },
+              config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production', 'Staging'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -951,14 +996,14 @@ describe('Plan component', () => {
   describe('Abort handling', () => {
     it('calls onAborted when Esc is pressed during selection', () => {
       const onAborted = vi.fn();
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           handlers={createGlobalMockHandlers({ onAborted })}
           state={state}
           message=""
@@ -967,6 +1012,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging'] },
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -979,14 +1025,14 @@ describe('Plan component', () => {
 
     it('does not call onAborted when Esc is pressed after done', () => {
       const onAborted = vi.fn();
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           handlers={createGlobalMockHandlers({ onAborted })}
           state={state}
           status={ComponentStatus.Done}
@@ -996,6 +1042,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging'] },
+              config: [],
             },
           ]}
         />
@@ -1007,14 +1054,14 @@ describe('Plan component', () => {
 
     it('does not call onAborted when there is no define task', () => {
       const onAborted = vi.fn();
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           handlers={createGlobalMockHandlers({ onAborted })}
           state={state}
           message=""
@@ -1022,6 +1069,7 @@ describe('Plan component', () => {
             {
               action: 'Deploy application',
               type: TaskType.Execute,
+              config: [],
             },
           ]}
           status={ComponentStatus.Active}
@@ -1036,25 +1084,26 @@ describe('Plan component', () => {
   describe('Filtering ignored and discarded tasks', () => {
     it('excludes Ignore tasks from refined task list', async () => {
       const onSelectionConfirmed = vi.fn();
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
-            { action: 'Build project', type: TaskType.Execute },
+            { action: 'Build project', type: TaskType.Execute, config: [] },
             {
               action: 'Choose environment',
               type: TaskType.Define,
               params: { options: ['Development', 'Production'] },
+              config: [],
             },
-            { action: 'Skip this step', type: TaskType.Ignore },
-            { action: 'Deploy', type: TaskType.Execute },
+            { action: 'Skip this step', type: TaskType.Ignore, config: [] },
+            { action: 'Deploy', type: TaskType.Execute, config: [] },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
@@ -1080,14 +1129,17 @@ describe('Plan component', () => {
           expect.objectContaining({
             action: 'Build project',
             type: TaskType.Execute,
+            config: [],
           }),
           expect.objectContaining({
             action: 'Development',
             type: TaskType.Execute,
+            config: [],
           }),
           expect.objectContaining({
             action: 'Deploy',
             type: TaskType.Execute,
+            config: [],
           }),
         ])
       );
@@ -1104,25 +1156,30 @@ describe('Plan component', () => {
 
     it('excludes Discard tasks from refined task list', async () => {
       const onSelectionConfirmed = vi.fn();
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
 
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
-            { action: 'Build project', type: TaskType.Execute },
+            { action: 'Build project', type: TaskType.Execute, config: [] },
             {
               action: 'Choose target',
               type: TaskType.Define,
               params: { options: ['Alpha', 'Beta'] },
+              config: [],
             },
-            { action: 'Old implementation', type: TaskType.Discard },
-            { action: 'Deploy', type: TaskType.Execute },
+            {
+              action: 'Old implementation',
+              type: TaskType.Discard,
+              config: [],
+            },
+            { action: 'Deploy', type: TaskType.Execute, config: [] },
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
@@ -1148,14 +1205,17 @@ describe('Plan component', () => {
           expect.objectContaining({
             action: 'Build project',
             type: TaskType.Execute,
+            config: [],
           }),
           expect.objectContaining({
             action: 'Alpha',
             type: TaskType.Execute,
+            config: [],
           }),
           expect.objectContaining({
             action: 'Deploy',
             type: TaskType.Execute,
+            config: [],
           }),
         ])
       );
@@ -1173,18 +1233,18 @@ describe('Plan component', () => {
 
   describe('Debug mode', () => {
     it('shows action types when debug is true', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const { lastFrame } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
-            { action: 'Build project', type: TaskType.Execute },
-            { action: 'Run tests', type: TaskType.Execute },
+            { action: 'Build project', type: TaskType.Execute, config: [] },
+            { action: 'Run tests', type: TaskType.Execute, config: [] },
           ]}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
@@ -1196,18 +1256,18 @@ describe('Plan component', () => {
     });
 
     it('hides action types when debug is false', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const { lastFrame } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
-            { action: 'Build project', type: TaskType.Execute },
-            { action: 'Run tests', type: TaskType.Execute },
+            { action: 'Build project', type: TaskType.Execute, config: [] },
+            { action: 'Run tests', type: TaskType.Execute, config: [] },
           ]}
           debug={DebugLevel.None}
           status={ComponentStatus.Active}
@@ -1219,18 +1279,18 @@ describe('Plan component', () => {
     });
 
     it('hides action types by default when debug prop is omitted', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const { lastFrame } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
-            { action: 'Build project', type: TaskType.Execute },
-            { action: 'Run tests', type: TaskType.Execute },
+            { action: 'Build project', type: TaskType.Execute, config: [] },
+            { action: 'Run tests', type: TaskType.Execute, config: [] },
           ]}
           status={ComponentStatus.Active}
         />
@@ -1241,20 +1301,20 @@ describe('Plan component', () => {
     });
 
     it('shows action types for all task types when debug is true', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const { lastFrame } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
-            { action: 'Build project', type: TaskType.Execute },
-            { action: 'Generate plan', type: TaskType.Plan },
-            { action: 'Get information', type: TaskType.Answer },
-            { action: 'Configure settings', type: TaskType.Config },
+            { action: 'Build project', type: TaskType.Execute, config: [] },
+            { action: 'Generate plan', type: TaskType.Schedule, config: [] },
+            { action: 'Get information', type: TaskType.Answer, config: [] },
+            { action: 'Configure settings', type: TaskType.Config, config: [] },
           ]}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
@@ -1263,19 +1323,19 @@ describe('Plan component', () => {
 
       const output = lastFrame();
       expect(output).toContain('execute');
-      expect(output).toContain('plan');
+      expect(output).toContain('schedule');
       expect(output).toContain('answer');
       expect(output).toContain('config');
     });
 
     it('shows action types for define task children when debug is true', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const { lastFrame } = render(
-        <Plan
+        <Schedule
           state={state}
           message=""
           tasks={[
@@ -1283,6 +1343,7 @@ describe('Plan component', () => {
               action: 'Choose deployment',
               type: TaskType.Define,
               params: { options: ['Production', 'Staging'] },
+              config: [],
             },
           ]}
           debug={DebugLevel.Info}
@@ -1295,17 +1356,19 @@ describe('Plan component', () => {
       expect(output).toContain('select');
     });
 
-    it('shows plan type in message when debug is true', () => {
-      const state: PlanState = {
+    it('shows schedule type in message when debug is true', () => {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const { lastFrame } = render(
-        <Plan
+        <Schedule
           message="Review changes"
           state={state}
-          tasks={[{ action: 'Build project', type: TaskType.Execute }]}
+          tasks={[
+            { action: 'Build project', type: TaskType.Execute, config: [] },
+          ]}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
         />
@@ -1314,20 +1377,22 @@ describe('Plan component', () => {
       const output = lastFrame();
       expect(output).toContain('Review changes');
       expect(output).toContain('›');
-      expect(output).toContain('plan');
+      expect(output).toContain('schedule');
     });
 
     it('hides plan type in message when debug is false', () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const { lastFrame } = render(
-        <Plan
+        <Schedule
           message="Review changes"
           state={state}
-          tasks={[{ action: 'Build project', type: TaskType.Execute }]}
+          tasks={[
+            { action: 'Build project', type: TaskType.Execute, config: [] },
+          ]}
           debug={DebugLevel.None}
           status={ComponentStatus.Active}
         />
@@ -1342,14 +1407,14 @@ describe('Plan component', () => {
     });
 
     it('uses Execute type for all selections (LLM classifies during refinement)', async () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const onSelectionConfirmed = vi.fn();
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           onSelectionConfirmed={onSelectionConfirmed}
           message=""
@@ -1360,6 +1425,7 @@ describe('Plan component', () => {
               params: {
                 options: ['Explain unit testing'],
               },
+              config: [],
             },
           ]}
           handlers={createGlobalMockHandlers()}
@@ -1377,19 +1443,20 @@ describe('Plan component', () => {
         {
           action: 'Explain unit testing',
           type: TaskType.Execute,
+          config: [],
         },
       ]);
     });
 
     it('uses Execute type as default for all actions', async () => {
-      const state: PlanState = {
+      const state: ScheduleState = {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
         completedSelections: [],
       };
       const onSelectionConfirmed = vi.fn();
       const { stdin } = render(
-        <Plan
+        <Schedule
           state={state}
           onSelectionConfirmed={onSelectionConfirmed}
           message=""
@@ -1400,6 +1467,7 @@ describe('Plan component', () => {
               params: {
                 options: ['Build the project'],
               },
+              config: [],
             },
           ]}
           handlers={createGlobalMockHandlers()}
@@ -1417,6 +1485,7 @@ describe('Plan component', () => {
         {
           action: 'Build the project',
           type: TaskType.Execute,
+          config: [],
         },
       ]);
     });

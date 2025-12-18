@@ -13,8 +13,8 @@ import {
   ConfirmDefinitionProps,
   ExecuteDefinitionProps,
   IntrospectDefinitionProps,
-  PlanDefinitionProps,
   RefinementDefinitionProps,
+  ScheduleDefinitionProps,
   ValidateDefinitionProps,
 } from '../types/components.js';
 
@@ -285,14 +285,14 @@ export function createCommandDefinition(
   };
 }
 
-export function createPlanDefinition(
+export function createScheduleDefinition(
   message: string,
   tasks: Task[],
   onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>
 ): ComponentDefinition {
   return {
     id: randomUUID(),
-    name: ComponentName.Plan,
+    name: ComponentName.Schedule,
     status: ComponentStatus.Awaiting,
     state: {
       highlightedIndex: null,
@@ -303,7 +303,7 @@ export function createPlanDefinition(
       message,
       tasks,
       onSelectionConfirmed,
-    } satisfies PlanDefinitionProps,
+    } satisfies ScheduleDefinitionProps,
   };
 }
 
