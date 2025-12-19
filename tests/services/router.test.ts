@@ -296,6 +296,77 @@ describe('Task Router', () => {
       }
     });
 
+    it('creates separate Answer components for multiple Answer tasks', () => {
+      const tasks = [
+        { action: 'Explain React', type: TaskType.Answer, config: [] },
+        { action: 'Explain Vue', type: TaskType.Answer, config: [] },
+        { action: 'Explain Angular', type: TaskType.Answer, config: [] },
+      ];
+      const service = {} as LLMService;
+      const handlers = createMockHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Answer questions',
+        service,
+        'explain react, vue, angular',
+        handlers,
+        false
+      );
+
+      // Get Schedule from first addToQueue call
+      const scheduleDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as ComponentDefinition;
+      expect(scheduleDef.name).toBe(ComponentName.Schedule);
+
+      // Simulate Schedule completing
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
+
+      // Simulate user confirming
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Should complete active and pending, then add 3 Answer components to queue
+      expect(handlers.completeActiveAndPending).toHaveBeenCalledTimes(1);
+      expect(handlers.addToQueue).toHaveBeenCalledTimes(5); // Schedule, Confirm, Answer1, Answer2, Answer3
+
+      // Verify first Answer component
+      const answer1Def = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[2][0] as ComponentDefinition;
+      expect(answer1Def.name).toBe(ComponentName.Answer);
+      if (answer1Def.name === ComponentName.Answer) {
+        expect(answer1Def.props.question).toBe('Explain React');
+        expect(answer1Def.props.service).toBe(service);
+      }
+
+      // Verify second Answer component
+      const answer2Def = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[3][0] as ComponentDefinition;
+      expect(answer2Def.name).toBe(ComponentName.Answer);
+      if (answer2Def.name === ComponentName.Answer) {
+        expect(answer2Def.props.question).toBe('Explain Vue');
+        expect(answer2Def.props.service).toBe(service);
+      }
+
+      // Verify third Answer component
+      const answer3Def = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[4][0] as ComponentDefinition;
+      expect(answer3Def.name).toBe(ComponentName.Answer);
+      if (answer3Def.name === ComponentName.Answer) {
+        expect(answer3Def.props.question).toBe('Explain Angular');
+        expect(answer3Def.props.service).toBe(service);
+      }
+    });
+
     it('routes to Introspect component when all tasks are Introspect type', () => {
       const tasks = [
         { action: 'List capabilities', type: TaskType.Introspect, config: [] },
@@ -966,6 +1037,181 @@ describe('Task Router', () => {
       expect(handlers.addToQueue).toHaveBeenCalledWith(
         expect.objectContaining({ name: ComponentName.Config })
       );
+    });
+
+    it('creates separate Execute components for multiple Execute Groups', () => {
+      const tasks = [
+        {
+          action: 'Deploy frontend',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Navigate to frontend',
+              type: TaskType.Execute,
+              config: [],
+            },
+            {
+              action: 'Install dependencies',
+              type: TaskType.Execute,
+              config: [],
+            },
+            { action: 'Deploy frontend', type: TaskType.Execute, config: [] },
+          ],
+        },
+        {
+          action: 'Deploy backend',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Navigate to backend',
+              type: TaskType.Execute,
+              config: [],
+            },
+            {
+              action: 'Install dependencies',
+              type: TaskType.Execute,
+              config: [],
+            },
+            { action: 'Deploy backend', type: TaskType.Execute, config: [] },
+          ],
+        },
+      ];
+      const handlers = createMockHandlers();
+      const service = {} as LLMService;
+
+      routeTasksWithConfirm(
+        tasks,
+        'Deploy projects',
+        service,
+        'deploy frontend, deploy backend',
+        handlers,
+        false
+      );
+
+      // Simulate Schedule and Confirm completing
+      const scheduleDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Should create TWO separate Execute components, not one merged component
+      const executeComponents = (
+        handlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls
+        .map((call) => call[0] as ComponentDefinition)
+        .filter((def) => def.name === ComponentName.Execute);
+
+      expect(executeComponents).toHaveLength(2);
+
+      // Verify first Execute component has 3 tasks from Deploy frontend group
+      expect(executeComponents[0].name).toBe(ComponentName.Execute);
+      expect(executeComponents[0].props.tasks).toHaveLength(3);
+      expect(executeComponents[0].props.tasks[0].action).toBe(
+        'Navigate to frontend'
+      );
+
+      // Verify second Execute component has 3 tasks from Deploy backend group
+      expect(executeComponents[1].name).toBe(ComponentName.Execute);
+      expect(executeComponents[1].props.tasks).toHaveLength(3);
+      expect(executeComponents[1].props.tasks[0].action).toBe(
+        'Navigate to backend'
+      );
+    });
+
+    it('preserves order when mixing Answer tasks with Execute Groups', () => {
+      const tasks = [
+        { action: 'Explain GraphQL', type: TaskType.Answer, config: [] },
+        {
+          action: 'Deploy frontend',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Navigate to frontend',
+              type: TaskType.Execute,
+              config: [],
+            },
+            { action: 'Deploy frontend', type: TaskType.Execute, config: [] },
+          ],
+        },
+        {
+          action: 'Deploy backend',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Navigate to backend',
+              type: TaskType.Execute,
+              config: [],
+            },
+            { action: 'Deploy backend', type: TaskType.Execute, config: [] },
+          ],
+        },
+        { action: 'Explain REST', type: TaskType.Answer, config: [] },
+      ];
+      const handlers = createMockHandlers();
+      const service = {} as LLMService;
+
+      routeTasksWithConfirm(
+        tasks,
+        'Mixed tasks',
+        service,
+        'explain graphql, deploy frontend, deploy backend, explain rest',
+        handlers,
+        false
+      );
+
+      // Simulate Schedule and Confirm completing
+      const scheduleDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      const confirmDef = (handlers.addToQueue as ReturnType<typeof vi.fn>).mock
+        .calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Get all components added to queue after Schedule and Confirm
+      const components = (
+        handlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls
+        .slice(2) // Skip Schedule and Confirm
+        .map((call) => call[0] as ComponentDefinition);
+
+      // Should have: Answer, Execute (frontend), Execute (backend), Answer
+      expect(components).toHaveLength(4);
+      expect(components[0].name).toBe(ComponentName.Answer);
+      expect(components[1].name).toBe(ComponentName.Execute);
+      expect(components[2].name).toBe(ComponentName.Execute);
+      expect(components[3].name).toBe(ComponentName.Answer);
+
+      // Verify Answer questions
+      if (components[0].name === ComponentName.Answer) {
+        expect(components[0].props.question).toBe('Explain GraphQL');
+      }
+      if (components[3].name === ComponentName.Answer) {
+        expect(components[3].props.question).toBe('Explain REST');
+      }
+
+      // Verify Execute groups are separate
+      if (components[1].name === ComponentName.Execute) {
+        expect(components[1].props.tasks).toHaveLength(2);
+        expect(components[1].props.tasks[0].action).toBe(
+          'Navigate to frontend'
+        );
+      }
+      if (components[2].name === ComponentName.Execute) {
+        expect(components[2].props.tasks).toHaveLength(2);
+        expect(components[2].props.tasks[0].action).toBe('Navigate to backend');
+      }
     });
 
     it('groups flattened tasks by type and routes each group', () => {
