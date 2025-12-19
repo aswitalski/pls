@@ -193,27 +193,51 @@ structure.
 
 ## Sequential and Multiple Requests
 
-When the user provides multiple requests separated by commas,
-semicolons, or the word "and":
+**CRITICAL**: When the user provides multiple requests separated by
+commas, semicolons, or the word "and", EVERY request must be
+represented as a separate task. DO NOT skip or merge any requests,
+even if they use the same action verb.
 
-1. **Preserve the sequence**: Each operation should be represented as a
-   separate task in the order specified
-2. **Independent skill matching**: For each operation, independently
+**Sequential Processing Rules:**
+
+1. **Preserve ALL requests**: Each operation in the sequence creates a
+   separate task, in the exact order specified. Count the requests
+   carefully and verify each one is represented.
+
+2. **Same action, different subjects = separate tasks**: Multiple
+   requests using the same verb with different subjects are NOT
+   duplicates:
+   - "explain X, explain Y" → TWO separate answer tasks
+   - "process A, process B" → TWO separate task groups
+   - "show X, show Y" → TWO separate report/answer tasks
+
+3. **Independent skill matching**: For each operation, independently
    check if it matches a skill:
    - If operation matches a skill → extract skill steps as subtasks
    - If operation does NOT match a skill → create "ignore" type task
    - **CRITICAL: Do NOT infer context or create generic execute tasks
      for unmatched operations**
-3. **No merging**: Keep operations separate even if they seem related.
-   The user's sequence is intentional.
+
+4. **No merging**: Keep operations separate even if they seem related.
+   The user's sequence is intentional and must be preserved exactly.
+
+5. **Verify completeness**: Before finalizing, count your tasks and
+   verify the count matches the number of distinct requests in the
+   user's input.
 
 **Examples:**
 
-- "explain docker, build production, then list the changes" → Three
-  separate task groups:
+- "explain docker, process data, explain kubernetes" → THREE
+  separate task groups (not two):
   - Task 1: "Explain Docker" (type: answer)
-  - Task 2: "Build production" (skill-based with subtasks)
-  - Task 3: "List the changes" (type: answer or report)
+  - Task 2: "Process data" (skill-based with subtasks)
+  - Task 3: "Explain Kubernetes" (type: answer)
+
+- "explain tdd, process files, explain tbd" → THREE separate task
+  groups:
+  - Task 1: "Explain Test-Driven Development" (type: answer)
+  - Task 2: "Process files" (skill-based with subtasks)
+  - Task 3: "Explain TBD" (type: answer)
 
 - "process files and validate" where only "process" has a skill →
   - Task 1: "Process files" (skill-based with subtasks)
@@ -270,14 +294,20 @@ Before finalizing, verify there are no duplicates.
      simple terms")
    - "list X completely" = ONE task (not "list X" + "be complete")
 
-2. **Synonymous verbs are duplicates**: Different verbs meaning the
-   same thing are duplicates
+2. **Synonymous verbs with SAME subject are duplicates**: Different
+   verbs meaning the same thing on the SAME subject are duplicates
    - "explain X" + "describe X" = DUPLICATE (choose one)
    - "show X" + "display X" = DUPLICATE (choose one)
    - "check X" + "verify X" = DUPLICATE (choose one)
 
-3. **Redundant operations are duplicates**: If two tasks would perform
-   the same operation
+3. **Same verb with DIFFERENT subjects are NOT duplicates**: This is
+   a sequential request and each must be preserved
+   - "explain X" + "explain Y" = TWO SEPARATE TASKS
+   - "process A" + "process B" = TWO SEPARATE TASKS
+   - "show X" + "show Y" = TWO SEPARATE TASKS
+
+4. **Redundant operations are duplicates**: If two tasks would perform
+   the same operation on the same target
    - "install and set up dependencies" = ONE task (setup is part of
      install)
    - "check and verify disk space" = ONE task (verify means check)
@@ -286,17 +316,22 @@ Before finalizing, verify there are no duplicates.
 
 Before finalizing the schedule, perform strict validation:
 
-1. Each task represents a distinct step in the user's request
-2. Tasks are ordered in the logical sequence they should execute
-3. Each task is clearly defined with specific action and parameters
-4. Tasks are NOT merged - preserve the user's intended sequence
-5. All operations from the user's request are represented
-6. No semantic duplicates exist (same operation with different words)
-7. For skill-based tasks, verify all required params are included
+1. **Count verification**: Count the distinct requests in the user's
+   input and verify your task list has the same number of top-level
+   tasks. If counts don't match, you've skipped or merged requests.
+2. Each task represents a distinct step in the user's request
+3. Tasks are ordered in the logical sequence they should execute
+4. Each task is clearly defined with specific action and parameters
+5. Tasks are NOT merged - preserve the user's intended sequence
+6. All operations from the user's request are represented (check each
+   one individually)
+7. No semantic duplicates exist (same verb on same subject), but same
+   verb on different subjects creates separate tasks
+8. For skill-based tasks, verify all required params are included
    (skill name, variant if applicable)
-8. For leaf tasks, verify type field is present
-9. For leaf tasks with config placeholders, verify config array is
-   populated
+9. For leaf tasks, verify type field is present
+10. For leaf tasks with config placeholders, verify config array is
+    populated
 
 ## Critical Guidelines
 

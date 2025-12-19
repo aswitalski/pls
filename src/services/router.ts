@@ -151,124 +151,156 @@ function executeTasksAfterConfirm(
     return;
   }
 
-  // Flatten Group tasks to get actual executable subtasks
-  const flattenedTasks: Task[] = [];
   const scheduledTasks = tasks as unknown as ScheduledTask[];
 
+  // Process tasks in order, preserving Group boundaries
+  // Track consecutive standalone tasks to group them by type
+  let consecutiveStandaloneTasks: Task[] = [];
+
+  const processStandaloneTasks = () => {
+    if (consecutiveStandaloneTasks.length === 0) return;
+
+    // Group consecutive standalone tasks by type
+    const tasksByType: Record<TaskType, Task[]> = {} as Record<
+      TaskType,
+      Task[]
+    >;
+    for (const type of Object.values(TaskType)) {
+      tasksByType[type as TaskType] = [];
+    }
+
+    for (const task of consecutiveStandaloneTasks) {
+      tasksByType[task.type].push(task);
+    }
+
+    // Route each type group
+    for (const [type, typeTasks] of Object.entries(tasksByType)) {
+      const taskType = type as TaskType;
+      if (typeTasks.length === 0) continue;
+
+      routeTasksByType(taskType, typeTasks, service, userRequest, handlers);
+    }
+
+    consecutiveStandaloneTasks = [];
+  };
+
+  // Process tasks in original order
   for (const task of scheduledTasks) {
     if (task.type === TaskType.Group && task.subtasks) {
-      // Add all subtasks from the group
-      flattenedTasks.push(...(task.subtasks as Task[]));
-    } else {
-      // Add non-group tasks as-is
-      flattenedTasks.push(task as Task);
-    }
-  }
+      // Process any accumulated standalone tasks first
+      processStandaloneTasks();
 
-  // Group flattened tasks by type - initialize all TaskType keys with empty arrays
-  const tasksByType: Record<TaskType, Task[]> = {} as Record<TaskType, Task[]>;
-  for (const type of Object.values(TaskType)) {
-    tasksByType[type as TaskType] = [];
-  }
-
-  for (const task of flattenedTasks) {
-    tasksByType[task.type].push(task);
-  }
-
-  // Route each type group appropriately
-  for (const [type, typeTasks] of Object.entries(tasksByType)) {
-    const taskType = type as TaskType;
-
-    // Skip empty task groups (pre-initialized but unused)
-    if (typeTasks.length === 0) {
-      continue;
-    }
-
-    if (taskType === TaskType.Answer) {
-      const question = typeTasks[0].action;
-      handlers.addToQueue(createAnswerDefinition(question, service));
-    } else if (taskType === TaskType.Introspect) {
-      handlers.addToQueue(createIntrospectDefinition(typeTasks, service));
-    } else if (taskType === TaskType.Config) {
-      // Route to Config flow - extract keys from task params
-      const configKeys = typeTasks
-        .map((task) => task.params?.key as string | undefined)
-        .filter((key): key is string => key !== undefined);
-
-      handlers.addToQueue(
-        createConfigDefinitionWithKeys(
-          configKeys,
-          (config: Record<string, string>) => {
-            // Save config - Config component will handle completion and feedback
-            try {
-              // Convert flat dotted keys to nested structure grouped by section
-              const configBySection = unflattenConfig(config);
-
-              // Save each section
-              for (const [section, sectionConfig] of Object.entries(
-                configBySection
-              )) {
-                saveConfig(section, sectionConfig);
-              }
-            } catch (error) {
-              const errorMessage =
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to save configuration';
-              throw new Error(errorMessage);
-            }
-          },
-          (operation: string) => {
-            handlers.onAborted(operation);
-          }
-        )
-      );
-    } else if (taskType === TaskType.Execute) {
-      // Execute tasks with validation
-      try {
-        const validation = validateExecuteTasks(typeTasks);
-
-        if (validation.validationErrors.length > 0) {
-          // Show error feedback for invalid skills
-          const errorMessages = validation.validationErrors.map((error) => {
-            const issuesList = error.issues
-              .map((issue) => `  - ${issue}`)
-              .join('\n');
-            return `Invalid skill definition "${error.skill}":\n\n${issuesList}`;
-          });
-
-          handlers.addToQueue(
-            createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
-          );
-        } else if (validation.missingConfig.length > 0) {
-          handlers.addToQueue(
-            createValidateDefinition(
-              validation.missingConfig,
-              userRequest,
-              service,
-              (error: string) => {
-                handlers.onError(error);
-              },
-              () => {
-                handlers.addToQueue(
-                  createExecuteDefinition(typeTasks, service)
-                );
-              },
-              (operation: string) => {
-                handlers.onAborted(operation);
-              }
-            )
-          );
-        } else {
-          handlers.addToQueue(createExecuteDefinition(typeTasks, service));
-        }
-      } catch (error) {
-        // Handle skill reference errors (e.g., unknown skills)
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        const message = createMessage(errorMessage);
-        handlers.addToQueue(message);
+      // Process Group as separate component
+      if (task.subtasks.length > 0) {
+        const subtasks = task.subtasks as Task[];
+        const taskType = subtasks[0].type;
+        routeTasksByType(taskType, subtasks, service, userRequest, handlers);
       }
+    } else {
+      // Accumulate standalone task
+      consecutiveStandaloneTasks.push(task as Task);
+    }
+  }
+
+  // Process any remaining standalone tasks
+  processStandaloneTasks();
+}
+
+/**
+ * Route tasks by type to appropriate components
+ * Extracted to allow reuse for both Groups and standalone tasks
+ */
+function routeTasksByType(
+  taskType: TaskType,
+  typeTasks: Task[],
+  service: LLMService,
+  userRequest: string,
+  handlers: Handlers
+): void {
+  if (taskType === TaskType.Answer) {
+    // Create separate Answer component for each question
+    for (const task of typeTasks) {
+      handlers.addToQueue(createAnswerDefinition(task.action, service));
+    }
+  } else if (taskType === TaskType.Introspect) {
+    handlers.addToQueue(createIntrospectDefinition(typeTasks, service));
+  } else if (taskType === TaskType.Config) {
+    // Route to Config flow - extract keys from task params
+    const configKeys = typeTasks
+      .map((task) => task.params?.key as string | undefined)
+      .filter((key): key is string => key !== undefined);
+
+    handlers.addToQueue(
+      createConfigDefinitionWithKeys(
+        configKeys,
+        (config: Record<string, string>) => {
+          // Save config - Config component will handle completion and feedback
+          try {
+            // Convert flat dotted keys to nested structure grouped by section
+            const configBySection = unflattenConfig(config);
+
+            // Save each section
+            for (const [section, sectionConfig] of Object.entries(
+              configBySection
+            )) {
+              saveConfig(section, sectionConfig);
+            }
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : 'Failed to save configuration';
+            throw new Error(errorMessage);
+          }
+        },
+        (operation: string) => {
+          handlers.onAborted(operation);
+        }
+      )
+    );
+  } else if (taskType === TaskType.Execute) {
+    // Execute tasks with validation
+    try {
+      const validation = validateExecuteTasks(typeTasks);
+
+      if (validation.validationErrors.length > 0) {
+        // Show error feedback for invalid skills
+        const errorMessages = validation.validationErrors.map((error) => {
+          const issuesList = error.issues
+            .map((issue) => `  - ${issue}`)
+            .join('\n');
+          return `Invalid skill definition "${error.skill}":\n\n${issuesList}`;
+        });
+
+        handlers.addToQueue(
+          createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
+        );
+      } else if (validation.missingConfig.length > 0) {
+        handlers.addToQueue(
+          createValidateDefinition(
+            validation.missingConfig,
+            userRequest,
+            service,
+            (error: string) => {
+              handlers.onError(error);
+            },
+            () => {
+              handlers.addToQueue(createExecuteDefinition(typeTasks, service));
+            },
+            (operation: string) => {
+              handlers.onAborted(operation);
+            }
+          )
+        );
+      } else {
+        handlers.addToQueue(createExecuteDefinition(typeTasks, service));
+      }
+    } catch (error) {
+      // Handle skill reference errors (e.g., unknown skills)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const message = createMessage(errorMessage);
+      handlers.addToQueue(message);
     }
   }
 }
