@@ -22,6 +22,7 @@ export interface ExecuteCommand {
 
 export interface CommandResult {
   message: string;
+  summary?: string;
   tasks: Task[];
   answer?: string;
   commands?: ExecuteCommand[];

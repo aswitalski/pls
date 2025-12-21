@@ -12,6 +12,11 @@ export const executeTool: Tool = {
         description:
           'Brief status message about the execution. Must be a single sentence, maximum 64 characters, ending with a period.',
       },
+      summary: {
+        type: 'string',
+        description:
+          'Natural language summary as if execution has finished, like a concierge would report. Shown after execution completes with time appended. Use varied expressions and synonyms, not necessarily the same verb as the message. Must be a single sentence without period, maximum 48 characters. MUST NOT be empty. Example: "Project ready to go" (time will be appended as " in X seconds").',
+      },
       commands: {
         type: 'array',
         description: 'Array of commands to execute sequentially',
@@ -48,6 +53,6 @@ export const executeTool: Tool = {
         },
       },
     },
-    required: ['message', 'commands'],
+    required: ['message', 'summary', 'commands'],
   },
 };

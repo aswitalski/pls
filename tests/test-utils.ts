@@ -36,6 +36,7 @@ export const Keys = {
 export function createMockAnthropicService(
   result: {
     message?: string;
+    summary?: string;
     tasks?: Task[];
     capabilities?: Capability[];
     answer?: string;
@@ -50,6 +51,7 @@ export function createMockAnthropicService(
       }
       return Promise.resolve({
         message: result.message || '',
+        summary: result.summary,
         tasks: result.tasks || [],
         answer: result.answer,
         commands: result.commands,

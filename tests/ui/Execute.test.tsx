@@ -979,4 +979,105 @@ describe('Execute component', () => {
       );
     });
   });
+
+  describe('Completion summary', () => {
+    it('shows completion message with summary and time', async () => {
+      const { lastFrame } = render(
+        <Execute
+          tasks={[{ action: 'Do something', type: TaskType.Execute }]}
+          status={ComponentStatus.Done}
+          service={createMockAnthropicService()}
+          handlers={createMockHandlers()}
+          state={{
+            message: 'Execute commands:',
+            summary: 'All tasks completed successfully',
+            taskInfos: [
+              {
+                label: 'Do something',
+                command: { description: 'First task', command: 'echo "first"' },
+              },
+              {
+                label: 'Do something',
+                command: {
+                  description: 'Second task',
+                  command: 'echo "second"',
+                },
+              },
+            ],
+            completionMessage: 'All tasks completed successfully in 0 seconds.',
+          }}
+        />
+      );
+
+      const frame = lastFrame();
+      expect(frame).toContain('All tasks completed successfully');
+      expect(frame).toContain('in');
+      expect(frame).toContain('second');
+    });
+
+    it('uses fallback message when summary is empty', async () => {
+      const { lastFrame } = render(
+        <Execute
+          tasks={[{ action: 'Do something', type: TaskType.Execute }]}
+          status={ComponentStatus.Done}
+          service={createMockAnthropicService()}
+          handlers={createMockHandlers()}
+          state={{
+            message: 'Execute commands:',
+            summary: '',
+            taskInfos: [
+              {
+                label: 'Do something',
+                command: { description: 'Task', command: 'echo "test"' },
+              },
+            ],
+            completionMessage: 'Execution completed in 0 seconds.',
+          }}
+        />
+      );
+
+      const frame = lastFrame();
+      expect(frame).toContain('Execution completed');
+      expect(frame).toContain('in');
+      expect(frame).toContain('second');
+    });
+
+    it('stores execution times in state', async () => {
+      const service = createMockAnthropicService({
+        message: 'Execute commands:',
+        summary: 'Tasks done',
+        commands: [
+          { description: 'First', command: 'cmd1' },
+          { description: 'Second', command: 'cmd2' },
+        ],
+      });
+
+      const handlers = createMockHandlers();
+      render(
+        <Execute
+          tasks={[{ action: 'Do something', type: TaskType.Execute }]}
+          status={ComponentStatus.Active}
+          service={service}
+          handlers={handlers}
+        />
+      );
+
+      // Wait for execution to complete
+      await vi.advanceTimersByTimeAsync(2000);
+
+      await vi.waitFor(
+        () => {
+          expect(handlers.completeActive).toHaveBeenCalled();
+        },
+        { timeout: 2000 }
+      );
+
+      // Check that updateState was called with execution times
+      const updateStateMock = vi.mocked(handlers.updateState);
+      const updateStateCalls = updateStateMock.mock.calls;
+      const finalCall = updateStateCalls[updateStateCalls.length - 1];
+      expect(finalCall[0]).toHaveProperty('taskExecutionTimes');
+      expect(finalCall[0]).toHaveProperty('completionMessage');
+    });
+  });
 });

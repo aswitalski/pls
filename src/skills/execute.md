@@ -90,6 +90,10 @@ Return a structured response with commands to execute:
 **Response structure:**
 - **message**: Brief status message in imperative mood (max 64 characters,
   end with colon)
+- **summary**: Natural language summary as if execution has finished,
+  like a concierge would report (max 48 characters, no period, time will
+  be appended). Use varied expressions and synonyms, not necessarily the
+  same verb as the message. MUST NOT be empty.
 - **commands**: Array of command objects to execute sequentially
 
 **Command object structure:**
@@ -135,6 +139,7 @@ Task: {
 Response:
 ```
 message: "Create the file:"
+summary: "File created"
 commands:
   - description: "Create test.txt"
     command: "touch test.txt"
@@ -150,6 +155,7 @@ Task: {
 Response:
 ```
 message: "List directory contents:"
+summary: "I've listed the directory contents"
 commands:
   - description: "List files with details"
     command: "ls -la"
@@ -169,6 +175,7 @@ Tasks:
 Response:
 ```
 message: "Set up the project:"
+summary: "Project ready to go"
 commands:
   - description: "Create project directory"
     command: "mkdir -p my-project"
@@ -190,6 +197,7 @@ Task: {
 Response:
 ```
 message: "Install dependencies:"
+summary: "Dependencies installed successfully"
 commands:
   - description: "Install npm packages"
     command: "npm install"
@@ -226,6 +234,7 @@ The "Process Data" skill's Execution section specifies:
 Response (using skill's Execution commands):
 ```
 message: "Process sales data:"
+summary: "Sales data transformed and exported"
 commands:
   - description: "Load the sales dataset"
     command: "curl -O https://data.example.com/sales.csv"
@@ -252,6 +261,7 @@ Task: {
 Response:
 ```
 message: "Create backup:"
+summary: "Backup complete"
 commands:
   - description: "Copy config directory"
     command: "cp -r ~/.config/app ~/.config/app.backup"
@@ -267,6 +277,7 @@ Task: {
 Response:
 ```
 message: "Check disk space:"
+summary: "Disk space verified"
 commands:
   - description: "Show disk usage"
     command: "df -h"
