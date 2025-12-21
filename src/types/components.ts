@@ -153,15 +153,11 @@ export interface AnswerState extends BaseState {
 export interface ExecuteState extends BaseState {
   error?: string | null;
   message?: string;
-  commandStatuses?: Array<{
+  taskInfos?: Array<{
     label: string;
     command: { description: string; command: string };
-    status: string;
-    output?: unknown;
-    startTime?: number;
-    endTime?: number;
-    elapsed?: number;
   }>;
+  activeTaskIndex?: number;
 }
 
 export interface ValidateState extends BaseState {

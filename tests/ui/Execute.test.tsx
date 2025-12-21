@@ -4,6 +4,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TaskType } from '../../src/types/types.js';
+import { ExecutionResult } from '../../src/services/shell.js';
 
 import { Execute } from '../../src/ui/Execute.js';
 
@@ -42,6 +43,20 @@ vi.mock('../../src/services/shell.js', async () => {
   const actual = await vi.importActual('../../src/services/shell.js');
   return {
     ...actual,
+    executeCommand: vi
+      .fn()
+      .mockImplementation(
+        async (cmd: { description: string; command: string }) => {
+          // Simulate immediate execution for tests
+          return {
+            description: cmd.description,
+            command: cmd.command,
+            output: '',
+            errors: '',
+            result: ExecutionResult.Success,
+          };
+        }
+      ),
     executeCommands: vi
       .fn()
       .mockImplementation(async (commands, onProgress) => {
@@ -59,7 +74,7 @@ vi.mock('../../src/services/shell.js', async () => {
               command: cmd.command,
               output: '',
               errors: '',
-              result: 'success',
+              result: ExecutionResult.Success,
             };
             onProgress?.({
               currentIndex: index,
@@ -298,87 +313,670 @@ describe('Execute component', () => {
     );
   });
 
-  it('resolves placeholders in commands before execution', async () => {
-    const { executeCommands } = await import('../../src/services/shell.js');
+  describe('Placeholder resolution', () => {
+    it('resolves single placeholder', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
 
-    const service = createMockAnthropicService({
-      message: 'Navigating to repository.',
-      commands: [
+      const service = createMockAnthropicService({
+        message: 'Navigating to repository.',
+        commands: [
+          {
+            description: 'Navigate to project directory',
+            command: 'cd {project.alpha.path}',
+          },
+        ],
+      });
+
+      const tasks = [
         {
-          description: 'Navigate to project directory',
-          command: 'cd {project.alpha.path}',
+          action: 'Navigate to Alpha project directory',
+          type: TaskType.Execute,
         },
-      ],
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(executeCommand).toHaveBeenCalled();
+        },
+        { timeout: 500 }
+      );
+
+      const commandArg = vi.mocked(executeCommand).mock.calls[0][0];
+      expect(commandArg.command).toBe('cd /home/user/alpha');
     });
 
-    const tasks = [
-      {
-        action: 'Navigate to Alpha project directory',
-        type: TaskType.Execute,
-      },
-    ];
+    it('resolves multiple placeholders in one command', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
 
-    render(
-      <Execute
-        tasks={tasks}
-        service={service}
-        handlers={createMockHandlers()}
-        status={ComponentStatus.Active}
-      />
-    );
+      const service = createMockAnthropicService({
+        message: 'Syncing projects.',
+        commands: [
+          {
+            description: 'Sync from main to test',
+            command: 'rsync -av {project.alpha.path}/ {project.beta.path}/',
+          },
+        ],
+      });
 
-    await vi.waitFor(
-      () => {
-        expect(executeCommands).toHaveBeenCalled();
-      },
-      { timeout: 500 }
-    );
+      const tasks = [
+        {
+          action: 'Sync alpha project to beta environment',
+          type: TaskType.Execute,
+        },
+      ];
 
-    // Verify that executeCommands was called with resolved placeholders
-    const commandsArg = (executeCommands as ReturnType<typeof vi.fn>).mock
-      .calls[0][0];
-    expect(commandsArg[0].command).toBe('cd /home/user/alpha');
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(executeCommand).toHaveBeenCalled();
+        },
+        { timeout: 500 }
+      );
+
+      const commandArg = vi.mocked(executeCommand).mock.calls[0][0];
+      expect(commandArg.command).toBe(
+        'rsync -av /home/user/alpha/ /home/user/beta/'
+      );
+    });
+
+    it('keeps unresolved placeholders when not in config', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      const service = createMockAnthropicService({
+        message: 'Deploying.',
+        commands: [
+          {
+            description: 'Deploy to server',
+            command: 'deploy --path {project.alpha.path} --token {api.secret}',
+          },
+        ],
+      });
+
+      const tasks = [
+        {
+          action: 'Deploy to API server',
+          type: TaskType.Execute,
+        },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(executeCommand).toHaveBeenCalled();
+        },
+        { timeout: 500 }
+      );
+
+      const commandArg = vi.mocked(executeCommand).mock.calls[0][0];
+      // project.alpha.path is resolved, api.secret is not (missing from config)
+      expect(commandArg.command).toBe(
+        'deploy --path /home/user/alpha --token {api.secret}'
+      );
+    });
   });
 
-  it('keeps unresolved placeholders if not in config', async () => {
-    const { executeCommands } = await import('../../src/services/shell.js');
+  describe('Command failure handling', () => {
+    it('stops execution when critical command fails', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
 
-    const service = createMockAnthropicService({
-      message: 'Running command.',
-      commands: [
-        {
-          description: 'Navigate to unknown path',
-          command: 'cd {project.gamma.path}',
+      // First command fails, second should not execute
+      vi.mocked(executeCommand).mockImplementation(
+        async (cmd: { command: string }) => {
+          if (cmd.command === 'build-project') {
+            return {
+              description: 'Build project',
+              command: 'build-project',
+              output: '',
+              errors: 'Build failed: compilation error',
+              result: ExecutionResult.Error,
+            };
+          }
+          return {
+            description: 'Test',
+            command: cmd.command,
+            output: '',
+            errors: '',
+            result: ExecutionResult.Success,
+          };
+        }
+      );
+
+      const service = createMockAnthropicService({
+        message: 'Building and deploying.',
+        commands: [
+          {
+            description: 'Build project',
+            command: 'build-project',
+            critical: true,
+          },
+          {
+            description: 'Deploy to production',
+            command: 'deploy-prod',
+            critical: true,
+          },
+        ],
+      });
+
+      const onError = vi.fn();
+      const tasks = [
+        { action: 'Build the project', type: TaskType.Execute },
+        { action: 'Deploy to production', type: TaskType.Execute },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ onError })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(onError).toHaveBeenCalled();
         },
-      ],
+        { timeout: 500 }
+      );
+
+      // Verify deploy command was never executed
+      const calls = vi.mocked(executeCommand).mock.calls;
+      expect(calls.some((call) => call[0].command === 'deploy-prod')).toBe(
+        false
+      );
     });
 
-    const tasks = [
-      {
-        action: 'Navigate to Gamma project directory',
-        type: TaskType.Execute,
-      },
-    ];
+    it('continues execution when non-critical command fails', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
 
-    render(
-      <Execute
-        tasks={tasks}
-        service={service}
-        handlers={createMockHandlers()}
-        status={ComponentStatus.Active}
-      />
-    );
+      let callCount = 0;
+      vi.mocked(executeCommand).mockImplementation(
+        async (cmd: { command: string }) => {
+          callCount++;
+          if (cmd.command === 'lint-code') {
+            return {
+              description: 'Lint code',
+              command: 'lint-code',
+              output: '',
+              errors: 'Linting warnings found',
+              result: ExecutionResult.Error,
+            };
+          }
+          return {
+            description: 'Command',
+            command: cmd.command,
+            output: 'success',
+            errors: '',
+            result: ExecutionResult.Success,
+          };
+        }
+      );
 
-    await vi.waitFor(
-      () => {
-        expect(executeCommands).toHaveBeenCalled();
-      },
-      { timeout: 500 }
-    );
+      const service = createMockAnthropicService({
+        message: 'Running checks and build.',
+        commands: [
+          {
+            description: 'Lint code',
+            command: 'lint-code',
+            critical: false,
+          },
+          {
+            description: 'Run tests',
+            command: 'test-suite',
+            critical: true,
+          },
+          {
+            description: 'Build project',
+            command: 'build-project',
+            critical: true,
+          },
+        ],
+      });
 
-    // Verify that unresolved placeholders are kept as-is
-    const commandsArg = (executeCommands as ReturnType<typeof vi.fn>).mock
-      .calls[0][0];
-    expect(commandsArg[0].command).toBe('cd {project.gamma.path}');
+      const completeActive = vi.fn();
+      const tasks = [
+        { action: 'Lint code', type: TaskType.Execute },
+        { action: 'Run tests', type: TaskType.Execute },
+        { action: 'Build project', type: TaskType.Execute },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ completeActive })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(completeActive).toHaveBeenCalled();
+        },
+        { timeout: 500 }
+      );
+
+      // All three commands should have been executed despite lint failure
+      expect(callCount).toBe(3);
+    });
+
+    it('shows appropriate error message for failed command', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      const errorMessage = 'Permission denied: cannot write to /usr/local';
+      vi.mocked(executeCommand).mockResolvedValue({
+        description: 'Install package',
+        command: 'install-pkg',
+        output: '',
+        errors: errorMessage,
+        result: ExecutionResult.Error,
+      });
+
+      const service = createMockAnthropicService({
+        message: 'Installing package.',
+        commands: [
+          {
+            description: 'Install package',
+            command: 'install-pkg',
+          },
+        ],
+      });
+
+      const onError = vi.fn();
+      const tasks = [{ action: 'Install package', type: TaskType.Execute }];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ onError })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(onError).toHaveBeenCalledWith(errorMessage);
+        },
+        { timeout: 500 }
+      );
+    });
+  });
+
+  describe('Multi-task execution', () => {
+    it('executes multiple tasks in sequence', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      const executionOrder: string[] = [];
+      vi.mocked(executeCommand).mockImplementation(
+        async (cmd: { command: string }) => {
+          executionOrder.push(cmd.command);
+          return {
+            description: 'Command',
+            command: cmd.command,
+            output: 'done',
+            errors: '',
+            result: ExecutionResult.Success,
+          };
+        }
+      );
+
+      const service = createMockAnthropicService({
+        message: 'Setting up environment.',
+        commands: [
+          { description: 'Install deps', command: 'npm install' },
+          { description: 'Build project', command: 'npm run build' },
+          { description: 'Run tests', command: 'npm test' },
+        ],
+      });
+
+      const completeActive = vi.fn();
+      const tasks = [
+        { action: 'Install dependencies', type: TaskType.Execute },
+        { action: 'Build the project', type: TaskType.Execute },
+        { action: 'Run test suite', type: TaskType.Execute },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ completeActive })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(completeActive).toHaveBeenCalled();
+        },
+        { timeout: 500 }
+      );
+
+      // Verify tasks executed in order
+      expect(executionOrder).toEqual([
+        'npm install',
+        'npm run build',
+        'npm test',
+      ]);
+    });
+
+    it('maintains task state across execution', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      let taskIndex = 0;
+      vi.mocked(executeCommand).mockImplementation(async () => {
+        const current = taskIndex++;
+        return {
+          description: `Task ${current}`,
+          command: `cmd-${current}`,
+          output: `output-${current}`,
+          errors: '',
+          result: ExecutionResult.Success,
+        };
+      });
+
+      const service = createMockAnthropicService({
+        message: 'Running tasks.',
+        commands: [
+          { description: 'First', command: 'first' },
+          { description: 'Second', command: 'second' },
+        ],
+      });
+
+      const updateState = vi.fn();
+      const tasks = [
+        { action: 'First task', type: TaskType.Execute },
+        { action: 'Second task', type: TaskType.Execute },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ updateState })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(taskIndex).toBe(2);
+        },
+        { timeout: 500 }
+      );
+
+      // Verify state was updated
+      expect(updateState).toHaveBeenCalled();
+    });
+  });
+
+  describe('Edge cases', () => {
+    it('handles empty command string', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      const service = createMockAnthropicService({
+        message: 'Processing.',
+        commands: [{ description: 'Empty command', command: '' }],
+      });
+
+      const tasks = [{ action: 'Do nothing', type: TaskType.Execute }];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(executeCommand).toHaveBeenCalled();
+        },
+        { timeout: 500 }
+      );
+
+      const commandArg = vi.mocked(executeCommand).mock.calls[0][0];
+      expect(commandArg.command).toBe('');
+    });
+
+    it('handles commands with special characters', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      const specialCommand = 'echo "Hello $USER" && ls -la | grep "*.txt"';
+      const service = createMockAnthropicService({
+        message: 'Running special command.',
+        commands: [
+          {
+            description: 'Special chars',
+            command: specialCommand,
+          },
+        ],
+      });
+
+      const tasks = [
+        {
+          action: 'Execute command with special characters',
+          type: TaskType.Execute,
+        },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(executeCommand).toHaveBeenCalled();
+        },
+        { timeout: 500 }
+      );
+
+      const commandArg = vi.mocked(executeCommand).mock.calls[0][0];
+      expect(commandArg.command).toBe(specialCommand);
+    });
+
+    it('handles very long command descriptions', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      const longDescription =
+        'This is a very long description that exceeds the normal length ' +
+        'and contains detailed information about what the command does, ' +
+        'including multiple clauses and technical details that might be ' +
+        'important for understanding the execution context';
+
+      const service = createMockAnthropicService({
+        message: 'Processing.',
+        commands: [
+          {
+            description: longDescription,
+            command: 'short-cmd',
+          },
+        ],
+      });
+
+      const tasks = [
+        { action: 'Long description task', type: TaskType.Execute },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(executeCommand).toHaveBeenCalled();
+        },
+        { timeout: 500 }
+      );
+
+      const commandArg = vi.mocked(executeCommand).mock.calls[0][0];
+      expect(commandArg.description).toBe(longDescription);
+    });
+  });
+
+  describe('Abort scenarios', () => {
+    it('handles abort during multi-task execution', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      const executedCommands: string[] = [];
+      vi.mocked(executeCommand).mockImplementation(
+        async (cmd: { command: string }) => {
+          executedCommands.push(cmd.command);
+          // Simulate slow execution
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          return {
+            description: 'Command',
+            command: cmd.command,
+            output: '',
+            errors: '',
+            result: ExecutionResult.Success,
+          };
+        }
+      );
+
+      const service = createMockAnthropicService({
+        message: 'Running tasks.',
+        commands: [
+          { description: 'First', command: 'first' },
+          { description: 'Second', command: 'second' },
+          { description: 'Third', command: 'third' },
+        ],
+      });
+
+      const onAborted = vi.fn();
+      const tasks = [
+        { action: 'First task', type: TaskType.Execute },
+        { action: 'Second task', type: TaskType.Execute },
+        { action: 'Third task', type: TaskType.Execute },
+      ];
+
+      const { stdin, lastFrame } = render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ onAborted })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Wait for first task to start
+      await vi.waitFor(
+        () => {
+          return lastFrame()?.includes('First');
+        },
+        { timeout: 500 }
+      );
+
+      // Abort during execution
+      stdin.write('\x1b'); // Escape
+
+      expect(onAborted).toHaveBeenCalledWith('execution');
+
+      // Second and third commands should not execute
+      await vi.waitFor(
+        () => {
+          expect(executedCommands.length).toBeLessThan(3);
+        },
+        { timeout: 200 }
+      );
+    });
+
+    it('marks running task as aborted when execution cancelled', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      vi.mocked(executeCommand).mockImplementation(async () => {
+        // Simulate long-running command
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return {
+          description: 'Long task',
+          command: 'sleep',
+          output: '',
+          errors: '',
+          result: ExecutionResult.Success,
+        };
+      });
+
+      const service = createMockAnthropicService({
+        message: 'Running long task.',
+        commands: [
+          {
+            description: 'Long running task',
+            command: 'sleep 10',
+          },
+        ],
+      });
+
+      const onAborted = vi.fn();
+      const tasks = [{ action: 'Long task', type: TaskType.Execute }];
+
+      const { stdin, lastFrame } = render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ onAborted })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Wait for task to start executing
+      await vi.waitFor(
+        () => {
+          return lastFrame()?.includes('Long');
+        },
+        { timeout: 500 }
+      );
+
+      // Abort
+      stdin.write('\x1b');
+
+      // Should show aborted status
+      await vi.waitFor(
+        () => {
+          const frame = lastFrame();
+          expect(onAborted).toHaveBeenCalled();
+          // The task should be marked as aborted in the UI
+          return frame?.includes('⊘') || frame?.includes('abort');
+        },
+        { timeout: 500 }
+      );
+    });
   });
 });

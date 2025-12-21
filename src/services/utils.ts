@@ -1,6 +1,13 @@
 import { ScheduledTask } from '../types/types.js';
 
 /**
+ * Calculates elapsed time from a start timestamp, rounded to seconds.
+ */
+export function calculateElapsed(start: number): number {
+  return Math.floor((Date.now() - start) / 1000) * 1000;
+}
+
+/**
  * Formats a duration in milliseconds to a human-readable string.
  * Uses correct singular/plural forms.
  */

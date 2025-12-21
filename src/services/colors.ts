@@ -1,5 +1,6 @@
 import { FeedbackType, TaskType } from '../types/types.js';
 import { DebugLevel } from './configuration.js';
+import { ExecutionStatus } from './shell.js';
 
 /**
  * Base color palette - raw color values with descriptive names.
@@ -232,4 +233,64 @@ export function getTaskTypeLabel(type: TaskType, debug: DebugLevel): string {
     return verboseTaskTypeLabels[type];
   }
   return type;
+}
+
+/**
+ * Status icons for execution states
+ */
+export const STATUS_ICONS: Record<ExecutionStatus, string> = {
+  [ExecutionStatus.Pending]: '- ',
+  [ExecutionStatus.Running]: '• ',
+  [ExecutionStatus.Success]: '✓ ',
+  [ExecutionStatus.Failed]: '✗ ',
+  [ExecutionStatus.Aborted]: '⊘ ',
+};
+
+/**
+ * Get colors for different execution status states.
+ *
+ * Returns color scheme for:
+ * - Icon: Status indicator symbol
+ * - Description: Task description text
+ * - Command: Command text
+ * - Symbol: Command prefix symbol
+ */
+export function getStatusColors(status: ExecutionStatus) {
+  switch (status) {
+    case ExecutionStatus.Pending:
+      return {
+        icon: Palette.Gray,
+        description: Palette.Gray,
+        command: Palette.DarkGray,
+        symbol: Palette.DarkGray,
+      };
+    case ExecutionStatus.Running:
+      return {
+        icon: Palette.Gray,
+        description: getTextColor(true),
+        command: Palette.LightGreen,
+        symbol: Palette.AshGray,
+      };
+    case ExecutionStatus.Success:
+      return {
+        icon: Colors.Status.Success,
+        description: getTextColor(true),
+        command: Palette.Gray,
+        symbol: Palette.Gray,
+      };
+    case ExecutionStatus.Failed:
+      return {
+        icon: Colors.Status.Error,
+        description: Colors.Status.Error,
+        command: Colors.Status.Error,
+        symbol: Palette.Gray,
+      };
+    case ExecutionStatus.Aborted:
+      return {
+        icon: Palette.DarkOrange,
+        description: getTextColor(true),
+        command: Palette.DarkOrange,
+        symbol: Palette.Gray,
+      };
+  }
 }
