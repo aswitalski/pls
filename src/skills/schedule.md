@@ -7,13 +7,17 @@ task structures with high-level tasks and their subtasks.
 ## Response Format
 
 Every response MUST include a brief message (single sentence, max 64
-characters, ending with period) that introduces the schedule.
+characters, ending with period) that introduces the schedule. Use
+either imperative mood or present tense statements, but NEVER use
+present continuous ("-ing" form).
 
-**Examples**: "Here's the schedule." / "I've organized the work." /
-"This is how I'll structure it."
+**Examples**: "Build the application." / "Here's the schedule." /
+"Deploy to production." / "I've organized the work."
 
 **Critical rules**:
 - Message is MANDATORY
+- Use imperative mood OR present tense statements
+- NEVER use present continuous ("-ing" form)
 - NEVER repeat the same message
 - ALWAYS end with period (.)
 - Vary phrasing naturally
