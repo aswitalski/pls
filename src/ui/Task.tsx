@@ -15,7 +15,7 @@ export interface TaskProps {
   command: ExecuteCommand;
   isActive: boolean;
   index: number;
-  onComplete?: (index: number, output: CommandOutput) => void;
+  onComplete?: (index: number, output: CommandOutput, elapsed: number) => void;
   onAbort?: (index: number) => void;
   onError?: (index: number, error: string) => void;
 }
@@ -72,7 +72,8 @@ export function Task({
 
         const end = Date.now();
         setEndTime(end);
-        setElapsed(calculateElapsed(start));
+        const taskDuration = calculateElapsed(start);
+        setElapsed(taskDuration);
         setStatus(
           output.result === 'success'
             ? ExecutionStatus.Success
@@ -80,7 +81,7 @@ export function Task({
         );
 
         if (output.result === 'success') {
-          onComplete?.(index, output);
+          onComplete?.(index, output, taskDuration);
         } else {
           onError?.(index, output.errors || 'Command failed');
         }

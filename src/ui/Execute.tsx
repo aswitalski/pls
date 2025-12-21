@@ -11,6 +11,7 @@ import { CommandOutput } from '../services/shell.js';
 import { replacePlaceholders } from '../services/resolver.js';
 import { loadUserConfig } from '../services/loader.js';
 import { ensureMinimumTime } from '../services/timing.js';
+import { formatDuration } from '../services/utils.js';
 
 import { Spinner } from './Spinner.js';
 import { Task } from './Task.js';
@@ -39,6 +40,13 @@ export function Execute({
     state?.activeTaskIndex ?? -1
   );
   const [hasProcessed, setHasProcessed] = useState(false);
+  const [taskExecutionTimes, setTaskExecutionTimes] = useState<number[]>(
+    (state?.taskExecutionTimes as number[]) ?? []
+  );
+  const [completionMessage, setCompletionMessage] = useState<string | null>(
+    (state?.completionMessage as string | null) ?? null
+  );
+  const [summary, setSummary] = useState<string>(state?.summary ?? '');
 
   // Derive loading state from current conditions
   const isLoading =
@@ -112,8 +120,9 @@ export function Execute({
           command: replacePlaceholders(cmd.command, userConfig),
         }));
 
-        // Set message and create task infos
+        // Set message, summary, and create task infos
         setMessage(result.message);
+        setSummary(result.summary || '');
         const infos = resolvedCommands.map((cmd, index) => ({
           label: tasks[index]?.action,
           command: cmd,
@@ -142,22 +151,32 @@ export function Execute({
 
   // Handle task completion - move to next task
   const handleTaskComplete = useCallback(
-    (index: number, _output: CommandOutput) => {
+    (index: number, _output: CommandOutput, elapsed: number) => {
+      const updatedTimes = [...taskExecutionTimes, elapsed];
+      setTaskExecutionTimes(updatedTimes);
+
       if (index < taskInfos.length - 1) {
         // More tasks to execute
         setActiveTaskIndex(index + 1);
       } else {
         // All tasks complete
         setActiveTaskIndex(-1);
+        const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
+        const summaryText = summary?.trim() || 'Execution completed';
+        const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
+        setCompletionMessage(completion);
         handlers?.updateState({
           message,
+          summary,
           taskInfos,
           activeTaskIndex: -1,
+          taskExecutionTimes: updatedTimes,
+          completionMessage: completion,
         });
         handlers?.completeActive();
       }
     },
-    [taskInfos, message, handlers]
+    [taskInfos, message, handlers, taskExecutionTimes, summary]
   );
 
   const handleTaskError = useCallback(
@@ -183,16 +202,26 @@ export function Execute({
         } else {
           // Last task, complete execution
           setActiveTaskIndex(-1);
+          const totalElapsed = taskExecutionTimes.reduce(
+            (sum, time) => sum + time,
+            0
+          );
+          const summaryText = summary?.trim() || 'Execution completed';
+          const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
+          setCompletionMessage(completion);
           handlers?.updateState({
             message,
+            summary,
             taskInfos,
             activeTaskIndex: -1,
+            taskExecutionTimes,
+            completionMessage: completion,
           });
           handlers?.completeActive();
         }
       }
     },
-    [taskInfos, message, handlers]
+    [taskInfos, message, handlers, taskExecutionTimes, summary]
   );
 
   const handleTaskAbort = useCallback(
@@ -250,6 +279,12 @@ export function Execute({
               />
             </Box>
           ))}
+        </Box>
+      )}
+
+      {completionMessage && !isActive && (
+        <Box marginTop={1} marginLeft={1}>
+          <Text color={getTextColor(false)}>{completionMessage}</Text>
         </Box>
       )}
 

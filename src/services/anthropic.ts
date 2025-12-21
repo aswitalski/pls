@@ -22,6 +22,7 @@ export interface ExecuteCommand {
 
 export interface CommandResult {
   message: string;
+  summary?: string;
   tasks: Task[];
   answer?: string;
   commands?: ExecuteCommand[];
@@ -218,6 +219,7 @@ export class AnthropicService implements LLMService {
     // Extract and validate response based on tool type
     const input = content.input as {
       message?: string;
+      summary?: string;
       tasks?: Task[];
       question?: string;
       answer?: string;
@@ -254,6 +256,7 @@ export class AnthropicService implements LLMService {
 
       return {
         message: input.message,
+        summary: input.summary,
         tasks: [],
         commands: input.commands,
         debug,
