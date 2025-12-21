@@ -88,7 +88,8 @@ these commands specifically for their environment and workflow.
 Return a structured response with commands to execute:
 
 **Response structure:**
-- **message**: Brief status message (max 64 characters, end with period)
+- **message**: Brief status message in imperative mood (max 64 characters,
+  end with colon)
 - **commands**: Array of command objects to execute sequentially
 
 **Command object structure:**
@@ -133,7 +134,7 @@ Task: {
 
 Response:
 ```
-message: "Creating the file."
+message: "Create the file:"
 commands:
   - description: "Create test.txt"
     command: "touch test.txt"
@@ -148,7 +149,7 @@ Task: {
 
 Response:
 ```
-message: "Listing directory contents."
+message: "List directory contents:"
 commands:
   - description: "List files with details"
     command: "ls -la"
@@ -167,7 +168,7 @@ Tasks:
 
 Response:
 ```
-message: "Setting up the project."
+message: "Set up the project:"
 commands:
   - description: "Create project directory"
     command: "mkdir -p my-project"
@@ -188,7 +189,7 @@ Task: {
 
 Response:
 ```
-message: "Installing dependencies."
+message: "Install dependencies:"
 commands:
   - description: "Install npm packages"
     command: "npm install"
@@ -224,7 +225,7 @@ The "Process Data" skill's Execution section specifies:
 
 Response (using skill's Execution commands):
 ```
-message: "Processing sales data."
+message: "Process sales data:"
 commands:
   - description: "Load the sales dataset"
     command: "curl -O https://data.example.com/sales.csv"
@@ -250,7 +251,7 @@ Task: {
 
 Response:
 ```
-message: "Creating backup."
+message: "Create backup:"
 commands:
   - description: "Copy config directory"
     command: "cp -r ~/.config/app ~/.config/app.backup"
@@ -265,7 +266,7 @@ Task: {
 
 Response:
 ```
-message: "Checking disk space."
+message: "Check disk space:"
 commands:
   - description: "Show disk usage"
     command: "df -h"
