@@ -12,7 +12,10 @@ import { Task, TaskType } from '../types/types.js';
 import { LLMService } from '../services/anthropic.js';
 
 import { Colors } from '../services/colors.js';
-import { createScheduleDefinition } from '../services/components.js';
+import {
+  addDebugToTimeline,
+  createScheduleDefinition,
+} from '../services/components.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { useInput } from '../services/keyboard.js';
 import { handleRefinement } from '../services/refinement.js';
@@ -87,12 +90,10 @@ export function Command({
           // Add debug components to timeline if present
           // If we delegated to configure, include both schedule and configure debug
           // If not, only include schedule debug (result.debug is same as scheduleDebug)
-          const allDebug = allConfig
+          const debugComponents = allConfig
             ? [...scheduleDebug, ...(result.debug || [])]
             : scheduleDebug;
-          if (allDebug.length > 0) {
-            handlers?.addToTimeline(...allDebug);
-          }
+          addDebugToTimeline(debugComponents, handlers);
 
           // Save result to state for timeline display
           handlers?.updateState({

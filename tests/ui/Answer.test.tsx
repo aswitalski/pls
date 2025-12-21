@@ -7,6 +7,7 @@ import { Answer } from '../../src/ui/Answer.js';
 
 import {
   createMockAnthropicService,
+  createMockDebugComponents,
   createMockHandlers,
 } from '../test-utils.js';
 
@@ -157,5 +158,33 @@ describe('Answer component', () => {
 
     // Should have called withMinimumTime (mocked to return immediately in tests)
     expect(withMinimumTime).toHaveBeenCalled();
+  });
+
+  it('adds debug components to timeline', async () => {
+    const debugComponents = createMockDebugComponents('answer');
+
+    const service = createMockAnthropicService({
+      answer: 'Test answer',
+      debug: debugComponents,
+    });
+
+    const handlers = createMockHandlers();
+
+    render(
+      <Answer
+        question="Test question?"
+        service={service}
+        status={ComponentStatus.Active}
+        handlers={handlers}
+      />
+    );
+
+    // Wait for processing
+    await vi.waitFor(
+      () => {
+        expect(handlers.addToTimeline).toHaveBeenCalledWith(...debugComponents);
+      },
+      { timeout: 500 }
+    );
   });
 });

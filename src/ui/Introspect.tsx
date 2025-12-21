@@ -9,7 +9,10 @@ import {
 import { Task } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
-import { createReportDefinition } from '../services/components.js';
+import {
+  addDebugToTimeline,
+  createReportDefinition,
+} from '../services/components.js';
 import { DebugLevel } from '../services/configuration.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
@@ -120,6 +123,9 @@ export function Introspect({
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
+          // Add debug components to timeline if present
+          addDebugToTimeline(result.debug, handlers);
+
           // Parse capabilities from returned tasks
           let capabilities = result.tasks.map(parseCapabilityFromTask);
 

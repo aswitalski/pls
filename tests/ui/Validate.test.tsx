@@ -8,7 +8,12 @@ import { Task, TaskType } from '../../src/types/types.js';
 
 import { Validate } from '../../src/ui/Validate.js';
 
-import { createMockAnthropicService, Keys } from '../test-utils.js';
+import {
+  createMockAnthropicService,
+  createMockDebugComponents,
+  createMockHandlers,
+  Keys,
+} from '../test-utils.js';
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({
@@ -509,6 +514,51 @@ describe('Validate component', () => {
               description: 'Unknown setting',
             },
           ]);
+        },
+        { timeout: 500 }
+      );
+    });
+
+    it('adds debug components to timeline', async () => {
+      const missingConfig: ConfigRequirement[] = [
+        { path: 'api.key', type: 'string', description: 'API Key' },
+      ];
+
+      const debugComponents = createMockDebugComponents('validate');
+
+      const tasks: Task[] = [
+        {
+          action: 'API Key for service',
+          type: TaskType.Config,
+          params: { key: 'api.key' },
+        },
+      ];
+
+      const service = createMockAnthropicService({
+        tasks,
+        debug: debugComponents,
+      });
+
+      const handlers = createMockHandlers();
+
+      render(
+        <Validate
+          missingConfig={missingConfig}
+          userRequest="setup"
+          service={service}
+          onComplete={vi.fn()}
+          onError={vi.fn()}
+          onAborted={vi.fn()}
+          status={ComponentStatus.Active}
+          handlers={handlers}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(handlers.addToTimeline).toHaveBeenCalledWith(
+            ...debugComponents
+          );
         },
         { timeout: 500 }
       );

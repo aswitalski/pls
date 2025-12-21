@@ -4,6 +4,7 @@ import { Box, Text } from 'ink';
 import { AnswerProps, ComponentStatus } from '../types/components.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
+import { addDebugToTimeline } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { withMinimumTime } from '../services/timing.js';
@@ -55,6 +56,9 @@ export function Answer({
         );
 
         if (mounted) {
+          // Add debug components to timeline if present
+          addDebugToTimeline(result.debug, handlers);
+
           // Extract answer from result
           const answerText = result.answer || '';
           setAnswer(answerText);

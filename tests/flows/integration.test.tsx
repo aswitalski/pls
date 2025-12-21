@@ -905,5 +905,63 @@ describe('End-to-End Flow Integration Tests', () => {
       debugModule.setDebugLevel(DebugLevel.None);
       vi.restoreAllMocks();
     });
+
+    it('shows debug boxes for all tool types', async () => {
+      const anthropicModule = await import('../../src/services/anthropic.js');
+      const debugModule = await import('../../src/services/logger.js');
+
+      debugModule.setDebugLevel(DebugLevel.Verbose);
+
+      const mockService = {
+        processWithTool: vi.fn().mockResolvedValue({
+          message: 'Processing tasks.',
+          tasks: [
+            { action: 'Execute command', type: TaskType.Execute },
+            { action: 'Answer question', type: TaskType.Answer },
+            { action: 'Show capabilities', type: TaskType.Introspect },
+          ],
+          debug: [
+            {
+              id: randomUUID(),
+              name: 'debug' as const,
+              props: {
+                title: 'SYSTEM PROMPT',
+                content: 'Tool: schedule',
+                color: '#ffffff',
+              },
+            },
+            {
+              id: randomUUID(),
+              name: 'debug' as const,
+              props: {
+                title: 'LLM RESPONSE',
+                content: 'Response with mixed tasks',
+                color: '#ffffff',
+              },
+            },
+          ],
+        }),
+      };
+
+      vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+        mockService as any
+      );
+
+      const { lastFrame } = render(
+        <Main
+          app={{ ...mockApp, debug: DebugLevel.Verbose }}
+          command="do multiple things"
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+      const output = lastFrame();
+      expect(output).toContain('SYSTEM PROMPT');
+      expect(output).toContain('LLM RESPONSE');
+
+      debugModule.setDebugLevel(DebugLevel.None);
+      vi.restoreAllMocks();
+    });
   });
 });

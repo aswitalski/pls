@@ -12,6 +12,7 @@ import {
   ConfigDefinitionProps,
   ConfirmDefinitionProps,
   ExecuteDefinitionProps,
+  Handlers,
   IntrospectDefinitionProps,
   RefinementDefinitionProps,
   ScheduleDefinitionProps,
@@ -479,4 +480,16 @@ export function createValidateDefinition(
       onAborted,
     } satisfies ValidateDefinitionProps,
   };
+}
+
+/**
+ * Add debug components to timeline if present in result
+ */
+export function addDebugToTimeline(
+  debugComponents: ComponentDefinition[] | undefined,
+  handlers: Handlers | undefined
+): void {
+  if (debugComponents && debugComponents.length > 0 && handlers) {
+    handlers.addToTimeline(...debugComponents);
+  }
 }

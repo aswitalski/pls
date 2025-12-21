@@ -5,6 +5,7 @@ import { ComponentStatus, ExecuteProps } from '../types/components.js';
 
 import { ExecuteCommand } from '../services/anthropic.js';
 import { Colors, getTextColor } from '../services/colors.js';
+import { addDebugToTimeline } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { CommandOutput } from '../services/shell.js';
@@ -103,6 +104,9 @@ export function Execute({
         await ensureMinimumTime(startTime, MINIMUM_PROCESSING_TIME);
 
         if (!mounted) return;
+
+        // Add debug components to timeline if present
+        addDebugToTimeline(result.debug, handlers);
 
         if (!result.commands || result.commands.length === 0) {
           setHasProcessed(true);

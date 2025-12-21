@@ -6,6 +6,7 @@ import { ConfigRequirement } from '../types/skills.js';
 import { TaskType } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
+import { addDebugToTimeline } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
@@ -79,6 +80,9 @@ export function Validate({
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
+          // Add debug components to timeline if present
+          addDebugToTimeline(result.debug, handlers);
+
           // Extract CONFIG tasks with descriptions from result
           const configTasks = result.tasks.filter(
             (task) => task.type === TaskType.Config

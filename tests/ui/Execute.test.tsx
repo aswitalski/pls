@@ -10,6 +10,7 @@ import { Execute } from '../../src/ui/Execute.js';
 
 import {
   createMockAnthropicService,
+  createMockDebugComponents,
   createMockHandlers,
 } from '../test-utils.js';
 
@@ -1078,6 +1079,36 @@ describe('Execute component', () => {
       const finalCall = updateStateCalls[updateStateCalls.length - 1];
       expect(finalCall[0]).toHaveProperty('taskExecutionTimes');
       expect(finalCall[0]).toHaveProperty('completionMessage');
+    });
+  });
+
+  describe('Debug handling', () => {
+    it('adds debug components to timeline', async () => {
+      const debugComponents = createMockDebugComponents('execute');
+
+      const service = createMockAnthropicService({
+        message: 'Execute commands:',
+        summary: 'Commands executed',
+        commands: [{ description: 'Test command', command: 'echo test' }],
+        debug: debugComponents,
+      });
+
+      const handlers = createMockHandlers();
+
+      render(
+        <Execute
+          tasks={[{ action: 'Run test', type: TaskType.Execute }]}
+          status={ComponentStatus.Active}
+          service={service}
+          handlers={handlers}
+        />
+      );
+
+      // Wait for processing
+      await vi.advanceTimersByTimeAsync(1000);
+
+      // Check that addToTimeline was called with debug components
+      expect(handlers.addToTimeline).toHaveBeenCalledWith(...debugComponents);
     });
   });
 });

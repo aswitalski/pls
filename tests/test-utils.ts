@@ -5,8 +5,12 @@ import type {
   Capability,
   Handlers,
   BaseState,
+  ComponentDefinition,
 } from '../src/types/components.js';
 import type { Task } from '../src/types/types.js';
+
+import { ComponentStatus } from '../src/types/components.js';
+import { ComponentName } from '../src/types/types.js';
 
 import type { ExecuteCommand, LLMService } from '../src/services/anthropic.js';
 
@@ -41,6 +45,7 @@ export function createMockAnthropicService(
     capabilities?: Capability[];
     answer?: string;
     commands?: ExecuteCommand[];
+    debug?: ComponentDefinition[];
   } = {},
   error?: Error
 ): LLMService {
@@ -55,9 +60,43 @@ export function createMockAnthropicService(
         tasks: result.tasks || [],
         answer: result.answer,
         commands: result.commands,
+        debug: result.debug,
       });
     },
   };
+}
+
+/**
+ * Creates mock debug components for testing.
+ *
+ * @param toolName - The name of the tool (e.g., 'execute', 'answer')
+ * @returns Array of mock debug components
+ */
+export function createMockDebugComponents(
+  toolName: string
+): ComponentDefinition[] {
+  return [
+    {
+      id: `debug-prompt-${toolName}`,
+      name: ComponentName.Debug,
+      status: ComponentStatus.Done,
+      props: {
+        title: `SYSTEM PROMPT (${toolName})`,
+        content: `Tool: ${toolName}`,
+        color: '#ffffff',
+      },
+    },
+    {
+      id: `debug-response-${toolName}`,
+      name: ComponentName.Debug,
+      status: ComponentStatus.Done,
+      props: {
+        title: `LLM RESPONSE (${toolName})`,
+        content: `Response from ${toolName} tool`,
+        color: '#ffffff',
+      },
+    },
+  ];
 }
 
 /**
