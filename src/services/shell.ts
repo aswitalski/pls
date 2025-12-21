@@ -82,6 +82,7 @@ export class DummyExecutor implements Executor {
       onProgress?.(ExecutionStatus.Running);
 
       const delay = this.delayGenerator(index);
+
       setTimeout(() => {
         const mocked = this.mockedResponses.get(cmd.command);
 
@@ -99,6 +100,7 @@ export class DummyExecutor implements Executor {
             ? ExecutionStatus.Success
             : ExecutionStatus.Failed
         );
+
         resolve(commandResult);
       }, delay);
     });

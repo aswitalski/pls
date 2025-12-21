@@ -42,6 +42,20 @@ vi.mock('../../src/services/shell.js', async () => {
   const actual = await vi.importActual('../../src/services/shell.js');
   return {
     ...actual,
+    executeCommand: vi
+      .fn()
+      .mockImplementation(
+        async (cmd: { description: string; command: string }) => {
+          // Simulate immediate execution for tests
+          return {
+            description: cmd.description,
+            command: cmd.command,
+            output: '',
+            errors: '',
+            result: 'success',
+          };
+        }
+      ),
     executeCommands: vi
       .fn()
       .mockImplementation(async (commands, onProgress) => {
@@ -299,7 +313,7 @@ describe('Execute component', () => {
   });
 
   it('resolves placeholders in commands before execution', async () => {
-    const { executeCommands } = await import('../../src/services/shell.js');
+    const { executeCommand } = await import('../../src/services/shell.js');
 
     const service = createMockAnthropicService({
       message: 'Navigating to repository.',
@@ -329,19 +343,19 @@ describe('Execute component', () => {
 
     await vi.waitFor(
       () => {
-        expect(executeCommands).toHaveBeenCalled();
+        expect(executeCommand).toHaveBeenCalled();
       },
       { timeout: 500 }
     );
 
-    // Verify that executeCommands was called with resolved placeholders
-    const commandsArg = (executeCommands as ReturnType<typeof vi.fn>).mock
+    // Verify that executeCommand was called with resolved placeholders
+    const commandArg = (executeCommand as ReturnType<typeof vi.fn>).mock
       .calls[0][0];
-    expect(commandsArg[0].command).toBe('cd /home/user/alpha');
+    expect(commandArg.command).toBe('cd /home/user/alpha');
   });
 
   it('keeps unresolved placeholders if not in config', async () => {
-    const { executeCommands } = await import('../../src/services/shell.js');
+    const { executeCommand } = await import('../../src/services/shell.js');
 
     const service = createMockAnthropicService({
       message: 'Running command.',
@@ -371,14 +385,14 @@ describe('Execute component', () => {
 
     await vi.waitFor(
       () => {
-        expect(executeCommands).toHaveBeenCalled();
+        expect(executeCommand).toHaveBeenCalled();
       },
       { timeout: 500 }
     );
 
     // Verify that unresolved placeholders are kept as-is
-    const commandsArg = (executeCommands as ReturnType<typeof vi.fn>).mock
+    const commandArg = (executeCommand as ReturnType<typeof vi.fn>).mock
       .calls[0][0];
-    expect(commandsArg[0].command).toBe('cd {project.gamma.path}');
+    expect(commandArg.command).toBe('cd {project.gamma.path}');
   });
 });
