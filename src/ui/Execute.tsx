@@ -10,7 +10,7 @@ import { useInput } from '../services/keyboard.js';
 import { loadUserConfig } from '../services/loader.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { replacePlaceholders } from '../services/resolver.js';
-import { CommandOutput } from '../services/shell.js';
+import { CommandOutput, ExecutionStatus } from '../services/shell.js';
 import { ensureMinimumTime } from '../services/timing.js';
 import { formatDuration } from '../services/utils.js';
 
@@ -22,6 +22,8 @@ const MINIMUM_PROCESSING_TIME = 400;
 interface TaskInfo {
   label: string;
   command: ExecuteCommand;
+  status?: ExecutionStatus;
+  elapsed?: number;
 }
 
 export function Execute({
@@ -56,12 +58,40 @@ export function Execute({
   const isExecuting =
     activeTaskIndex >= 0 && activeTaskIndex < taskInfos.length;
 
+  // Handle cancel with useCallback to ensure we capture latest state
+  const handleCancel = useCallback(() => {
+    // Mark tasks based on their status relative to activeTaskIndex:
+    // - Before activeTaskIndex: completed (Success)
+    // - At activeTaskIndex: interrupted (Aborted)
+    // - After activeTaskIndex: never started (Cancelled)
+    const updatedTaskInfos = taskInfos.map((task, index) => {
+      if (index < activeTaskIndex) {
+        // Tasks that completed before interruption
+        return { ...task, status: ExecutionStatus.Success };
+      } else if (index === activeTaskIndex) {
+        // Task that was running when interrupted
+        return { ...task, status: ExecutionStatus.Aborted };
+      } else {
+        // Tasks that haven't started yet
+        return { ...task, status: ExecutionStatus.Cancelled };
+      }
+    });
+
+    setTaskInfos(updatedTaskInfos);
+    setActiveTaskIndex(-1);
+    handlers?.updateState({
+      message,
+      taskInfos: updatedTaskInfos,
+      activeTaskIndex: -1,
+      taskExecutionTimes,
+    });
+    handlers?.onAborted('execution');
+  }, [message, taskInfos, activeTaskIndex, taskExecutionTimes, handlers]);
+
   useInput(
     (_, key) => {
       if (key.escape && (isLoading || isExecuting) && isActive) {
-        // Cancel execution
-        setActiveTaskIndex(-1);
-        handlers?.onAborted('execution');
+        handleCancel();
       }
     },
     { isActive: (isLoading || isExecuting) && isActive }
@@ -159,6 +189,14 @@ export function Execute({
       const updatedTimes = [...taskExecutionTimes, elapsed];
       setTaskExecutionTimes(updatedTimes);
 
+      // Update task with elapsed time and success status
+      const updatedTaskInfos = taskInfos.map((task, i) =>
+        i === index
+          ? { ...task, status: ExecutionStatus.Success, elapsed }
+          : task
+      );
+      setTaskInfos(updatedTaskInfos);
+
       if (index < taskInfos.length - 1) {
         // More tasks to execute
         setActiveTaskIndex(index + 1);
@@ -172,7 +210,7 @@ export function Execute({
         handlers?.updateState({
           message,
           summary,
-          taskInfos,
+          taskInfos: updatedTaskInfos,
           activeTaskIndex: -1,
           taskExecutionTimes: updatedTimes,
           completionMessage: completion,
@@ -184,9 +222,17 @@ export function Execute({
   );
 
   const handleTaskError = useCallback(
-    (index: number, error: string) => {
+    (index: number, error: string, elapsed: number) => {
       const task = taskInfos[index];
       const isCritical = task?.command.critical !== false; // Default to true
+
+      // Update task with elapsed time and failed status
+      const updatedTaskInfos = taskInfos.map((task, i) =>
+        i === index
+          ? { ...task, status: ExecutionStatus.Failed, elapsed }
+          : task
+      );
+      setTaskInfos(updatedTaskInfos);
 
       if (isCritical) {
         // Critical failure - stop execution
@@ -194,19 +240,22 @@ export function Execute({
         setError(error);
         handlers?.updateState({
           message,
-          taskInfos,
+          taskInfos: updatedTaskInfos,
           activeTaskIndex: -1,
           error,
         });
         handlers?.onError(error);
       } else {
         // Non-critical failure - continue to next task
+        const updatedTimes = [...taskExecutionTimes, elapsed];
+        setTaskExecutionTimes(updatedTimes);
+
         if (index < taskInfos.length - 1) {
           setActiveTaskIndex(index + 1);
         } else {
           // Last task, complete execution
           setActiveTaskIndex(-1);
-          const totalElapsed = taskExecutionTimes.reduce(
+          const totalElapsed = updatedTimes.reduce(
             (sum, time) => sum + time,
             0
           );
@@ -216,9 +265,9 @@ export function Execute({
           handlers?.updateState({
             message,
             summary,
-            taskInfos,
+            taskInfos: updatedTaskInfos,
             activeTaskIndex: -1,
-            taskExecutionTimes,
+            taskExecutionTimes: updatedTimes,
             completionMessage: completion,
           });
           handlers?.completeActive();
@@ -277,6 +326,8 @@ export function Execute({
                 command={taskInfo.command}
                 isActive={isActive && index === activeTaskIndex}
                 index={index}
+                initialStatus={taskInfo.status}
+                initialElapsed={taskInfo.elapsed}
                 onComplete={handleTaskComplete}
                 onAbort={handleTaskAbort}
                 onError={handleTaskError}

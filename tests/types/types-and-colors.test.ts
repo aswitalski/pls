@@ -6,6 +6,7 @@ import {
   getTaskColors,
   getTaskTypeLabel,
   getTextColor,
+  Palette,
 } from '../../src/services/colors.js';
 import { DebugLevel } from '../../src/services/configuration.js';
 import { FeedbackType, TaskType } from '../../src/types/types.js';
@@ -93,9 +94,9 @@ describe('getFeedbackColor', () => {
     expect(color).toBe(Colors.Status.Success);
   });
 
-  it('returns Warning color for Aborted', () => {
+  it('returns MediumOrange color for Aborted', () => {
     const color = getFeedbackColor(FeedbackType.Aborted, false);
-    expect(color).toBe(Colors.Status.Warning);
+    expect(color).toBe(Palette.MediumOrange);
   });
 
   it('returns Error color for Failed', () => {
