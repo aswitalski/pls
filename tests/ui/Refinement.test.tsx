@@ -1,9 +1,11 @@
-import { ComponentStatus } from '../../src/types/components.js';
-import { render } from 'ink-testing-library';
 import React from 'react';
+import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
+import { ComponentStatus } from '../../src/types/components.js';
+
 import { Refinement } from '../../src/ui/Refinement.js';
+
 import { Keys } from '../test-utils.js';
 
 describe('Refinement', () => {

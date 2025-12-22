@@ -1,18 +1,20 @@
+import { randomUUID } from 'crypto';
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { randomUUID } from 'crypto';
 
 import { App, TaskType } from '../../src/types/types.js';
 
-import { Main } from '../../src/ui/Main.js';
-import { Keys } from '../test-utils.js';
 import {
   DebugLevel,
   getMissingConfigKeys,
   loadConfig,
 } from '../../src/services/configuration.js';
 import { exitApp } from '../../src/services/process.js';
+
+import { Main } from '../../src/ui/Main.js';
+
+import { Keys } from '../test-utils.js';
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({

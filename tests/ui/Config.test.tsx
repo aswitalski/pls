@@ -1,11 +1,13 @@
-import { ComponentStatus } from '../../src/types/components.js';
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
+import { ComponentStatus } from '../../src/types/components.js';
+
 import { AnthropicModel } from '../../src/services/configuration.js';
 
 import { Config, ConfigStep, StepType } from '../../src/ui/Config.js';
+
 import { Keys } from '../test-utils.js';
 
 describe('Config component interaction flows', () => {

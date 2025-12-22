@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { Box, Text } from 'ink';
 
-import {
-  ComponentStatus,
-  ConfirmProps,
-  ConfirmState,
-} from '../types/components.js';
+import { ComponentStatus, ConfirmProps } from '../types/components.js';
 
 import { Colors, Palette } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';

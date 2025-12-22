@@ -1,7 +1,8 @@
-import { ComponentStatus } from '../../src/types/components.js';
-import { render } from 'ink-testing-library';
 import React from 'react';
+import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { ComponentStatus } from '../../src/types/components.js';
 
 import { Answer } from '../../src/ui/Answer.js';
 

@@ -3,8 +3,9 @@ import { Box, Text } from 'ink';
 
 import { ComponentStatus, ScheduleProps } from '../types/components.js';
 import { ScheduledTask, Task, TaskType } from '../types/types.js';
-import { DebugLevel } from '../services/configuration.js';
+
 import { getTaskColors, getTaskTypeLabel } from '../services/colors.js';
+import { DebugLevel } from '../services/configuration.js';
 import { useInput } from '../services/keyboard.js';
 
 import { Label } from './Label.js';

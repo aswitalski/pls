@@ -16,8 +16,8 @@ import {
   markAsDone,
 } from '../services/components.js';
 import { DebugLevel } from '../services/configuration.js';
-import { exitApp } from '../services/process.js';
 import { getCancellationMessage } from '../services/messages.js';
+import { exitApp } from '../services/process.js';
 
 import { Component } from './Component.js';
 

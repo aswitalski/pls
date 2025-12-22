@@ -2,8 +2,8 @@ import { Box, Text } from 'ink';
 
 import { ExecuteCommand } from '../services/anthropic.js';
 import { getStatusColors, Palette, STATUS_ICONS } from '../services/colors.js';
-import { formatDuration } from '../services/utils.js';
 import { ExecutionStatus } from '../services/shell.js';
+import { formatDuration } from '../services/utils.js';
 
 import { Spinner } from './Spinner.js';
 

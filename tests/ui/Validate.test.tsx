@@ -1,8 +1,8 @@
-import { ComponentStatus } from '../../src/types/components.js';
-import { render } from 'ink-testing-library';
 import React from 'react';
+import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ComponentStatus } from '../../src/types/components.js';
 import { ConfigRequirement } from '../../src/types/skills.js';
 import { Task, TaskType } from '../../src/types/types.js';
 

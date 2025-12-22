@@ -10,14 +10,13 @@ import {
 import { Task, TaskType } from '../types/types.js';
 
 import { LLMService } from '../services/anthropic.js';
-
 import { Colors } from '../services/colors.js';
 import {
   addDebugToTimeline,
   createScheduleDefinition,
 } from '../services/components.js';
-import { formatErrorMessage } from '../services/messages.js';
 import { useInput } from '../services/keyboard.js';
+import { formatErrorMessage } from '../services/messages.js';
 import { handleRefinement } from '../services/refinement.js';
 import { routeTasksWithConfirm } from '../services/router.js';
 import { ensureMinimumTime } from '../services/timing.js';

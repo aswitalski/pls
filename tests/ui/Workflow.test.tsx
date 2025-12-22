@@ -12,8 +12,9 @@ import {
   TaskType,
 } from '../../src/types/types.js';
 
-import { Workflow } from '../../src/ui/Workflow.js';
 import { DebugLevel } from '../../src/services/configuration.js';
+
+import { Workflow } from '../../src/ui/Workflow.js';
 
 // Mock exitApp to prevent process.exit
 vi.mock('../../src/services/process.js', () => ({

@@ -7,16 +7,16 @@ import { DebugLevel } from '../services/configuration.js';
 
 import { Answer } from './Answer.js';
 import { Command } from './Command.js';
-import { Confirm } from './Confirm.js';
 import { Config } from './Config.js';
+import { Confirm } from './Confirm.js';
 import { Debug } from './Debug.js';
 import { Execute } from './Execute.js';
 import { Feedback } from './Feedback.js';
 import { Introspect } from './Introspect.js';
 import { Message } from './Message.js';
-import { Schedule } from './Schedule.js';
 import { Refinement } from './Refinement.js';
 import { Report } from './Report.js';
+import { Schedule } from './Schedule.js';
 import { Validate } from './Validate.js';
 import { Welcome } from './Welcome.js';
 

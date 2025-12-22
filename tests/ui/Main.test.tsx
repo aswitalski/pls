@@ -4,12 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../../src/types/types.js';
 
-import { Main } from '../../src/ui/Main.js';
 import {
   DebugLevel,
   getMissingConfigKeys,
   loadConfig,
 } from '../../src/services/configuration.js';
+
+import { Main } from '../../src/ui/Main.js';
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({

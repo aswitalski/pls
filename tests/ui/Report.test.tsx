@@ -1,8 +1,9 @@
-import { render } from 'ink-testing-library';
 import React from 'react';
+import { render } from 'ink-testing-library';
 import { describe, expect, it } from 'vitest';
 
 import { Capability } from '../../src/types/components.js';
+
 import { Report } from '../../src/ui/Report.js';
 
 describe('Report component', () => {

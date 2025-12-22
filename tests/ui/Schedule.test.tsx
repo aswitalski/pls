@@ -1,13 +1,18 @@
-import { ComponentStatus } from '../../src/types/components.js';
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Handlers, ScheduleState } from '../../src/types/components.js';
+import {
+  ComponentStatus,
+  Handlers,
+  ScheduleState,
+} from '../../src/types/components.js';
 import { Task, TaskType } from '../../src/types/types.js';
 
-import { Schedule } from '../../src/ui/Schedule.js';
 import { DebugLevel } from '../../src/services/configuration.js';
+
+import { Schedule } from '../../src/ui/Schedule.js';
+
 import {
   Keys,
   createMockHandlers as createGlobalMockHandlers,

@@ -1,14 +1,15 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render } from 'ink-testing-library';
-import { Text } from 'ink';
 import React from 'react';
+import { Text } from 'ink';
+import { render } from 'ink-testing-library';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { Key } from 'ink';
 
 import { DebugLevel } from '../../src/services/configuration.js';
 import {
-  registerGlobalShortcut,
-  isGlobalShortcut,
   clearGlobalShortcuts,
+  isGlobalShortcut,
+  registerGlobalShortcut,
   useInput,
 } from '../../src/services/keyboard.js';
 

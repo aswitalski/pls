@@ -7,10 +7,10 @@ import { ExecuteCommand } from '../services/anthropic.js';
 import { Colors, getTextColor } from '../services/colors.js';
 import { addDebugToTimeline } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
-import { formatErrorMessage } from '../services/messages.js';
-import { CommandOutput } from '../services/shell.js';
-import { replacePlaceholders } from '../services/resolver.js';
 import { loadUserConfig } from '../services/loader.js';
+import { formatErrorMessage } from '../services/messages.js';
+import { replacePlaceholders } from '../services/resolver.js';
+import { CommandOutput } from '../services/shell.js';
 import { ensureMinimumTime } from '../services/timing.js';
 import { formatDuration } from '../services/utils.js';
 

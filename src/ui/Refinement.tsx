@@ -1,6 +1,7 @@
 import { Box } from 'ink';
 
 import { ComponentStatus, RefinementProps } from '../types/components.js';
+
 import { useInput } from '../services/keyboard.js';
 
 import { Message } from './Message.js';

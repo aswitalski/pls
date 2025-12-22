@@ -1,5 +1,5 @@
-import { ScheduledTask, Task, TaskType } from '../types/types.js';
 import { Handlers } from '../types/components.js';
+import { FeedbackType, ScheduledTask, Task, TaskType } from '../types/types.js';
 
 import { LLMService } from './anthropic.js';
 import {
@@ -14,13 +14,12 @@ import {
   createValidateDefinition,
 } from './components.js';
 import { saveConfig, unflattenConfig } from './configuration.js';
-import { FeedbackType } from '../types/types.js';
-import { validateExecuteTasks } from './validator.js';
 import {
   getCancellationMessage,
   getMixedTaskTypesError,
   getUnknownRequestMessage,
 } from './messages.js';
+import { validateExecuteTasks } from './validator.js';
 
 /**
  * Determine the operation name based on task types

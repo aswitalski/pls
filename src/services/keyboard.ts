@@ -1,4 +1,5 @@
 import { useInput as useInkInput } from 'ink';
+
 import type { Key } from 'ink';
 
 type KeyboardHandler = () => void;

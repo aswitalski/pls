@@ -1,7 +1,9 @@
-import { ComponentStatus } from '../../src/types/components.js';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ComponentDefinition } from '../../src/types/components.js';
+import {
+  ComponentDefinition,
+  ComponentStatus,
+} from '../../src/types/components.js';
 import {
   App,
   ComponentName,
@@ -9,11 +11,12 @@ import {
   TaskType,
 } from '../../src/types/types.js';
 
+import { DebugLevel } from '../../src/services/configuration.js';
+
 import { Component } from '../../src/ui/Component.js';
 import { StepType } from '../../src/ui/Config.js';
 
 import { createMockAnthropicService } from '../test-utils.js';
-import { DebugLevel } from '../../src/services/configuration.js';
 
 describe('Component', () => {
   const mockApp: App = {

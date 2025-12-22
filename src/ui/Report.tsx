@@ -1,6 +1,7 @@
 import { Box, Text } from 'ink';
 
 import { Capability, ReportProps } from '../types/components.js';
+
 import { Colors } from '../services/colors.js';
 
 function CapabilityItem({

@@ -7,14 +7,14 @@ import { TaskType } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
 import { addDebugToTimeline } from '../services/components.js';
-import { useInput } from '../services/keyboard.js';
-import { formatErrorMessage } from '../services/messages.js';
-import { ensureMinimumTime } from '../services/timing.js';
 import {
   DebugLevel,
   saveConfig,
   unflattenConfig,
 } from '../services/configuration.js';
+import { useInput } from '../services/keyboard.js';
+import { formatErrorMessage } from '../services/messages.js';
+import { ensureMinimumTime } from '../services/timing.js';
 
 import { Config, ConfigStep, StepType } from './Config.js';
 import { Spinner } from './Spinner.js';

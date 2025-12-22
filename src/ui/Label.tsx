@@ -1,8 +1,9 @@
 import { Box, Text } from 'ink';
 
 import { TaskType } from '../types/types.js';
-import { DebugLevel } from '../services/configuration.js';
+
 import { getTaskColors, getTaskTypeLabel } from '../services/colors.js';
+import { DebugLevel } from '../services/configuration.js';
 
 import { Separator } from './Separator.js';
 

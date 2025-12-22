@@ -1,9 +1,10 @@
-import { ComponentStatus } from '../../src/types/components.js';
-import { render } from 'ink-testing-library';
 import React from 'react';
+import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ComponentStatus } from '../../src/types/components.js';
 import { TaskType } from '../../src/types/types.js';
+
 import { ExecutionResult } from '../../src/services/shell.js';
 
 import { Execute } from '../../src/ui/Execute.js';
