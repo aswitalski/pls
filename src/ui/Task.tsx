@@ -15,9 +15,11 @@ export interface TaskProps {
   command: ExecuteCommand;
   isActive: boolean;
   index: number;
+  initialStatus?: ExecutionStatus;
+  initialElapsed?: number;
   onComplete?: (index: number, output: CommandOutput, elapsed: number) => void;
   onAbort?: (index: number) => void;
-  onError?: (index: number, error: string) => void;
+  onError?: (index: number, error: string, elapsed: number) => void;
 }
 
 export function Task({
@@ -25,16 +27,18 @@ export function Task({
   command,
   isActive,
   index,
+  initialStatus,
+  initialElapsed,
   onComplete,
   onAbort,
   onError,
 }: TaskProps) {
   const [status, setStatus] = useState<ExecutionStatus>(
-    ExecutionStatus.Pending
+    initialStatus ?? ExecutionStatus.Pending
   );
   const [startTime, setStartTime] = useState<number | undefined>();
   const [endTime, setEndTime] = useState<number | undefined>();
-  const [elapsed, setElapsed] = useState<number | undefined>();
+  const [elapsed, setElapsed] = useState<number | undefined>(initialElapsed);
   const [currentElapsed, setCurrentElapsed] = useState<number>(0);
 
   // Update elapsed time while running
@@ -53,7 +57,12 @@ export function Task({
 
   // Execute command when becoming active
   useEffect(() => {
-    if (!isActive || status !== ExecutionStatus.Pending) {
+    // Don't execute if task is cancelled or if not active
+    if (
+      !isActive ||
+      status === ExecutionStatus.Cancelled ||
+      status !== ExecutionStatus.Pending
+    ) {
       return;
     }
 
@@ -83,16 +92,21 @@ export function Task({
         if (output.result === 'success') {
           onComplete?.(index, output, taskDuration);
         } else {
-          onError?.(index, output.errors || 'Command failed');
+          onError?.(index, output.errors || 'Command failed', taskDuration);
         }
       } catch (err) {
         if (!mounted) return;
 
         const end = Date.now();
         setEndTime(end);
-        setElapsed(calculateElapsed(start));
+        const errorDuration = calculateElapsed(start);
+        setElapsed(errorDuration);
         setStatus(ExecutionStatus.Failed);
-        onError?.(index, err instanceof Error ? err.message : 'Unknown error');
+        onError?.(
+          index,
+          err instanceof Error ? err.message : 'Unknown error',
+          errorDuration
+        );
       }
     }
 
@@ -121,6 +135,7 @@ export function Task({
       label={label}
       command={command}
       status={status}
+      isActive={isActive}
       startTime={startTime}
       endTime={endTime}
       elapsed={status === ExecutionStatus.Running ? currentElapsed : elapsed}

@@ -158,7 +158,7 @@ export interface ExecuteState extends BaseState {
     label: string;
     command: { description: string; command: string };
   }>;
-  activeTaskIndex?: number;
+  completed?: number;
   taskExecutionTimes?: number[];
   completionMessage?: string | null;
 }

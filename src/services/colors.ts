@@ -19,6 +19,7 @@ export const Palette = {
   Yellow: '#cccc5c',
   LightYellow: '#d4d47a',
   Orange: '#f48c80',
+  MediumOrange: '#d07560',
   DarkOrange: '#ab5e40',
   BurntOrange: '#cc7a5c',
   Red: '#cc5c5c',
@@ -49,7 +50,7 @@ export const Colors = {
   Status: {
     Success: Palette.BrightGreen,
     Error: Palette.Red,
-    Warning: Palette.Orange,
+    Warning: Palette.MediumOrange,
     Info: Palette.Cyan,
   },
   Label: {
@@ -137,7 +138,7 @@ const taskColors: Record<
 const feedbackColors: Record<FeedbackType, string | null> = {
   [FeedbackType.Info]: Colors.Status.Info,
   [FeedbackType.Succeeded]: Colors.Status.Success,
-  [FeedbackType.Aborted]: Colors.Status.Warning,
+  [FeedbackType.Aborted]: Palette.MediumOrange,
   [FeedbackType.Failed]: Colors.Status.Error,
 } as const;
 
@@ -244,6 +245,7 @@ export const STATUS_ICONS: Record<ExecutionStatus, string> = {
   [ExecutionStatus.Success]: '✓ ',
   [ExecutionStatus.Failed]: '✗ ',
   [ExecutionStatus.Aborted]: '⊘ ',
+  [ExecutionStatus.Cancelled]: '⊘ ',
 };
 
 /**
@@ -274,7 +276,7 @@ export function getStatusColors(status: ExecutionStatus) {
     case ExecutionStatus.Success:
       return {
         icon: Colors.Status.Success,
-        description: getTextColor(true),
+        description: Palette.AshGray,
         command: Palette.Gray,
         symbol: Palette.Gray,
       };
@@ -287,10 +289,17 @@ export function getStatusColors(status: ExecutionStatus) {
       };
     case ExecutionStatus.Aborted:
       return {
-        icon: Palette.DarkOrange,
-        description: getTextColor(true),
-        command: Palette.DarkOrange,
+        icon: Palette.MediumOrange,
+        description: Palette.Gray,
+        command: Palette.MediumOrange,
         symbol: Palette.Gray,
+      };
+    case ExecutionStatus.Cancelled:
+      return {
+        icon: Palette.DarkGray,
+        description: Palette.DarkGray,
+        command: Palette.DarkGray,
+        symbol: Palette.DarkGray,
       };
   }
 }

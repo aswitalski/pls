@@ -3,11 +3,15 @@ import { describe, expect, it } from 'vitest';
 import {
   Colors,
   getFeedbackColor,
+  getStatusColors,
   getTaskColors,
   getTaskTypeLabel,
   getTextColor,
+  Palette,
+  STATUS_ICONS,
 } from '../../src/services/colors.js';
 import { DebugLevel } from '../../src/services/configuration.js';
+import { ExecutionStatus } from '../../src/services/shell.js';
 import { FeedbackType, TaskType } from '../../src/types/types.js';
 
 describe('Color relationships', () => {
@@ -93,9 +97,9 @@ describe('getFeedbackColor', () => {
     expect(color).toBe(Colors.Status.Success);
   });
 
-  it('returns Warning color for Aborted', () => {
+  it('returns MediumOrange color for Aborted', () => {
     const color = getFeedbackColor(FeedbackType.Aborted, false);
-    expect(color).toBe(Colors.Status.Warning);
+    expect(color).toBe(Palette.MediumOrange);
   });
 
   it('returns Error color for Failed', () => {
@@ -318,6 +322,39 @@ describe('getTaskTypeLabel', () => {
         expect(wordCount).toBeGreaterThanOrEqual(2);
         expect(wordCount).toBeLessThanOrEqual(3);
       });
+    });
+  });
+});
+
+describe('Execution status colors and icons', () => {
+  describe('STATUS_ICONS', () => {
+    it('has icons for all execution statuses', () => {
+      const statuses = Object.values(ExecutionStatus);
+      statuses.forEach((status) => {
+        expect(STATUS_ICONS[status]).toBeDefined();
+        expect(STATUS_ICONS[status]).toBeTruthy();
+      });
+    });
+  });
+
+  describe('getStatusColors', () => {
+    it('returns color scheme for all execution statuses', () => {
+      const statuses = Object.values(ExecutionStatus);
+      statuses.forEach((status) => {
+        const colors = getStatusColors(status);
+        expect(colors).toBeDefined();
+        expect(colors).toHaveProperty('icon');
+        expect(colors).toHaveProperty('description');
+        expect(colors).toHaveProperty('command');
+        expect(colors).toHaveProperty('symbol');
+      });
+    });
+  });
+
+  describe('Color palette additions', () => {
+    it('uses MediumOrange for aborted feedback', () => {
+      const color = getFeedbackColor(FeedbackType.Aborted, false);
+      expect(color).toBe(Palette.MediumOrange);
     });
   });
 });

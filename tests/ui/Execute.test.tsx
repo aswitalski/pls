@@ -1112,4 +1112,367 @@ describe('Execute component', () => {
       expect(handlers.addToTimeline).toHaveBeenCalledWith(...debugComponents);
     });
   });
+
+  describe('Completed field tracking', () => {
+    it('starts with completed at 0 when execution begins', async () => {
+      const service = createMockAnthropicService({
+        message: 'Running tasks.',
+        commands: [
+          { description: 'First', command: 'first' },
+          { description: 'Second', command: 'second' },
+        ],
+      });
+
+      const tasks = [
+        { action: 'First task', type: TaskType.Execute },
+        { action: 'Second task', type: TaskType.Execute },
+      ];
+
+      // Start with no state, should initialize completed to 0
+      const { lastFrame } = render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Wait for execution to start
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Component should start rendering tasks (completed starts at 0)
+      const frame = lastFrame();
+      expect(frame).toBeTruthy();
+    });
+
+    it('increments completed as tasks finish successfully', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      let executionCount = 0;
+      vi.mocked(executeCommand).mockImplementation(async () => {
+        executionCount++;
+        return {
+          description: 'Task',
+          command: 'cmd',
+          output: 'success',
+          errors: '',
+          result: ExecutionResult.Success,
+        };
+      });
+
+      const service = createMockAnthropicService({
+        message: 'Running tasks.',
+        commands: [
+          { description: 'First', command: 'first' },
+          { description: 'Second', command: 'second' },
+          { description: 'Third', command: 'third' },
+        ],
+      });
+
+      const updateState = vi.fn();
+      const tasks = [
+        { action: 'First task', type: TaskType.Execute },
+        { action: 'Second task', type: TaskType.Execute },
+        { action: 'Third task', type: TaskType.Execute },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ updateState })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(executionCount).toBe(3);
+        },
+        { timeout: 1000 }
+      );
+
+      // Check that final state has completed = 3
+      const calls = vi.mocked(updateState).mock.calls;
+      const finalCall = calls[calls.length - 1];
+      expect(finalCall[0].completed).toBe(3);
+    });
+
+    it('sets completed correctly on critical failure', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      vi.mocked(executeCommand).mockImplementation(
+        async (cmd: { command: string }) => {
+          if (cmd.command === 'second') {
+            return {
+              description: 'Second',
+              command: 'second',
+              output: '',
+              errors: 'Critical error',
+              result: ExecutionResult.Error,
+            };
+          }
+          return {
+            description: 'Task',
+            command: cmd.command,
+            output: 'success',
+            errors: '',
+            result: ExecutionResult.Success,
+          };
+        }
+      );
+
+      const service = createMockAnthropicService({
+        message: 'Running tasks.',
+        commands: [
+          { description: 'First', command: 'first', critical: true },
+          { description: 'Second', command: 'second', critical: true },
+          { description: 'Third', command: 'third', critical: true },
+        ],
+      });
+
+      const updateState = vi.fn();
+      const onError = vi.fn();
+      const tasks = [
+        { action: 'First task', type: TaskType.Execute },
+        { action: 'Second task', type: TaskType.Execute },
+        { action: 'Third task', type: TaskType.Execute },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ updateState, onError })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(onError).toHaveBeenCalled();
+        },
+        { timeout: 1000 }
+      );
+
+      // Check that completed = 2 (first task completed, second failed)
+      const calls = vi.mocked(updateState).mock.calls;
+      const errorCall = calls.find((call) => call[0].error !== undefined);
+      expect(errorCall).toBeDefined();
+      expect(errorCall![0].completed).toBe(2);
+    });
+
+    it('sets completed correctly on non-critical failure', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      vi.mocked(executeCommand).mockImplementation(
+        async (cmd: { command: string }) => {
+          if (cmd.command === 'second') {
+            return {
+              description: 'Second',
+              command: 'second',
+              output: '',
+              errors: 'Non-critical error',
+              result: ExecutionResult.Error,
+            };
+          }
+          return {
+            description: 'Task',
+            command: cmd.command,
+            output: 'success',
+            errors: '',
+            result: ExecutionResult.Success,
+          };
+        }
+      );
+
+      const service = createMockAnthropicService({
+        message: 'Running tasks.',
+        commands: [
+          { description: 'First', command: 'first', critical: true },
+          { description: 'Second', command: 'second', critical: false },
+          { description: 'Third', command: 'third', critical: true },
+        ],
+      });
+
+      const updateState = vi.fn();
+      const completeActive = vi.fn();
+      const tasks = [
+        { action: 'First task', type: TaskType.Execute },
+        { action: 'Second task', type: TaskType.Execute },
+        { action: 'Third task', type: TaskType.Execute },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ updateState, completeActive })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(completeActive).toHaveBeenCalled();
+        },
+        { timeout: 1000 }
+      );
+
+      // Check that completed = 3 (all tasks attempted)
+      const calls = vi.mocked(updateState).mock.calls;
+      const finalCall = calls[calls.length - 1];
+      expect(finalCall[0].completed).toBe(3);
+    });
+
+    it('preserves completed when aborting', async () => {
+      const { executeCommand } = await import('../../src/services/shell.js');
+
+      let executionCount = 0;
+      vi.mocked(executeCommand).mockImplementation(async () => {
+        executionCount++;
+        // Simulate slow execution
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return {
+          description: 'Task',
+          command: 'cmd',
+          output: 'success',
+          errors: '',
+          result: ExecutionResult.Success,
+        };
+      });
+
+      const service = createMockAnthropicService({
+        message: 'Running tasks.',
+        commands: [
+          { description: 'First', command: 'first' },
+          { description: 'Second', command: 'second' },
+          { description: 'Third', command: 'third' },
+        ],
+      });
+
+      const updateState = vi.fn();
+      const onAborted = vi.fn();
+      const tasks = [
+        { action: 'First task', type: TaskType.Execute },
+        { action: 'Second task', type: TaskType.Execute },
+        { action: 'Third task', type: TaskType.Execute },
+      ];
+
+      const { stdin, lastFrame } = render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ updateState, onAborted })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Wait for first task to complete and second to start
+      await vi.waitFor(
+        () => {
+          return (
+            lastFrame()?.includes('First') || lastFrame()?.includes('Running')
+          );
+        },
+        { timeout: 500 }
+      );
+
+      // Abort during execution
+      stdin.write('\x1b'); // Escape
+
+      await vi.waitFor(
+        () => {
+          expect(onAborted).toHaveBeenCalledWith('execution');
+        },
+        { timeout: 500 }
+      );
+
+      // Check that completed is set in the abort call
+      const calls = vi.mocked(updateState).mock.calls;
+      const abortCall = calls.find((call) => call[0].taskInfos !== undefined);
+      expect(abortCall).toBeDefined();
+      expect(abortCall![0]).toHaveProperty('completed');
+    });
+
+    it('includes completed in state updates', async () => {
+      const service = createMockAnthropicService({
+        message: 'Running tasks.',
+        commands: [{ description: 'Task', command: 'cmd' }],
+      });
+
+      const updateState = vi.fn();
+      const tasks = [{ action: 'Single task', type: TaskType.Execute }];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ updateState })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      await vi.waitFor(
+        () => {
+          expect(updateState).toHaveBeenCalled();
+        },
+        { timeout: 1000 }
+      );
+
+      // Check that at least one state update includes completed
+      const calls = vi.mocked(updateState).mock.calls;
+      const hasCompleted = calls.some(
+        (call) => call[0].completed !== undefined
+      );
+      expect(hasCompleted).toBe(true);
+    });
+
+    it('restores completed from state when resuming', () => {
+      const service = createMockAnthropicService({
+        message: 'Running tasks.',
+        commands: [
+          { description: 'First', command: 'first' },
+          { description: 'Second', command: 'second' },
+        ],
+      });
+
+      const tasks = [
+        { action: 'First task', type: TaskType.Execute },
+        { action: 'Second task', type: TaskType.Execute },
+      ];
+
+      const { lastFrame } = render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers()}
+          status={ComponentStatus.Done}
+          state={{
+            message: 'Running tasks.',
+            completed: 2,
+            taskInfos: [
+              {
+                label: 'First task',
+                command: { description: 'First', command: 'first' },
+              },
+              {
+                label: 'Second task',
+                command: { description: 'Second', command: 'second' },
+              },
+            ],
+            taskExecutionTimes: [100, 150],
+            completionMessage: 'Tasks completed in 250ms.',
+          }}
+        />
+      );
+
+      // Should render with the restored state
+      const frame = lastFrame();
+      expect(frame).toContain('Tasks completed');
+    });
+  });
 });
