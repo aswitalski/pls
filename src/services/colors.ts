@@ -9,7 +9,6 @@ import { ExecutionStatus } from './shell.js';
 export const Palette = {
   White: '#ffffff',
   AshGray: '#d0d0d0',
-  PaleGreen: '#a8dcbc',
   Gray: '#888888',
   DarkGray: '#666666',
   CharcoalGray: '#282828',
@@ -17,7 +16,6 @@ export const Palette = {
   LightGreen: '#65b595',
   BrightGreen: '#3e9a3e',
   Yellow: '#cccc5c',
-  LightYellow: '#d4d47a',
   Orange: '#f48c80',
   MediumOrange: '#d07560',
   DarkOrange: '#ab5e40',

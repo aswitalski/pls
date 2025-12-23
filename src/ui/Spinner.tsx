@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Text } from 'ink';
 
+import { Palette } from '../services/colors.js';
+
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 const INTERVAL = 80;
 const CYCLE = FRAMES.length * INTERVAL;
@@ -23,5 +25,5 @@ export function Spinner() {
     return () => clearInterval(timer);
   }, []);
 
-  return <Text color="blueBright">{FRAMES[frame]}</Text>;
+  return <Text color={Palette.Cyan}>{FRAMES[frame]}</Text>;
 }

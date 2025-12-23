@@ -1,6 +1,8 @@
 import { FC } from 'react';
 import { Box, Text } from 'ink';
 
+import { Palette } from '../services/colors.js';
+
 import { Separator } from './Separator.js';
 
 type ColoredText = {
@@ -62,7 +64,7 @@ export const List: FC<ListProps> = ({
           item.markerColor ||
           (isHighlighted && item.type.highlightedColor
             ? item.type.highlightedColor
-            : 'whiteBright');
+            : Palette.White);
 
         return (
           <Box key={index} flexDirection="column">
