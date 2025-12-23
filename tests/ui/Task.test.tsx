@@ -20,9 +20,8 @@ vi.mock('../../src/services/shell.js', async () => {
 });
 
 // Import after mock
-const { ExecutionResult, ExecutionStatus } = await import(
-  '../../src/services/shell.js'
-);
+const { ExecutionResult, ExecutionStatus } =
+  await import('../../src/services/shell.js');
 
 vi.useFakeTimers();
 

@@ -192,9 +192,8 @@ describe('Main component queue-based architecture', () => {
     });
 
     it('shows error feedback when config save fails during initial setup', async () => {
-      const configurationModule = await import(
-        '../../src/services/configuration.js'
-      );
+      const configurationModule =
+        await import('../../src/services/configuration.js');
       const processModule = await import('../../src/services/process.js');
 
       // Mock exitApp to prevent process.exit

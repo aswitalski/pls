@@ -389,9 +389,8 @@ describe('Validate component', () => {
 
   describe('Minimum processing time', () => {
     it('uses ensureMinimumTime for UX polish', async () => {
-      const { ensureMinimumTime } = await import(
-        '../../src/services/timing.js'
-      );
+      const { ensureMinimumTime } =
+        await import('../../src/services/timing.js');
       const missingConfig: ConfigRequirement[] = [
         { path: 'api.key', type: 'string' },
       ];
