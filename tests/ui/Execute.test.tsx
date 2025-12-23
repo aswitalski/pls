@@ -1258,7 +1258,9 @@ describe('Execute component', () => {
 
       // Check that completed = 2 (first task completed, second failed)
       const calls = vi.mocked(updateState).mock.calls;
-      const errorCall = calls.find((call) => call[0].error !== undefined);
+      const errorCall = calls.find(
+        (call) => call[0].error && call[0].error !== null
+      );
       expect(errorCall).toBeDefined();
       expect(errorCall![0].completed).toBe(2);
     });
