@@ -470,6 +470,186 @@ The type system provides better tooling and IDE support.`;
   });
 });
 
+describe('Introspect tool response handling', () => {
+  it('validates capability has name field', async () => {
+    const mockClient = {
+      messages: {
+        create: vi.fn().mockResolvedValue({
+          stop_reason: 'end_turn',
+          content: [
+            {
+              type: 'tool_use',
+              input: {
+                message: 'Here are my capabilities:',
+                capabilities: [
+                  {
+                    description: 'run commands',
+                    origin: 'system',
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      },
+    };
+
+    const service = new AnthropicService(
+      'sk-ant-api03-' + 'A'.repeat(95),
+      'claude-haiku-4-5-20251001'
+    );
+
+    (service as unknown as { client: typeof mockClient }).client = mockClient;
+
+    await expect(
+      service.processWithTool('list skills', 'introspect')
+    ).rejects.toThrow("missing or invalid 'name' field");
+  });
+
+  it('validates capability has description field', async () => {
+    const mockClient = {
+      messages: {
+        create: vi.fn().mockResolvedValue({
+          stop_reason: 'end_turn',
+          content: [
+            {
+              type: 'tool_use',
+              input: {
+                message: 'Here are my capabilities:',
+                capabilities: [
+                  {
+                    name: 'Execute',
+                    origin: 'system',
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      },
+    };
+
+    const service = new AnthropicService(
+      'sk-ant-api03-' + 'A'.repeat(95),
+      'claude-haiku-4-5-20251001'
+    );
+
+    (service as unknown as { client: typeof mockClient }).client = mockClient;
+
+    await expect(
+      service.processWithTool('list skills', 'introspect')
+    ).rejects.toThrow("missing or invalid 'description' field");
+  });
+
+  it('validates capability has valid origin field', async () => {
+    const mockClient = {
+      messages: {
+        create: vi.fn().mockResolvedValue({
+          stop_reason: 'end_turn',
+          content: [
+            {
+              type: 'tool_use',
+              input: {
+                message: 'Here are my capabilities:',
+                capabilities: [
+                  {
+                    name: 'Execute',
+                    description: 'run commands',
+                    origin: 123,
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      },
+    };
+
+    const service = new AnthropicService(
+      'sk-ant-api03-' + 'A'.repeat(95),
+      'claude-haiku-4-5-20251001'
+    );
+
+    (service as unknown as { client: typeof mockClient }).client = mockClient;
+
+    await expect(
+      service.processWithTool('list skills', 'introspect')
+    ).rejects.toThrow("invalid 'origin' field");
+  });
+
+  it('rejects capability with non-string name', async () => {
+    const mockClient = {
+      messages: {
+        create: vi.fn().mockResolvedValue({
+          stop_reason: 'end_turn',
+          content: [
+            {
+              type: 'tool_use',
+              input: {
+                message: 'Here are my capabilities:',
+                capabilities: [
+                  {
+                    name: ['Execute'],
+                    description: 'run commands',
+                    origin: 'system',
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      },
+    };
+
+    const service = new AnthropicService(
+      'sk-ant-api03-' + 'A'.repeat(95),
+      'claude-haiku-4-5-20251001'
+    );
+
+    (service as unknown as { client: typeof mockClient }).client = mockClient;
+
+    await expect(
+      service.processWithTool('list skills', 'introspect')
+    ).rejects.toThrow("missing or invalid 'name' field");
+  });
+
+  it('rejects capability with non-string description', async () => {
+    const mockClient = {
+      messages: {
+        create: vi.fn().mockResolvedValue({
+          stop_reason: 'end_turn',
+          content: [
+            {
+              type: 'tool_use',
+              input: {
+                message: 'Here are my capabilities:',
+                capabilities: [
+                  {
+                    name: 'Execute',
+                    description: 42,
+                    origin: 'system',
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      },
+    };
+
+    const service = new AnthropicService(
+      'sk-ant-api03-' + 'A'.repeat(95),
+      'claude-haiku-4-5-20251001'
+    );
+
+    (service as unknown as { client: typeof mockClient }).client = mockClient;
+
+    await expect(
+      service.processWithTool('list skills', 'introspect')
+    ).rejects.toThrow("missing or invalid 'description' field");
+  });
+});
+
 describe('Web search integration', () => {
   it('includes web search tool for answer requests', async () => {
     let capturedTools: unknown[] = [];

@@ -126,16 +126,4 @@ describe('Introspect capability handling', () => {
     expect(capabilities[1].origin).toBe(Origin.BuiltIn);
     expect(capabilities[2].origin).toBe(Origin.UserProvided);
   });
-
-  it('handles capability structure correctly', () => {
-    const capability: Capability = {
-      name: 'Deploy Application',
-      description: 'build and deploy to production',
-      origin: Origin.UserProvided,
-    };
-
-    expect(capability.name).toBe('Deploy Application');
-    expect(capability.description).toBe('build and deploy to production');
-    expect(capability.origin).toBe(Origin.UserProvided);
-  });
 });

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   Colors,
   getFeedbackColor,
+  getOriginColor,
   getStatusColors,
   getTaskColors,
   getTaskTypeLabel,
@@ -12,7 +13,7 @@ import {
 } from '../../src/services/colors.js';
 import { DebugLevel } from '../../src/services/configuration.js';
 import { ExecutionStatus } from '../../src/services/shell.js';
-import { FeedbackType, TaskType } from '../../src/types/types.js';
+import { FeedbackType, Origin, TaskType } from '../../src/types/types.js';
 
 describe('Color relationships', () => {
   it('uses same color for Introspect and Answer types', () => {
@@ -42,6 +43,14 @@ describe('Origin colors for capability display', () => {
   it('uses same color for user capabilities as Execute action', () => {
     // User capabilities share color with Execute for consistency
     expect(Colors.Origin.UserProvided).toBe(Colors.Action.Execute);
+  });
+
+  it('maps origin enum to correct colors', () => {
+    expect(getOriginColor(Origin.BuiltIn)).toBe(Colors.Origin.BuiltIn);
+    expect(getOriginColor(Origin.UserProvided)).toBe(
+      Colors.Origin.UserProvided
+    );
+    expect(getOriginColor(Origin.Indirect)).toBe(Colors.Origin.Indirect);
   });
 });
 
