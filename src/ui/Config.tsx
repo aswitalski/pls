@@ -1,8 +1,8 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { Box, Text, useFocus } from 'ink';
 import TextInput from 'ink-text-input';
 
-import { ComponentStatus, Handlers } from '../types/components.js';
+import { ComponentStatus, ConfigState, Handlers } from '../types/components.js';
 import { FeedbackType } from '../types/types.js';
 
 import { Colors } from '../services/colors.js';
@@ -37,11 +37,6 @@ export type ConfigStep = {
     }
 );
 
-interface ConfigState {
-  values?: Record<string, string>;
-  completedStep?: number;
-}
-
 export interface ConfigProps<
   T extends Record<string, string> = Record<string, string>,
 > {
@@ -72,6 +67,11 @@ function TextStep({
   const [inputValue, setInputValue] = useState(value);
   const [validationFailed, setValidationFailed] = useState(false);
   const { isFocused } = useFocus({ autoFocus: true });
+
+  // Sync internal state with prop changes
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
 
   const handleChange = (newValue: string) => {
     setInputValue(newValue);
@@ -201,8 +201,20 @@ export function Config<
     });
     return initial;
   });
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState(() => {
+    // Initialize with the current step's value if available
+    if (isActive && step < steps.length) {
+      const stepConfig = steps[step];
+      const configKey = stepConfig.path || stepConfig.key;
+      return values[configKey] || '';
+    }
+    return '';
+  });
   const [selectedIndex, setSelectedIndex] = useState(() => {
+    // If not active, use saved state
+    if (!isActive && state?.selectedIndex !== undefined) {
+      return state.selectedIndex;
+    }
     // Initialize selectedIndex based on current step's defaultIndex
     if (
       isActive &&
@@ -220,6 +232,17 @@ export function Config<
     }
     return value.replace(/\n/g, '').trim();
   };
+
+  // Update inputValue when step changes
+  useEffect(() => {
+    if (isActive && step < steps.length) {
+      const stepConfig = steps[step];
+      const configKey = stepConfig.path || stepConfig.key;
+      const value = values[configKey] || '';
+      setInputValue(value);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, isActive, steps]);
 
   useInput((_, key) => {
     if (!isActive || step >= steps.length) return;
@@ -251,6 +274,7 @@ export function Config<
       handlers?.updateState({
         values,
         completedStep: step,
+        selectedIndex,
       });
 
       if (onAborted) {
@@ -325,6 +349,7 @@ export function Config<
       const stateUpdate = {
         values: newValues,
         completedStep: steps.length,
+        selectedIndex,
       };
       handlers?.updateState(stateUpdate);
 
@@ -356,6 +381,7 @@ export function Config<
       const stateUpdate = {
         values: newValues,
         completedStep: step + 1,
+        selectedIndex,
       };
       handlers?.updateState(stateUpdate);
 

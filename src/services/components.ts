@@ -239,7 +239,11 @@ export function createConfigDefinition(
     id: randomUUID(),
     name: ComponentName.Config,
     status: ComponentStatus.Awaiting,
-    state: {},
+    state: {
+      values: {},
+      completedStep: 0,
+      selectedIndex: 0,
+    },
     props: {
       steps: createConfigSteps(),
       onFinished,
@@ -260,7 +264,11 @@ export function createConfigDefinitionWithKeys(
     id: randomUUID(),
     name: ComponentName.Config,
     status: ComponentStatus.Awaiting,
-    state: {},
+    state: {
+      values: {},
+      completedStep: 0,
+      selectedIndex: 0,
+    },
     props: {
       steps: createConfigStepsFromSchema(keys),
       onFinished,
@@ -449,7 +457,15 @@ export function createExecuteDefinition(
     id: randomUUID(),
     name: ComponentName.Execute,
     status: ComponentStatus.Awaiting,
-    state: {},
+    state: {
+      error: null,
+      message: '',
+      summary: '',
+      taskInfos: [],
+      completed: 0,
+      taskExecutionTimes: [],
+      completionMessage: null,
+    },
     props: {
       tasks,
       service,
@@ -469,7 +485,12 @@ export function createValidateDefinition(
     id: randomUUID(),
     name: ComponentName.Validate,
     status: ComponentStatus.Awaiting,
-    state: {},
+    state: {
+      error: null,
+      completionMessage: null,
+      configRequirements: null,
+      validated: false,
+    },
     props: {
       missingConfig,
       userRequest,

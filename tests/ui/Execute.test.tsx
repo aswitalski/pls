@@ -1258,7 +1258,9 @@ describe('Execute component', () => {
 
       // Check that completed = 2 (first task completed, second failed)
       const calls = vi.mocked(updateState).mock.calls;
-      const errorCall = calls.find((call) => call[0].error !== undefined);
+      const errorCall = calls.find(
+        (call) => call[0].error && call[0].error !== null
+      );
       expect(errorCall).toBeDefined();
       expect(errorCall![0].completed).toBe(2);
     });
@@ -1473,6 +1475,155 @@ describe('Execute component', () => {
       // Should render with the restored state
       const frame = lastFrame();
       expect(frame).toContain('Tasks completed');
+    });
+  });
+
+  describe('Complete state preservation', () => {
+    it('preserves all state fields after successful execution', async () => {
+      const service = createMockAnthropicService({
+        message: 'Processing tasks',
+        summary: 'Task summary',
+        commands: [
+          { description: 'First task', command: 'cmd1' },
+          { description: 'Second task', command: 'cmd2' },
+        ],
+      });
+
+      const updateState = vi.fn();
+      const tasks = [
+        { action: 'First', type: TaskType.Execute },
+        { action: 'Second', type: TaskType.Execute },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          handlers={createMockHandlers({ updateState })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.advanceTimersByTimeAsync(500);
+
+      // Wait for completion
+      await vi.waitFor(
+        () => {
+          const calls = updateState.mock.calls;
+          return calls.some((call) => call[0].completionMessage !== undefined);
+        },
+        { timeout: 500 }
+      );
+
+      // Find the final completion state update
+      const calls = updateState.mock.calls;
+      const completionCall = calls.find(
+        (call) => call[0].completionMessage !== null
+      );
+
+      expect(completionCall).toBeDefined();
+      expect(completionCall![0]).toMatchObject({
+        message: expect.any(String),
+        summary: expect.any(String),
+        taskInfos: expect.any(Array),
+        completed: expect.any(Number),
+        taskExecutionTimes: expect.any(Array),
+        completionMessage: expect.any(String),
+        error: null,
+      });
+    });
+
+    it('preserves all state fields on abort', async () => {
+      const service = createMockAnthropicService({
+        message: 'Executing tasks',
+        summary: 'Summary text',
+        commands: [
+          { description: 'Task 1', command: 'cmd1' },
+          { description: 'Task 2', command: 'cmd2' },
+        ],
+      });
+
+      const updateState = vi.fn();
+      const onAborted = vi.fn();
+
+      const { stdin } = render(
+        <Execute
+          tasks={[
+            { action: 'First', type: TaskType.Execute },
+            { action: 'Second', type: TaskType.Execute },
+          ]}
+          service={service}
+          handlers={createMockHandlers({ updateState, onAborted })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.advanceTimersByTimeAsync(50);
+
+      // Press escape to abort
+      stdin.write('\x1b');
+
+      await vi.waitFor(
+        () => {
+          expect(onAborted).toHaveBeenCalledWith('execution');
+        },
+        { timeout: 200 }
+      );
+
+      // Find the abort state update
+      const calls = updateState.mock.calls;
+      const abortCall = calls[calls.length - 1];
+
+      expect(abortCall[0]).toMatchObject({
+        message: expect.any(String),
+        summary: expect.any(String),
+        taskInfos: expect.any(Array),
+        completed: expect.any(Number),
+        taskExecutionTimes: expect.any(Array),
+        completionMessage: null,
+        error: null,
+      });
+    });
+
+    it('preserves all state fields on error', async () => {
+      const service = createMockAnthropicService(
+        {},
+        new Error('Processing failed')
+      );
+
+      const updateState = vi.fn();
+      const onError = vi.fn();
+
+      render(
+        <Execute
+          tasks={[{ action: 'Task', type: TaskType.Execute }]}
+          service={service}
+          handlers={createMockHandlers({ updateState, onError })}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(onError).toHaveBeenCalled();
+        },
+        { timeout: 200 }
+      );
+
+      // Find the error state update
+      const calls = updateState.mock.calls;
+      const errorCall = calls.find((call) => call[0].error !== null);
+
+      expect(errorCall).toBeDefined();
+      expect(errorCall![0]).toMatchObject({
+        message: '',
+        summary: '',
+        taskInfos: [],
+        completed: 0,
+        taskExecutionTimes: [],
+        completionMessage: null,
+        error: expect.any(String),
+      });
     });
   });
 });

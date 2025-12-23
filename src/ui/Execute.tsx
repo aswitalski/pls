@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { ComponentStatus, ExecuteProps } from '../types/components.js';
+import {
+  ComponentStatus,
+  ExecuteProps,
+  TaskInfo,
+} from '../types/components.js';
 
 import { ExecuteCommand } from '../services/anthropic.js';
 import { Colors, getTextColor } from '../services/colors.js';
@@ -19,13 +23,6 @@ import { Task } from './Task.js';
 
 const MINIMUM_PROCESSING_TIME = 400;
 
-interface TaskInfo {
-  label: string;
-  command: ExecuteCommand;
-  status?: ExecutionStatus;
-  elapsed?: number;
-}
-
 export function Execute({
   tasks,
   state,
@@ -36,16 +33,16 @@ export function Execute({
   const isActive = status === ComponentStatus.Active;
   const [error, setError] = useState<string | null>(state?.error ?? null);
   const [taskInfos, setTaskInfos] = useState<TaskInfo[]>(
-    (state?.taskInfos as TaskInfo[]) ?? []
+    state?.taskInfos ?? []
   );
   const [message, setMessage] = useState<string>(state?.message ?? '');
   const [completed, setCompleted] = useState<number>(state?.completed ?? 0);
   const [hasProcessed, setHasProcessed] = useState(false);
   const [taskExecutionTimes, setTaskExecutionTimes] = useState<number[]>(
-    (state?.taskExecutionTimes as number[]) ?? []
+    state?.taskExecutionTimes ?? []
   );
   const [completionMessage, setCompletionMessage] = useState<string | null>(
-    (state?.completionMessage as string | null) ?? null
+    state?.completionMessage ?? null
   );
   const [summary, setSummary] = useState<string>(state?.summary ?? '');
 
@@ -77,12 +74,15 @@ export function Execute({
     setTaskInfos(updatedTaskInfos);
     handlers?.updateState({
       message,
+      summary,
       taskInfos: updatedTaskInfos,
       completed,
       taskExecutionTimes,
+      completionMessage: null,
+      error: null,
     });
     handlers?.onAborted('execution');
-  }, [message, taskInfos, completed, taskExecutionTimes, handlers]);
+  }, [message, summary, taskInfos, completed, taskExecutionTimes, handlers]);
 
   useInput(
     (_, key) => {
@@ -138,7 +138,12 @@ export function Execute({
           setHasProcessed(true);
           handlers?.updateState({
             message: result.message,
+            summary: '',
             taskInfos: [],
+            completed: 0,
+            taskExecutionTimes: [],
+            completionMessage: null,
+            error: null,
           });
           handlers?.completeActive();
           return;
@@ -151,14 +156,28 @@ export function Execute({
         }));
 
         // Set message, summary, and create task infos
-        setMessage(result.message);
-        setSummary(result.summary || '');
+        const newMessage = result.message;
+        const newSummary = result.summary || '';
         const infos = resolvedCommands.map((cmd, index) => ({
           label: tasks[index]?.action,
           command: cmd,
         }));
+
+        setMessage(newMessage);
+        setSummary(newSummary);
         setTaskInfos(infos);
         setCompleted(0); // Start with first task
+
+        // Update state after AI processing
+        handlers?.updateState({
+          message: newMessage,
+          summary: newSummary,
+          taskInfos: infos,
+          completed: 0,
+          taskExecutionTimes: [],
+          completionMessage: null,
+          error: null,
+        });
       } catch (err) {
         await ensureMinimumTime(startTime, MINIMUM_PROCESSING_TIME);
 
@@ -166,7 +185,15 @@ export function Execute({
           const errorMessage = formatErrorMessage(err);
           setError(errorMessage);
           setHasProcessed(true);
-          handlers?.updateState({ error: errorMessage });
+          handlers?.updateState({
+            message: '',
+            summary: '',
+            taskInfos: [],
+            completed: 0,
+            taskExecutionTimes: [],
+            completionMessage: null,
+            error: errorMessage,
+          });
           handlers?.onError(errorMessage);
         }
       }
@@ -196,6 +223,15 @@ export function Execute({
       if (index < taskInfos.length - 1) {
         // More tasks to execute
         setCompleted(index + 1);
+        handlers?.updateState({
+          message,
+          summary,
+          taskInfos: updatedTaskInfos,
+          completed: index + 1,
+          taskExecutionTimes: updatedTimes,
+          completionMessage: null,
+          error: null,
+        });
       } else {
         // All tasks complete
         const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
@@ -209,6 +245,7 @@ export function Execute({
           completed: index + 1,
           taskExecutionTimes: updatedTimes,
           completionMessage: completion,
+          error: null,
         });
         handlers?.completeActive();
       }
@@ -234,8 +271,11 @@ export function Execute({
         setError(error);
         handlers?.updateState({
           message,
+          summary,
           taskInfos: updatedTaskInfos,
           completed: index + 1,
+          taskExecutionTimes,
+          completionMessage: null,
           error,
         });
         handlers?.onError(error);
@@ -246,6 +286,15 @@ export function Execute({
 
         if (index < taskInfos.length - 1) {
           setCompleted(index + 1);
+          handlers?.updateState({
+            message,
+            summary,
+            taskInfos: updatedTaskInfos,
+            completed: index + 1,
+            taskExecutionTimes: updatedTimes,
+            completionMessage: null,
+            error: null,
+          });
         } else {
           // Last task, complete execution
           const totalElapsed = updatedTimes.reduce(
@@ -262,6 +311,7 @@ export function Execute({
             completed: index + 1,
             taskExecutionTimes: updatedTimes,
             completionMessage: completion,
+            error: null,
           });
           handlers?.completeActive();
         }
@@ -276,11 +326,15 @@ export function Execute({
       // Just update state, don't call onAborted (already called at Execute level)
       handlers?.updateState({
         message,
+        summary,
         taskInfos,
         completed,
+        taskExecutionTimes,
+        completionMessage: null,
+        error: null,
       });
     },
-    [taskInfos, message, completed, handlers]
+    [taskInfos, message, summary, completed, taskExecutionTimes, handlers]
   );
 
   // Return null only when loading completes with no commands

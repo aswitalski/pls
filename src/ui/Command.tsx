@@ -145,6 +145,9 @@ export function Command({
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
           setError(errorMessage);
+          handlers?.updateState({
+            error: errorMessage,
+          });
           handlers?.onError(errorMessage);
         }
       }

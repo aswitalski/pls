@@ -6,7 +6,10 @@ import { ConfigRequirement } from '../types/skills.js';
 import { TaskType } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
-import { addDebugToTimeline } from '../services/components.js';
+import {
+  addDebugToTimeline,
+  createConfigStepsFromSchema,
+} from '../services/components.js';
 import {
   DebugLevel,
   saveConfig,
@@ -16,7 +19,7 @@ import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
 
-import { Config, ConfigStep, StepType } from './Config.js';
+import { Config, ConfigStep } from './Config.js';
 import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000;
@@ -35,13 +38,13 @@ export function Validate({
   handlers,
 }: ValidateProps) {
   const isActive = status === ComponentStatus.Active;
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(state?.error ?? null);
   const [completionMessage, setCompletionMessage] = useState<string | null>(
-    null
+    state?.completionMessage ?? null
   );
   const [configRequirements, setConfigRequirements] = useState<
     ConfigRequirement[] | null
-  >(null);
+  >(state?.configRequirements ?? null);
   const [showConfig, setShowConfig] = useState(false);
 
   useInput(
@@ -123,8 +126,10 @@ export function Validate({
 
           // Save state after validation completes
           handlers?.updateState({
+            completionMessage: message,
             configRequirements: withDescriptions,
             validated: true,
+            error: null,
           });
         }
       } catch (err) {
@@ -132,16 +137,18 @@ export function Validate({
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
+          setError(errorMessage);
 
           // Save error state
           handlers?.updateState({
             error: errorMessage,
+            completionMessage: null,
+            configRequirements: null,
+            validated: false,
           });
 
           if (onError) {
             onError(errorMessage);
-          } else {
-            setError(errorMessage);
           }
         }
       }
@@ -167,16 +174,21 @@ export function Validate({
     return null;
   }
 
-  // Create ConfigSteps from requirements
+  // Create ConfigSteps from requirements using createConfigStepsFromSchema
+  // to load current values from config file, then override descriptions
   const configSteps: ConfigStep[] | null = configRequirements
-    ? configRequirements.map((req) => ({
-        description: req.description || req.path,
-        key: req.path,
-        path: req.path,
-        type: StepType.Text,
-        value: null,
-        validate: () => true,
-      }))
+    ? (() => {
+        const keys = configRequirements.map((req) => req.path);
+        const steps = createConfigStepsFromSchema(keys);
+
+        // Override descriptions with LLM-generated ones
+        return steps.map((step, index) => ({
+          ...step,
+          description:
+            configRequirements[index].description ||
+            configRequirements[index].path,
+        }));
+      })()
     : null;
 
   const handleConfigFinished = (config: Record<string, string>) => {

@@ -3,8 +3,9 @@ import { ReactNode } from 'react';
 import { App, ComponentName, FeedbackType, Task } from './types.js';
 import { ConfigRequirement } from './skills.js';
 
-import { LLMService } from '../services/anthropic.js';
+import { ExecuteCommand, LLMService } from '../services/anthropic.js';
 import { DebugLevel } from '../services/configuration.js';
+import { ExecutionStatus } from '../services/shell.js';
 
 import { ConfigStep } from '../ui/Config.js';
 
@@ -150,23 +151,34 @@ export interface AnswerState extends BaseState {
   answer?: string;
 }
 
+export interface TaskInfo {
+  label: string;
+  command: ExecuteCommand;
+  status?: ExecutionStatus;
+  elapsed?: number;
+}
+
 export interface ExecuteState extends BaseState {
   error?: string | null;
   message?: string;
   summary?: string;
-  taskInfos?: Array<{
-    label: string;
-    command: { description: string; command: string };
-  }>;
+  taskInfos?: TaskInfo[];
   completed?: number;
   taskExecutionTimes?: number[];
   completionMessage?: string | null;
 }
 
 export interface ValidateState extends BaseState {
-  error?: string;
-  configRequirements?: ConfigRequirement[];
+  error?: string | null;
+  completionMessage?: string | null;
+  configRequirements?: ConfigRequirement[] | null;
   validated?: boolean;
+}
+
+export interface ConfigState extends BaseState {
+  values?: Record<string, string>;
+  completedStep?: number;
+  selectedIndex?: number;
 }
 
 // Definition props (stored in component definitions, excludes runtime props)

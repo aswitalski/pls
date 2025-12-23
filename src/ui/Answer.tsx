@@ -64,7 +64,9 @@ export function Answer({
           setAnswer(answerText);
 
           // Update component state so answer persists in timeline
-          handlers?.updateState({ answer: answerText });
+          handlers?.updateState({
+            answer: answerText,
+          });
 
           // Signal completion
           handlers?.completeActive();
@@ -73,6 +75,9 @@ export function Answer({
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
           setError(errorMessage);
+          handlers?.updateState({
+            error: errorMessage,
+          });
           handlers?.onError(errorMessage);
         }
       }

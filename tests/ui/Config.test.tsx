@@ -603,6 +603,7 @@ describe('Config component interaction flows', () => {
       expect(mockHandlers.updateState).toHaveBeenCalledWith({
         values: { 'settings.debug': 'true' },
         completedStep: 1,
+        selectedIndex: 0,
       });
     });
 
