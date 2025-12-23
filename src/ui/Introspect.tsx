@@ -1,12 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import {
-  Capability,
-  ComponentStatus,
-  IntrospectProps,
-} from '../types/components.js';
-import { Task } from '../types/types.js';
+import { ComponentStatus, IntrospectProps } from '../types/components.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
 import {
@@ -21,55 +16,6 @@ import { ensureMinimumTime } from '../services/timing.js';
 import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000;
-
-const BUILT_IN_CAPABILITIES = new Set([
-  'CONFIGURE',
-  'SCHEDULE',
-  'INTROSPECT',
-  'ANSWER',
-  'EXECUTE',
-  'VALIDATE',
-  'REPORT',
-]);
-
-const INDIRECT_CAPABILITIES = new Set(['SCHEDULE', 'VALIDATE', 'REPORT']);
-
-function parseCapabilityFromTask(task: Task): Capability {
-  // Parse "NAME: Description" format from task.action
-  const colonIndex = task.action.indexOf(':');
-
-  if (colonIndex === -1) {
-    const upperName = task.action.toUpperCase();
-    // Check for status markers
-    const isIncomplete = task.action.includes('(INCOMPLETE)');
-    const cleanName = task.action.replace(/\s*\(INCOMPLETE\)\s*/gi, '').trim();
-
-    return {
-      name: cleanName,
-      description: '',
-      isBuiltIn: BUILT_IN_CAPABILITIES.has(upperName),
-      isIndirect: INDIRECT_CAPABILITIES.has(upperName),
-      isIncomplete,
-    };
-  }
-
-  const name = task.action.substring(0, colonIndex).trim();
-  const description = task.action.substring(colonIndex + 1).trim();
-  // Check for status markers
-  const isIncomplete = name.includes('(INCOMPLETE)');
-  const cleanName = name.replace(/\s*\(INCOMPLETE\)\s*/gi, '').trim();
-  const upperName = cleanName.toUpperCase();
-  const isBuiltIn = BUILT_IN_CAPABILITIES.has(upperName);
-  const isIndirect = INDIRECT_CAPABILITIES.has(upperName);
-
-  return {
-    name: cleanName,
-    description,
-    isBuiltIn,
-    isIndirect,
-    isIncomplete,
-  };
-}
 
 export function Introspect({
   tasks,
@@ -126,8 +72,8 @@ export function Introspect({
           // Add debug components to timeline if present
           addDebugToTimeline(result.debug, handlers);
 
-          // Parse capabilities from returned tasks
-          let capabilities = result.tasks.map(parseCapabilityFromTask);
+          // Capabilities come directly from result - no parsing needed
+          let capabilities = result.capabilities;
 
           // Filter out internal capabilities when not in debug mode
           if (debug === DebugLevel.None) {

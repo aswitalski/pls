@@ -287,7 +287,7 @@ export function getConfigurationRequiredMessage(forFutureUse = false): string {
 }
 
 /**
- * Core configuration schema - defines structure and types for built-in settings
+ * Core configuration schema - defines structure and types for system settings
  */
 const coreConfigSchema: Record<string, ConfigDefinition> = {
   'anthropic.key': {

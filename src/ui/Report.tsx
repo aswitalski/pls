@@ -2,20 +2,15 @@ import { Box, Text } from 'ink';
 
 import { Capability, ReportProps } from '../types/components.js';
 
-import { Colors } from '../services/colors.js';
+import { Colors, getOriginColor } from '../services/colors.js';
 
 function CapabilityItem({
   name,
   description,
-  isBuiltIn,
-  isIndirect,
+  origin,
   isIncomplete,
 }: Capability) {
-  const color = isIndirect
-    ? Colors.Origin.Indirect
-    : isBuiltIn
-      ? Colors.Origin.BuiltIn
-      : Colors.Origin.UserProvided;
+  const color = getOriginColor(origin);
 
   return (
     <Box>
@@ -39,8 +34,7 @@ export function Report({ message, capabilities }: ReportProps) {
             key={index}
             name={capability.name}
             description={capability.description}
-            isBuiltIn={capability.isBuiltIn}
-            isIndirect={capability.isIndirect}
+            origin={capability.origin}
             isIncomplete={capability.isIncomplete}
           />
         ))}

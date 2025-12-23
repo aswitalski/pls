@@ -39,6 +39,12 @@ export enum TaskType {
   Group = 'group',
 }
 
+export enum Origin {
+  BuiltIn = 'system',
+  UserProvided = 'user',
+  Indirect = 'meta',
+}
+
 export enum FeedbackType {
   Info = 'info',
   Succeeded = 'succeeded',

@@ -3,17 +3,22 @@ import { render } from 'ink-testing-library';
 import { describe, expect, it } from 'vitest';
 
 import { Capability } from '../../src/types/components.js';
+import { Origin } from '../../src/types/types.js';
 
 import { Report } from '../../src/ui/Report.js';
 
 describe('Report component', () => {
   it('renders message and capabilities list', () => {
     const capabilities: Capability[] = [
-      { name: 'Plan', description: 'break down requests', isBuiltIn: true },
+      {
+        name: 'Plan',
+        description: 'break down requests',
+        origin: Origin.Indirect,
+      },
       {
         name: 'Deploy App',
         description: 'deploy application',
-        isBuiltIn: false,
+        origin: Origin.UserProvided,
       },
     ];
 
@@ -28,7 +33,7 @@ describe('Report component', () => {
 
   it('formats capabilities with dash and separator', () => {
     const capabilities: Capability[] = [
-      { name: 'Execute', description: 'run commands', isBuiltIn: true },
+      { name: 'Execute', description: 'run commands', origin: Origin.BuiltIn },
     ];
 
     const { lastFrame } = render(
@@ -50,13 +55,21 @@ describe('Report component', () => {
 
   it('displays multiple capabilities correctly', () => {
     const capabilities: Capability[] = [
-      { name: 'Plan', description: 'break down requests', isBuiltIn: true },
-      { name: 'Execute', description: 'run commands', isBuiltIn: true },
-      { name: 'Answer', description: 'provide information', isBuiltIn: true },
+      {
+        name: 'Plan',
+        description: 'break down requests',
+        origin: Origin.Indirect,
+      },
+      { name: 'Execute', description: 'run commands', origin: Origin.BuiltIn },
+      {
+        name: 'Answer',
+        description: 'provide information',
+        origin: Origin.BuiltIn,
+      },
       {
         name: 'Deploy App',
         description: 'deploy to production',
-        isBuiltIn: false,
+        origin: Origin.UserProvided,
       },
     ];
 
@@ -76,9 +89,13 @@ describe('Report component', () => {
       {
         name: 'Deploy Application',
         description: 'deploy app',
-        isBuiltIn: false,
+        origin: Origin.UserProvided,
       },
-      { name: 'Process Data', description: 'process files', isBuiltIn: false },
+      {
+        name: 'Process Data',
+        description: 'process files',
+        origin: Origin.UserProvided,
+      },
     ];
 
     const { lastFrame } = render(

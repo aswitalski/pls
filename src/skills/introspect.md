@@ -26,8 +26,8 @@ You will receive:
 
 ## Task
 
-Present the concierge's capabilities as a list of tasks, each representing
-one capability.
+Present the concierge's capabilities as a list of capability objects, each
+with a name, description, and origin.
 
 ## Response Format
 
@@ -77,7 +77,7 @@ NON-NEGOTIABLE and applies to EVERY response.
 
 **CORRECT ORDER - FOLLOW EXACTLY:**
 
-### Position 1-4: Built-in Capabilities (Direct User Operations)
+### Position 1-4: system capabilities (origin: "system")
 
 These MUST appear FIRST, in this EXACT sequence:
 
@@ -86,47 +86,56 @@ These MUST appear FIRST, in this EXACT sequence:
 3. **Answer** ← ALWAYS THIRD
 4. **Execute** ← ALWAYS FOURTH
 
-### Position 5-7: Indirect Workflow Capabilities
+### Position 5-7: meta workflow capabilities (origin: "meta")
 
-These MUST appear AFTER Execute and BEFORE user skills:
+These MUST appear AFTER Execute and BEFORE user-provided skills:
 
 5. **Schedule** ← NEVER FIRST, ALWAYS position 5 (after Execute)
 6. **Validate** ← ALWAYS position 6 (after Schedule)
 7. **Report** ← NEVER FIRST, ALWAYS position 7 (after Validate)
 
-### 3. User-Defined Skills
+### 3. user-provided skills (origin: "user")
 
 If skills are provided in the "Available Skills" section below, include
 them in the response. For each skill:
 - Extract the skill name from the first heading (# Skill Name)
-- If the skill name contains "(INCOMPLETE)", preserve it exactly in the
-  task action
+- Set origin to "user"
+- If the skill name contains "(INCOMPLETE)", set isIncomplete to true and
+  remove "(INCOMPLETE)" from the name
 - Extract a brief description from the Description or Overview section
 - Keep descriptions concise (1-2 lines maximum)
 - If the user specified a filter (e.g., "skills for deployment"), only
   include skills whose name or description matches the filter
 
-## Task Definition Guidelines
+## Capability Object Guidelines
 
-Create tasks with type "introspect" for each capability. Each task should:
+Create capability objects for each capability. Each object should have:
 
-- **Action**: The capability name and a concise description
-  - Format: "Capability Name: description" (note: display format will use
-    " - " separator)
-  - **IMPORTANT**: Use title case for capability names (e.g., "Schedule",
-    "Execute"), NOT all uppercase (NOT "SCHEDULE", "EXECUTE")
+- **name**: The capability or skill name
+  - Use title case (e.g., "Schedule", "Execute", "Deploy Application")
+  - NOT all uppercase (NOT "SCHEDULE", "EXECUTE")
+  - Maximum 32 characters
+  - Examples: "Introspect", "Execute", "Deploy Application"
+
+- **description**: A concise description of what this capability does
+  - Maximum 64 characters
+  - Start with lowercase letter, no ending punctuation
+  - Focus on clarity and brevity
+  - Describe the core purpose in one short phrase
   - Examples:
-    - "Schedule: break down requests into actionable steps"
-    - "Execute: run shell commands and process operations"
-    - "Deploy Application: build and deploy to staging or production"
-- **Type**: Always use "introspect"
-- **Params**: Omit params field
+    - "break down requests into actionable steps"
+    - "run shell commands and process operations"
+    - "build and deploy to staging or production"
 
-**Keep action descriptions concise:**
-- Maximum 60 characters for the description portion (after the colon)
-- Focus on clarity and brevity
-- Describe the core purpose in one short phrase
-- Start descriptions with a lowercase letter (they follow a colon)
+- **origin**: The origin type of the capability
+  - Use "system" for system capabilities: Introspect, Configure, Answer,
+    Execute
+  - Use "meta" for meta workflow capabilities: Schedule, Validate, Report
+  - Use "user" for all user-provided skills
+
+- **isIncomplete**: Optional boolean flag
+  - Only include if the skill is marked as incomplete
+  - Set to true if skill name contained "(INCOMPLETE)"
 
 ## Filtering
 
@@ -134,48 +143,48 @@ When the user specifies a filter (e.g., "skills for deployment", "what
 can you do with files"):
 1. Parse the filter keyword(s) from the request
 2. Match against skill names and descriptions (case-insensitive)
-3. Include built-in capabilities if they match the filter
+3. Include system capabilities if they match the filter
 4. Only present capabilities that match the filter
 
 Examples:
 - "skills for deployment" → Only show skills with "deploy" in
   name/description
 - "what can you do with files" → Show EXECUTE and any file-related skills
-- "list all skills" → Show all built-in capabilities + all user skills
+- "list all skills" → Show all system capabilities + all user-provided skills
 
 ## Examples
 
 ### Example 1: List All Capabilities
 
 When user asks "list your skills", create an introductory message like
-"here are my capabilities:" followed by tasks for built-in capabilities
-(Introspect, Configure, Answer, Execute), then indirect workflow capabilities
-(Schedule, Validate, Report).
-
-Each task uses type "introspect" with an action describing the
-capability.
+"here are my capabilities:" followed by capability objects for system
+capabilities (Introspect, Configure, Answer, Execute with origin
+"system"), then meta workflow capabilities (Schedule, Validate, Report
+with origin "meta").
 
 ### Example 2: Filtered Skills
 
 When user asks "skills for deployment" and a "deploy app" skill exists,
 create an introductory message like "these skills match 'deployment':"
-followed by only the tasks that match the filter. In this case, show the
-deploy app skill with its description.
+followed by only the capabilities that match the filter. Show the deploy
+app skill with origin "user".
 
 ### Example 3: With User Skills
 
-When user asks "what can you do" and user-defined skills like "process
+When user asks "what can you do" and user-provided skills like "process
 data" and "backup files" exist, create an introductory message like "i can
-help with these operations:" followed by all built-in capabilities
-(Introspect, Configure, Answer, Execute, Validate, Schedule, Report) plus the
-user-defined skills. Each capability and skill becomes a task with type
-"introspect".
+help with these operations:" followed by all system capabilities
+(Introspect, Configure, Answer, Execute with origin "system"), meta
+capabilities (Schedule, Validate, Report with origin "meta"), plus the
+user-provided skills with origin "user".
 
 ## Final Validation
 
 Before finalizing:
-1. Ensure every task has type "introspect"
-2. Verify action descriptions are concise (≤64 characters)
+1. Ensure every capability has the correct origin value ("system",
+   "meta", or "user")
+2. Verify descriptions are concise (≤64 characters)
 3. Confirm the introductory message ends with a colon
 4. Check that filtering was applied correctly if specified
 5. Ensure no duplicate capabilities are listed
+6. Verify names use title case, not all uppercase

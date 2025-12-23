@@ -332,7 +332,7 @@ describe('Integration Tests', () => {
 
       const result = await mockService.processWithTool(
         'execute introspection',
-        'introspect'
+        'schedule'
       );
 
       expect(result.tasks).toHaveLength(4);

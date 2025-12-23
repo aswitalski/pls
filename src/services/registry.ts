@@ -49,7 +49,7 @@ class ToolRegistry {
 // Create singleton instance
 export const toolRegistry = new ToolRegistry();
 
-// Register built-in tools
+// Register system tools
 import { answerTool } from '../tools/answer.tool.js';
 import { configureTool } from '../tools/configure.tool.js';
 import { executeTool } from '../tools/execute.tool.js';

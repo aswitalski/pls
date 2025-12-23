@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-import { App, ComponentName, FeedbackType, Task } from './types.js';
+import { App, ComponentName, FeedbackType, Origin, Task } from './types.js';
 import { ConfigRequirement } from './skills.js';
 
 import { ExecuteCommand, LLMService } from '../services/anthropic.js';
@@ -107,8 +107,7 @@ export type CommandProps = ComponentProps<CommandDefinitionProps, CommandState>;
 export interface Capability {
   name: string;
   description: string;
-  isBuiltIn: boolean;
-  isIndirect?: boolean;
+  origin: Origin;
   isIncomplete?: boolean;
 }
 

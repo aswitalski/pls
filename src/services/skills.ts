@@ -41,7 +41,7 @@ export function isValidSkillFilename(filename: string): boolean {
 }
 
 /**
- * Check if skill key conflicts with built-in skills
+ * Check if skill key conflicts with system skills
  */
 export function conflictsWithBuiltIn(key: string): boolean {
   return BUILT_IN_SKILLS.has(key);
@@ -57,7 +57,7 @@ export function getSkillsDirectory(): string {
 /**
  * Load all skill markdown files from the skills directory
  * Returns an array of objects with filename (key) and content
- * Filters out invalid filenames and conflicts with built-in skills
+ * Filters out invalid filenames and conflicts with system skills
  */
 export function loadSkills(): Array<{ key: string; content: string }> {
   const skillsDir = getSkillsDirectory();
@@ -81,7 +81,7 @@ export function loadSkills(): Array<{ key: string; content: string }> {
         // Extract key (filename without extension, handles both .md and .MD)
         const key = file.slice(0, -3);
 
-        // Must not conflict with built-in skills
+        // Must not conflict with system skills
         if (conflictsWithBuiltIn(key)) {
           return false;
         }

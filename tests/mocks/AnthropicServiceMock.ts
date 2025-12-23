@@ -4,6 +4,7 @@ import { TaskType } from '../../src/types/types.js';
 import {
   AnthropicService,
   CommandResult,
+  IntrospectResult,
 } from '../../src/services/anthropic.js';
 
 /**
@@ -52,7 +53,15 @@ export class AnthropicServiceMock extends AnthropicService {
     this.errorMessage = 'Mock error';
   }
 
-  processWithTool(command: string, _toolName: string): Promise<CommandResult> {
+  processWithTool(
+    command: string,
+    _toolName: 'introspect'
+  ): Promise<IntrospectResult>;
+  processWithTool(command: string, _toolName: string): Promise<CommandResult>;
+  processWithTool(
+    command: string,
+    _toolName: string
+  ): Promise<CommandResult | IntrospectResult> {
     if (this.shouldFail) {
       return Promise.reject(new Error(this.errorMessage));
     }

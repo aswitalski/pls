@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-import type { ComponentDefinition } from '../types/components.js';
+import type { Capability, ComponentDefinition } from '../types/components.js';
 import type { Task } from '../types/types.js';
 
 import {
@@ -29,7 +29,18 @@ export interface CommandResult {
   debug?: ComponentDefinition[];
 }
 
+export interface IntrospectResult {
+  message: string;
+  capabilities: Capability[];
+  debug?: ComponentDefinition[];
+}
+
 export interface LLMService {
+  processWithTool(
+    command: string,
+    toolName: 'introspect',
+    instructions?: string
+  ): Promise<IntrospectResult>;
   processWithTool(
     command: string,
     toolName: string,
@@ -100,9 +111,19 @@ export class AnthropicService implements LLMService {
 
   async processWithTool(
     command: string,
+    toolName: 'introspect',
+    customInstructions?: string
+  ): Promise<IntrospectResult>;
+  async processWithTool(
+    command: string,
     toolName: string,
     customInstructions?: string
-  ): Promise<CommandResult> {
+  ): Promise<CommandResult>;
+  async processWithTool(
+    command: string,
+    toolName: string,
+    customInstructions?: string
+  ): Promise<CommandResult | IntrospectResult> {
     // Load tool from registry
     const tool = toolRegistry.getSchema(toolName);
 
@@ -221,6 +242,7 @@ export class AnthropicService implements LLMService {
       message?: string;
       summary?: string;
       tasks?: Task[];
+      capabilities?: Capability[];
       question?: string;
       answer?: string;
       commands?: ExecuteCommand[];
@@ -285,7 +307,47 @@ export class AnthropicService implements LLMService {
       };
     }
 
-    // Handle schedule and introspect tool responses
+    // Handle introspect tool response
+    if (toolName === 'introspect') {
+      if (!input.message || typeof input.message !== 'string') {
+        throw new Error(
+          'Invalid tool response: missing or invalid message field'
+        );
+      }
+
+      if (!input.capabilities || !Array.isArray(input.capabilities)) {
+        throw new Error(
+          'Invalid tool response: missing or invalid capabilities array'
+        );
+      }
+
+      // Validate each capability has required fields
+      input.capabilities.forEach((cap, i) => {
+        if (!cap.name || typeof cap.name !== 'string') {
+          throw new Error(
+            `Invalid capability at index ${String(i)}: missing or invalid 'name' field`
+          );
+        }
+        if (!cap.description || typeof cap.description !== 'string') {
+          throw new Error(
+            `Invalid capability at index ${String(i)}: missing or invalid 'description' field`
+          );
+        }
+        if (typeof cap.origin !== 'string') {
+          throw new Error(
+            `Invalid capability at index ${String(i)}: invalid 'origin' field`
+          );
+        }
+      });
+
+      return {
+        message: input.message,
+        capabilities: input.capabilities,
+        debug,
+      };
+    }
+
+    // Handle schedule tool responses
     if (input.message === undefined || typeof input.message !== 'string') {
       throw new Error(
         'Invalid tool response: missing or invalid message field'

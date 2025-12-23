@@ -116,7 +116,7 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
   }
 
   return keys.map((key) => {
-    // Check if key is in schema (built-in config)
+    // Check if key is in schema (system config)
     if (!(key in schema)) {
       // Key is not in schema - it's from a skill or discovered config
       // Create a simple text step with the full path as description

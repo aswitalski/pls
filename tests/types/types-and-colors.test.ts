@@ -29,18 +29,18 @@ describe('Color relationships', () => {
 });
 
 describe('Origin colors for capability display', () => {
-  it('uses distinct colors for built-in vs user-provided', () => {
-    // Built-in and user-provided must be visually distinguishable
+  it('uses distinct colors for system vs user', () => {
+    // System and user origins must be visually distinguishable
     expect(Colors.Origin.BuiltIn).not.toBe(Colors.Origin.UserProvided);
   });
 
-  it('uses same color for built-in capabilities as Config type', () => {
-    // Built-in capabilities share color with Config for visual consistency
+  it('uses same color for system capabilities as Config type', () => {
+    // System capabilities share color with Config for visual consistency
     expect(Colors.Origin.BuiltIn).toBe(Colors.Type.Config);
   });
 
-  it('uses same color for user-provided capabilities as Execute action', () => {
-    // User-provided capabilities share color with Execute for consistency
+  it('uses same color for user capabilities as Execute action', () => {
+    // User capabilities share color with Execute for consistency
     expect(Colors.Origin.UserProvided).toBe(Colors.Action.Execute);
   });
 });

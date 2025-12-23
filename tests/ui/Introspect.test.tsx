@@ -1,43 +1,43 @@
 import { describe, expect, it } from 'vitest';
 
-import { Task, TaskType } from '../../src/types/types.js';
+import { Capability } from '../../src/types/components.js';
+import { Origin } from '../../src/types/types.js';
 
-// Test the parsing logic by importing the component and testing it indirectly
-describe('Introspect capability parsing', () => {
-  it('detects built-in capabilities correctly', () => {
-    const builtInNames = [
-      'SCHEDULE',
-      'Schedule',
-      'schedule',
-      'EXECUTE',
-      'Execute',
-    ];
-
-    builtInNames.forEach((name) => {
-      // Built-in capabilities are detected case-insensitively
-      const upperName = name.toUpperCase();
-      expect([
-        'SCHEDULE',
-        'EXECUTE',
-        'CONFIGURE',
-        'ANSWER',
-        'INTROSPECT',
-        'VALIDATE',
-        'REPORT',
-      ]).toContain(upperName);
-    });
-  });
-
+describe('Introspect capability handling', () => {
   it('filters debug-only capabilities in normal mode', () => {
     // Simulate the filtering logic from Introspect component
-    const allCapabilities = [
-      { name: 'Introspect', description: 'list capabilities' },
-      { name: 'Configure', description: 'manage settings' },
-      { name: 'Answer', description: 'provide information' },
-      { name: 'Execute', description: 'run commands' },
-      { name: 'Schedule', description: 'break down requests' },
-      { name: 'Validate', description: 'verify operations' },
-      { name: 'Report', description: 'summarize outcomes' },
+    const allCapabilities: Capability[] = [
+      {
+        name: 'Introspect',
+        description: 'list capabilities',
+        origin: Origin.BuiltIn,
+      },
+      {
+        name: 'Configure',
+        description: 'manage settings',
+        origin: Origin.BuiltIn,
+      },
+      {
+        name: 'Answer',
+        description: 'provide information',
+        origin: Origin.BuiltIn,
+      },
+      { name: 'Execute', description: 'run commands', origin: Origin.BuiltIn },
+      {
+        name: 'Schedule',
+        description: 'break down requests',
+        origin: Origin.Indirect,
+      },
+      {
+        name: 'Validate',
+        description: 'verify operations',
+        origin: Origin.Indirect,
+      },
+      {
+        name: 'Report',
+        description: 'summarize outcomes',
+        origin: Origin.Indirect,
+      },
     ];
 
     // In normal mode, filter out Schedule, Validate, Report
@@ -59,14 +59,38 @@ describe('Introspect capability parsing', () => {
 
   it('includes debug-only capabilities in debug mode', () => {
     // In debug mode, all capabilities should be included
-    const allCapabilities = [
-      { name: 'Introspect', description: 'list capabilities' },
-      { name: 'Configure', description: 'manage settings' },
-      { name: 'Answer', description: 'provide information' },
-      { name: 'Execute', description: 'run commands' },
-      { name: 'Schedule', description: 'break down requests' },
-      { name: 'Validate', description: 'verify operations' },
-      { name: 'Report', description: 'summarize outcomes' },
+    const allCapabilities: Capability[] = [
+      {
+        name: 'Introspect',
+        description: 'list capabilities',
+        origin: Origin.BuiltIn,
+      },
+      {
+        name: 'Configure',
+        description: 'manage settings',
+        origin: Origin.BuiltIn,
+      },
+      {
+        name: 'Answer',
+        description: 'provide information',
+        origin: Origin.BuiltIn,
+      },
+      { name: 'Execute', description: 'run commands', origin: Origin.BuiltIn },
+      {
+        name: 'Schedule',
+        description: 'break down requests',
+        origin: Origin.Indirect,
+      },
+      {
+        name: 'Validate',
+        description: 'verify operations',
+        origin: Origin.Indirect,
+      },
+      {
+        name: 'Report',
+        description: 'summarize outcomes',
+        origin: Origin.Indirect,
+      },
     ];
 
     // In debug mode, no filtering applied
@@ -83,30 +107,35 @@ describe('Introspect capability parsing', () => {
   });
 
   it('handles mixed built-in and user-defined capabilities', () => {
-    const tasks: Task[] = [
-      { action: 'Schedule: break down requests', type: TaskType.Introspect },
-      { action: 'Execute: run commands', type: TaskType.Introspect },
-      { action: 'Deploy App: deploy application', type: TaskType.Introspect },
+    const capabilities: Capability[] = [
+      {
+        name: 'Schedule',
+        description: 'break down requests',
+        origin: Origin.Indirect,
+      },
+      { name: 'Execute', description: 'run commands', origin: Origin.BuiltIn },
+      {
+        name: 'Deploy App',
+        description: 'deploy application',
+        origin: Origin.UserProvided,
+      },
     ];
 
-    // First two are built-in (case-insensitive match)
-    expect(tasks.length).toBe(3);
-    expect(tasks[0].action).toContain('Schedule');
-    expect(tasks[1].action).toContain('Execute');
-    expect(tasks[2].action).toContain('Deploy App');
+    expect(capabilities.length).toBe(3);
+    expect(capabilities[0].origin).toBe(Origin.Indirect);
+    expect(capabilities[1].origin).toBe(Origin.BuiltIn);
+    expect(capabilities[2].origin).toBe(Origin.UserProvided);
   });
 
-  it('parses capability names and descriptions from task actions', () => {
-    const task: Task = {
-      action: 'Deploy Application: build and deploy to production',
-      type: TaskType.Introspect,
+  it('handles capability structure correctly', () => {
+    const capability: Capability = {
+      name: 'Deploy Application',
+      description: 'build and deploy to production',
+      origin: Origin.UserProvided,
     };
 
-    const colonIndex = task.action.indexOf(':');
-    const name = task.action.substring(0, colonIndex).trim();
-    const description = task.action.substring(colonIndex + 1).trim();
-
-    expect(name).toBe('Deploy Application');
-    expect(description).toBe('build and deploy to production');
+    expect(capability.name).toBe('Deploy Application');
+    expect(capability.description).toBe('build and deploy to production');
+    expect(capability.origin).toBe(Origin.UserProvided);
   });
 });

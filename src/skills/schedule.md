@@ -83,12 +83,17 @@ settings", type "configure", params { query: "app" }
 
 Before creating tasks, evaluate the request type:
 
-1. **Information requests** (questions) - Use question keywords:
+1. **Introspection requests** - User asks about your capabilities:
+   - "list your skills", "what can you do", "flex", "show off", "list
+     capabilities", "show skills"
+   - Example: "flex" → introspect type
+
+2. **Information requests** (questions) - Use question keywords:
    - "explain", "describe", "tell me", "what is", "how does", "find",
      "search"
    - Example: "explain docker" → answer type
 
-2. **Action requests** (commands) - Must match available skills:
+3. **Action requests** (commands) - Must match available skills:
    - Action verbs like "compile", "deploy", "process", "validate"
    - If verb matches a skill → extract skill steps as subtasks
    - If verb does NOT match any skill → ignore type with action
@@ -98,7 +103,7 @@ Before creating tasks, evaluate the request type:
    - Example: "validate" with no skill → action "Ignore unknown
      'validate' request"
 
-3. **Vague/ambiguous requests** without clear verb:
+4. **Vague/ambiguous requests** without clear verb:
    - Phrases like "do something", "handle it" → ignore type
    - Action format: "Ignore unknown 'X' request" where X is the phrase
 

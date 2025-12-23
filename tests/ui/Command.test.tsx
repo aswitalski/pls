@@ -138,7 +138,10 @@ describe('Command component error handling', () => {
         ],
       });
 
-      const result = await service.processWithTool('build and test', 'plan');
+      const result = await service.processWithTool(
+        'build and test',
+        'schedule'
+      );
 
       expect(result.tasks).toHaveLength(2);
       expect(result.tasks[0].type).toBe(TaskType.Execute);

@@ -1,4 +1,4 @@
-import { FeedbackType, TaskType } from '../types/types.js';
+import { FeedbackType, Origin, TaskType } from '../types/types.js';
 import { DebugLevel } from './configuration.js';
 import { ExecutionStatus } from './shell.js';
 
@@ -141,6 +141,15 @@ const feedbackColors: Record<FeedbackType, string | null> = {
 } as const;
 
 /**
+ * Origin-specific color mappings (internal)
+ */
+const originColors: Record<Origin, string> = {
+  [Origin.BuiltIn]: Colors.Origin.BuiltIn,
+  [Origin.UserProvided]: Colors.Origin.UserProvided,
+  [Origin.Indirect]: Colors.Origin.Indirect,
+} as const;
+
+/**
  * Process null color values based on current/historical state.
  *
  * Replaces null with:
@@ -189,6 +198,18 @@ export function getFeedbackColor(
   isCurrent: boolean
 ): string | undefined {
   return processColor(feedbackColors[type], isCurrent);
+}
+
+/**
+ * Get color for capability origin.
+ *
+ * Returns the color associated with each origin type:
+ * - BuiltIn: Cyan
+ * - UserProvided: Green
+ * - Indirect: Purple
+ */
+export function getOriginColor(origin: Origin): string {
+  return originColors[origin];
 }
 
 /**

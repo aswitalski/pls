@@ -12,7 +12,12 @@ import type { Task } from '../src/types/types.js';
 import { ComponentStatus } from '../src/types/components.js';
 import { ComponentName } from '../src/types/types.js';
 
-import type { ExecuteCommand, LLMService } from '../src/services/anthropic.js';
+import type {
+  CommandResult,
+  ExecuteCommand,
+  IntrospectResult,
+  LLMService,
+} from '../src/services/anthropic.js';
 
 /**
  * Test input key constants for stdin.write()
@@ -50,9 +55,19 @@ export function createMockAnthropicService(
   error?: Error
 ): LLMService {
   return {
-    processWithTool: () => {
+    processWithTool(
+      _command: string,
+      toolName: string
+    ): Promise<CommandResult | IntrospectResult> {
       if (error) {
         return Promise.reject(error);
+      }
+      if (toolName === 'introspect' && result.capabilities) {
+        return Promise.resolve({
+          message: result.message || '',
+          capabilities: result.capabilities,
+          debug: result.debug,
+        });
       }
       return Promise.resolve({
         message: result.message || '',
@@ -63,7 +78,7 @@ export function createMockAnthropicService(
         debug: result.debug,
       });
     },
-  };
+  } as LLMService;
 }
 
 /**
