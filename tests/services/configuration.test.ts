@@ -370,7 +370,7 @@ config:
         const structure = getAvailableConfigStructure();
 
         expect(structure['custom.mykey']).toBeDefined();
-        expect(structure['custom.mykey']).toContain('discovered');
+        expect(structure['custom.mykey']).toBe('Custom Mykey');
       });
 
       it('works when no config file exists', () => {
@@ -380,11 +380,11 @@ config:
         expect(structure['anthropic.key']).toBeDefined();
         expect(structure['anthropic.model']).toBeDefined();
 
-        // Optional keys should be present and marked
-        expect(structure['settings.debug']).toBe('Debug mode (optional)');
+        // Optional keys should be present
+        expect(structure['settings.debug']).toBe('Debug mode');
       });
 
-      it('includes all optional keys marked as (optional)', () => {
+      it('includes all optional keys', () => {
         // Save required config only
         saveAnthropicConfig({
           key: 'sk-ant-api03-' + 'A'.repeat(95),
@@ -397,11 +397,11 @@ config:
         expect(structure['anthropic.key']).toBe('Anthropic API key');
         expect(structure['anthropic.model']).toBe('Anthropic model');
 
-        // Optional key should be in structure marked as optional
-        expect(structure['settings.debug']).toBe('Debug mode (optional)');
+        // Optional key should be in structure
+        expect(structure['settings.debug']).toBe('Debug mode');
       });
 
-      it('includes optional configured keys marked with (optional)', () => {
+      it('includes optional configured keys', () => {
         // Save required config
         saveAnthropicConfig({
           key: 'sk-ant-api03-' + 'A'.repeat(95),
@@ -417,8 +417,8 @@ config:
         expect(structure['anthropic.key']).toBe('Anthropic API key');
         expect(structure['anthropic.model']).toBe('Anthropic model');
 
-        // Optional configured key should be included and marked
-        expect(structure['settings.debug']).toBe('Debug mode (optional)');
+        // Optional configured key should be included
+        expect(structure['settings.debug']).toBe('Debug mode');
       });
     });
 

@@ -3,6 +3,19 @@ import { homedir } from 'os';
 import { join } from 'path';
 import YAML from 'yaml';
 
+import { getConfigLabel } from './config-labels.js';
+
+/**
+ * Convert a dotted config key to a readable label
+ * Example: "project.alpha.repo" -> "Project Alpha Repo"
+ */
+function keyToLabel(key: string): string {
+  return key
+    .split('.')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 export enum AnthropicModel {
   Sonnet = 'claude-sonnet-4-5',
   Haiku = 'claude-haiku-4-5',
@@ -483,21 +496,14 @@ export function getAvailableConfigStructure(): Record<string, string> {
   }
 
   // Add schema keys with descriptions
-  // Mark optional keys as (optional)
   for (const [key, definition] of Object.entries(schema)) {
-    const isOptional = !definition.required;
-
-    if (isOptional) {
-      structure[key] = `${definition.description} (optional)`;
-    } else {
-      structure[key] = definition.description;
-    }
+    structure[key] = definition.description;
   }
 
   // Add discovered keys that aren't in schema
   for (const key of Object.keys(flatConfig)) {
     if (!(key in structure)) {
-      structure[key] = `${key} (discovered)`;
+      structure[key] = getConfigLabel(key) || keyToLabel(key);
     }
   }
 

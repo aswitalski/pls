@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { type ReactElement, useEffect, useState } from 'react';
 import { Box, Text, useFocus } from 'ink';
 import TextInput from 'ink-text-input';
 
@@ -9,6 +9,22 @@ import { Colors } from '../services/colors.js';
 import { createFeedback } from '../services/components.js';
 import { DebugLevel } from '../services/configuration.js';
 import { useInput } from '../services/keyboard.js';
+
+/**
+ * Get postfix with debug brackets if debug is enabled
+ * Info: {key} | Verbose: {key} entry
+ */
+function getPostfix(text: string | undefined, debugLevel: DebugLevel): string {
+  if (debugLevel === DebugLevel.None || !text) {
+    return '';
+  }
+
+  if (debugLevel === DebugLevel.Info) {
+    return `{${text}}`;
+  }
+
+  return `{${text}} entry`;
+}
 
 export enum StepType {
   Text = 'text',
@@ -460,6 +476,8 @@ export function Config<
           return null;
         }
 
+        const postfix = getPostfix(stepConfig.path, debug);
+
         return (
           <Box
             key={stepConfig.path || stepConfig.key}
@@ -469,13 +487,7 @@ export function Config<
             <Box>
               <Text>{stepConfig.description}</Text>
               <Text>: </Text>
-              {debug !== DebugLevel.None && stepConfig.path && (
-                <Text color={Colors.Type.Define}>
-                  {'{'}
-                  {stepConfig.path}
-                  {'}'}
-                </Text>
-              )}
+              {postfix && <Text color={Colors.Type.Config}>{postfix}</Text>}
             </Box>
             <Box>
               <Text> </Text>

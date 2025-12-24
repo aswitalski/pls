@@ -15,6 +15,7 @@ import {
   saveConfig,
   unflattenConfig,
 } from '../services/configuration.js';
+import { saveConfigLabels } from '../services/config-labels.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
@@ -194,6 +195,17 @@ export function Validate({
   const handleConfigFinished = (config: Record<string, string>) => {
     // Convert flat dotted keys to nested structure grouped by section
     const configBySection = unflattenConfig(config);
+
+    // Extract and save labels to cache
+    if (configRequirements) {
+      const labels: Record<string, string> = {};
+      for (const req of configRequirements) {
+        if (req.description) {
+          labels[req.path] = req.description;
+        }
+      }
+      saveConfigLabels(labels);
+    }
 
     // Save each section
     for (const [section, sectionConfig] of Object.entries(configBySection)) {
