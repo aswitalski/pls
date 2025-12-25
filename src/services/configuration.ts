@@ -4,6 +4,7 @@ import { join } from 'path';
 import YAML from 'yaml';
 
 import { getConfigLabel } from './config-labels.js';
+import { flattenConfig } from './config-utils.js';
 
 /**
  * Convert a dotted config key to a readable label
@@ -420,28 +421,6 @@ export function getConfiguredKeys(): string[] {
     const parsed = YAML.parse(content) as Record<string, unknown>;
 
     // Flatten nested config to dot notation
-    function flattenConfig(
-      obj: Record<string, unknown>,
-      prefix = ''
-    ): Record<string, unknown> {
-      const result: Record<string, unknown> = {};
-
-      for (const [key, value] of Object.entries(obj)) {
-        const fullKey = prefix ? `${prefix}.${key}` : key;
-
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-          Object.assign(
-            result,
-            flattenConfig(value as Record<string, unknown>, fullKey)
-          );
-        } else {
-          result[fullKey] = value;
-        }
-      }
-
-      return result;
-    }
-
     const flatConfig = flattenConfig(parsed);
     return Object.keys(flatConfig);
   } catch {
@@ -467,28 +446,6 @@ export function getAvailableConfigStructure(): Record<string, string> {
       const parsed = YAML.parse(content) as Record<string, unknown>;
 
       // Flatten nested config to dot notation
-      function flattenConfig(
-        obj: Record<string, unknown>,
-        prefix = ''
-      ): Record<string, unknown> {
-        const result: Record<string, unknown> = {};
-
-        for (const [key, value] of Object.entries(obj)) {
-          const fullKey = prefix ? `${prefix}.${key}` : key;
-
-          if (value && typeof value === 'object' && !Array.isArray(value)) {
-            Object.assign(
-              result,
-              flattenConfig(value as Record<string, unknown>, fullKey)
-            );
-          } else {
-            result[fullKey] = value;
-          }
-        }
-
-        return result;
-      }
-
       flatConfig = flattenConfig(parsed);
     }
   } catch {
