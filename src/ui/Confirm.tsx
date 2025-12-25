@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 
 import { ComponentStatus, ConfirmProps } from '../types/components.js';
 
-import { Colors, Palette } from '../services/colors.js';
+import { Colors, getTextColor, Palette } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 
 import { UserQuery } from './UserQuery.js';
@@ -27,7 +27,7 @@ export function Confirm({
         // Escape: highlight "No" and cancel
         setSelectedIndex(1);
         handlers?.updateState({ selectedIndex: 1 });
-        onCancelled?.();
+        onCancelled();
       } else if (key.tab) {
         // Toggle between Yes (0) and No (1)
         const newIndex = selectedIndex === 0 ? 1 : 0;
@@ -37,9 +37,9 @@ export function Confirm({
         // Confirm selection
         handlers?.updateState({ selectedIndex, confirmed: true });
         if (selectedIndex === 0) {
-          onConfirmed?.();
+          onConfirmed();
         } else {
-          onCancelled?.();
+          onCancelled();
         }
       }
     },
@@ -66,9 +66,7 @@ export function Confirm({
   return (
     <Box flexDirection="column">
       <Box marginBottom={1} marginLeft={1}>
-        <Text color={isActive ? Colors.Text.Active : Colors.Text.Inactive}>
-          {message}
-        </Text>
+        <Text color={getTextColor(isActive)}>{message}</Text>
       </Box>
       <Box marginLeft={1}>
         <Text color={Colors.Action.Select}>&gt;</Text>

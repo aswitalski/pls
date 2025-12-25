@@ -1331,9 +1331,7 @@ describe('Execute component', () => {
     it('preserves completed when aborting', async () => {
       const { executeCommand } = await import('../../src/services/shell.js');
 
-      let executionCount = 0;
       vi.mocked(executeCommand).mockImplementation(async () => {
-        executionCount++;
         // Simulate slow execution
         await new Promise((resolve) => setTimeout(resolve, 100));
         return {

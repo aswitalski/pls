@@ -31,7 +31,7 @@ describe('Configuration management', () => {
 
   beforeEach(() => {
     originalHome = process.env.HOME;
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+
     tempHome = join(tmpdir(), `pls-config-test-${Date.now()}`);
     mkdirSync(tempHome, { recursive: true });
     process.env.HOME = tempHome;

@@ -30,8 +30,6 @@ describe('Workflow component lifecycle', () => {
 
   describe('Component status transitions', () => {
     it('transitions stateless components from Awaiting to Active to Done', async () => {
-      const messages: ComponentDefinition[] = [];
-
       // Create a simple Message component in Awaiting state
       const messageComponent: ComponentDefinition = {
         id: 'msg-1',
@@ -40,7 +38,7 @@ describe('Workflow component lifecycle', () => {
         status: ComponentStatus.Awaiting,
       };
 
-      const { lastFrame, rerender } = render(
+      const { lastFrame } = render(
         <Workflow initialQueue={[messageComponent]} debug={DebugLevel.Info} />
       );
 

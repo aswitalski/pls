@@ -22,7 +22,7 @@ describe('Anthropic API key validation', () => {
     originalHome = process.env.HOME;
     tempHome = join(
       tmpdir(),
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+
       `pls-anthropic-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
     );
     mkdirSync(tempHome, { recursive: true });

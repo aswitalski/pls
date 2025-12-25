@@ -46,26 +46,19 @@ export function Validate({
   const [configRequirements, setConfigRequirements] = useState<
     ConfigRequirement[] | null
   >(state?.configRequirements ?? null);
-  const [showConfig, setShowConfig] = useState(false);
 
   useInput(
     (_, key) => {
-      if (key.escape && isActive && !showConfig) {
+      if (key.escape && isActive) {
         onAborted('validation');
       }
     },
-    { isActive: isActive && !showConfig }
+    { isActive }
   );
 
   useEffect(() => {
     // Skip processing if not active
     if (!isActive) {
-      return;
-    }
-
-    // Skip processing if no service available
-    if (!service) {
-      setError('No service available');
       return;
     }
 
@@ -79,7 +72,7 @@ export function Validate({
         const prompt = buildValidatePrompt(missingConfig, userRequest);
 
         // Call validate tool
-        const result = await svc!.processWithTool(prompt, 'validate');
+        const result = await svc.processWithTool(prompt, 'validate');
 
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
@@ -148,14 +141,12 @@ export function Validate({
             validated: false,
           });
 
-          if (onError) {
-            onError(errorMessage);
-          }
+          onError(errorMessage);
         }
       }
     }
 
-    process(service);
+    void process(service);
 
     return () => {
       mounted = false;
@@ -217,7 +208,9 @@ export function Validate({
     handlers?.completeActive();
 
     // Invoke callback which will queue the Execute component
-    onComplete?.(configRequirements!);
+    if (configRequirements) {
+      onComplete(configRequirements);
+    }
   };
 
   const handleConfigAborted = (operation: string) => {

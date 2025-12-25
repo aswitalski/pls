@@ -210,8 +210,8 @@ export function Config<
             stepConfig.options[stepConfig.defaultIndex].value;
           break;
         default: {
-          const exhaustiveCheck: never = stepConfig;
-          throw new Error(`Unsupported step type: ${exhaustiveCheck}`);
+          const _exhaustiveCheck: never = stepConfig;
+          throw new Error('Unsupported step type');
         }
       }
     });
@@ -257,7 +257,6 @@ export function Config<
       const value = values[configKey] || '';
       setInputValue(value);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, isActive, steps]);
 
   useInput((_, key) => {
@@ -267,24 +266,22 @@ export function Config<
 
     if (key.escape) {
       // Save current value before aborting
-      if (currentStepConfig) {
-        const configKey = currentStepConfig.path || currentStepConfig.key;
-        let currentValue = '';
-        switch (currentStepConfig.type) {
-          case StepType.Text:
-            currentValue = inputValue || values[configKey] || '';
-            break;
-          case StepType.Selection:
-            currentValue = values[configKey] || '';
-            break;
-          default: {
-            const exhaustiveCheck: never = currentStepConfig;
-            throw new Error(`Unsupported step type: ${exhaustiveCheck}`);
-          }
+      const configKey = currentStepConfig.path || currentStepConfig.key;
+      let currentValue = '';
+      switch (currentStepConfig.type) {
+        case StepType.Text:
+          currentValue = inputValue || values[configKey] || '';
+          break;
+        case StepType.Selection:
+          currentValue = values[configKey] || '';
+          break;
+        default: {
+          const _exhaustiveCheck: never = currentStepConfig;
+          throw new Error('Unsupported step type');
         }
-        if (currentValue) {
-          setValues({ ...values, [configKey]: currentValue });
-        }
+      }
+      if (currentValue) {
+        setValues({ ...values, [configKey]: currentValue });
       }
       // Save state before aborting
       handlers?.updateState({
@@ -341,8 +338,8 @@ export function Config<
         break;
       }
       default: {
-        const exhaustiveCheck: never = currentStepConfig;
-        throw new Error(`Unsupported step type: ${exhaustiveCheck}`);
+        const _exhaustiveCheck: never = currentStepConfig;
+        throw new Error('Unsupported step type');
       }
     }
 
@@ -458,8 +455,8 @@ export function Config<
         );
       }
       default: {
-        const exhaustiveCheck: never = stepConfig;
-        throw new Error(`Unsupported step type: ${exhaustiveCheck}`);
+        const _exhaustiveCheck: never = stepConfig;
+        throw new Error('Unsupported step type');
       }
     }
   };

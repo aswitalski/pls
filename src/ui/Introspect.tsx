@@ -19,7 +19,7 @@ const MIN_PROCESSING_TIME = 1000;
 
 export function Introspect({
   tasks,
-  state,
+  state: _state,
   status,
   service,
   children,
@@ -45,12 +45,6 @@ export function Introspect({
       return;
     }
 
-    // Skip processing if no service available
-    if (!service) {
-      setError('No service available');
-      return;
-    }
-
     let mounted = true;
 
     async function process(svc: typeof service) {
@@ -61,7 +55,7 @@ export function Introspect({
         const introspectAction = tasks[0]?.action || 'list capabilities';
 
         // Call introspect tool
-        const result = await svc!.processWithTool(
+        const result = await svc.processWithTool(
           introspectAction,
           'introspect'
         );
@@ -116,7 +110,7 @@ export function Introspect({
       }
     }
 
-    process(service);
+    void process(service);
 
     return () => {
       mounted = false;

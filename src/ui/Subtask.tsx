@@ -21,7 +21,7 @@ export function Subtask({
   label,
   command,
   status,
-  isActive,
+  isActive: _isActive,
   startTime,
   endTime,
   elapsed,

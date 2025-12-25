@@ -239,17 +239,15 @@ describe('Task component', () => {
       vi.mocked(executeCommand).mockImplementation(
         async () =>
           new Promise((resolve) =>
-            setTimeout(
-              () =>
-                resolve({
-                  description: 'Test',
-                  command: 'test-cmd',
-                  output: '',
-                  errors: '',
-                  result: ExecutionResult.Success,
-                }),
-              1000
-            )
+            setTimeout(() => {
+              resolve({
+                description: 'Test',
+                command: 'test-cmd',
+                output: '',
+                errors: '',
+                result: ExecutionResult.Success,
+              });
+            }, 1000)
           )
       );
 

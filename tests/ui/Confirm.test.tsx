@@ -4,8 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ComponentStatus } from '../../src/types/components.js';
 
-import { DebugLevel } from '../../src/services/configuration.js';
-
 import { Confirm } from '../../src/ui/Confirm.js';
 
 import { Keys } from '../test-utils.js';

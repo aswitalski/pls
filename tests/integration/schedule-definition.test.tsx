@@ -8,8 +8,8 @@ import {
 import { toolRegistry } from '../../src/services/registry.js';
 import { formatSkillsForPrompt } from '../../src/services/skills.js';
 import { handleRefinement } from '../../src/services/refinement.js';
-import { routeTasksWithConfirm } from '../../src/services/router.js';
-import type { ScheduledTask, Task, TaskType } from '../../src/types/types.js';
+import { TaskType } from '../../src/types/types.js';
+import type { ScheduledTask, Task } from '../../src/types/types.js';
 import type { Handlers } from '../../src/types/components.js';
 
 import {
@@ -74,7 +74,7 @@ describe('Define task flow', () => {
       // Verify we have exactly 1 DEFINE task
       const leafTasks = getAllLeafTasks(tasks);
       const defineTasks = leafTasks.filter(
-        (task) => task.type === 'define'
+        (task) => task.type === TaskType.Define
       ) as Task[];
       expect(defineTasks.length).toBe(1);
 

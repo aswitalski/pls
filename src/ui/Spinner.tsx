@@ -22,7 +22,9 @@ export function Spinner() {
       });
     }, INTERVAL);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, []);
 
   return <Text color={Palette.Cyan}>{FRAMES[frame]}</Text>;

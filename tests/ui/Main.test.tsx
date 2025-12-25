@@ -243,7 +243,7 @@ describe('Main component queue-based architecture', () => {
       // Mock createAnthropicService to throw non-Error object
       vi.spyOn(anthropicModule, 'createAnthropicService').mockImplementation(
         () => {
-          throw 'String error'; // eslint-disable-line no-throw-literal
+          throw 'String error';
         }
       );
 

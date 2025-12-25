@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Box, Static, Text } from 'ink';
+import { Box, Static } from 'ink';
 
 import {
   BaseState,

@@ -39,19 +39,13 @@ export function Answer({
       return;
     }
 
-    // Skip processing if no service available
-    if (!service) {
-      setError('No service available');
-      return;
-    }
-
     let mounted = true;
 
     async function process(svc: typeof service) {
       try {
         // Call answer tool with minimum processing time for UX polish
         const result = await withMinimumTime(
-          () => svc!.processWithTool(question, 'answer'),
+          () => svc.processWithTool(question, 'answer'),
           MINIMUM_PROCESSING_TIME
         );
 
@@ -83,7 +77,7 @@ export function Answer({
       }
     }
 
-    process(service);
+    void process(service);
 
     return () => {
       mounted = false;

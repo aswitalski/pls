@@ -7,6 +7,7 @@ import {
 } from '../../src/services/configuration.js';
 import { toolRegistry } from '../../src/services/registry.js';
 import { formatSkillsForPrompt } from '../../src/services/skills.js';
+import { TaskType } from '../../src/types/types.js';
 import type { ScheduledTask } from '../../src/types/types.js';
 
 import {
@@ -252,7 +253,9 @@ describe('Variant resolution', () => {
       expect(leafTasks.length).toBe(3);
 
       // All tasks should have gamma variant
-      const executeTasks = leafTasks.filter((task) => task.type === 'execute');
+      const executeTasks = leafTasks.filter(
+        (task) => task.type === TaskType.Execute
+      );
       expect(executeTasks.length).toBe(3);
 
       executeTasks.forEach((task) => {

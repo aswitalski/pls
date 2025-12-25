@@ -7,6 +7,7 @@ import {
 } from '../../src/services/configuration.js';
 import { toolRegistry } from '../../src/services/registry.js';
 import { formatSkillsForPrompt } from '../../src/services/skills.js';
+import { TaskType } from '../../src/types/types.js';
 import type { ScheduledTask } from '../../src/types/types.js';
 
 import {
@@ -75,7 +76,9 @@ describe('Complex workflows and sequential requests', () => {
       expect(leafTasks.length).toBe(6);
 
       // Verify all tasks are execute type
-      const executeTasks = leafTasks.filter((task) => task.type === 'execute');
+      const executeTasks = leafTasks.filter(
+        (task) => task.type === TaskType.Execute
+      );
       expect(executeTasks.length).toBe(leafTasks.length);
 
       // Verify we have tasks from both Build Project and Deploy App
@@ -158,9 +161,11 @@ describe('Complex workflows and sequential requests', () => {
 
       // Verify we have answer and execute tasks
       const answerTasks = leafTasks.filter(
-        (task) => task.type === 'answer' || task.type === 'report'
+        (task) => task.type === TaskType.Answer || task.type === TaskType.Report
       );
-      const executeTasks = leafTasks.filter((task) => task.type === 'execute');
+      const executeTasks = leafTasks.filter(
+        (task) => task.type === TaskType.Execute
+      );
 
       expect(answerTasks.length).toBe(2); // Exactly 2 answer tasks (rumination + tdd)
       expect(executeTasks.length).toBe(3); // Exactly 3 execute tasks (navigate + generate + compile)

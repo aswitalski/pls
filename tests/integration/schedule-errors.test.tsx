@@ -7,6 +7,7 @@ import {
 } from '../../src/services/configuration.js';
 import { toolRegistry } from '../../src/services/registry.js';
 import { formatSkillsForPrompt } from '../../src/services/skills.js';
+import { TaskType } from '../../src/types/types.js';
 import type { ScheduledTask } from '../../src/types/types.js';
 
 import {
@@ -162,11 +163,15 @@ describe('Error handling and edge cases', () => {
       expect(leafTasks.length).toBe(2);
 
       // First should be execute (navigate)
-      const executeTask = leafTasks.find((task) => task.type === 'execute');
+      const executeTask = leafTasks.find(
+        (task) => task.type === TaskType.Execute
+      );
       expect(executeTask).toBeDefined();
 
       // Should also have ignore for "reticulate splines"
-      const ignoreTask = leafTasks.find((task) => task.type === 'ignore');
+      const ignoreTask = leafTasks.find(
+        (task) => task.type === TaskType.Ignore
+      );
       expect(ignoreTask).toBeDefined();
       expect(ignoreTask?.action).toMatch(/reticulate|spline/i);
     },
@@ -224,7 +229,7 @@ describe('Error handling and edge cases', () => {
       // CRITICAL: Every single leaf task must have a type field
       // Expected: 1 answer + 3 build + 1 navigate + 1 introspect = 6 tasks
       expect(leafTasks.length).toBe(6);
-      leafTasks.forEach((task, index) => {
+      leafTasks.forEach((task) => {
         expect(task.type).toBeDefined();
         expect(task.type).toBeTruthy();
         expect(task.action).toBeTruthy();

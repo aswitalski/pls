@@ -133,7 +133,7 @@ export const Main = ({ app, command }: MainProps) => {
         }
       };
 
-      const handleConfigAborted = (operation: string) => {
+      const handleConfigAborted = (_operation: string) => {
         // Config was cancelled
       };
 

@@ -14,7 +14,11 @@ const __dirname = dirname(__filename);
 
 // Get package info
 const packageJsonPath = join(__dirname, '../package.json');
-const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as {
+  name: string;
+  version: string;
+  description: string;
+};
 
 // Check if running from development (symlinked) or production
 // In dev, package.json is directly in parent dir and src/ exists

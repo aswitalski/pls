@@ -21,7 +21,7 @@ describe('Skills integration - real-life scenarios', () => {
 
   beforeEach(() => {
     originalHome = process.env.HOME;
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+
     tempHome = join(tmpdir(), `pls-skills-integration-${Date.now()}`);
     mkdirSync(tempHome, { recursive: true });
     process.env.HOME = tempHome;

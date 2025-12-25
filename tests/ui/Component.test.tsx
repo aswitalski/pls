@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  ComponentDefinition,
-  ComponentStatus,
-} from '../../src/types/components.js';
+import { ComponentDefinition } from '../../src/types/components.js';
 import {
   App,
   ComponentName,

@@ -5,7 +5,6 @@ import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Command } from '../../src/ui/Command.js';
-import { DebugLevel } from '../../src/services/configuration.js';
 import {
   Keys,
   createMockAnthropicService,
@@ -16,9 +15,6 @@ const { Escape } = Keys;
 
 // Mock service for all tests
 const mockService = createMockAnthropicService();
-
-// Mock onAborted function for all tests
-const mockOnAborted = vi.fn();
 
 describe('Command component error handling', () => {
   describe('Error display', () => {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Text } from 'ink';
+import { Box } from 'ink';
 
 import { ComponentStatus, ScheduleProps } from '../types/components.js';
 import { ScheduledTask, Task, TaskType } from '../types/types.js';
@@ -59,7 +59,7 @@ function taskToListItem(
       const planColors = getTaskColors(TaskType.Schedule, isCurrent);
       return {
         description: {
-          text: String(option),
+          text: option,
           color: colors.description,
           highlightedColor: planColors.description,
         },
@@ -145,7 +145,7 @@ export function Schedule({
       // Complete the selection phase - it goes to timeline
       // Callback will create a new Plan showing refined tasks (pending) + Confirm (active)
       handlers?.completeActive();
-      onSelectionConfirmed(concreteTasks);
+      void onSelectionConfirmed(concreteTasks);
     }
   }, [
     isActive,
@@ -209,7 +209,7 @@ export function Schedule({
               // This is a Define task - only include the selected option
               const options = task.params.options as string[];
               const selectedIndex = newCompletedSelections[defineGroupIndex];
-              const selectedOption = String(options[selectedIndex]);
+              const selectedOption = options[selectedIndex];
 
               // Use Execute as default - LLM will properly classify during refinement
               refinedTasks.push({
@@ -230,7 +230,7 @@ export function Schedule({
             // Complete the selection phase - it goes to timeline
             // Callback will create a new Plan showing refined tasks (pending) + Confirm (active)
             handlers?.completeActive();
-            onSelectionConfirmed(refinedTasks);
+            void onSelectionConfirmed(refinedTasks);
           } else {
             // No selection callback, just complete normally
             handlers?.completeActive();

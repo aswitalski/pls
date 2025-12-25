@@ -124,7 +124,6 @@ describe('Schedule component', () => {
 
       // Initially, parent has arrow
       let output = lastFrame();
-      const arrowCountBefore = (output!.match(/→/g) || []).length;
 
       // Press down arrow to highlight first child
       stdin.write(ArrowDown);

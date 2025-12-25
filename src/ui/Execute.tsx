@@ -7,7 +7,6 @@ import {
   TaskInfo,
 } from '../types/components.js';
 
-import { ExecuteCommand } from '../services/anthropic.js';
 import { Colors, getTextColor } from '../services/colors.js';
 import { addDebugToTimeline } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
@@ -99,11 +98,6 @@ export function Execute({
       return;
     }
 
-    if (!service) {
-      setError('No service available');
-      return;
-    }
-
     let mounted = true;
 
     async function process(svc: typeof service) {
@@ -125,7 +119,7 @@ export function Execute({
           .join('\n');
 
         // Call execute tool to get commands
-        const result = await svc!.processWithTool(taskDescriptions, 'execute');
+        const result = await svc.processWithTool(taskDescriptions, 'execute');
 
         await ensureMinimumTime(startTime, MINIMUM_PROCESSING_TIME);
 
@@ -199,7 +193,7 @@ export function Execute({
       }
     }
 
-    process(service);
+    void process(service);
 
     return () => {
       mounted = false;
@@ -235,7 +229,7 @@ export function Execute({
       } else {
         // All tasks complete
         const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
-        const summaryText = summary?.trim() || 'Execution completed';
+        const summaryText = summary.trim() || 'Execution completed';
         const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
         setCompletionMessage(completion);
         handlers?.updateState({
@@ -256,7 +250,7 @@ export function Execute({
   const handleTaskError = useCallback(
     (index: number, error: string, elapsed: number) => {
       const task = taskInfos[index];
-      const isCritical = task?.command.critical !== false; // Default to true
+      const isCritical = task.command.critical !== false; // Default to true
 
       // Update task with elapsed time and failed status
       const updatedTaskInfos = taskInfos.map((task, i) =>
@@ -301,7 +295,7 @@ export function Execute({
             (sum, time) => sum + time,
             0
           );
-          const summaryText = summary?.trim() || 'Execution completed';
+          const summaryText = summary.trim() || 'Execution completed';
           const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
           setCompletionMessage(completion);
           handlers?.updateState({

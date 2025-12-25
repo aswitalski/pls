@@ -27,7 +27,6 @@ vi.mock('../../src/services/timing.js', () => ({
 vi.mock('../../src/ui/Config.js', () => ({
   Config: ({
     onFinished,
-    steps,
   }: {
     onFinished: (config: Record<string, string>) => void;
     steps: unknown[];

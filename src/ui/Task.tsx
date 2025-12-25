@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ExecuteCommand } from '../services/anthropic.js';
 import {
   CommandOutput,
+  ExecutionResult,
   ExecutionStatus,
   executeCommand,
 } from '../services/shell.js';
@@ -52,7 +53,9 @@ export function Task({
       });
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, [status, startTime]);
 
   // Execute command when becoming active
@@ -84,12 +87,12 @@ export function Task({
         const taskDuration = calculateElapsed(start);
         setElapsed(taskDuration);
         setStatus(
-          output.result === 'success'
+          output.result === ExecutionResult.Success
             ? ExecutionStatus.Success
             : ExecutionStatus.Failed
         );
 
-        if (output.result === 'success') {
+        if (output.result === ExecutionResult.Success) {
           onComplete?.(index, output, taskDuration);
         } else {
           onError?.(index, output.errors || 'Command failed', taskDuration);
@@ -110,12 +113,11 @@ export function Task({
       }
     }
 
-    execute();
+    void execute();
 
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
   // Handle abort when task becomes inactive while running

@@ -7,6 +7,7 @@ import {
 } from '../../src/services/configuration.js';
 import { toolRegistry } from '../../src/services/registry.js';
 import { formatSkillsForPrompt } from '../../src/services/skills.js';
+import { TaskType } from '../../src/types/types.js';
 import type { ScheduledTask } from '../../src/types/types.js';
 
 import {
@@ -66,7 +67,7 @@ describe('Task types', () => {
       expect(leafTasks.length).toBe(1);
 
       const introspectTask = leafTasks.find(
-        (task) => task.type === 'introspect'
+        (task) => task.type === TaskType.Introspect
       );
       expect(introspectTask).toBeDefined();
       expect(introspectTask?.action).toBeTruthy();
@@ -115,7 +116,9 @@ describe('Task types', () => {
 
       // Should have at least 1 answer task (may break down into multiple subtopics)
       expect(leafTasks.length).toBeGreaterThanOrEqual(1);
-      const answerTasks = leafTasks.filter((task) => task.type === 'answer');
+      const answerTasks = leafTasks.filter(
+        (task) => task.type === TaskType.Answer
+      );
       expect(answerTasks.length).toBeGreaterThanOrEqual(1);
       answerTasks.forEach((task) => {
         expect(task.action).toBeTruthy();
@@ -216,7 +219,9 @@ describe('Task types', () => {
 
       // Should have exactly 1 configure task
       expect(leafTasks.length).toBe(1);
-      const configTask = leafTasks.find((task) => task.type === 'configure');
+      const configTask = leafTasks.find(
+        (task) => task.type === TaskType.Config
+      );
       expect(configTask).toBeDefined();
       expect(configTask?.action).toBeTruthy();
     },

@@ -7,6 +7,7 @@ import {
 } from '../../src/services/configuration.js';
 import { toolRegistry } from '../../src/services/registry.js';
 import { formatSkillsForPrompt } from '../../src/services/skills.js';
+import { TaskType } from '../../src/types/types.js';
 import type { ScheduledTask } from '../../src/types/types.js';
 
 import {
@@ -146,8 +147,12 @@ describe('Skill reference expansion', () => {
 
       // Check if LLM detected the circular reference
       // It should either create ignore task or limit nesting depth
-      const ignoreTasks = leafTasks.filter((task) => task.type === 'ignore');
-      const executeTasks = leafTasks.filter((task) => task.type === 'execute');
+      const ignoreTasks = leafTasks.filter(
+        (task) => task.type === TaskType.Ignore
+      );
+      const executeTasks = leafTasks.filter(
+        (task) => task.type === TaskType.Execute
+      );
 
       // Either has ignore task OR limited execute tasks (not infinite)
       if (ignoreTasks.length > 0) {
@@ -209,8 +214,12 @@ describe('Skill reference expansion', () => {
       expect(leafTasks.length).toBeGreaterThan(0);
 
       // Check if LLM detected the self-reference
-      const ignoreTasks = leafTasks.filter((task) => task.type === 'ignore');
-      const executeTasks = leafTasks.filter((task) => task.type === 'execute');
+      const ignoreTasks = leafTasks.filter(
+        (task) => task.type === TaskType.Ignore
+      );
+      const executeTasks = leafTasks.filter(
+        (task) => task.type === TaskType.Execute
+      );
 
       // Either has ignore task OR limited execute tasks (not infinite)
       if (ignoreTasks.length > 0) {
