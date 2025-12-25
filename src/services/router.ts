@@ -1,5 +1,6 @@
 import { Handlers } from '../types/components.js';
-import { FeedbackType, ScheduledTask, Task, TaskType } from '../types/types.js';
+import { asScheduledTasks } from '../types/guards.js';
+import { FeedbackType, Task, TaskType } from '../types/types.js';
 
 import { LLMService } from './anthropic.js';
 import {
@@ -111,8 +112,8 @@ export function routeTasksWithConfirm(
 function validateTaskTypes(tasks: Task[]): void {
   if (tasks.length === 0) return;
 
-  // Cast to ScheduledTask to access subtasks property
-  const scheduledTasks = tasks as unknown as ScheduledTask[];
+  // Convert to ScheduledTask to access subtasks property
+  const scheduledTasks = asScheduledTasks(tasks);
 
   // Check each Group task's subtasks for uniform types
   for (const task of scheduledTasks) {
@@ -150,7 +151,7 @@ function executeTasksAfterConfirm(
     return;
   }
 
-  const scheduledTasks = tasks as unknown as ScheduledTask[];
+  const scheduledTasks = asScheduledTasks(tasks);
 
   // Process tasks in order, preserving Group boundaries
   // Track consecutive standalone tasks to group them by type
