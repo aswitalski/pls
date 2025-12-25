@@ -75,7 +75,7 @@ describe('Anthropic service - Tool-based processing', () => {
       ]);
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-haiku-4-5',
           max_tokens: 1024,
           tools: expect.any(Array) as unknown[],
           tool_choice: { type: 'any' },

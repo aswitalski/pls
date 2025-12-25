@@ -104,8 +104,8 @@ export class AnthropicService implements LLMService {
   private client: Anthropic;
   private model: string;
 
-  constructor(key: string, model = 'claude-haiku-4-5-20251001') {
-    this.client = new Anthropic({ apiKey: key });
+  constructor(key: string, model = 'claude-haiku-4-5', timeout = 30000) {
+    this.client = new Anthropic({ apiKey: key, timeout });
     this.model = model;
   }
 
