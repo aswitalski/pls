@@ -177,6 +177,7 @@ flowchart TD
 ```
 
 **Task Types:**
+
 - `config` - Configuration changes, settings updates
 - `schedule` - Planning or breaking down tasks
 - `execute` - Shell commands, running programs, processing operations
@@ -185,6 +186,9 @@ flowchart TD
 - `report` - Generating summaries, displaying results
 - `define` - Presenting options when request is ambiguous
 - `ignore` - Request too vague or no matching skill
+- `select` - User selection from options
+- `discard` - Tasks to be discarded
+- `group` - Hierarchical container for organizing related subtasks
 
 **CONFIGURE Tool Delegation:**
 
@@ -199,6 +203,7 @@ prompts:
    defaults to 'app') and returns specific config keys with validation rules
 
 **Example:**
+
 ```
 User request: "configure my API settings"
 SCHEDULE returns: [{ type: "configure", params: { query: "api" } }]
@@ -214,7 +219,7 @@ requirements rather than generic placeholders.
 
 ## Schedule Selection and Refinement Flow
 
-**Trigger:** Plan contains one or more DEFINE tasks
+**Trigger:** Schedule contains one or more DEFINE tasks
 
 **Flow:**
 
@@ -232,8 +237,8 @@ requirements rather than generic placeholders.
 
 ```mermaid
 flowchart TD
-    Start([Plan with DEFINE tasks]) --> DisplayPlan[Display Schedule component]
-    DisplayPlan --> UserNav[User navigates options<br/>Up/Down/Enter/Ctrl+C]
+    Start([Schedule with DEFINE tasks]) --> DisplaySchedule[Display Schedule component]
+    DisplaySchedule --> UserNav[User navigates options<br/>Up/Down/Enter/Ctrl+C]
 
     UserNav --> UserAction{User action}
     UserAction -->|Abort| ShowCancel[Show cancellation]
@@ -416,6 +421,7 @@ flowchart TD
 ```
 
 **Configuration Structure:**
+
 - Nested YAML in ~/.plsrc
 - Grouped by top-level sections
 - Supports dot-notation paths (e.g., product.alpha.path)
@@ -531,6 +537,7 @@ flowchart TD
 ```
 
 **Example:**
+
 ```
 User: "pls build alpha"
 Missing config: product.alpha.path
@@ -628,6 +635,7 @@ flowchart TD
 ```
 
 **Placeholder Types:**
+
 - `{section.property}` - Strict, direct lookup
 - `{section.VARIANT.property}` - Variant resolved by LLM first
 - `[Skill Name]` - Inject another skill's execution steps
@@ -661,6 +669,7 @@ flowchart TD
 ```
 
 **Error Types:**
+
 - LLM API errors (network, authentication, rate limits)
 - Configuration errors (invalid values, missing files)
 - Execution errors (command failures, shell errors)
@@ -707,6 +716,7 @@ flowchart TD
 ```
 
 **Abort Points:**
+
 - Configuration input
 - Plan selection
 - Execution confirmation
@@ -718,20 +728,23 @@ flowchart TD
 
 ## Component Lifecycle
 
-All flows use a queue-based execution model with three states:
+All flows use a queue-based execution model with four states:
 
-- **Queue:** Pending component definitions (first item is active)
-- **Active:** Currently executing component
+- **Queued:** Pending component definitions waiting in queue
+- **Active:** Currently executing component (first item in queue)
+- **Pending:** Parked component awaiting subsequent interaction
 - **Timeline:** Completed component definitions (visible history)
 
 **Component States:**
+
 - **Stateless:** Move to timeline immediately
-  - Welcome, Message, Feedback, Report
+  - Welcome, Message, Feedback, Report, Debug
 - **Stateful:** Wait for completion before moving to timeline
-  - Config, Command, Plan, Confirm, Introspect, Answer, Execute, Validate,
+  - Config, Command, Schedule, Confirm, Introspect, Answer, Execute, Validate,
     Refinement
 
 **Lifecycle Events:**
+
 1. Component added to queue
 2. If stateless → Move to timeline, process next
 3. If stateful → Render and wait for completion
@@ -771,6 +784,7 @@ flowchart TD
 ### Welcome → Config → Command
 
 First-time user experience:
+
 1. No config exists
 2. Show Welcome screen
 3. Show config required message
@@ -794,9 +808,10 @@ flowchart LR
     style Exec fill:#e1ffe1
 ```
 
-### Command → Plan → Refinement → Plan → Confirm → Execute
+### Command → Schedule → Refinement → Schedule → Confirm → Execute
 
 Complex request with ambiguity:
+
 1. User provides ambiguous request
 2. Command creates initial schedule with DEFINE tasks
 3. User selects from options
@@ -808,11 +823,11 @@ Complex request with ambiguity:
 ```mermaid
 flowchart LR
     Start([pls deploy]) --> Command[Command]
-    Command --> Plan1[Schedule:<br/>DEFINE tasks]
-    Plan1 --> UserSelect[User selects<br/>option]
+    Command --> Schedule1[Schedule:<br/>DEFINE tasks]
+    Schedule1 --> UserSelect[User selects<br/>option]
     UserSelect --> Refine[Refinement]
-    Refine --> Plan2[Schedule:<br/>Concrete tasks]
-    Plan2 --> Confirm[Confirm]
+    Refine --> Schedule2[Schedule:<br/>Concrete tasks]
+    Schedule2 --> Confirm[Confirm]
     Confirm --> Execute[Execute]
     Execute --> Exit[Exit]
 
@@ -823,6 +838,7 @@ flowchart LR
 ### Execute → Validate → Config → Execute
 
 Missing configuration during execution:
+
 1. Execute tasks require config
 2. Validator detects missing paths
 3. Validate generates contextual descriptions
