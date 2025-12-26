@@ -268,7 +268,6 @@ describe('Main component queue-based architecture', () => {
   describe('Confirmation flow', () => {
     it('shows confirmation after plan without Define tasks', async () => {
       const componentsModule = await import('../../src/services/components.js');
-      const anthropicModule = await import('../../src/services/anthropic.js');
       const processModule = await import('../../src/services/process.js');
 
       // Mock exitApp to prevent process.exit
@@ -287,14 +286,19 @@ describe('Main component queue-based architecture', () => {
         }),
       };
 
-      vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
-        mockService as any
-      );
+      // Use dependency injection instead of module mocking
+      const mockServiceFactory = () => mockService as any;
 
       // Spy on createConfirmDefinition to verify it's called
       const confirmSpy = vi.spyOn(componentsModule, 'createConfirmDefinition');
 
-      render(<Main app={mockApp} command="test task" />);
+      render(
+        <Main
+          app={mockApp}
+          command="test task"
+          serviceFactory={mockServiceFactory}
+        />
+      );
 
       // Wait for async processing (Command -> Plan -> Confirm workflow)
       await new Promise((resolve) => setTimeout(resolve, WorkflowWait));

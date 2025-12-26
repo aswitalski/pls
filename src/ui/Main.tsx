@@ -3,10 +3,7 @@ import { useEffect, useState } from 'react';
 import { ComponentDefinition } from '../types/components.js';
 import { App, FeedbackType } from '../types/types.js';
 
-import {
-  AnthropicService,
-  createAnthropicService,
-} from '../services/anthropic.js';
+import { LLMService, createAnthropicService } from '../services/anthropic.js';
 import {
   createCommandDefinition,
   createConfigDefinitionWithKeys,
@@ -15,6 +12,7 @@ import {
   createWelcomeDefinition,
 } from '../services/components.js';
 import {
+  AnthropicConfig,
   DebugLevel,
   getConfigurationRequiredMessage,
   getMissingConfigKeys,
@@ -32,10 +30,15 @@ import { Workflow } from './Workflow.js';
 interface MainProps {
   app: App;
   command: string | null;
+  serviceFactory?: (config: AnthropicConfig) => LLMService;
 }
 
-export const Main = ({ app, command }: MainProps) => {
-  const [service, setService] = useState<AnthropicService | null>(null);
+export const Main = ({
+  app,
+  command,
+  serviceFactory = createAnthropicService,
+}: MainProps) => {
+  const [service, setService] = useState<LLMService | null>(null);
 
   const [initialQueue, setInitialQueue] = useState<
     ComponentDefinition[] | null
@@ -83,7 +86,7 @@ export const Main = ({ app, command }: MainProps) => {
       // Config exists - create service immediately
       try {
         const config = loadConfig();
-        const newService = createAnthropicService(config.anthropic);
+        const newService = serviceFactory(config.anthropic);
         setService(newService);
       } catch (error) {
         // Service creation failed - show error and exit
@@ -95,7 +98,7 @@ export const Main = ({ app, command }: MainProps) => {
       }
     }
     // If config is missing, service will be created after config completes
-  }, [service]);
+  }, [service, serviceFactory]);
 
   // Initialize queue after service is ready
   useEffect(() => {
@@ -121,7 +124,7 @@ export const Main = ({ app, command }: MainProps) => {
 
           // Load config and create service
           const newConfig = loadConfig();
-          const newService = createAnthropicService(newConfig.anthropic);
+          const newService = serviceFactory(newConfig.anthropic);
           setService(newService);
         } catch (error) {
           // Config save failed
