@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
+import { homedir } from 'os';
 import { join } from 'path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
+import { MemoryFileSystem } from '../src/services/filesystem.js';
 import { validateExecuteTasks } from '../src/services/validator.js';
 import {
   expandSkillReferences,
@@ -12,31 +12,15 @@ import {
 } from '../src/services/skills.js';
 import { Task, TaskType } from '../src/types/types.js';
 
-import { safeRemoveDirectory } from './test-utils.js';
-
 describe('Skills integration - real-life scenarios', () => {
-  let originalHome: string | undefined;
-  let tempHome: string;
+  let fs: MemoryFileSystem;
   let skillsDir: string;
 
   beforeEach(() => {
-    originalHome = process.env.HOME;
-
-    tempHome = join(tmpdir(), `pls-skills-integration-${Date.now()}`);
-    mkdirSync(tempHome, { recursive: true });
-    process.env.HOME = tempHome;
-
-    const plsDir = join(tempHome, '.pls');
-    mkdirSync(plsDir, { recursive: true });
+    fs = new MemoryFileSystem();
+    const plsDir = join(homedir(), '.pls');
     skillsDir = join(plsDir, 'skills');
-    mkdirSync(skillsDir, { recursive: true });
-  });
-
-  afterEach(() => {
-    if (originalHome !== undefined) {
-      process.env.HOME = originalHome;
-    }
-    safeRemoveDirectory(tempHome);
+    fs.createDirectory(skillsDir, { recursive: true });
   });
 
   describe('Deploying to multiple environments', () => {
@@ -72,9 +56,9 @@ deployment:
 - ssh {deployment.VARIANT.server} "systemctl restart myapp"
 `;
 
-      writeFileSync(join(skillsDir, 'deploy.md'), deploySkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'deploy.md'), deploySkill);
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
       expect(skills).toHaveLength(1);
       expect(skills[0].name).toBe('Deploy Application');
       expect(skills[0].isValid).toBe(true);
@@ -102,11 +86,7 @@ deployment:
 - scp dist/* {deployment.prod.server}:{deployment.prod.path}
 `;
 
-      writeFileSync(
-        join(skillsDir, 'deploy-application.md'),
-        deploySkill,
-        'utf-8'
-      );
+      fs.writeFile(join(skillsDir, 'deploy-application.md'), deploySkill);
 
       const tasks: Task[] = [
         {
@@ -119,7 +99,7 @@ deployment:
         },
       ];
 
-      const result = validateExecuteTasks(tasks);
+      const result = validateExecuteTasks(tasks, fs);
 
       // Should detect exactly 2 missing config paths
       expect(result.missingConfig.length).toBe(2);
@@ -178,11 +158,11 @@ Build the project with tests
 - npm run build
 `;
 
-      writeFileSync(join(skillsDir, 'navigate.md'), navigateSkill, 'utf-8');
-      writeFileSync(join(skillsDir, 'test.md'), testSkill, 'utf-8');
-      writeFileSync(join(skillsDir, 'build.md'), buildSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'navigate.md'), navigateSkill);
+      fs.writeFile(join(skillsDir, 'test.md'), testSkill);
+      fs.writeFile(join(skillsDir, 'build.md'), buildSkill);
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
       expect(skills).toHaveLength(3);
 
       const buildSkillDef = skills.find((s) => s.name === 'Build Project');
@@ -235,10 +215,10 @@ References Skill A
 - [ Skill A ]
 `;
 
-      writeFileSync(join(skillsDir, 'skill-a.md'), skillA, 'utf-8');
-      writeFileSync(join(skillsDir, 'skill-b.md'), skillB, 'utf-8');
+      fs.writeFile(join(skillsDir, 'skill-a.md'), skillA);
+      fs.writeFile(join(skillsDir, 'skill-b.md'), skillB);
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
       const skillLookup = (name: string) =>
         skills.find((s) => s.name === name) || null;
 
@@ -295,11 +275,11 @@ References Skill A to complete the cycle
 - [ Skill A ]
 `;
 
-      writeFileSync(join(skillsDir, 'skill-a.md'), skillA, 'utf-8');
-      writeFileSync(join(skillsDir, 'skill-b.md'), skillB, 'utf-8');
-      writeFileSync(join(skillsDir, 'skill-c.md'), skillC, 'utf-8');
+      fs.writeFile(join(skillsDir, 'skill-a.md'), skillA);
+      fs.writeFile(join(skillsDir, 'skill-b.md'), skillB);
+      fs.writeFile(join(skillsDir, 'skill-c.md'), skillC);
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
       const skillLookup = (name: string) =>
         skills.find((s) => s.name === name) || null;
 
@@ -332,9 +312,9 @@ TODO
 - echo "hello"
 `;
 
-      writeFileSync(join(skillsDir, 'incomplete.md'), incompleteSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'incomplete.md'), incompleteSkill);
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
       expect(skills).toHaveLength(1);
       expect(skills[0].isValid).toBe(true);
       expect(skills[0].isIncomplete).toBe(true);
@@ -354,9 +334,9 @@ Short
 - echo "hello"
 `;
 
-      writeFileSync(join(skillsDir, 'incomplete.md'), incompleteSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'incomplete.md'), incompleteSkill);
 
-      const markedSkills = loadSkillsWithValidation();
+      const markedSkills = loadSkillsWithValidation(fs);
       expect(markedSkills).toHaveLength(1);
       expect(markedSkills[0]).toContain('(INCOMPLETE)');
       expect(markedSkills[0]).toContain('Quick Task (INCOMPLETE)');
@@ -373,9 +353,9 @@ Missing execution section
 - Do something
 `;
 
-      writeFileSync(join(skillsDir, 'invalid.md'), invalidSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'invalid.md'), invalidSkill);
 
-      const markedSkills = loadSkillsWithValidation();
+      const markedSkills = loadSkillsWithValidation(fs);
       expect(markedSkills).toHaveLength(1);
       expect(markedSkills[0]).toContain('(INCOMPLETE)');
       expect(markedSkills[0]).toContain('Invalid Skill (INCOMPLETE)');
@@ -395,14 +375,14 @@ This is a well-documented skill with sufficient description
 - echo "hello"
 `;
 
-      writeFileSync(join(skillsDir, 'complete.md'), completeSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'complete.md'), completeSkill);
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
       expect(skills).toHaveLength(1);
       expect(skills[0].isValid).toBe(true);
       expect(skills[0].isIncomplete).toBeUndefined();
 
-      const markedSkills = loadSkillsWithValidation();
+      const markedSkills = loadSkillsWithValidation(fs);
       expect(markedSkills[0]).not.toContain('(INCOMPLETE)');
     });
   });
@@ -420,7 +400,7 @@ Missing execution
 - Step 2
 `;
 
-      writeFileSync(join(skillsDir, 'broken-skill.md'), invalidSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'broken-skill.md'), invalidSkill);
 
       const tasks: Task[] = [
         {
@@ -432,7 +412,7 @@ Missing execution
         },
       ];
 
-      const result = validateExecuteTasks(tasks);
+      const result = validateExecuteTasks(tasks, fs);
 
       expect(result.validationErrors).toHaveLength(1);
       expect(result.validationErrors[0].skill).toBe('Broken Skill');
@@ -459,11 +439,7 @@ Steps and execution counts do not match
 - command 2
 `;
 
-      writeFileSync(
-        join(skillsDir, 'mismatched-skill.md'),
-        mismatchedSkill,
-        'utf-8'
-      );
+      fs.writeFile(join(skillsDir, 'mismatched-skill.md'), mismatchedSkill);
 
       const tasks: Task[] = [
         {
@@ -475,7 +451,7 @@ Steps and execution counts do not match
         },
       ];
 
-      const result = validateExecuteTasks(tasks);
+      const result = validateExecuteTasks(tasks, fs);
 
       expect(result.validationErrors).toHaveLength(1);
       expect(result.validationErrors[0].issues[0]).toContain(
@@ -518,9 +494,9 @@ app:
 - curl -f {app.VARIANT.server}/health || exit 1
 `;
 
-      writeFileSync(join(skillsDir, 'deploy-env.md'), deploySkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'deploy-env.md'), deploySkill);
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
       const skill = skills[0];
 
       expect(skill.name).toBe('Deploy To Environment');
@@ -562,9 +538,9 @@ database:
 - rm backup.sql
 `;
 
-      writeFileSync(join(skillsDir, 'migrate.md'), migrationSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'migrate.md'), migrationSkill);
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
       const skill = skills[0];
 
       expect(skill.name).toBe('Run Database Migration');
@@ -597,9 +573,9 @@ Initialize development environment with all necessary tools and dependencies
 - Configure: cp .env.example .env
 `;
 
-      writeFileSync(join(skillsDir, 'setup.md'), labeledSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'setup.md'), labeledSkill);
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
       const skill = skills[0];
 
       expect(skill.isValid).toBe(true);
@@ -646,12 +622,8 @@ Connect and run database query
 - psql -c "SELECT * FROM users"
 `;
 
-      writeFileSync(
-        join(skillsDir, 'connect-to-database.md'),
-        baseSkill,
-        'utf-8'
-      );
-      writeFileSync(join(skillsDir, 'run-query.md'), wrapperSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'connect-to-database.md'), baseSkill);
+      fs.writeFile(join(skillsDir, 'run-query.md'), wrapperSkill);
 
       const tasks: Task[] = [
         {
@@ -664,7 +636,7 @@ Connect and run database query
         },
       ];
 
-      const result = validateExecuteTasks(tasks);
+      const result = validateExecuteTasks(tasks, fs);
 
       // Should detect missing config from nested reference
       expect(result.missingConfig.length).toBeGreaterThan(0);
@@ -689,7 +661,7 @@ Build the second version of the project
 - npm run build:v2
 `;
 
-      writeFileSync(join(skillsDir, 'build-project-2.md'), buildSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'build-project-2.md'), buildSkill);
 
       const tasks: Task[] = [
         {
@@ -701,7 +673,7 @@ Build the second version of the project
         },
       ];
 
-      const result = validateExecuteTasks(tasks);
+      const result = validateExecuteTasks(tasks, fs);
 
       expect(result.validationErrors).toHaveLength(0);
       expect(result.missingConfig).toHaveLength(0);
@@ -736,12 +708,8 @@ Deploy the web application after setup
 - npm run deploy
 `;
 
-      writeFileSync(
-        join(skillsDir, 'setup-nodejs-environment.md'),
-        setupSkill,
-        'utf-8'
-      );
-      writeFileSync(join(skillsDir, 'deploy-web-app.md'), deploySkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'setup-nodejs-environment.md'), setupSkill);
+      fs.writeFile(join(skillsDir, 'deploy-web-app.md'), deploySkill);
 
       const tasks: Task[] = [
         {
@@ -753,7 +721,7 @@ Deploy the web application after setup
         },
       ];
 
-      const result = validateExecuteTasks(tasks);
+      const result = validateExecuteTasks(tasks, fs);
 
       expect(result.validationErrors).toHaveLength(0);
       expect(result.missingConfig).toHaveLength(0);
@@ -770,9 +738,9 @@ A skill that relies on filename for its name
 - echo "running"
 `;
 
-      writeFileSync(join(skillsDir, 'auto-named.md'), simpleSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'auto-named.md'), simpleSkill);
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
 
       expect(skills).toHaveLength(1);
       expect(skills[0].key).toBe('auto-named');
@@ -808,8 +776,8 @@ Run full CI pipeline
 - npm run build
 `;
 
-      writeFileSync(join(skillsDir, 'run-tests.md'), baseSkill, 'utf-8');
-      writeFileSync(join(skillsDir, 'ci-pipeline.md'), wrapperSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'run-tests.md'), baseSkill);
+      fs.writeFile(join(skillsDir, 'ci-pipeline.md'), wrapperSkill);
 
       const tasks: Task[] = [
         {
@@ -821,7 +789,7 @@ Run full CI pipeline
         },
       ];
 
-      const result = validateExecuteTasks(tasks);
+      const result = validateExecuteTasks(tasks, fs);
 
       expect(result.validationErrors).toHaveLength(0);
     });
@@ -830,25 +798,25 @@ Run full CI pipeline
   describe('Skills directory management', () => {
     it('returns correct skills directory path', () => {
       const dir = getSkillsDirectory();
-      expect(dir).toBe(join(tempHome, '.pls', 'skills'));
+      expect(dir).toBe(join(homedir(), '.pls', 'skills'));
     });
 
     it('handles missing skills directory gracefully', () => {
-      // Remove skills directory
-      safeRemoveDirectory(skillsDir);
+      // Create a fresh MemoryFileSystem without the skills directory
+      const emptyFs = new MemoryFileSystem();
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(emptyFs);
       expect(skills).toEqual([]);
     });
 
     it('handles empty skills directory', () => {
       // Skills directory exists but contains no .md files
       // (it's already empty from beforeEach, so just verify)
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
       expect(skills).toEqual([]);
 
       // Verify the directory itself exists
-      expect(existsSync(skillsDir)).toBe(true);
+      expect(fs.exists(skillsDir)).toBe(true);
     });
 
     it('loads multiple skills with mixed validity', () => {
@@ -888,11 +856,11 @@ Missing execution
 - Do something
 `;
 
-      writeFileSync(join(skillsDir, 'valid.md'), validSkill, 'utf-8');
-      writeFileSync(join(skillsDir, 'incomplete.md'), incompleteSkill, 'utf-8');
-      writeFileSync(join(skillsDir, 'invalid.md'), invalidSkill, 'utf-8');
+      fs.writeFile(join(skillsDir, 'valid.md'), validSkill);
+      fs.writeFile(join(skillsDir, 'incomplete.md'), incompleteSkill);
+      fs.writeFile(join(skillsDir, 'invalid.md'), invalidSkill);
 
-      const skills = loadSkillDefinitions();
+      const skills = loadSkillDefinitions(fs);
       expect(skills).toHaveLength(3);
 
       const valid = skills.find((s) => s.name === 'Valid Skill');

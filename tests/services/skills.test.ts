@@ -1,7 +1,6 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
+import { homedir } from 'os';
 import { join } from 'path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   expandSkillReferences,
@@ -13,10 +12,9 @@ import {
   parseSkillReference,
   validateNoCycles,
 } from '../../src/services/skills.js';
+import { MemoryFileSystem } from '../../src/services/filesystem.js';
 import { displayNameToKey } from '../../src/services/parser.js';
 import { SkillDefinition } from '../../src/types/skills.js';
-
-import { safeRemoveDirectory } from '../test-utils.js';
 
 /**
  * Helper to create skill lookup function for tests
@@ -32,31 +30,15 @@ function createTestLookup(
 }
 
 describe('Skills service', () => {
-  let originalHome: string | undefined;
-  let tempHome: string;
+  let fs: MemoryFileSystem;
+  let skillsDir: string;
 
   beforeEach(() => {
-    // Mock HOME to point to temp directory
-    originalHome = process.env.HOME;
-
-    tempHome = join(tmpdir(), `pls-home-test-${Date.now()}`);
-    mkdirSync(tempHome, { recursive: true });
-    process.env.HOME = tempHome;
-
-    // Create .pls/skills directory structure
-    const plsDir = join(tempHome, '.pls');
-    mkdirSync(plsDir, { recursive: true });
-    mkdirSync(join(plsDir, 'skills'), { recursive: true });
-  });
-
-  afterEach(() => {
-    // Restore original HOME first
-    if (originalHome !== undefined) {
-      process.env.HOME = originalHome;
-    }
-
-    // Clean up temp directory using safe utility
-    safeRemoveDirectory(tempHome);
+    fs = new MemoryFileSystem();
+    // Create .pls/skills directory structure in memory
+    const plsDir = join(homedir(), '.pls');
+    skillsDir = join(plsDir, 'skills');
+    fs.createDirectory(skillsDir, { recursive: true });
   });
 
   describe('Getting skills directory', () => {
@@ -69,23 +51,19 @@ describe('Skills service', () => {
 
   describe('Loading skills', () => {
     it('returns empty array when skills directory does not exist', () => {
-      // Remove the skills directory
-      const skillsDir = getSkillsDirectory();
-      if (existsSync(skillsDir)) {
-        rmSync(skillsDir, { recursive: true, force: true });
-      }
+      // Create a fresh MemoryFileSystem without the skills directory
+      const emptyFs = new MemoryFileSystem();
 
-      const skills = loadSkills();
+      const skills = loadSkills(emptyFs);
       expect(skills).toEqual([]);
     });
 
     it('returns empty array when skills directory is empty', () => {
-      const skills = loadSkills();
+      const skills = loadSkills(fs);
       expect(skills).toEqual([]);
     });
 
     it('loads single skill file', () => {
-      const skillsDir = getSkillsDirectory();
       const skillContent = `### Name
 Build Opera
 
@@ -95,47 +73,41 @@ Run Opera Desktop browser build
 ### Steps
 Navigate to the project directory, run the project generation script, run the compilation`;
 
-      writeFileSync(join(skillsDir, 'opera.md'), skillContent, 'utf-8');
+      fs.writeFile(join(skillsDir, 'opera.md'), skillContent);
 
-      const skills = loadSkills();
+      const skills = loadSkills(fs);
       expect(skills).toHaveLength(1);
       expect(skills[0]).toEqual({ key: 'opera', content: skillContent });
     });
 
     it('loads multiple skill files', () => {
-      const skillsDir = getSkillsDirectory();
-
       const skill1 = 'Skill 1 content';
       const skill2 = 'Skill 2 content';
 
-      writeFileSync(join(skillsDir, 'skill1.md'), skill1, 'utf-8');
-      writeFileSync(join(skillsDir, 'skill2.md'), skill2, 'utf-8');
+      fs.writeFile(join(skillsDir, 'skill1.md'), skill1);
+      fs.writeFile(join(skillsDir, 'skill2.md'), skill2);
 
-      const skills = loadSkills();
+      const skills = loadSkills(fs);
       expect(skills).toHaveLength(2);
       expect(skills).toContainEqual({ key: 'skill1', content: skill1 });
       expect(skills).toContainEqual({ key: 'skill2', content: skill2 });
     });
 
     it('ignores non-markdown files', () => {
-      const skillsDir = getSkillsDirectory();
+      fs.writeFile(join(skillsDir, 'skill.md'), 'Skill content');
+      fs.writeFile(join(skillsDir, 'readme.txt'), 'Not a skill');
+      fs.writeFile(join(skillsDir, 'data.json'), '{}');
 
-      writeFileSync(join(skillsDir, 'skill.md'), 'Skill content', 'utf-8');
-      writeFileSync(join(skillsDir, 'readme.txt'), 'Not a skill', 'utf-8');
-      writeFileSync(join(skillsDir, 'data.json'), '{}', 'utf-8');
-
-      const skills = loadSkills();
+      const skills = loadSkills(fs);
       expect(skills).toHaveLength(1);
       expect(skills[0]).toEqual({ key: 'skill', content: 'Skill content' });
     });
 
     it('handles both .md and .MD extensions', () => {
-      const skillsDir = getSkillsDirectory();
+      fs.writeFile(join(skillsDir, 'skill1.md'), 'Lowercase');
+      fs.writeFile(join(skillsDir, 'skill2.MD'), 'Uppercase');
 
-      writeFileSync(join(skillsDir, 'skill1.md'), 'Lowercase', 'utf-8');
-      writeFileSync(join(skillsDir, 'skill2.MD'), 'Uppercase', 'utf-8');
-
-      const skills = loadSkills();
+      const skills = loadSkills(fs);
       expect(skills).toHaveLength(2);
       expect(skills[0]).toEqual({ key: 'skill1', content: 'Lowercase' });
       expect(skills[1]).toEqual({ key: 'skill2', content: 'Uppercase' });

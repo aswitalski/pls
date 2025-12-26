@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
 import { parse as parseYaml } from 'yaml';
 
 import { ConfigRequirement } from '../types/skills.js';
@@ -29,6 +28,7 @@ import {
   getConfigSchema,
   loadConfig,
 } from './configuration.js';
+import { defaultFileSystem, FileSystem } from './filesystem.js';
 import { getConfirmationMessage } from './messages.js';
 
 import { ConfigStep, StepType } from '../ui/Config.js';
@@ -92,14 +92,17 @@ function getValidator(
 /**
  * Create config steps from schema for specified keys
  */
-export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
+export function createConfigStepsFromSchema(
+  keys: string[],
+  fs: FileSystem = defaultFileSystem
+): ConfigStep[] {
   const schema = getConfigSchema();
   let currentConfig: Config | null = null;
   let rawConfig: Record<string, unknown> | null = null;
 
   // Load validated config (may fail if config has validation errors)
   try {
-    currentConfig = loadConfig();
+    currentConfig = loadConfig(fs);
   } catch {
     // Config doesn't exist or has validation errors, use defaults
   }
@@ -107,8 +110,8 @@ export function createConfigStepsFromSchema(keys: string[]): ConfigStep[] {
   // Load raw config separately (for discovered keys not in schema)
   try {
     const configFile = getConfigPath();
-    if (existsSync(configFile)) {
-      const content = readFileSync(configFile, 'utf-8');
+    if (fs.exists(configFile)) {
+      const content = fs.readFile(configFile, 'utf-8');
       rawConfig = parseYaml(content) as Record<string, unknown>;
     }
   } catch {

@@ -1,10 +1,10 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 import YAML from 'yaml';
 
 import { getConfigLabel } from './config-labels.js';
 import { flattenConfig } from './config-utils.js';
+import { defaultFileSystem, FileSystem } from './filesystem.js';
 
 /**
  * Convert a dotted config key to a readable label
@@ -165,13 +165,13 @@ function validateConfig(parsed: unknown): Config {
   return validatedConfig;
 }
 
-export function loadConfig(): Config {
+export function loadConfig(fs: FileSystem = defaultFileSystem): Config {
   const configFile = getConfigFile();
-  if (!existsSync(configFile)) {
+  if (!fs.exists(configFile)) {
     throw new ConfigError('Configuration not found');
   }
 
-  const content = readFileSync(configFile, 'utf-8');
+  const content = fs.readFile(configFile, 'utf-8');
   const parsed = parseYamlConfig(content);
   return validateConfig(parsed);
 }
@@ -180,8 +180,8 @@ export function getConfigPath(): string {
   return getConfigFile();
 }
 
-export function configExists(): boolean {
-  return existsSync(getConfigFile());
+export function configExists(fs: FileSystem = defaultFileSystem): boolean {
+  return fs.exists(getConfigFile());
 }
 
 export function isValidAnthropicApiKey(key: string): boolean {
@@ -237,30 +237,39 @@ export function mergeConfig(
 
 export function saveConfig(
   section: string,
-  config: Record<string, unknown>
+  config: Record<string, unknown>,
+  fs: FileSystem = defaultFileSystem
 ): void {
   const configFile = getConfigFile();
-  const existingContent = existsSync(configFile)
-    ? readFileSync(configFile, 'utf-8')
+  const existingContent = fs.exists(configFile)
+    ? fs.readFile(configFile, 'utf-8')
     : '';
 
   const newContent = mergeConfig(existingContent, section, config);
 
-  writeFileSync(configFile, newContent, 'utf-8');
+  fs.writeFile(configFile, newContent);
 }
 
-export function saveAnthropicConfig(config: AnthropicConfig): Config {
-  saveConfig('anthropic', config);
-  return loadConfig();
+export function saveAnthropicConfig(
+  config: AnthropicConfig,
+  fs: FileSystem = defaultFileSystem
+): Config {
+  saveConfig('anthropic', config, fs);
+  return loadConfig(fs);
 }
 
-export function saveDebugSetting(debug: DebugLevel): void {
-  saveConfig('settings', { debug });
+export function saveDebugSetting(
+  debug: DebugLevel,
+  fs: FileSystem = defaultFileSystem
+): void {
+  saveConfig('settings', { debug }, fs);
 }
 
-export function loadDebugSetting(): DebugLevel {
+export function loadDebugSetting(
+  fs: FileSystem = defaultFileSystem
+): DebugLevel {
   try {
-    const config = loadConfig();
+    const config = loadConfig(fs);
     return config.settings?.debug ?? DebugLevel.None;
   } catch {
     return DebugLevel.None;
@@ -410,14 +419,16 @@ export function getMissingConfigKeys(): string[] {
  * Get list of configured keys from config file
  * Returns array of dot-notation keys that exist in the config file
  */
-export function getConfiguredKeys(): string[] {
+export function getConfiguredKeys(
+  fs: FileSystem = defaultFileSystem
+): string[] {
   try {
     const configFile = getConfigFile();
-    if (!existsSync(configFile)) {
+    if (!fs.exists(configFile)) {
       return [];
     }
 
-    const content = readFileSync(configFile, 'utf-8');
+    const content = fs.readFile(configFile, 'utf-8');
     const parsed = YAML.parse(content) as Record<string, unknown>;
 
     // Flatten nested config to dot notation
@@ -433,7 +444,9 @@ export function getConfiguredKeys(): string[] {
  * Returns keys with descriptions only (no values for privacy)
  * Marks optional keys as "(optional)"
  */
-export function getAvailableConfigStructure(): Record<string, string> {
+export function getAvailableConfigStructure(
+  fs: FileSystem = defaultFileSystem
+): Record<string, string> {
   const schema = getConfigSchema();
   const structure: Record<string, string> = {};
 
@@ -441,8 +454,8 @@ export function getAvailableConfigStructure(): Record<string, string> {
   let flatConfig: Record<string, unknown> = {};
   try {
     const configFile = getConfigFile();
-    if (existsSync(configFile)) {
-      const content = readFileSync(configFile, 'utf-8');
+    if (fs.exists(configFile)) {
+      const content = fs.readFile(configFile, 'utf-8');
       const parsed = YAML.parse(content) as Record<string, unknown>;
 
       // Flatten nested config to dot notation

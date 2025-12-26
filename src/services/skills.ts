@@ -1,9 +1,9 @@
-import { existsSync, readdirSync, readFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 
 import { SkillDefinition } from '../types/skills.js';
 
+import { defaultFileSystem, FileSystem } from './filesystem.js';
 import { getUnknownSkillMessage } from './messages.js';
 import { parseSkillMarkdown, displayNameToKey } from './parser.js';
 
@@ -59,16 +59,18 @@ export function getSkillsDirectory(): string {
  * Returns an array of objects with filename (key) and content
  * Filters out invalid filenames and conflicts with system skills
  */
-export function loadSkills(): Array<{ key: string; content: string }> {
+export function loadSkills(
+  fs: FileSystem = defaultFileSystem
+): Array<{ key: string; content: string }> {
   const skillsDir = getSkillsDirectory();
 
   // Return empty array if directory doesn't exist
-  if (!existsSync(skillsDir)) {
+  if (!fs.exists(skillsDir)) {
     return [];
   }
 
   try {
-    const files = readdirSync(skillsDir);
+    const files = fs.readDirectory(skillsDir);
 
     // Filter and map valid skill files
     return files
@@ -92,7 +94,7 @@ export function loadSkills(): Array<{ key: string; content: string }> {
         // Extract key (filename without extension, handles both .md and .MD)
         const key = file.slice(0, -3);
         const filePath = join(skillsDir, file);
-        const content = readFileSync(filePath, 'utf-8');
+        const content = fs.readFile(filePath, 'utf-8');
 
         return { key, content };
       });
@@ -106,8 +108,10 @@ export function loadSkills(): Array<{ key: string; content: string }> {
  * Load and parse all skill definitions
  * Returns structured skill definitions (including invalid skills)
  */
-export function loadSkillDefinitions(): SkillDefinition[] {
-  const skills = loadSkills();
+export function loadSkillDefinitions(
+  fs: FileSystem = defaultFileSystem
+): SkillDefinition[] {
+  const skills = loadSkills(fs);
   return skills.map(({ key, content }) => parseSkillMarkdown(key, content));
 }
 
@@ -115,8 +119,10 @@ export function loadSkillDefinitions(): SkillDefinition[] {
  * Load skills and mark incomplete ones in their markdown
  * Returns array of skill markdown with status markers
  */
-export function loadSkillsWithValidation(): string[] {
-  const skills = loadSkills();
+export function loadSkillsWithValidation(
+  fs: FileSystem = defaultFileSystem
+): string[] {
+  const skills = loadSkills(fs);
 
   return skills.map(({ key, content }) => {
     const parsed = parseSkillMarkdown(key, content);

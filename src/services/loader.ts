@@ -1,20 +1,23 @@
-import { existsSync, readFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 import YAML from 'yaml';
 
+import { defaultFileSystem, FileSystem } from './filesystem.js';
+
 /**
  * Load user config from ~/.plsrc
  */
-export function loadUserConfig(): Record<string, unknown> {
+export function loadUserConfig(
+  fs: FileSystem = defaultFileSystem
+): Record<string, unknown> {
   const configPath = join(homedir(), '.plsrc');
 
-  if (!existsSync(configPath)) {
+  if (!fs.exists(configPath)) {
     return {};
   }
 
   try {
-    const content = readFileSync(configPath, 'utf-8');
+    const content = fs.readFile(configPath, 'utf-8');
     const parsed: unknown = YAML.parse(content);
 
     if (parsed && typeof parsed === 'object') {

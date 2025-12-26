@@ -1,7 +1,4 @@
-import { mkdirSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   AnthropicModel,
@@ -9,7 +6,6 @@ import {
   configExists,
   DebugLevel,
   getAvailableConfigStructure,
-  getConfigPath,
   getConfigSchema,
   getConfigurationRequiredMessage,
   getConfiguredKeys,
@@ -21,27 +17,14 @@ import {
   saveDebugSetting,
 } from '../../src/services/configuration.js';
 import { createConfigStepsFromSchema } from '../../src/services/components.js';
+import { MemoryFileSystem } from '../../src/services/filesystem.js';
 import { StepType } from '../../src/ui/Config.js';
 
-import { safeRemoveDirectory } from '../test-utils.js';
-
 describe('Configuration management', () => {
-  let originalHome: string | undefined;
-  let tempHome: string;
+  let fs: MemoryFileSystem;
 
   beforeEach(() => {
-    originalHome = process.env.HOME;
-
-    tempHome = join(tmpdir(), `pls-config-test-${Date.now()}`);
-    mkdirSync(tempHome, { recursive: true });
-    process.env.HOME = tempHome;
-  });
-
-  afterEach(() => {
-    if (originalHome !== undefined) {
-      process.env.HOME = originalHome;
-    }
-    safeRemoveDirectory(tempHome);
+    fs = new MemoryFileSystem();
   });
 
   describe('Merging configuration', () => {
@@ -147,49 +130,56 @@ config:
 
   describe('Saving configuration', () => {
     it('creates new config file when none exists', () => {
-      saveConfig('anthropic', {
-        key: 'sk-ant-test',
-        model: 'claude-haiku-4-5-20251001',
-      });
+      saveConfig(
+        'anthropic',
+        {
+          key: 'sk-ant-test',
+          model: 'claude-haiku-4-5-20251001',
+        },
+        fs
+      );
 
-      expect(configExists()).toBe(true);
-      const config = loadConfig();
+      expect(configExists(fs)).toBe(true);
+      const config = loadConfig(fs);
       expect(config.anthropic.key).toBe('sk-ant-test');
     });
 
     it('preserves existing sections when adding new section', () => {
-      saveConfig('ui', { theme: 'dark' });
-      saveConfig('anthropic', { key: 'sk-ant-test' });
+      saveConfig('ui', { theme: 'dark' }, fs);
+      saveConfig('anthropic', { key: 'sk-ant-test' }, fs);
 
-      const config = loadConfig();
+      const config = loadConfig(fs);
       expect(config.anthropic.key).toBe('sk-ant-test');
     });
 
     it('updates existing section values', () => {
-      saveConfig('anthropic', { key: 'sk-ant-old' });
-      saveConfig('anthropic', { key: 'sk-ant-new' });
+      saveConfig('anthropic', { key: 'sk-ant-old' }, fs);
+      saveConfig('anthropic', { key: 'sk-ant-new' }, fs);
 
-      const config = loadConfig();
+      const config = loadConfig(fs);
       expect(config.anthropic.key).toBe('sk-ant-new');
     });
   });
 
   describe('Saving Anthropic configuration', () => {
     it('saves anthropic config to file', () => {
-      saveAnthropicConfig({
-        key: 'sk-ant-test',
-        model: AnthropicModel.Haiku,
-      });
+      saveAnthropicConfig(
+        {
+          key: 'sk-ant-test',
+          model: AnthropicModel.Haiku,
+        },
+        fs
+      );
 
-      const config = loadConfig();
+      const config = loadConfig(fs);
       expect(config.anthropic.key).toBe('sk-ant-test');
       expect(config.anthropic.model).toBe(AnthropicModel.Haiku);
     });
 
     it('saves anthropic config with only required fields', () => {
-      saveAnthropicConfig({ key: 'sk-ant-test' });
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
 
-      const config = loadConfig();
+      const config = loadConfig(fs);
       expect(config.anthropic.key).toBe('sk-ant-test');
     });
   });
@@ -259,67 +249,73 @@ config:
 
   describe('Debug setting', () => {
     it('returns false when no config exists', () => {
-      expect(loadDebugSetting()).toBe(DebugLevel.None);
+      expect(loadDebugSetting(fs)).toBe(DebugLevel.None);
     });
 
     it('returns false when config exists but no debug setting', () => {
-      saveAnthropicConfig({ key: 'sk-ant-test' });
-      expect(loadDebugSetting()).toBe(DebugLevel.None);
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      expect(loadDebugSetting(fs)).toBe(DebugLevel.None);
     });
 
     it('saves debug setting to settings section', () => {
-      saveAnthropicConfig({ key: 'sk-ant-test' });
-      saveDebugSetting(DebugLevel.Info);
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      saveDebugSetting(DebugLevel.Info, fs);
 
-      const config = loadConfig();
+      const config = loadConfig(fs);
       expect(config.settings?.debug).toBe(DebugLevel.Info);
     });
 
     it('loads saved debug setting', () => {
-      saveAnthropicConfig({ key: 'sk-ant-test' });
-      saveDebugSetting(DebugLevel.Info);
-      expect(loadDebugSetting()).toBe(DebugLevel.Info);
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      saveDebugSetting(DebugLevel.Info, fs);
+      expect(loadDebugSetting(fs)).toBe(DebugLevel.Info);
 
-      saveDebugSetting(DebugLevel.None);
-      expect(loadDebugSetting()).toBe(DebugLevel.None);
+      saveDebugSetting(DebugLevel.None, fs);
+      expect(loadDebugSetting(fs)).toBe(DebugLevel.None);
     });
 
     it('preserves anthropic config when saving debug setting', () => {
-      saveAnthropicConfig({
-        key: 'sk-ant-test',
-        model: AnthropicModel.Sonnet,
-      });
-      saveDebugSetting(DebugLevel.Info);
+      saveAnthropicConfig(
+        {
+          key: 'sk-ant-test',
+          model: AnthropicModel.Sonnet,
+        },
+        fs
+      );
+      saveDebugSetting(DebugLevel.Info, fs);
 
-      const config = loadConfig();
+      const config = loadConfig(fs);
       expect(config.anthropic.key).toBe('sk-ant-test');
       expect(config.anthropic.model).toBe(AnthropicModel.Sonnet);
       expect(config.settings?.debug).toBe(DebugLevel.Info);
     });
 
     it('preserves debug setting when saving anthropic config', () => {
-      saveDebugSetting(DebugLevel.Info);
-      saveAnthropicConfig({
-        key: 'sk-ant-test',
-        model: AnthropicModel.Haiku,
-      });
+      saveDebugSetting(DebugLevel.Info, fs);
+      saveAnthropicConfig(
+        {
+          key: 'sk-ant-test',
+          model: AnthropicModel.Haiku,
+        },
+        fs
+      );
 
-      const config = loadConfig();
+      const config = loadConfig(fs);
       expect(config.settings?.debug).toBe(DebugLevel.Info);
       expect(config.anthropic.key).toBe('sk-ant-test');
       expect(config.anthropic.model).toBe(AnthropicModel.Haiku);
     });
 
     it('updates debug setting', () => {
-      saveAnthropicConfig({ key: 'sk-ant-test' });
-      saveDebugSetting(DebugLevel.Info);
-      expect(loadDebugSetting()).toBe(DebugLevel.Info);
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      saveDebugSetting(DebugLevel.Info, fs);
+      expect(loadDebugSetting(fs)).toBe(DebugLevel.Info);
 
-      saveDebugSetting(DebugLevel.None);
-      expect(loadDebugSetting()).toBe(DebugLevel.None);
+      saveDebugSetting(DebugLevel.None, fs);
+      expect(loadDebugSetting(fs)).toBe(DebugLevel.None);
 
-      saveDebugSetting(DebugLevel.Info);
-      expect(loadDebugSetting()).toBe(DebugLevel.Info);
+      saveDebugSetting(DebugLevel.Info, fs);
+      expect(loadDebugSetting(fs)).toBe(DebugLevel.Info);
     });
   });
 
@@ -352,12 +348,15 @@ config:
 
     describe('Config discovery', () => {
       it('returns only keys and descriptions without values', () => {
-        saveAnthropicConfig({
-          key: 'sk-ant-test-123',
-          model: AnthropicModel.Haiku,
-        });
+        saveAnthropicConfig(
+          {
+            key: 'sk-ant-test-123',
+            model: AnthropicModel.Haiku,
+          },
+          fs
+        );
 
-        const structure = getAvailableConfigStructure();
+        const structure = getAvailableConfigStructure(fs);
 
         expect(structure['anthropic.key']).toBeDefined();
         expect(structure['anthropic.key']).toBe('Anthropic API key');
@@ -365,16 +364,16 @@ config:
       });
 
       it('includes discovered keys from config file', () => {
-        saveConfig('custom', { mykey: 'myvalue' });
+        saveConfig('custom', { mykey: 'myvalue' }, fs);
 
-        const structure = getAvailableConfigStructure();
+        const structure = getAvailableConfigStructure(fs);
 
         expect(structure['custom.mykey']).toBeDefined();
         expect(structure['custom.mykey']).toBe('Custom Mykey');
       });
 
       it('works when no config file exists', () => {
-        const structure = getAvailableConfigStructure();
+        const structure = getAvailableConfigStructure(fs);
 
         // Required keys should always be present
         expect(structure['anthropic.key']).toBeDefined();
@@ -386,12 +385,15 @@ config:
 
       it('includes all optional keys', () => {
         // Save required config only
-        saveAnthropicConfig({
-          key: 'sk-ant-api03-' + 'A'.repeat(95),
-          model: AnthropicModel.Haiku,
-        });
+        saveAnthropicConfig(
+          {
+            key: 'sk-ant-api03-' + 'A'.repeat(95),
+            model: AnthropicModel.Haiku,
+          },
+          fs
+        );
 
-        const structure = getAvailableConfigStructure();
+        const structure = getAvailableConfigStructure(fs);
 
         // Required keys should be included
         expect(structure['anthropic.key']).toBe('Anthropic API key');
@@ -403,15 +405,18 @@ config:
 
       it('includes optional configured keys', () => {
         // Save required config
-        saveAnthropicConfig({
-          key: 'sk-ant-api03-' + 'A'.repeat(95),
-          model: AnthropicModel.Haiku,
-        });
+        saveAnthropicConfig(
+          {
+            key: 'sk-ant-api03-' + 'A'.repeat(95),
+            model: AnthropicModel.Haiku,
+          },
+          fs
+        );
 
         // Save optional debug setting
-        saveDebugSetting(DebugLevel.Info);
+        saveDebugSetting(DebugLevel.Info, fs);
 
-        const structure = getAvailableConfigStructure();
+        const structure = getAvailableConfigStructure(fs);
 
         // Required keys should not be marked
         expect(structure['anthropic.key']).toBe('Anthropic API key');
@@ -423,39 +428,38 @@ config:
     });
 
     describe('Configured keys tracking', () => {
-      it('uses temporary directory for tests', () => {
-        // Verify we're not using the real home directory
-        const configPath = getConfigPath();
-        expect(configPath).toContain(tempHome);
-        expect(configPath).not.toContain(originalHome || '');
-      });
-
       it('returns empty array when no config file exists', () => {
-        const keys = getConfiguredKeys();
+        const keys = getConfiguredKeys(fs);
 
         expect(keys).toEqual([]);
       });
 
       it('returns configured keys from config file', () => {
-        saveAnthropicConfig({
-          key: 'sk-ant-api03-' + 'A'.repeat(95),
-          model: AnthropicModel.Haiku,
-        });
+        saveAnthropicConfig(
+          {
+            key: 'sk-ant-api03-' + 'A'.repeat(95),
+            model: AnthropicModel.Haiku,
+          },
+          fs
+        );
 
-        const keys = getConfiguredKeys();
+        const keys = getConfiguredKeys(fs);
 
         expect(keys).toContain('anthropic.key');
         expect(keys).toContain('anthropic.model');
       });
 
       it('returns optional configured keys', () => {
-        saveAnthropicConfig({
-          key: 'sk-ant-api03-' + 'A'.repeat(95),
-          model: AnthropicModel.Haiku,
-        });
-        saveDebugSetting(DebugLevel.Info);
+        saveAnthropicConfig(
+          {
+            key: 'sk-ant-api03-' + 'A'.repeat(95),
+            model: AnthropicModel.Haiku,
+          },
+          fs
+        );
+        saveDebugSetting(DebugLevel.Info, fs);
 
-        const keys = getConfiguredKeys();
+        const keys = getConfiguredKeys(fs);
 
         expect(keys).toContain('anthropic.key');
         expect(keys).toContain('anthropic.model');
@@ -463,20 +467,24 @@ config:
       });
 
       it('returns discovered keys from config file', () => {
-        saveConfig('custom', { mykey: 'myvalue' });
+        saveConfig('custom', { mykey: 'myvalue' }, fs);
 
-        const keys = getConfiguredKeys();
+        const keys = getConfiguredKeys(fs);
 
         expect(keys).toContain('custom.mykey');
       });
 
       it('handles nested config structures', () => {
-        saveConfig('product', {
-          alpha: { path: '/path/to/alpha', enabled: true },
-          beta: { path: '/path/to/beta', enabled: false },
-        });
+        saveConfig(
+          'product',
+          {
+            alpha: { path: '/path/to/alpha', enabled: true },
+            beta: { path: '/path/to/beta', enabled: false },
+          },
+          fs
+        );
 
-        const keys = getConfiguredKeys();
+        const keys = getConfiguredKeys(fs);
 
         expect(keys).toContain('product.alpha.path');
         expect(keys).toContain('product.alpha.enabled');
@@ -486,16 +494,19 @@ config:
 
       it('returns all keys from mixed configuration', () => {
         // Required config
-        saveAnthropicConfig({
-          key: 'sk-ant-api03-' + 'A'.repeat(95),
-          model: AnthropicModel.Haiku,
-        });
+        saveAnthropicConfig(
+          {
+            key: 'sk-ant-api03-' + 'A'.repeat(95),
+            model: AnthropicModel.Haiku,
+          },
+          fs
+        );
         // Optional config
-        saveDebugSetting(DebugLevel.Info);
+        saveDebugSetting(DebugLevel.Info, fs);
         // Discovered config
-        saveConfig('custom', { setting: 'value' });
+        saveConfig('custom', { setting: 'value' }, fs);
 
-        const keys = getConfiguredKeys();
+        const keys = getConfiguredKeys(fs);
 
         // Required keys
         expect(keys).toContain('anthropic.key');
@@ -509,7 +520,7 @@ config:
 
     describe('Config step generation', () => {
       it('creates text step for regexp type', () => {
-        const steps = createConfigStepsFromSchema(['anthropic.key']);
+        const steps = createConfigStepsFromSchema(['anthropic.key'], fs);
 
         expect(steps).toHaveLength(1);
         expect(steps[0].type).toBe(StepType.Text);
@@ -518,7 +529,7 @@ config:
       });
 
       it('creates selection step for enum type', () => {
-        const steps = createConfigStepsFromSchema(['anthropic.model']);
+        const steps = createConfigStepsFromSchema(['anthropic.model'], fs);
 
         expect(steps).toHaveLength(1);
         expect(steps[0].type).toBe(StepType.Selection);
@@ -526,7 +537,7 @@ config:
       });
 
       it('creates selection step for debug enum type', () => {
-        const steps = createConfigStepsFromSchema(['settings.debug']);
+        const steps = createConfigStepsFromSchema(['settings.debug'], fs);
 
         expect(steps).toHaveLength(1);
         expect(steps[0].type).toBe(StepType.Selection);
@@ -554,15 +565,18 @@ config:
       });
 
       it('uses current config value as default if valid', () => {
-        saveAnthropicConfig({
-          key: 'sk-ant-api03-' + 'a'.repeat(95),
-          model: AnthropicModel.Haiku,
-        });
+        saveAnthropicConfig(
+          {
+            key: 'sk-ant-api03-' + 'a'.repeat(95),
+            model: AnthropicModel.Haiku,
+          },
+          fs
+        );
 
-        const steps = createConfigStepsFromSchema([
-          'anthropic.key',
-          'anthropic.model',
-        ]);
+        const steps = createConfigStepsFromSchema(
+          ['anthropic.key', 'anthropic.model'],
+          fs
+        );
 
         // Check key step (text type)
         if ('value' in steps[0]) {
@@ -590,9 +604,9 @@ config:
 
       it('creates text steps for discovered keys not in schema', () => {
         // Save some custom config that's not in the schema
-        saveConfig('custom', { mykey: 'myvalue' });
+        saveConfig('custom', { mykey: 'myvalue' }, fs);
 
-        const steps = createConfigStepsFromSchema(['custom.mykey']);
+        const steps = createConfigStepsFromSchema(['custom.mykey'], fs);
 
         expect(steps).toHaveLength(1);
         expect(steps[0].type).toBe(StepType.Text);
@@ -603,15 +617,19 @@ config:
 
       it('loads existing values for discovered config keys', () => {
         // Save config with discovered keys
-        saveConfig('opera', {
-          gx: { repo: '~/Developer/gx' },
-          neon: { repo: '~/Developer/neon' },
-        });
+        saveConfig(
+          'opera',
+          {
+            gx: { repo: '~/Developer/gx' },
+            neon: { repo: '~/Developer/neon' },
+          },
+          fs
+        );
 
-        const steps = createConfigStepsFromSchema([
-          'opera.gx.repo',
-          'opera.neon.repo',
-        ]);
+        const steps = createConfigStepsFromSchema(
+          ['opera.gx.repo', 'opera.neon.repo'],
+          fs
+        );
 
         expect(steps).toHaveLength(2);
         expect(steps[0].type).toBe(StepType.Text);
@@ -627,7 +645,7 @@ config:
       });
 
       it('uses null value for discovered keys with no existing value', () => {
-        const steps = createConfigStepsFromSchema(['nonexistent.key']);
+        const steps = createConfigStepsFromSchema(['nonexistent.key'], fs);
 
         expect(steps).toHaveLength(1);
         expect(steps[0].type).toBe(StepType.Text);

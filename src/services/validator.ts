@@ -1,6 +1,7 @@
 import { Task } from '../types/types.js';
 import { ConfigRequirement } from '../types/skills.js';
 
+import { defaultFileSystem, FileSystem } from './filesystem.js';
 import { loadUserConfig, hasConfigPath } from './loader.js';
 import { loadSkillDefinitions, createSkillLookup } from './skills.js';
 
@@ -26,15 +27,18 @@ export interface ExecuteValidationResult {
  * Validate config requirements for execute tasks
  * Returns validation result with missing config and validation errors
  */
-export function validateExecuteTasks(tasks: Task[]): ExecuteValidationResult {
-  const userConfig = loadUserConfig();
+export function validateExecuteTasks(
+  tasks: Task[],
+  fs: FileSystem = defaultFileSystem
+): ExecuteValidationResult {
+  const userConfig = loadUserConfig(fs);
   const missing: ConfigRequirement[] = [];
   const seenPaths = new Set<string>();
   const validationErrors: ValidationError[] = [];
   const seenSkills = new Set<string>();
 
   // Load all skills (including invalid ones for validation)
-  const parsedSkills = loadSkillDefinitions();
+  const parsedSkills = loadSkillDefinitions(fs);
   const skillLookup = createSkillLookup(parsedSkills);
 
   // Check for invalid skills being used in tasks

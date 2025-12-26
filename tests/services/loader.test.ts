@@ -1,38 +1,25 @@
-import { mkdirSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
+import { homedir } from 'os';
 import { join } from 'path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
+import { MemoryFileSystem } from '../../src/services/filesystem.js';
 import {
   getConfigValue,
   hasConfigPath,
   loadUserConfig,
 } from '../../src/services/loader.js';
 
-import { safeRemoveDirectory } from '../test-utils.js';
-
 describe('Loading user config', () => {
-  let testDir: string;
-  let originalHome: string | undefined;
+  let fs: MemoryFileSystem;
+  let configPath: string;
 
   beforeEach(() => {
-    testDir = join(
-      tmpdir(),
-      `pls-test-${Date.now().toString()}-${Math.random().toString()}`
-    );
-    mkdirSync(testDir, { recursive: true });
-    originalHome = process.env.HOME;
-    process.env.HOME = testDir;
-  });
-
-  afterEach(() => {
-    process.env.HOME = originalHome;
-    safeRemoveDirectory(testDir);
+    fs = new MemoryFileSystem();
+    configPath = join(homedir(), '.plsrc');
   });
 
   it('loads valid YAML config from ~/.plsrc', () => {
-    const configPath = join(testDir, '.plsrc');
-    writeFileSync(
+    fs.writeFile(
       configPath,
       `
 product:
@@ -41,11 +28,10 @@ product:
     enabled: true
   beta:
     path: /data/beta
-`,
-      'utf-8'
+`
     );
 
-    const config = loadUserConfig();
+    const config = loadUserConfig(fs);
 
     expect(config).toEqual({
       product: {
@@ -61,40 +47,36 @@ product:
   });
 
   it('returns empty object when config file does not exist', () => {
-    const config = loadUserConfig();
+    const config = loadUserConfig(fs);
 
     expect(config).toEqual({});
   });
 
   it('returns empty object when config is malformed YAML', () => {
-    const configPath = join(testDir, '.plsrc');
-    writeFileSync(
+    fs.writeFile(
       configPath,
       `
 invalid: yaml: syntax:
   - broken
     indentation
-`,
-      'utf-8'
+`
     );
 
-    const config = loadUserConfig();
+    const config = loadUserConfig(fs);
 
     expect(config).toEqual({});
   });
 
   it('returns empty object when config is not an object', () => {
-    const configPath = join(testDir, '.plsrc');
-    writeFileSync(configPath, 'just a string', 'utf-8');
+    fs.writeFile(configPath, 'just a string');
 
-    const config = loadUserConfig();
+    const config = loadUserConfig(fs);
 
     expect(config).toEqual({});
   });
 
   it('handles nested config structures', () => {
-    const configPath = join(testDir, '.plsrc');
-    writeFileSync(
+    fs.writeFile(
       configPath,
       `
 app:
@@ -104,11 +86,10 @@ app:
       port: 5432
     secondary:
       host: remote
-`,
-      'utf-8'
+`
     );
 
-    const config = loadUserConfig();
+    const config = loadUserConfig(fs);
 
     expect(config).toEqual({
       app: {
