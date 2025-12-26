@@ -503,4 +503,72 @@ describe('Workflow component lifecycle', () => {
       expect(lastFrame()).toContain('No status');
     });
   });
+
+  describe('Warning feedback integration', () => {
+    it('displays warnings from logger as Feedback components', async () => {
+      const { displayWarning, getWarnings, setDebugLevel } =
+        await import('../../src/services/logger.js');
+
+      // Clear any existing warnings
+      getWarnings();
+
+      // Set debug level to Info so warnings are stored
+      setDebugLevel(DebugLevel.Info);
+
+      // Create a component that will trigger warnings
+      const message: ComponentDefinition = {
+        id: 'msg-1',
+        name: ComponentName.Message,
+        props: { text: 'Test message' },
+        status: ComponentStatus.Awaiting,
+      };
+
+      // Log warnings before rendering
+      displayWarning('Configuration file not found');
+      displayWarning('Using default settings');
+
+      const { lastFrame } = render(
+        <Workflow initialQueue={[message]} debug={DebugLevel.Info} />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      // Warnings should appear as yellow feedback with ⚠ symbol
+      const output = lastFrame();
+      expect(output).toContain('⚠');
+      expect(output).toContain('Configuration file not found');
+      expect(output).toContain('Using default settings');
+    });
+
+    it('does not display warnings when debug level is None', async () => {
+      const { displayWarning, getWarnings, setDebugLevel } =
+        await import('../../src/services/logger.js');
+
+      // Clear any existing warnings
+      getWarnings();
+
+      // Set debug level to None
+      setDebugLevel(DebugLevel.None);
+
+      const message: ComponentDefinition = {
+        id: 'msg-1',
+        name: ComponentName.Message,
+        props: { text: 'Test message' },
+        status: ComponentStatus.Awaiting,
+      };
+
+      // Log warning (should not be stored)
+      displayWarning('This warning should not appear');
+
+      const { lastFrame } = render(
+        <Workflow initialQueue={[message]} debug={DebugLevel.None} />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      const output = lastFrame();
+      expect(output).toContain('Test message');
+      expect(output).not.toContain('This warning should not appear');
+    });
+  });
 });

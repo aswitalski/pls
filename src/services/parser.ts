@@ -2,6 +2,8 @@ import YAML from 'yaml';
 
 import { ConfigSchema, SkillDefinition } from '../types/skills.js';
 
+import { displayWarning } from './logger.js';
+
 export interface SkillValidationError {
   skillName: string;
   error: string;
@@ -251,7 +253,8 @@ function parseConfigSchema(content: string): ConfigSchema | undefined {
     }
 
     return parsed as ConfigSchema;
-  } catch {
+  } catch (error) {
+    displayWarning('Failed to parse config schema in skill', error);
     return undefined;
   }
 }

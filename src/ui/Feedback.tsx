@@ -8,6 +8,7 @@ import { getFeedbackColor } from '../services/colors.js';
 function getSymbol(type: FeedbackType): string {
   return {
     [FeedbackType.Info]: 'ℹ',
+    [FeedbackType.Warning]: '⚠',
     [FeedbackType.Succeeded]: '✓',
     [FeedbackType.Aborted]: '⊘',
     [FeedbackType.Failed]: '✗',

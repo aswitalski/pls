@@ -3,6 +3,7 @@ import { join } from 'path';
 import YAML from 'yaml';
 
 import { defaultFileSystem, FileSystem } from './filesystem.js';
+import { displayWarning } from './logger.js';
 
 /**
  * Load user config from ~/.plsrc
@@ -24,8 +25,10 @@ export function loadUserConfig(
       return parsed as Record<string, unknown>;
     }
 
+    displayWarning('User config file exists but is not a valid object');
     return {};
-  } catch {
+  } catch (error) {
+    displayWarning('Failed to load user config', error);
     return {};
   }
 }

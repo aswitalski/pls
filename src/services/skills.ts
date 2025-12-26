@@ -4,6 +4,7 @@ import { join } from 'path';
 import { SkillDefinition } from '../types/skills.js';
 
 import { defaultFileSystem, FileSystem } from './filesystem.js';
+import { displayWarning } from './logger.js';
 import { getUnknownSkillMessage } from './messages.js';
 import { parseSkillMarkdown, displayNameToKey } from './parser.js';
 
@@ -98,8 +99,8 @@ export function loadSkills(
 
         return { key, content };
       });
-  } catch {
-    // Return empty array if there's any error reading the directory
+  } catch (error) {
+    displayWarning('Failed to load skills directory', error);
     return [];
   }
 }

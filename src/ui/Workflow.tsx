@@ -16,6 +16,7 @@ import {
   markAsDone,
 } from '../services/components.js';
 import { DebugLevel } from '../services/configuration.js';
+import { getWarnings } from '../services/logger.js';
 import { getCancellationMessage } from '../services/messages.js';
 import { exitApp } from '../services/process.js';
 
@@ -177,6 +178,17 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
     }
     // Stateful components stay in active until handlers move them to pending
   }, [current]);
+
+  // Check for accumulated warnings and add them to timeline
+  useEffect(() => {
+    const warningMessages = getWarnings();
+    if (warningMessages.length > 0) {
+      const warningComponents = warningMessages.map((msg) =>
+        markAsDone(createFeedback(FeedbackType.Warning, msg))
+      );
+      setTimeline((prev) => [...prev, ...warningComponents]);
+    }
+  }, [timeline, current]);
 
   // Move final pending to timeline and exit when all done
   useEffect(() => {

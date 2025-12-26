@@ -135,6 +135,7 @@ const taskColors: Record<
  */
 const feedbackColors: Record<FeedbackType, string | null> = {
   [FeedbackType.Info]: Colors.Status.Info,
+  [FeedbackType.Warning]: Palette.Yellow,
   [FeedbackType.Succeeded]: Colors.Status.Success,
   [FeedbackType.Aborted]: Palette.MediumOrange,
   [FeedbackType.Failed]: Colors.Status.Error,

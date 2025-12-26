@@ -47,6 +47,7 @@ export enum Origin {
 
 export enum FeedbackType {
   Info = 'info',
+  Warning = 'warning',
   Succeeded = 'succeeded',
   Aborted = 'aborted',
   Failed = 'failed',

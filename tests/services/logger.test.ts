@@ -9,9 +9,11 @@ import {
 import { DebugLevel } from '../../src/services/configuration.js';
 import {
   getDebugLevel,
+  getWarnings,
   initializeLogger,
   logPrompt,
   logResponse,
+  displayWarning,
   setDebugLevel,
 } from '../../src/services/logger.js';
 import { Palette } from '../../src/services/colors.js';
@@ -310,6 +312,85 @@ Line 4`;
       const props = getDebugProps(result);
       expect(props.content).toContain('Line 1');
       expect(props.content).toContain('Line 2');
+    });
+  });
+
+  describe('Logging warnings', () => {
+    beforeEach(() => {
+      // Clear warnings before each test
+      getWarnings();
+    });
+
+    it('does not store warnings when debug level is None', () => {
+      setDebugLevel(DebugLevel.None);
+      displayWarning('Test warning');
+      displayWarning('Test warning with error', new Error('Test error'));
+
+      const warnings = getWarnings();
+      expect(warnings).toEqual([]);
+    });
+
+    it('stores warnings when debug level is Info', () => {
+      setDebugLevel(DebugLevel.Info);
+      displayWarning('Test warning');
+
+      const warnings = getWarnings();
+      expect(warnings).toEqual(['Test warning']);
+    });
+
+    it('stores warnings when debug level is Verbose', () => {
+      setDebugLevel(DebugLevel.Verbose);
+      displayWarning('Test warning');
+
+      const warnings = getWarnings();
+      expect(warnings).toEqual(['Test warning']);
+    });
+
+    it('includes error details when provided', () => {
+      setDebugLevel(DebugLevel.Info);
+      const error = new Error('Something went wrong');
+      displayWarning('Failed to process', error);
+
+      const warnings = getWarnings();
+      expect(warnings).toEqual(['Failed to process: Something went wrong']);
+    });
+
+    it('handles non-Error objects gracefully', () => {
+      setDebugLevel(DebugLevel.Info);
+      displayWarning('Warning 1', 'string error');
+      displayWarning('Warning 2', { message: 'object error' });
+      displayWarning('Warning 3', 123);
+
+      const warnings = getWarnings();
+      expect(warnings).toEqual(['Warning 1', 'Warning 2', 'Warning 3']);
+    });
+
+    it('accumulates multiple warnings', () => {
+      setDebugLevel(DebugLevel.Info);
+      displayWarning('Warning 1');
+      displayWarning('Warning 2');
+      displayWarning('Warning 3');
+
+      const warnings = getWarnings();
+      expect(warnings).toEqual(['Warning 1', 'Warning 2', 'Warning 3']);
+    });
+
+    it('clears warnings after getWarnings is called', () => {
+      setDebugLevel(DebugLevel.Info);
+      displayWarning('Warning 1');
+      displayWarning('Warning 2');
+
+      const firstCall = getWarnings();
+      expect(firstCall).toEqual(['Warning 1', 'Warning 2']);
+
+      const secondCall = getWarnings();
+      expect(secondCall).toEqual([]);
+    });
+
+    it('returns empty array when no warnings', () => {
+      setDebugLevel(DebugLevel.Info);
+      const warnings = getWarnings();
+      expect(warnings).toEqual([]);
     });
   });
 });
