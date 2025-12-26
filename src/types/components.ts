@@ -1,6 +1,14 @@
 import { ReactNode } from 'react';
 
 import { App, ComponentName, FeedbackType, Origin, Task } from './types.js';
+import {
+  BaseState,
+  ErrorHandlers,
+  LifecycleHandlers,
+  QueueHandlers,
+  StateHandlers,
+  WorkflowHandlers,
+} from './handlers.js';
 import { ConfigRequirement } from './skills.js';
 
 import { ExecuteCommand, LLMService } from '../services/anthropic.js';
@@ -8,6 +16,16 @@ import { DebugLevel } from '../services/configuration.js';
 import { ExecutionStatus } from '../services/shell.js';
 
 import { ConfigStep } from '../ui/Config.js';
+
+// Re-export handlers for convenience
+export type {
+  BaseState,
+  ErrorHandlers,
+  LifecycleHandlers,
+  QueueHandlers,
+  StateHandlers,
+  WorkflowHandlers,
+};
 
 // Component lifecycle status
 export enum ComponentStatus {
@@ -17,28 +35,10 @@ export enum ComponentStatus {
   Done = 'done', // Completed, in Static timeline
 }
 
-// Global handlers passed to all stateful components
-export interface Handlers<TState extends BaseState = BaseState> {
-  addToQueue: (...items: ComponentDefinition[]) => void;
-  updateState: (state: Partial<TState>) => void;
-  completeActive: (...items: ComponentDefinition[]) => void;
-  completeActiveAndPending: (...items: ComponentDefinition[]) => void;
-  addToTimeline: (...items: ComponentDefinition[]) => void;
-  onAborted: (operation: string) => void;
-  onError: (error: string) => void;
-}
-
-// Base state interface - all stateful components extend this
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface BaseState {
-  // Component-specific state only - no 'done' property
-}
-
 // Runtime-only props (injected during rendering)
 export interface BaseRuntimeProps<TState extends BaseState = BaseState> {
   state?: TState;
   status?: ComponentStatus;
-  handlers?: Handlers<TState>;
 }
 
 // Utility type to combine definition props with runtime props
@@ -54,9 +54,27 @@ export interface WelcomeDefinitionProps {
 
 export type WelcomeProps = WelcomeDefinitionProps & BaseRuntimeProps;
 
+export interface ConfigState extends BaseState {
+  values?: Record<string, string>;
+  completedStep?: number;
+  selectedIndex?: number;
+}
+
+export interface ConfigDefinitionProps<
+  T extends Record<string, string> = Record<string, string>,
+> {
+  steps: ConfigStep[];
+  debug?: DebugLevel;
+  onFinished?: (config: T) => void;
+  onAborted?: (operation: string) => void;
+  // Focused handlers for Config (state & lifecycle user)
+  stateHandlers?: StateHandlers<ConfigState>;
+  lifecycleHandlers?: LifecycleHandlers;
+}
+
 export type ConfigProps<
   T extends Record<string, string> = Record<string, string>,
-> = ComponentProps<ConfigDefinitionProps<T>, BaseState>;
+> = ComponentProps<ConfigDefinitionProps<T>, ConfigState>;
 
 export interface FeedbackDefinitionProps {
   type: FeedbackType;
@@ -174,30 +192,19 @@ export interface ValidateState extends BaseState {
   validated?: boolean;
 }
 
-export interface ConfigState extends BaseState {
-  values?: Record<string, string>;
-  completedStep?: number;
-  selectedIndex?: number;
-}
-
 // Definition props (stored in component definitions, excludes runtime props)
-export interface ConfigDefinitionProps<
-  T extends Record<string, string> = Record<string, string>,
-> {
-  steps: ConfigStep[];
-  onFinished: (config: T) => void;
-  onAborted: (operation: string) => void;
-}
-
 export interface ConfirmDefinitionProps {
   message: string;
   onConfirmed: VoidFunction;
   onCancelled: VoidFunction;
+  // Focused handlers for Confirm (state only)
+  stateHandlers?: StateHandlers<ConfirmState>;
 }
 
 export interface RefinementDefinitionProps {
   text: string;
   onAborted: (operation: string) => void;
+  // Refinement doesn't use handlers - uses onAborted prop
 }
 
 export interface ScheduleDefinitionProps {
@@ -205,6 +212,10 @@ export interface ScheduleDefinitionProps {
   tasks: Task[];
   debug?: DebugLevel;
   onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>;
+  // Focused handlers for Schedule (state, lifecycle, error)
+  stateHandlers?: StateHandlers<ScheduleState>;
+  lifecycleHandlers?: LifecycleHandlers;
+  errorHandlers?: ErrorHandlers;
 }
 
 export interface CommandDefinitionProps {
@@ -212,6 +223,12 @@ export interface CommandDefinitionProps {
   service: LLMService;
   error?: string;
   onAborted?: (operation: string) => void;
+  // Focused handlers for Command (state, lifecycle, queue, error, workflow)
+  stateHandlers?: StateHandlers<CommandState>;
+  lifecycleHandlers?: LifecycleHandlers;
+  queueHandlers?: QueueHandlers;
+  errorHandlers?: ErrorHandlers;
+  workflowHandlers?: WorkflowHandlers;
 }
 
 export interface IntrospectDefinitionProps {
@@ -219,16 +236,32 @@ export interface IntrospectDefinitionProps {
   service: LLMService;
   children?: ReactNode;
   debug?: DebugLevel;
+  // Focused handlers for Introspect (state, lifecycle, queue, error, workflow)
+  stateHandlers?: StateHandlers<IntrospectState>;
+  lifecycleHandlers?: LifecycleHandlers;
+  queueHandlers?: QueueHandlers;
+  errorHandlers?: ErrorHandlers;
+  workflowHandlers?: WorkflowHandlers;
 }
 
 export interface AnswerDefinitionProps {
   question: string;
   service: LLMService;
+  // Focused handlers for Answer (state, lifecycle, error, workflow)
+  stateHandlers?: StateHandlers<AnswerState>;
+  lifecycleHandlers?: LifecycleHandlers;
+  errorHandlers?: ErrorHandlers;
+  workflowHandlers?: WorkflowHandlers;
 }
 
 export interface ExecuteDefinitionProps {
   tasks: Task[];
   service: LLMService;
+  // Focused handlers for Execute (heavy state, lifecycle, error, workflow)
+  stateHandlers?: StateHandlers<ExecuteState>;
+  lifecycleHandlers?: LifecycleHandlers;
+  errorHandlers?: ErrorHandlers;
+  workflowHandlers?: WorkflowHandlers;
 }
 
 export interface ValidateDefinitionProps {
@@ -240,6 +273,10 @@ export interface ValidateDefinitionProps {
   onError: (error: string) => void;
   onComplete: (configWithDescriptions: ConfigRequirement[]) => void;
   onAborted: (operation: string) => void;
+  // Focused handlers for Validate (state, lifecycle, workflow)
+  stateHandlers?: StateHandlers<ValidateState>;
+  lifecycleHandlers?: LifecycleHandlers;
+  workflowHandlers?: WorkflowHandlers;
 }
 
 // Generic base definitions with shared properties

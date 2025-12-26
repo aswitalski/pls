@@ -1,4 +1,8 @@
-import { Handlers } from '../types/components.js';
+import {
+  ErrorHandlers,
+  QueueHandlers,
+  WorkflowHandlers,
+} from '../types/handlers.js';
 import { asScheduledTasks } from '../types/guards.js';
 import { FeedbackType, Task, TaskType } from '../types/types.js';
 
@@ -45,7 +49,9 @@ export function routeTasksWithConfirm(
   message: string,
   service: LLMService,
   userRequest: string,
-  handlers: Handlers,
+  queueHandlers: QueueHandlers,
+  workflowHandlers: WorkflowHandlers,
+  errorHandlers: ErrorHandlers,
   hasDefineTask: boolean = false
 ): void {
   if (tasks.length === 0) return;
@@ -58,7 +64,7 @@ export function routeTasksWithConfirm(
   // Check if no valid tasks remain after filtering
   if (validTasks.length === 0) {
     const message = createMessage(getUnknownRequestMessage());
-    handlers.addToQueue(message);
+    queueHandlers.addToQueue(message);
     return;
   }
 
@@ -68,7 +74,7 @@ export function routeTasksWithConfirm(
     // Has DEFINE tasks - add Schedule to queue for user selection
     // Refinement flow will call this function again with refined tasks
     const scheduleDefinition = createScheduleDefinition(message, validTasks);
-    handlers.addToQueue(scheduleDefinition);
+    queueHandlers.addToQueue(scheduleDefinition);
   } else {
     // No DEFINE tasks - Schedule auto-completes and adds Confirm to queue
     // When Schedule activates, Command moves to timeline
@@ -82,26 +88,29 @@ export function routeTasksWithConfirm(
         const confirmDefinition = createConfirmDefinition(
           () => {
             // User confirmed - complete both Confirm and Schedule, then route to appropriate component
-            handlers.completeActiveAndPending();
+            workflowHandlers.completeActiveAndPending();
             executeTasksAfterConfirm(
               validTasks,
               service,
               userRequest,
-              handlers
+              queueHandlers,
+              errorHandlers
             );
           },
           () => {
             // User cancelled - complete both Confirm and Schedule, then show cancellation
-            handlers.completeActiveAndPending();
+            workflowHandlers.completeActiveAndPending();
             const message = getCancellationMessage(operation);
-            handlers.addToQueue(createFeedback(FeedbackType.Aborted, message));
+            queueHandlers.addToQueue(
+              createFeedback(FeedbackType.Aborted, message)
+            );
           }
         );
-        handlers.addToQueue(confirmDefinition);
+        queueHandlers.addToQueue(confirmDefinition);
       }
     );
 
-    handlers.addToQueue(scheduleDefinition);
+    queueHandlers.addToQueue(scheduleDefinition);
   }
 }
 
@@ -141,13 +150,16 @@ function executeTasksAfterConfirm(
   tasks: Task[],
   service: LLMService,
   userRequest: string,
-  handlers: Handlers
+  queueHandlers: QueueHandlers,
+  errorHandlers: ErrorHandlers
 ): void {
   // Validate task types (Groups must have uniform subtasks)
   try {
     validateTaskTypes(tasks);
   } catch (error) {
-    handlers.onError(error instanceof Error ? error.message : String(error));
+    errorHandlers.onError(
+      error instanceof Error ? error.message : String(error)
+    );
     return;
   }
 
@@ -178,7 +190,14 @@ function executeTasksAfterConfirm(
       const taskType = type as TaskType;
       if (typeTasks.length === 0) continue;
 
-      routeTasksByType(taskType, typeTasks, service, userRequest, handlers);
+      routeTasksByType(
+        taskType,
+        typeTasks,
+        service,
+        userRequest,
+        queueHandlers,
+        errorHandlers
+      );
     }
 
     consecutiveStandaloneTasks = [];
@@ -194,7 +213,14 @@ function executeTasksAfterConfirm(
       if (task.subtasks.length > 0) {
         const subtasks = task.subtasks as Task[];
         const taskType = subtasks[0].type;
-        routeTasksByType(taskType, subtasks, service, userRequest, handlers);
+        routeTasksByType(
+          taskType,
+          subtasks,
+          service,
+          userRequest,
+          queueHandlers,
+          errorHandlers
+        );
       }
     } else {
       // Accumulate standalone task
@@ -215,22 +241,23 @@ function routeTasksByType(
   typeTasks: Task[],
   service: LLMService,
   userRequest: string,
-  handlers: Handlers
+  queueHandlers: QueueHandlers,
+  errorHandlers: ErrorHandlers
 ): void {
   if (taskType === TaskType.Answer) {
     // Create separate Answer component for each question
     for (const task of typeTasks) {
-      handlers.addToQueue(createAnswerDefinition(task.action, service));
+      queueHandlers.addToQueue(createAnswerDefinition(task.action, service));
     }
   } else if (taskType === TaskType.Introspect) {
-    handlers.addToQueue(createIntrospectDefinition(typeTasks, service));
+    queueHandlers.addToQueue(createIntrospectDefinition(typeTasks, service));
   } else if (taskType === TaskType.Config) {
     // Route to Config flow - extract keys from task params
     const configKeys = typeTasks
       .map((task) => task.params?.key as string | undefined)
       .filter((key): key is string => key !== undefined);
 
-    handlers.addToQueue(
+    queueHandlers.addToQueue(
       createConfigDefinitionWithKeys(
         configKeys,
         (config: Record<string, string>) => {
@@ -254,7 +281,7 @@ function routeTasksByType(
           }
         },
         (operation: string) => {
-          handlers.onAborted(operation);
+          errorHandlers.onAborted(operation);
         }
       )
     );
@@ -272,35 +299,37 @@ function routeTasksByType(
           return `Invalid skill definition "${error.skill}":\n\n${issuesList}`;
         });
 
-        handlers.addToQueue(
+        queueHandlers.addToQueue(
           createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
         );
       } else if (validation.missingConfig.length > 0) {
-        handlers.addToQueue(
+        queueHandlers.addToQueue(
           createValidateDefinition(
             validation.missingConfig,
             userRequest,
             service,
             (error: string) => {
-              handlers.onError(error);
+              errorHandlers.onError(error);
             },
             () => {
-              handlers.addToQueue(createExecuteDefinition(typeTasks, service));
+              queueHandlers.addToQueue(
+                createExecuteDefinition(typeTasks, service)
+              );
             },
             (operation: string) => {
-              handlers.onAborted(operation);
+              errorHandlers.onAborted(operation);
             }
           )
         );
       } else {
-        handlers.addToQueue(createExecuteDefinition(typeTasks, service));
+        queueHandlers.addToQueue(createExecuteDefinition(typeTasks, service));
       }
     } catch (error) {
       // Handle skill reference errors (e.g., unknown skills)
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       const message = createMessage(errorMessage);
-      handlers.addToQueue(message);
+      queueHandlers.addToQueue(message);
     }
   }
 }

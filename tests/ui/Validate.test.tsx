@@ -9,9 +9,11 @@ import { Task, TaskType } from '../../src/types/types.js';
 import { Validate } from '../../src/ui/Validate.js';
 
 import {
+  createLifecycleHandlers,
   createMockAnthropicService,
   createMockDebugComponents,
-  createMockHandlers,
+  createStateHandlers,
+  createWorkflowHandlers,
   Keys,
 } from '../test-utils.js';
 
@@ -83,6 +85,9 @@ describe('Validate component', () => {
           onComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -149,6 +154,9 @@ describe('Validate component', () => {
           onComplete={onComplete}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -191,6 +199,9 @@ describe('Validate component', () => {
           onComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -244,6 +255,9 @@ describe('Validate component', () => {
           onComplete={onComplete}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -298,6 +312,9 @@ describe('Validate component', () => {
           onComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -336,6 +353,9 @@ describe('Validate component', () => {
           onComplete={vi.fn()}
           onError={onError}
           onAborted={vi.fn()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -376,6 +396,9 @@ describe('Validate component', () => {
           onComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={onAborted}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -414,6 +437,9 @@ describe('Validate component', () => {
           onComplete={onComplete}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -456,6 +482,9 @@ describe('Validate component', () => {
           onComplete={onComplete}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -499,6 +528,9 @@ describe('Validate component', () => {
           onComplete={onComplete}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -537,7 +569,7 @@ describe('Validate component', () => {
         debug: debugComponents,
       });
 
-      const handlers = createMockHandlers();
+      const workflowHandlers = createWorkflowHandlers();
 
       render(
         <Validate
@@ -547,14 +579,16 @@ describe('Validate component', () => {
           onComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={workflowHandlers}
           status={ComponentStatus.Active}
-          handlers={handlers}
         />
       );
 
       await vi.waitFor(
         () => {
-          expect(handlers.addToTimeline).toHaveBeenCalledWith(
+          expect(workflowHandlers.addToTimeline).toHaveBeenCalledWith(
             ...debugComponents
           );
         },

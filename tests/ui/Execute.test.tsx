@@ -10,9 +10,12 @@ import { ExecutionResult } from '../../src/services/shell.js';
 import { Execute } from '../../src/ui/Execute.js';
 
 import {
+  createErrorHandlers,
+  createLifecycleHandlers,
   createMockAnthropicService,
   createMockDebugComponents,
-  createMockHandlers,
+  createStateHandlers,
+  createWorkflowHandlers,
 } from '../test-utils.js';
 
 // Mock timing helpers to skip delays in tests
@@ -112,7 +115,10 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        handlers={createMockHandlers()}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        errorHandlers={createErrorHandlers()}
+        workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
     );
@@ -133,7 +139,10 @@ describe('Execute component', () => {
         tasks={tasks}
         state={{}}
         service={service}
-        handlers={createMockHandlers()}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        errorHandlers={createErrorHandlers()}
+        workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
     );
@@ -162,7 +171,10 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        handlers={createMockHandlers({ completeActive })}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers({ completeActive })}
+        errorHandlers={createErrorHandlers()}
+        workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
     );
@@ -186,7 +198,10 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        handlers={createMockHandlers({ onError })}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        errorHandlers={createErrorHandlers({ onError })}
+        workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
     );
@@ -212,7 +227,10 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        handlers={createMockHandlers({ onAborted })}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        errorHandlers={createErrorHandlers({ onAborted })}
+        workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
     );
@@ -235,7 +253,10 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        handlers={createMockHandlers({ onAborted })}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        errorHandlers={createErrorHandlers({ onAborted })}
+        workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
     );
@@ -269,7 +290,10 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        handlers={createMockHandlers({ onAborted })}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        errorHandlers={createErrorHandlers({ onAborted })}
+        workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
     );
@@ -302,7 +326,10 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        handlers={createMockHandlers({ completeActive })}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers({ completeActive })}
+        errorHandlers={createErrorHandlers()}
+        workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
     );
@@ -340,7 +367,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -380,7 +410,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -422,7 +455,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -494,7 +530,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ onError })}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers({ onError })}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -571,7 +610,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ completeActive })}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers({ completeActive })}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -616,7 +658,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ onError })}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers({ onError })}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -668,7 +713,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ completeActive })}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers({ completeActive })}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -721,7 +769,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ updateState })}
+          stateHandlers={createStateHandlers({ updateState })}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -753,7 +804,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -794,7 +848,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -837,7 +894,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -894,7 +954,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ onAborted })}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers({ onAborted })}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -953,7 +1016,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ onAborted })}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers({ onAborted })}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -989,7 +1055,10 @@ describe('Execute component', () => {
           tasks={[{ action: 'Do something', type: TaskType.Execute }]}
           status={ComponentStatus.Done}
           service={createMockAnthropicService()}
-          handlers={createMockHandlers()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           state={{
             message: 'Execute commands:',
             summary: 'All tasks completed successfully',
@@ -1023,7 +1092,10 @@ describe('Execute component', () => {
           tasks={[{ action: 'Do something', type: TaskType.Execute }]}
           status={ComponentStatus.Done}
           service={createMockAnthropicService()}
-          handlers={createMockHandlers()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           state={{
             message: 'Execute commands:',
             summary: '',
@@ -1054,13 +1126,16 @@ describe('Execute component', () => {
         ],
       });
 
-      const handlers = createMockHandlers();
+      const stateHandlers = createStateHandlers();
       render(
         <Execute
           tasks={[{ action: 'Do something', type: TaskType.Execute }]}
           status={ComponentStatus.Active}
           service={service}
-          handlers={handlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -1069,13 +1144,13 @@ describe('Execute component', () => {
 
       await vi.waitFor(
         () => {
-          expect(handlers.completeActive).toHaveBeenCalled();
+          expect(stateHandlers.updateState).toHaveBeenCalled();
         },
         { timeout: 2000 }
       );
 
       // Check that updateState was called with execution times
-      const updateStateMock = vi.mocked(handlers.updateState);
+      const updateStateMock = vi.mocked(stateHandlers.updateState);
       const updateStateCalls = updateStateMock.mock.calls;
       const finalCall = updateStateCalls[updateStateCalls.length - 1];
       expect(finalCall[0]).toHaveProperty('taskExecutionTimes');
@@ -1094,14 +1169,17 @@ describe('Execute component', () => {
         debug: debugComponents,
       });
 
-      const handlers = createMockHandlers();
+      const workflowHandlers = createWorkflowHandlers();
 
       render(
         <Execute
           tasks={[{ action: 'Run test', type: TaskType.Execute }]}
           status={ComponentStatus.Active}
           service={service}
-          handlers={handlers}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={workflowHandlers}
         />
       );
 
@@ -1109,7 +1187,9 @@ describe('Execute component', () => {
       await vi.advanceTimersByTimeAsync(1000);
 
       // Check that addToTimeline was called with debug components
-      expect(handlers.addToTimeline).toHaveBeenCalledWith(...debugComponents);
+      expect(workflowHandlers.addToTimeline).toHaveBeenCalledWith(
+        ...debugComponents
+      );
     });
   });
 
@@ -1133,7 +1213,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -1181,7 +1264,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ updateState })}
+          stateHandlers={createStateHandlers({ updateState })}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -1244,7 +1330,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ updateState, onError })}
+          stateHandlers={createStateHandlers({ updateState })}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers({ onError })}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -1310,7 +1399,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ updateState, completeActive })}
+          stateHandlers={createStateHandlers({ updateState })}
+          lifecycleHandlers={createLifecycleHandlers({ completeActive })}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -1364,7 +1456,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ updateState, onAborted })}
+          stateHandlers={createStateHandlers({ updateState })}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers({ onAborted })}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -1409,7 +1504,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ updateState })}
+          stateHandlers={createStateHandlers({ updateState })}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -1449,7 +1547,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers()}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Done}
           state={{
             message: 'Running tasks.',
@@ -1497,7 +1598,10 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          handlers={createMockHandlers({ updateState })}
+          stateHandlers={createStateHandlers({ updateState })}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -1551,7 +1655,10 @@ describe('Execute component', () => {
             { action: 'Second', type: TaskType.Execute },
           ]}
           service={service}
-          handlers={createMockHandlers({ updateState, onAborted })}
+          stateHandlers={createStateHandlers({ updateState })}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers({ onAborted })}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );
@@ -1596,7 +1703,10 @@ describe('Execute component', () => {
         <Execute
           tasks={[{ action: 'Task', type: TaskType.Execute }]}
           service={service}
-          handlers={createMockHandlers({ updateState, onError })}
+          stateHandlers={createStateHandlers({ updateState })}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers({ onError })}
+          workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
       );

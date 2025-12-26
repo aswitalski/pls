@@ -2,10 +2,14 @@ import { existsSync, rmSync } from 'fs';
 import { vi } from 'vitest';
 
 import type {
-  Capability,
-  Handlers,
   BaseState,
+  Capability,
   ComponentDefinition,
+  ErrorHandlers,
+  LifecycleHandlers,
+  QueueHandlers,
+  StateHandlers,
+  WorkflowHandlers,
 } from '../src/types/components.js';
 import type { Task } from '../src/types/types.js';
 
@@ -151,22 +155,79 @@ export function safeRemoveDirectory(
 }
 
 /**
- * Creates a complete mock Handlers object for testing with all required methods.
+ * Creates mock StateHandlers for testing state management.
  *
- * @param overrides - Partial handlers to override default mocks
- * @returns A complete Handlers mock object
+ * @param overrides - Partial state handlers to override default mocks
+ * @returns A StateHandlers mock object
  */
-export function createMockHandlers<T extends BaseState = BaseState>(
-  overrides?: Partial<Handlers<T>>
-): Handlers<T> {
+export function createStateHandlers<T extends BaseState = BaseState>(
+  overrides?: Partial<StateHandlers<T>>
+): StateHandlers<T> {
+  return {
+    updateState: vi.fn(),
+    ...overrides,
+  };
+}
+
+/**
+ * Creates mock LifecycleHandlers for testing component lifecycle.
+ *
+ * @param overrides - Partial lifecycle handlers to override default mocks
+ * @returns A LifecycleHandlers mock object
+ */
+export function createLifecycleHandlers<TComponentDefinition = unknown>(
+  overrides?: Partial<LifecycleHandlers<TComponentDefinition>>
+): LifecycleHandlers<TComponentDefinition> {
+  return {
+    completeActive: vi.fn(),
+    ...overrides,
+  };
+}
+
+/**
+ * Creates mock QueueHandlers for testing queue management.
+ *
+ * @param overrides - Partial queue handlers to override default mocks
+ * @returns A QueueHandlers mock object
+ */
+export function createQueueHandlers<TComponentDefinition = unknown>(
+  overrides?: Partial<QueueHandlers<TComponentDefinition>>
+): QueueHandlers<TComponentDefinition> {
   return {
     addToQueue: vi.fn(),
-    updateState: vi.fn(),
-    completeActive: vi.fn(),
+    ...overrides,
+  };
+}
+
+/**
+ * Creates mock ErrorHandlers for testing error handling.
+ *
+ * @param overrides - Partial error handlers to override default mocks
+ * @returns An ErrorHandlers mock object
+ */
+export function createErrorHandlers(
+  overrides?: Partial<ErrorHandlers>
+): ErrorHandlers {
+  return {
+    onError: vi.fn(),
+    onAborted: vi.fn(),
+    ...overrides,
+  };
+}
+
+/**
+ * Creates a mock WorkflowHandlers object for testing with workflow methods
+ * like completeActiveAndPending and addToTimeline.
+ *
+ * @param overrides - Partial workflow handlers to override default mocks
+ * @returns A mock WorkflowHandlers object
+ */
+export function createWorkflowHandlers<TComponentDefinition = unknown>(
+  overrides?: Partial<WorkflowHandlers<TComponentDefinition>>
+): WorkflowHandlers<TComponentDefinition> {
+  return {
     completeActiveAndPending: vi.fn(),
     addToTimeline: vi.fn(),
-    onAborted: vi.fn(),
-    onError: vi.fn(),
     ...overrides,
   };
 }

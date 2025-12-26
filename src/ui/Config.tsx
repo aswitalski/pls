@@ -2,7 +2,7 @@ import { type ReactElement, useEffect, useState } from 'react';
 import { Box, Text, useFocus } from 'ink';
 import TextInput from 'ink-text-input';
 
-import { ComponentStatus, ConfigState, Handlers } from '../types/components.js';
+import { ComponentStatus, ConfigProps } from '../types/components.js';
 import { FeedbackType } from '../types/types.js';
 
 import { Colors } from '../services/colors.js';
@@ -52,18 +52,6 @@ export type ConfigStep = {
       defaultIndex: number;
     }
 );
-
-export interface ConfigProps<
-  T extends Record<string, string> = Record<string, string>,
-> {
-  steps: ConfigStep[];
-  state?: ConfigState;
-  status?: ComponentStatus;
-  debug?: DebugLevel;
-  handlers?: Handlers;
-  onFinished?: (config: T) => void;
-  onAborted?: (operation: string) => void;
-}
 
 interface TextStepProps {
   value: string;
@@ -174,15 +162,17 @@ function SelectionStep({
 
 export function Config<
   T extends Record<string, string> = Record<string, string>,
->({
-  steps,
-  state,
-  status,
-  debug = DebugLevel.None,
-  handlers,
-  onFinished,
-  onAborted,
-}: ConfigProps<T>) {
+>(props: ConfigProps<T>) {
+  const {
+    steps,
+    state,
+    status,
+    debug = DebugLevel.None,
+    stateHandlers,
+    lifecycleHandlers,
+    onFinished,
+    onAborted,
+  } = props;
   const isActive = status === ComponentStatus.Active;
 
   const [step, setStep] = useState<number>(
@@ -284,7 +274,7 @@ export function Config<
         setValues({ ...values, [configKey]: currentValue });
       }
       // Save state before aborting
-      handlers?.updateState({
+      stateHandlers?.updateState({
         values,
         completedStep: step,
         selectedIndex,
@@ -294,7 +284,7 @@ export function Config<
         onAborted('configuration');
       }
       // Complete with abort feedback
-      handlers?.completeActive(
+      lifecycleHandlers?.completeActive(
         createFeedback(FeedbackType.Aborted, 'Configuration cancelled.')
       );
       return;
@@ -364,7 +354,7 @@ export function Config<
         completedStep: steps.length,
         selectedIndex,
       };
-      handlers?.updateState(stateUpdate);
+      stateHandlers?.updateState(stateUpdate);
 
       // Call onFinished callback and handle result
       try {
@@ -373,7 +363,7 @@ export function Config<
         }
 
         // Success - complete with success feedback
-        handlers?.completeActive(
+        lifecycleHandlers?.completeActive(
           createFeedback(
             FeedbackType.Succeeded,
             'Configuration saved successfully.'
@@ -383,7 +373,7 @@ export function Config<
         // Failure - complete with error feedback
         const errorMessage =
           error instanceof Error ? error.message : 'Configuration failed';
-        handlers?.completeActive(
+        lifecycleHandlers?.completeActive(
           createFeedback(FeedbackType.Failed, errorMessage)
         );
       }
@@ -396,7 +386,7 @@ export function Config<
         completedStep: step + 1,
         selectedIndex,
       };
-      handlers?.updateState(stateUpdate);
+      stateHandlers?.updateState(stateUpdate);
 
       const nextStep = step + 1;
       setStep(nextStep);

@@ -4,10 +4,7 @@ import { Box, Text } from 'ink';
 import { CommandProps, ComponentStatus } from '../types/components.js';
 import { Task, TaskType } from '../types/types.js';
 import { Colors } from '../services/colors.js';
-import {
-  addDebugToTimeline,
-  createScheduleDefinition,
-} from '../services/components.js';
+import { createScheduleDefinition } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { handleRefinement } from '../services/refinement.js';
@@ -24,7 +21,11 @@ export function Command({
   state,
   status,
   service,
-  handlers,
+  stateHandlers,
+  lifecycleHandlers,
+  queueHandlers,
+  errorHandlers,
+  workflowHandlers,
   onAborted,
 }: CommandProps) {
   const isActive = status === ComponentStatus.Active;
@@ -33,7 +34,7 @@ export function Command({
   useInput(
     (_, key) => {
       if (key.escape && isActive) {
-        handlers?.onAborted('request');
+        errorHandlers?.onAborted('request');
         onAborted?.('request');
       }
     },
@@ -79,10 +80,12 @@ export function Command({
           const debugComponents = allConfig
             ? [...scheduleDebug, ...(result.debug || [])]
             : scheduleDebug;
-          addDebugToTimeline(debugComponents, handlers);
+          if (debugComponents.length > 0) {
+            workflowHandlers?.addToTimeline(...debugComponents);
+          }
 
           // Save result to state for timeline display
-          handlers?.updateState({
+          stateHandlers?.updateState({
             message: result.message,
             tasks: result.tasks,
           });
@@ -92,7 +95,13 @@ export function Command({
             (task) => task.type === TaskType.Define
           );
 
-          if (!handlers) {
+          // Guard: ensure all required handlers are present
+          if (
+            !queueHandlers ||
+            !lifecycleHandlers ||
+            !workflowHandlers ||
+            !errorHandlers
+          ) {
             return;
           }
 
@@ -103,24 +112,34 @@ export function Command({
             hasDefineTask
               ? async (selectedTasks: Task[]) => {
                   // Refinement flow for DEFINE tasks
-                  await handleRefinement(selectedTasks, svc, command, handlers);
+                  await handleRefinement(
+                    selectedTasks,
+                    svc,
+                    command,
+                    queueHandlers,
+                    lifecycleHandlers,
+                    workflowHandlers,
+                    errorHandlers
+                  );
                 }
               : undefined
           );
 
           if (hasDefineTask) {
             // DEFINE tasks: Move Command to timeline, add Schedule to queue
-            handlers.completeActive();
-            handlers.addToQueue(scheduleDefinition);
+            lifecycleHandlers.completeActive();
+            queueHandlers.addToQueue(scheduleDefinition);
           } else {
             // No DEFINE tasks: Complete Command, then route to Confirm flow
-            handlers.completeActive();
+            lifecycleHandlers.completeActive();
             routeTasksWithConfirm(
               result.tasks,
               result.message,
               svc,
               command,
-              handlers,
+              queueHandlers,
+              workflowHandlers,
+              errorHandlers,
               false
             );
           }
@@ -131,10 +150,10 @@ export function Command({
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
           setError(errorMessage);
-          handlers?.updateState({
+          stateHandlers?.updateState({
             error: errorMessage,
           });
-          handlers?.onError(errorMessage);
+          errorHandlers?.onError(errorMessage);
         }
       }
     }
@@ -144,7 +163,7 @@ export function Command({
     return () => {
       mounted = false;
     };
-  }, [command, isActive, service, handlers]);
+  }, [command, isActive, service]);
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">

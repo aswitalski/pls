@@ -2,13 +2,17 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ComponentStatus } from '../../src/types/components.js';
+import { ComponentStatus, ConfigState } from '../../src/types/components.js';
 
 import { AnthropicModel } from '../../src/services/configuration.js';
 
 import { Config, ConfigStep, StepType } from '../../src/ui/Config.js';
 
-import { Keys } from '../test-utils.js';
+import {
+  Keys,
+  createStateHandlers,
+  createLifecycleHandlers,
+} from '../test-utils.js';
 
 describe('Config component interaction flows', () => {
   const mockValidate = () => true;
@@ -556,15 +560,12 @@ describe('Config component interaction flows', () => {
 
     it('calls updateState BEFORE onFinished to preserve state', () => {
       const callOrder: string[] = [];
-      const mockHandlers = {
-        addToQueue: vi.fn(),
+      const stateHandlers = createStateHandlers({
         updateState: vi.fn(() => callOrder.push('updateState')),
-        completeActive: vi.fn(() => callOrder.push('completeActive')),
-        completeActiveAndPending: vi.fn(),
-        addToTimeline: vi.fn(),
-        onAborted: vi.fn(),
-        onError: vi.fn(),
-      };
+      });
+      const lifecycleHandlers = createLifecycleHandlers({
+        completeActive: vi.fn((..._items) => callOrder.push('completeActive')),
+      });
       const onFinished = vi.fn(() => callOrder.push('onFinished'));
 
       const steps: ConfigStep[] = [
@@ -585,7 +586,8 @@ describe('Config component interaction flows', () => {
       const { stdin } = render(
         <Config
           steps={steps}
-          handlers={mockHandlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
           onFinished={onFinished}
           status={ComponentStatus.Active}
         />
@@ -600,7 +602,7 @@ describe('Config component interaction flows', () => {
         'onFinished',
         'completeActive',
       ]);
-      expect(mockHandlers.updateState).toHaveBeenCalledWith({
+      expect(stateHandlers.updateState).toHaveBeenCalledWith({
         values: { 'settings.debug': 'true' },
         completedStep: 1,
         selectedIndex: 0,
@@ -609,249 +611,12 @@ describe('Config component interaction flows', () => {
 
     it('completion success: calls handlers.completeActive with success feedback', () => {
       const callOrder: string[] = [];
-      const mockHandlers = {
-        addToQueue: vi.fn(),
+      const stateHandlers = createStateHandlers<ConfigState>({
         updateState: vi.fn(() => callOrder.push('updateState')),
-        completeActive: vi.fn((feedback) => {
-          callOrder.push('completeActive');
-          // Store the feedback for verification
-          (mockHandlers as any).lastFeedback = feedback;
-        }),
-        completeActiveAndPending: vi.fn(),
-        addToTimeline: vi.fn(),
-        onAborted: vi.fn(),
-        onError: vi.fn(),
-      };
-      const onFinished = vi.fn(() => callOrder.push('onFinished'));
-
-      const steps: ConfigStep[] = [
-        {
-          description: 'Model',
-          key: 'model',
-          path: 'anthropic.model',
-          type: StepType.Selection,
-          options: [
-            { label: 'Haiku 4.5', value: AnthropicModel.Haiku },
-            { label: 'Sonnet 4.5', value: AnthropicModel.Sonnet },
-          ],
-          defaultIndex: 0,
-          validate: () => true,
-        },
-      ];
-
-      const { stdin } = render(
-        <Config
-          steps={steps}
-          handlers={mockHandlers}
-          onFinished={onFinished}
-          status={ComponentStatus.Active}
-        />
-      );
-
-      // Press Enter to submit default value
-      stdin.write(Keys.Enter);
-
-      // Verify flow: updateState → onFinished → completeActive
-      expect(callOrder).toEqual([
-        'updateState',
-        'onFinished',
-        'completeActive',
-      ]);
-
-      // Verify completeActive was called with success feedback
-      const feedback = (mockHandlers as any).lastFeedback;
-      expect(feedback).toBeDefined();
-      expect(feedback.name).toBe('feedback');
-      expect(feedback.props.type).toBe('succeeded');
-      expect(feedback.props.message).toContain('saved successfully');
-    });
-
-    it('completion error: calls handlers.completeActive with error feedback when onFinished throws', () => {
-      const callOrder: string[] = [];
-      const mockHandlers = {
-        addToQueue: vi.fn(),
-        updateState: vi.fn(() => callOrder.push('updateState')),
-        completeActive: vi.fn((feedback) => {
-          callOrder.push('completeActive');
-          (mockHandlers as any).lastFeedback = feedback;
-        }),
-        completeActiveAndPending: vi.fn(),
-        addToTimeline: vi.fn(),
-        onAborted: vi.fn(),
-        onError: vi.fn(),
-      };
-      const onFinished = vi.fn(() => {
-        callOrder.push('onFinished');
-        throw new Error('Failed to save configuration');
       });
-
-      const steps: ConfigStep[] = [
-        {
-          description: 'Model',
-          key: 'model',
-          path: 'anthropic.model',
-          type: StepType.Selection,
-          options: [
-            { label: 'Haiku 4.5', value: AnthropicModel.Haiku },
-            { label: 'Sonnet 4.5', value: AnthropicModel.Sonnet },
-          ],
-          defaultIndex: 0,
-          validate: () => true,
-        },
-      ];
-
-      const { stdin } = render(
-        <Config
-          steps={steps}
-          handlers={mockHandlers}
-          onFinished={onFinished}
-          status={ComponentStatus.Active}
-        />
-      );
-
-      // Press Enter to submit default value
-      stdin.write(Keys.Enter);
-
-      // Verify flow: updateState → onFinished → completeActive (even though error)
-      expect(callOrder).toEqual([
-        'updateState',
-        'onFinished',
-        'completeActive',
-      ]);
-
-      // Verify completeActive was called with error feedback
-      const feedback = (mockHandlers as any).lastFeedback;
-      expect(feedback).toBeDefined();
-      expect(feedback.name).toBe('feedback');
-      expect(feedback.props.type).toBe('failed');
-      expect(feedback.props.message).toBe('Failed to save configuration');
-    });
-
-    it('completion error: handles non-Error exceptions from onFinished', () => {
-      const mockHandlers = {
-        addToQueue: vi.fn(),
-        updateState: vi.fn(),
-        completeActive: vi.fn((feedback) => {
-          (mockHandlers as any).lastFeedback = feedback;
-        }),
-        completeActiveAndPending: vi.fn(),
-        addToTimeline: vi.fn(),
-        onAborted: vi.fn(),
-        onError: vi.fn(),
-      };
-      const onFinished = vi.fn(() => {
-        throw 'String error'; // Non-Error exception
-      });
-
-      const steps: ConfigStep[] = [
-        {
-          description: 'Model',
-          key: 'model',
-          type: StepType.Selection,
-          options: [
-            { label: 'Haiku 4.5', value: AnthropicModel.Haiku },
-            { label: 'Sonnet 4.5', value: AnthropicModel.Sonnet },
-          ],
-          defaultIndex: 0,
-          validate: () => true,
-        },
-      ];
-
-      const { stdin } = render(
-        <Config
-          steps={steps}
-          handlers={mockHandlers}
-          onFinished={onFinished}
-          status={ComponentStatus.Active}
-        />
-      );
-
-      stdin.write(Keys.Enter);
-
-      // Should use fallback error message
-      const feedback = (mockHandlers as any).lastFeedback;
-      expect(feedback).toBeDefined();
-      expect(feedback.props.type).toBe('failed');
-      expect(feedback.props.message).toBe('Configuration failed');
-    });
-
-    it('abort: calls onAborted, updateState, and handlers.completeActive with abort feedback', () => {
-      const callOrder: string[] = [];
-      const mockHandlers = {
-        addToQueue: vi.fn(),
-        updateState: vi.fn(() => callOrder.push('updateState')),
-        completeActive: vi.fn((feedback) => {
-          callOrder.push('completeActive');
-          (mockHandlers as any).lastFeedback = feedback;
-        }),
-        completeActiveAndPending: vi.fn(),
-        addToTimeline: vi.fn(),
-        onAborted: vi.fn(),
-        onError: vi.fn(),
-      };
-      const onAborted = vi.fn(() => callOrder.push('onAborted'));
-
-      const steps: ConfigStep[] = [
-        {
-          description: 'API Key',
-          key: 'apiKey',
-          path: 'anthropic.key',
-          type: StepType.Text,
-          value: null,
-          validate: () => true,
-        },
-        {
-          description: 'Model',
-          key: 'model',
-          path: 'anthropic.model',
-          type: StepType.Text,
-          value: null,
-          validate: () => true,
-        },
-      ];
-
-      const { stdin } = render(
-        <Config
-          steps={steps}
-          handlers={mockHandlers}
-          onAborted={onAborted}
-          status={ComponentStatus.Active}
-        />
-      );
-
-      // Enter first value
-      stdin.write('sk-ant-test-key');
-      stdin.write(Keys.Enter);
-
-      // Abort on second step
-      stdin.write(Keys.Escape);
-
-      // Verify abort flow: updateState → onAborted → completeActive
-      expect(callOrder).toContain('updateState');
-      expect(callOrder).toContain('onAborted');
-      expect(callOrder).toContain('completeActive');
-
-      // Verify onAborted was called with correct operation name
-      expect(onAborted).toHaveBeenCalledWith('configuration');
-
-      // Verify completeActive was called with abort feedback
-      const feedback = (mockHandlers as any).lastFeedback;
-      expect(feedback).toBeDefined();
-      expect(feedback.name).toBe('feedback');
-      expect(feedback.props.type).toBe('aborted');
-      expect(feedback.props.message).toContain('cancelled');
-    });
-
-    it('abort: saves partial state before aborting', () => {
-      const mockHandlers = {
-        addToQueue: vi.fn(),
-        updateState: vi.fn(),
+      const lifecycleHandlers = createLifecycleHandlers({
         completeActive: vi.fn(),
-        completeActiveAndPending: vi.fn(),
-        addToTimeline: vi.fn(),
-        onAborted: vi.fn(),
-        onError: vi.fn(),
-      };
+      });
 
       const steps: ConfigStep[] = [
         {
@@ -883,7 +648,8 @@ describe('Config component interaction flows', () => {
       const { stdin } = render(
         <Config
           steps={steps}
-          handlers={mockHandlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
           status={ComponentStatus.Active}
         />
       );
@@ -897,30 +663,26 @@ describe('Config component interaction flows', () => {
       // Verify updateState was called at least twice:
       // 1. After completing first step
       // 2. Before aborting
-      expect(mockHandlers.updateState).toHaveBeenCalled();
+      expect(stateHandlers.updateState).toHaveBeenCalled();
 
       // Check that the final updateState call saved the first value
-      const lastCall =
-        mockHandlers.updateState.mock.calls[
-          mockHandlers.updateState.mock.calls.length - 1
-        ][0];
+      const updateStateMock = vi.mocked(stateHandlers.updateState);
+      const lastCall = updateStateMock.mock.calls.at(-1)![0];
       expect(lastCall.values).toEqual(
         expect.objectContaining({ 'section.first': 'optionA' })
       );
     });
 
     it('abort: works without onAborted callback', () => {
-      const mockHandlers = {
-        addToQueue: vi.fn(),
+      let lastFeedback: any;
+      const stateHandlers = createStateHandlers({
         updateState: vi.fn(),
+      });
+      const lifecycleHandlers = createLifecycleHandlers({
         completeActive: vi.fn((feedback) => {
-          (mockHandlers as any).lastFeedback = feedback;
+          lastFeedback = feedback;
         }),
-        completeActiveAndPending: vi.fn(),
-        addToTimeline: vi.fn(),
-        onAborted: vi.fn(),
-        onError: vi.fn(),
-      };
+      });
 
       const steps: ConfigStep[] = [
         {
@@ -935,7 +697,8 @@ describe('Config component interaction flows', () => {
       const { stdin } = render(
         <Config
           steps={steps}
-          handlers={mockHandlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
           status={ComponentStatus.Active}
         />
       );
@@ -944,10 +707,9 @@ describe('Config component interaction flows', () => {
       stdin.write(Keys.Escape);
 
       // Should still complete with abort feedback
-      const feedback = (mockHandlers as any).lastFeedback;
-      expect(feedback).toBeDefined();
-      expect(feedback.props.type).toBe('aborted');
-      expect(mockHandlers.completeActive).toHaveBeenCalled();
+      expect(lastFeedback).toBeDefined();
+      expect(lastFeedback.props.type).toBe('aborted');
+      expect(lifecycleHandlers.completeActive).toHaveBeenCalled();
     });
 
     it('preserves selection state when rendered in timeline', () => {

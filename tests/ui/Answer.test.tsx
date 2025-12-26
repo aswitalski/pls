@@ -7,9 +7,12 @@ import { ComponentStatus } from '../../src/types/components.js';
 import { Answer } from '../../src/ui/Answer.js';
 
 import {
+  createErrorHandlers,
+  createLifecycleHandlers,
   createMockAnthropicService,
   createMockDebugComponents,
-  createMockHandlers,
+  createStateHandlers,
+  createWorkflowHandlers,
 } from '../test-utils.js';
 
 // Mock timing helpers to skip delays in tests
@@ -35,7 +38,10 @@ describe('Answer component', () => {
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
         status={ComponentStatus.Active}
-        handlers={createMockHandlers()}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        errorHandlers={createErrorHandlers()}
+        workflowHandlers={createWorkflowHandlers()}
       />
     );
 
@@ -53,7 +59,10 @@ describe('Answer component', () => {
         state={{ answer: 'The 55 inch Samsung The Frame costs around $1,500.' }}
         service={service}
         status={ComponentStatus.Done}
-        handlers={createMockHandlers()}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        errorHandlers={createErrorHandlers()}
+        workflowHandlers={createWorkflowHandlers()}
       />
     );
 
@@ -68,13 +77,17 @@ describe('Answer component', () => {
     const answer = 'The 55 inch Samsung The Frame costs around $1,500.';
     const service = createMockAnthropicService({ answer });
     const completeActive = vi.fn();
+    const lifecycleHandlers = createLifecycleHandlers({ completeActive });
 
     const { lastFrame } = render(
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
         status={ComponentStatus.Active}
-        handlers={createMockHandlers({ completeActive })}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={lifecycleHandlers}
+        errorHandlers={createErrorHandlers()}
+        workflowHandlers={createWorkflowHandlers()}
       />
     );
 
@@ -95,13 +108,17 @@ describe('Answer component', () => {
     const errorMessage = 'Network error';
     const service = createMockAnthropicService({}, new Error(errorMessage));
     const onError = vi.fn();
+    const errorHandlers = createErrorHandlers({ onError });
 
     render(
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
         status={ComponentStatus.Active}
-        handlers={createMockHandlers({ onError })}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        errorHandlers={errorHandlers}
+        workflowHandlers={createWorkflowHandlers()}
       />
     );
 
@@ -119,13 +136,17 @@ describe('Answer component', () => {
       answer: 'The 55 inch Samsung The Frame costs around $1,500.',
     });
     const onAborted = vi.fn();
+    const errorHandlers = createErrorHandlers({ onAborted });
 
     const { stdin } = render(
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
         status={ComponentStatus.Active}
-        handlers={createMockHandlers({ onAborted })}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        errorHandlers={errorHandlers}
+        workflowHandlers={createWorkflowHandlers()}
       />
     );
 
@@ -139,13 +160,17 @@ describe('Answer component', () => {
     const answer = 'Quick answer';
     const service = createMockAnthropicService({ answer });
     const completeActive = vi.fn();
+    const lifecycleHandlers = createLifecycleHandlers({ completeActive });
 
     render(
       <Answer
         question="Quick question?"
         service={service}
         status={ComponentStatus.Active}
-        handlers={createMockHandlers({ completeActive })}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={lifecycleHandlers}
+        errorHandlers={createErrorHandlers()}
+        workflowHandlers={createWorkflowHandlers()}
       />
     );
 
@@ -169,21 +194,26 @@ describe('Answer component', () => {
       debug: debugComponents,
     });
 
-    const handlers = createMockHandlers();
+    const workflowHandlers = createWorkflowHandlers();
 
     render(
       <Answer
         question="Test question?"
         service={service}
         status={ComponentStatus.Active}
-        handlers={handlers}
+        stateHandlers={createStateHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        errorHandlers={createErrorHandlers()}
+        workflowHandlers={workflowHandlers}
       />
     );
 
     // Wait for processing
     await vi.waitFor(
       () => {
-        expect(handlers.addToTimeline).toHaveBeenCalledWith(...debugComponents);
+        expect(workflowHandlers.addToTimeline).toHaveBeenCalledWith(
+          ...debugComponents
+        );
       },
       { timeout: 500 }
     );

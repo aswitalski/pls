@@ -4,7 +4,6 @@ import { Box, Text } from 'ink';
 import { AnswerProps, ComponentStatus } from '../types/components.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
-import { addDebugToTimeline } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { withMinimumTime } from '../services/timing.js';
@@ -18,7 +17,10 @@ export function Answer({
   state,
   status,
   service,
-  handlers,
+  stateHandlers,
+  lifecycleHandlers,
+  errorHandlers,
+  workflowHandlers,
 }: AnswerProps) {
   const isActive = status === ComponentStatus.Active;
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export function Answer({
   useInput(
     (input, key) => {
       if (key.escape && isActive) {
-        handlers?.onAborted('answer');
+        errorHandlers?.onAborted('answer');
       }
     },
     { isActive }
@@ -51,28 +53,30 @@ export function Answer({
 
         if (mounted) {
           // Add debug components to timeline if present
-          addDebugToTimeline(result.debug, handlers);
+          if (result.debug?.length) {
+            workflowHandlers?.addToTimeline(...result.debug);
+          }
 
           // Extract answer from result
           const answerText = result.answer || '';
           setAnswer(answerText);
 
           // Update component state so answer persists in timeline
-          handlers?.updateState({
+          stateHandlers?.updateState({
             answer: answerText,
           });
 
           // Signal completion
-          handlers?.completeActive();
+          lifecycleHandlers?.completeActive();
         }
       } catch (err) {
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
           setError(errorMessage);
-          handlers?.updateState({
+          stateHandlers?.updateState({
             error: errorMessage,
           });
-          handlers?.onError(errorMessage);
+          errorHandlers?.onError(errorMessage);
         }
       }
     }
@@ -82,7 +86,7 @@ export function Answer({
     return () => {
       mounted = false;
     };
-  }, [question, isActive, service, handlers]);
+  }, [question, isActive, service]);
 
   const lines = answer ? answer.split('\n') : [];
 

@@ -2,11 +2,7 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  ComponentStatus,
-  Handlers,
-  ScheduleState,
-} from '../../src/types/components.js';
+import { ComponentStatus, ScheduleState } from '../../src/types/components.js';
 import { Task, TaskType } from '../../src/types/types.js';
 
 import { DebugLevel } from '../../src/services/configuration.js';
@@ -15,7 +11,9 @@ import { Schedule } from '../../src/ui/Schedule.js';
 
 import {
   Keys,
-  createMockHandlers as createGlobalMockHandlers,
+  createErrorHandlers,
+  createLifecycleHandlers,
+  createStateHandlers,
 } from '../test-utils.js';
 
 // Destructure for readability
@@ -24,22 +22,20 @@ const WaitTime = 32; // Generous wait time ensuring stability across all hardwar
 
 // Helper to create mock handlers with state tracking
 function createMockHandlers(initialState: ScheduleState): {
-  handlers: Handlers<ScheduleState>;
+  stateHandlers: ReturnType<typeof createStateHandlers<ScheduleState>>;
+  lifecycleHandlers: ReturnType<typeof createLifecycleHandlers>;
+  errorHandlers: ReturnType<typeof createErrorHandlers>;
   state: ScheduleState;
 } {
   const state = { ...initialState };
-  const handlers: Handlers<ScheduleState> = {
-    addToQueue: vi.fn(),
+  const stateHandlers = createStateHandlers<ScheduleState>({
     updateState: vi.fn((newState) => {
       Object.assign(state, newState);
     }),
-    completeActive: vi.fn(),
-    completeActiveAndPending: vi.fn(),
-    addToTimeline: vi.fn(),
-    onAborted: vi.fn(),
-    onError: vi.fn(),
-  };
-  return { handlers, state };
+  });
+  const lifecycleHandlers = createLifecycleHandlers();
+  const errorHandlers = createErrorHandlers();
+  return { stateHandlers, lifecycleHandlers, errorHandlers, state };
 }
 
 describe('Schedule component', () => {
@@ -63,6 +59,9 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -90,6 +89,9 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -100,15 +102,18 @@ describe('Schedule component', () => {
     });
 
     it('removes arrow from parent when child is highlighted', async () => {
-      const { handlers, state } = createMockHandlers({
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      });
+      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
+        createMockHandlers({
+          highlightedIndex: null,
+          currentDefineGroupIndex: 0,
+          completedSelections: [],
+        });
       const { lastFrame, stdin } = render(
         <Schedule
           state={state}
-          handlers={handlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -162,6 +167,9 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -210,6 +218,9 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -225,16 +236,19 @@ describe('Schedule component', () => {
     });
 
     it('supports navigation with arrow keys', async () => {
-      const { handlers, state } = createMockHandlers({
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      });
+      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
+        createMockHandlers({
+          highlightedIndex: null,
+          currentDefineGroupIndex: 0,
+          completedSelections: [],
+        });
 
       const { stdin } = render(
         <Schedule
           state={state}
-          handlers={handlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -265,16 +279,19 @@ describe('Schedule component', () => {
     });
 
     it('wraps around when navigating with arrow keys', async () => {
-      const { handlers, state } = createMockHandlers({
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      });
+      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
+        createMockHandlers({
+          highlightedIndex: null,
+          currentDefineGroupIndex: 0,
+          completedSelections: [],
+        });
 
       const { stdin } = render(
         <Schedule
           state={state}
-          handlers={handlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -326,6 +343,9 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -347,7 +367,6 @@ describe('Schedule component', () => {
 
       const { stdin } = render(
         <Schedule
-          handlers={createGlobalMockHandlers({ completeActive })}
           state={state}
           message=""
           tasks={[
@@ -360,6 +379,9 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers({ completeActive })}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -387,7 +409,6 @@ describe('Schedule component', () => {
 
       const { lastFrame, stdin } = render(
         <Schedule
-          handlers={createGlobalMockHandlers()}
           state={state}
           message=""
           tasks={[
@@ -401,6 +422,9 @@ describe('Schedule component', () => {
           onSelectionConfirmed={onSelectionConfirmed}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -458,6 +482,9 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -492,6 +519,9 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -501,17 +531,20 @@ describe('Schedule component', () => {
     });
 
     it('advances to next group when Enter is pressed', async () => {
-      const { handlers, state } = createMockHandlers({
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      });
+      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
+        createMockHandlers({
+          highlightedIndex: null,
+          currentDefineGroupIndex: 0,
+          completedSelections: [],
+        });
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Schedule
           state={state}
-          handlers={handlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -551,16 +584,19 @@ describe('Schedule component', () => {
     });
 
     it('keeps previous group selection visible when advancing', async () => {
-      const { handlers, state } = createMockHandlers({
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      });
+      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
+        createMockHandlers({
+          highlightedIndex: null,
+          currentDefineGroupIndex: 0,
+          completedSelections: [],
+        });
 
       const { lastFrame, stdin } = render(
         <Schedule
           state={state}
-          handlers={handlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -623,6 +659,9 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -662,6 +701,9 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -704,6 +746,9 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -738,16 +783,19 @@ describe('Schedule component', () => {
     });
 
     it('tracks completedSelections for all groups', async () => {
-      const { handlers, state } = createMockHandlers({
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      });
+      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
+        createMockHandlers({
+          highlightedIndex: null,
+          currentDefineGroupIndex: 0,
+          completedSelections: [],
+        });
 
       const { stdin } = render(
         <Schedule
           state={state}
-          handlers={handlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -787,17 +835,20 @@ describe('Schedule component', () => {
     });
 
     it('handles three sequential define groups', async () => {
-      const { handlers, state } = createMockHandlers({
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      });
+      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
+        createMockHandlers({
+          highlightedIndex: null,
+          currentDefineGroupIndex: 0,
+          completedSelections: [],
+        });
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Schedule
           state={state}
-          handlers={handlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -851,17 +902,20 @@ describe('Schedule component', () => {
     });
 
     it('handles mixed execute and define tasks', async () => {
-      const { handlers, state } = createMockHandlers({
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      });
+      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
+        createMockHandlers({
+          highlightedIndex: null,
+          currentDefineGroupIndex: 0,
+          completedSelections: [],
+        });
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Schedule
           state={state}
-          handlers={handlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          errorHandlers={errorHandlers}
           message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute, config: [] },
@@ -930,16 +984,19 @@ describe('Schedule component', () => {
     });
 
     it('navigation only works on current active group', async () => {
-      const { handlers, state } = createMockHandlers({
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      });
+      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
+        createMockHandlers({
+          highlightedIndex: null,
+          currentDefineGroupIndex: 0,
+          completedSelections: [],
+        });
 
       const { stdin } = render(
         <Schedule
           state={state}
-          handlers={handlers}
+          stateHandlers={stateHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -1008,7 +1065,6 @@ describe('Schedule component', () => {
 
       const { stdin } = render(
         <Schedule
-          handlers={createGlobalMockHandlers({ onAborted })}
           state={state}
           message=""
           tasks={[
@@ -1020,6 +1076,9 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers({ onAborted })}
         />
       );
 
@@ -1037,7 +1096,6 @@ describe('Schedule component', () => {
 
       const { stdin } = render(
         <Schedule
-          handlers={createGlobalMockHandlers({ onAborted })}
           state={state}
           status={ComponentStatus.Done}
           message=""
@@ -1049,6 +1107,9 @@ describe('Schedule component', () => {
               config: [],
             },
           ]}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers({ onAborted })}
         />
       );
 
@@ -1066,7 +1127,6 @@ describe('Schedule component', () => {
 
       const { stdin } = render(
         <Schedule
-          handlers={createGlobalMockHandlers({ onAborted })}
           state={state}
           message=""
           tasks={[
@@ -1077,6 +1137,9 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers({ onAborted })}
         />
       );
 
@@ -1111,6 +1174,9 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1187,6 +1253,9 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1252,6 +1321,9 @@ describe('Schedule component', () => {
           ]}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1275,6 +1347,9 @@ describe('Schedule component', () => {
           ]}
           debug={DebugLevel.None}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1297,6 +1372,9 @@ describe('Schedule component', () => {
             { action: 'Run tests', type: TaskType.Execute, config: [] },
           ]}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1322,6 +1400,9 @@ describe('Schedule component', () => {
           ]}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1352,6 +1433,9 @@ describe('Schedule component', () => {
           ]}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1375,6 +1459,9 @@ describe('Schedule component', () => {
           ]}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1399,6 +1486,9 @@ describe('Schedule component', () => {
           ]}
           debug={DebugLevel.None}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1432,8 +1522,10 @@ describe('Schedule component', () => {
               config: [],
             },
           ]}
-          handlers={createGlobalMockHandlers()}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1474,8 +1566,10 @@ describe('Schedule component', () => {
               config: [],
             },
           ]}
-          handlers={createGlobalMockHandlers()}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers<ScheduleState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          errorHandlers={createErrorHandlers()}
         />
       );
 

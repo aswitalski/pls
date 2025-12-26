@@ -16,6 +16,12 @@ import { DebugLevel } from '../../src/services/configuration.js';
 
 import { Workflow } from '../../src/ui/Workflow.js';
 
+import {
+  createErrorHandlers,
+  createLifecycleHandlers,
+  createStateHandlers,
+} from '../test-utils.js';
+
 // Mock exitApp to prevent process.exit
 vi.mock('../../src/services/process.js', () => ({
   exitApp: vi.fn(),
@@ -321,6 +327,9 @@ describe('Workflow component lifecycle', () => {
             },
           ],
           onSelectionConfirmed: vi.fn(),
+          stateHandlers: createStateHandlers(),
+          lifecycleHandlers: createLifecycleHandlers(),
+          errorHandlers: createErrorHandlers(),
         },
         status: ComponentStatus.Awaiting,
       };
@@ -356,6 +365,9 @@ describe('Workflow component lifecycle', () => {
             },
           ],
           onSelectionConfirmed: vi.fn(),
+          stateHandlers: createStateHandlers(),
+          lifecycleHandlers: createLifecycleHandlers(),
+          errorHandlers: createErrorHandlers(),
         },
         status: ComponentStatus.Awaiting,
       };
@@ -412,6 +424,9 @@ describe('Workflow component lifecycle', () => {
             },
           ],
           onSelectionConfirmed: vi.fn(),
+          stateHandlers: createStateHandlers(),
+          lifecycleHandlers: createLifecycleHandlers(),
+          errorHandlers: createErrorHandlers(),
         },
         status: ComponentStatus.Awaiting,
       };

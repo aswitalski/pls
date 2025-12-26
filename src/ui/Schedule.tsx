@@ -104,10 +104,13 @@ export function Schedule({
   state,
   status,
   debug = DebugLevel.None,
-  handlers,
+  stateHandlers,
+  lifecycleHandlers,
+  errorHandlers,
   onSelectionConfirmed,
 }: ScheduleProps) {
   const isActive = status === ComponentStatus.Active;
+
   // isActive passed as prop
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(
     state?.highlightedIndex ?? null
@@ -144,7 +147,7 @@ export function Schedule({
       );
       // Complete the selection phase - it goes to timeline
       // Callback will create a new Plan showing refined tasks (pending) + Confirm (active)
-      handlers?.completeActive();
+      lifecycleHandlers?.completeActive();
       void onSelectionConfirmed(concreteTasks);
     }
   }, [
@@ -152,7 +155,7 @@ export function Schedule({
     defineTaskIndices.length,
     tasks,
     onSelectionConfirmed,
-    handlers,
+    lifecycleHandlers,
   ]);
 
   useInput(
@@ -163,7 +166,7 @@ export function Schedule({
       }
 
       if (key.escape) {
-        handlers?.onAborted('task selection');
+        errorHandlers?.onAborted('task selection');
         return;
       }
 
@@ -229,11 +232,11 @@ export function Schedule({
           if (onSelectionConfirmed) {
             // Complete the selection phase - it goes to timeline
             // Callback will create a new Plan showing refined tasks (pending) + Confirm (active)
-            handlers?.completeActive();
+            lifecycleHandlers?.completeActive();
             void onSelectionConfirmed(refinedTasks);
           } else {
             // No selection callback, just complete normally
-            handlers?.completeActive();
+            lifecycleHandlers?.completeActive();
           }
         }
       }
@@ -244,7 +247,7 @@ export function Schedule({
   // Sync state back to component definition
   // This ensures timeline can render historical state and tests can validate behavior
   useEffect(() => {
-    handlers?.updateState({
+    stateHandlers?.updateState({
       highlightedIndex,
       currentDefineGroupIndex,
       completedSelections,
@@ -253,7 +256,7 @@ export function Schedule({
     highlightedIndex,
     currentDefineGroupIndex,
     completedSelections,
-    handlers,
+    stateHandlers,
   ]);
 
   const listItems = tasks.map((task, idx) => {
