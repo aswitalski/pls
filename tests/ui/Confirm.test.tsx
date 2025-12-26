@@ -6,7 +6,7 @@ import { ComponentStatus } from '../../src/types/components.js';
 
 import { Confirm } from '../../src/ui/Confirm.js';
 
-import { Keys } from '../test-utils.js';
+import { Keys, createStateHandlers } from '../test-utils.js';
 
 describe('Confirm component', () => {
   describe('Rendering', () => {
@@ -17,6 +17,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers()}
         />
       );
 
@@ -31,6 +32,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers()}
         />
       );
 
@@ -46,6 +48,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers()}
         />
       );
 
@@ -64,6 +67,7 @@ describe('Confirm component', () => {
           onConfirmed={onConfirmed}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers()}
         />
       );
 
@@ -80,6 +84,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={onCancelled}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers()}
         />
       );
 
@@ -98,6 +103,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers()}
         />
       );
 
@@ -118,6 +124,7 @@ describe('Confirm component', () => {
           message="Continue?"
           state={{}}
           status={ComponentStatus.Done}
+          stateHandlers={createStateHandlers()}
           onConfirmed={onConfirmed}
           onCancelled={() => {}}
         />
@@ -136,6 +143,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={onCancelled}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers()}
         />
       );
 
@@ -155,6 +163,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers()}
         />
       );
 
@@ -170,6 +179,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers()}
         />
       );
 
@@ -186,6 +196,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
+          stateHandlers={createStateHandlers()}
         />
       );
 

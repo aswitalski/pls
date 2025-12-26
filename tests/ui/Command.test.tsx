@@ -7,8 +7,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { Command } from '../../src/ui/Command.js';
 import {
   Keys,
+  createErrorHandlers,
+  createLifecycleHandlers,
   createMockAnthropicService,
-  createMockHandlers,
+  createQueueHandlers,
+  createStateHandlers,
+  createWorkflowHandlers,
 } from '../test-utils.js';
 
 const { Escape } = Keys;
@@ -84,6 +88,11 @@ describe('Command component error handling', () => {
           service={mockService}
           status={ComponentStatus.Active}
           command="test command"
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          queueHandlers={createQueueHandlers()}
+          errorHandlers={createErrorHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -92,20 +101,24 @@ describe('Command component error handling', () => {
     });
 
     it('calls handler when aborted', () => {
-      const handlers = createMockHandlers();
+      const errorHandlers = createErrorHandlers();
       const { stdin } = render(
         <Command
           onAborted={vi.fn()}
           service={mockService}
           status={ComponentStatus.Active}
           command="test command"
-          handlers={handlers}
+          stateHandlers={createStateHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          queueHandlers={createQueueHandlers()}
+          errorHandlers={errorHandlers}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
       stdin.write(Escape);
 
-      expect(handlers.onAborted).toHaveBeenCalledTimes(1);
+      expect(errorHandlers.onAborted).toHaveBeenCalledTimes(1);
     });
 
     it('does not call onAborted when Esc is pressed after done', () => {

@@ -1,4 +1,9 @@
-import { Handlers } from '../types/components.js';
+import {
+  ErrorHandlers,
+  LifecycleHandlers,
+  QueueHandlers,
+  WorkflowHandlers,
+} from '../types/handlers.js';
 import { Task } from '../types/types.js';
 
 import { LLMService } from './anthropic.js';
@@ -14,17 +19,20 @@ export async function handleRefinement(
   selectedTasks: Task[],
   service: LLMService,
   originalCommand: string,
-  handlers: Handlers
+  queueHandlers: QueueHandlers,
+  lifecycleHandlers: LifecycleHandlers,
+  workflowHandlers: WorkflowHandlers,
+  errorHandlers: ErrorHandlers
 ): Promise<void> {
   // Create and add refinement component to queue
   const refinementDef = createRefinement(
     getRefiningMessage(),
     (operation: string) => {
-      handlers.onAborted(operation);
+      errorHandlers.onAborted(operation);
     }
   );
 
-  handlers.addToQueue(refinementDef);
+  queueHandlers.addToQueue(refinementDef);
 
   try {
     // Build refined command from selected tasks
@@ -43,11 +51,11 @@ export async function handleRefinement(
     );
 
     // Complete the Refinement component
-    handlers.completeActive();
+    lifecycleHandlers.completeActive();
 
     // Add debug components to timeline if present
-    if (refinedResult.debug && refinedResult.debug.length > 0) {
-      handlers.addToTimeline(...refinedResult.debug);
+    if (refinedResult.debug?.length) {
+      workflowHandlers.addToTimeline(...refinedResult.debug);
     }
 
     // Route refined tasks to appropriate components
@@ -56,12 +64,14 @@ export async function handleRefinement(
       refinedResult.message,
       service,
       originalCommand,
-      handlers,
+      queueHandlers,
+      workflowHandlers,
+      errorHandlers,
       false // No DEFINE tasks in refined result
     );
   } catch (err) {
-    handlers.completeActive();
+    lifecycleHandlers.completeActive();
     const errorMessage = formatErrorMessage(err);
-    handlers.onError(errorMessage);
+    errorHandlers.onError(errorMessage);
   }
 }

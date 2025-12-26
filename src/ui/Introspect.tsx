@@ -4,10 +4,7 @@ import { Box, Text } from 'ink';
 import { ComponentStatus, IntrospectProps } from '../types/components.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
-import {
-  addDebugToTimeline,
-  createReportDefinition,
-} from '../services/components.js';
+import { createReportDefinition } from '../services/components.js';
 import { DebugLevel } from '../services/configuration.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
@@ -24,16 +21,21 @@ export function Introspect({
   service,
   children,
   debug = DebugLevel.None,
-  handlers,
+  stateHandlers,
+  lifecycleHandlers,
+  queueHandlers,
+  errorHandlers,
+  workflowHandlers,
 }: IntrospectProps) {
   const isActive = status === ComponentStatus.Active;
+
   // isActive passed as prop
   const [error, setError] = useState<string | null>(null);
 
   useInput(
     (input, key) => {
       if (key.escape && isActive) {
-        handlers?.onAborted('introspection');
+        errorHandlers?.onAborted('introspection');
       }
     },
     { isActive }
@@ -64,7 +66,9 @@ export function Introspect({
 
         if (mounted) {
           // Add debug components to timeline if present
-          addDebugToTimeline(result.debug, handlers);
+          if (result.debug?.length) {
+            workflowHandlers?.addToTimeline(...result.debug);
+          }
 
           // Capabilities come directly from result - no parsing needed
           let capabilities = result.capabilities;
@@ -80,18 +84,18 @@ export function Introspect({
           }
 
           // Save state before completing
-          handlers?.updateState({
+          stateHandlers?.updateState({
             capabilities,
             message: result.message,
           });
 
           // Add Report component to queue
-          handlers?.addToQueue(
+          queueHandlers?.addToQueue(
             createReportDefinition(result.message, capabilities)
           );
 
           // Signal completion
-          handlers?.completeActive();
+          lifecycleHandlers?.completeActive();
         }
       } catch (err) {
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
@@ -101,11 +105,11 @@ export function Introspect({
           setError(errorMessage);
 
           // Save error state
-          handlers?.updateState({
+          stateHandlers?.updateState({
             error: errorMessage,
           });
 
-          handlers?.onError(errorMessage);
+          errorHandlers?.onError(errorMessage);
         }
       }
     }
@@ -115,7 +119,7 @@ export function Introspect({
     return () => {
       mounted = false;
     };
-  }, [tasks, isActive, service, debug, handlers]);
+  }, [tasks, isActive, service, debug]);
 
   // Don't render wrapper when done and nothing to show
   if (!isActive && !error && !children) {

@@ -12,7 +12,7 @@ export function Confirm({
   message,
   state,
   status,
-  handlers,
+  stateHandlers,
   onConfirmed,
   onCancelled,
 }: ConfirmProps) {
@@ -26,16 +26,16 @@ export function Confirm({
       if (key.escape) {
         // Escape: highlight "No" and cancel
         setSelectedIndex(1);
-        handlers?.updateState({ selectedIndex: 1 });
+        stateHandlers?.updateState({ selectedIndex: 1 });
         onCancelled();
       } else if (key.tab) {
         // Toggle between Yes (0) and No (1)
         const newIndex = selectedIndex === 0 ? 1 : 0;
         setSelectedIndex(newIndex);
-        handlers?.updateState({ selectedIndex: newIndex });
+        stateHandlers?.updateState({ selectedIndex: newIndex });
       } else if (key.return) {
         // Confirm selection
-        handlers?.updateState({ selectedIndex, confirmed: true });
+        stateHandlers?.updateState({ selectedIndex, confirmed: true });
         if (selectedIndex === 0) {
           onConfirmed();
         } else {

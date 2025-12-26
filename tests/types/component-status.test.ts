@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   ComponentStatus,
-  Handlers,
   BaseRuntimeProps,
   ComponentDefinition,
 } from '../../src/types/components.js';
@@ -74,27 +73,6 @@ describe('ComponentDefinition with status', () => {
       };
       expect(definition.status).toBe(status);
     });
-  });
-});
-
-describe('Handlers interface', () => {
-  it('includes all required handlers', () => {
-    const handlers: Handlers = {
-      addToQueue: vi.fn(),
-      updateState: vi.fn(),
-      completeActive: vi.fn(),
-      completeActiveAndPending: vi.fn(),
-      addToTimeline: vi.fn(),
-      onAborted: vi.fn(),
-      onError: vi.fn(),
-    };
-
-    expect(handlers.onAborted).toBeDefined();
-    expect(handlers.onError).toBeDefined();
-    expect(handlers.addToQueue).toBeDefined();
-    expect(handlers.addToTimeline).toBeDefined();
-    expect(handlers.completeActive).toBeDefined();
-    expect(handlers.updateState).toBeDefined();
   });
 });
 

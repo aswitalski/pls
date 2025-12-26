@@ -8,7 +8,6 @@ import {
 } from '../types/components.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
-import { addDebugToTimeline } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
 import { loadUserConfig } from '../services/loader.js';
 import { formatErrorMessage } from '../services/messages.js';
@@ -221,7 +220,10 @@ export function Execute({
   state,
   status,
   service,
-  handlers,
+  stateHandlers,
+  lifecycleHandlers,
+  errorHandlers,
+  workflowHandlers,
 }: ExecuteProps) {
   const isActive = status === ComponentStatus.Active;
   const [localState, dispatch] = useReducer(executeReducer, {
@@ -267,7 +269,7 @@ export function Execute({
       }
     });
 
-    handlers?.updateState({
+    stateHandlers?.updateState({
       message,
       summary,
       taskInfos: updatedTaskInfos,
@@ -276,8 +278,16 @@ export function Execute({
       completionMessage: null,
       error: null,
     });
-    handlers?.onAborted('execution');
-  }, [message, summary, taskInfos, completed, taskExecutionTimes, handlers]);
+    errorHandlers?.onAborted('execution');
+  }, [
+    message,
+    summary,
+    taskInfos,
+    completed,
+    taskExecutionTimes,
+    stateHandlers,
+    errorHandlers,
+  ]);
 
   useInput(
     (_, key) => {
@@ -322,14 +332,16 @@ export function Execute({
         if (!mounted) return;
 
         // Add debug components to timeline if present
-        addDebugToTimeline(result.debug, handlers);
+        if (result.debug?.length) {
+          workflowHandlers?.addToTimeline(...result.debug);
+        }
 
         if (!result.commands || result.commands.length === 0) {
           dispatch({
             type: 'PROCESSING_COMPLETE',
             payload: { message: result.message },
           });
-          handlers?.updateState({
+          stateHandlers?.updateState({
             message: result.message,
             summary: '',
             taskInfos: [],
@@ -338,7 +350,7 @@ export function Execute({
             completionMessage: null,
             error: null,
           });
-          handlers?.completeActive();
+          lifecycleHandlers?.completeActive();
           return;
         }
 
@@ -366,7 +378,7 @@ export function Execute({
         });
 
         // Update state after AI processing
-        handlers?.updateState({
+        stateHandlers?.updateState({
           message: newMessage,
           summary: newSummary,
           taskInfos: infos,
@@ -384,7 +396,7 @@ export function Execute({
             type: 'PROCESSING_ERROR',
             payload: { error: errorMessage },
           });
-          handlers?.updateState({
+          stateHandlers?.updateState({
             message: '',
             summary: '',
             taskInfos: [],
@@ -393,7 +405,7 @@ export function Execute({
             completionMessage: null,
             error: errorMessage,
           });
-          handlers?.onError(errorMessage);
+          errorHandlers?.onError(errorMessage);
         }
       }
     }
@@ -403,7 +415,17 @@ export function Execute({
     return () => {
       mounted = false;
     };
-  }, [tasks, isActive, service, handlers, taskInfos.length, hasProcessed]);
+  }, [
+    tasks,
+    isActive,
+    service,
+    stateHandlers,
+    lifecycleHandlers,
+    workflowHandlers,
+    errorHandlers,
+    taskInfos.length,
+    hasProcessed,
+  ]);
 
   // Handle task completion - move to next task
   const handleTaskComplete = useCallback(
@@ -419,7 +441,7 @@ export function Execute({
             : task
         );
 
-        handlers?.updateState({
+        stateHandlers?.updateState({
           message,
           summary,
           taskInfos: updatedTaskInfos,
@@ -445,7 +467,7 @@ export function Execute({
         const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
         const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
 
-        handlers?.updateState({
+        stateHandlers?.updateState({
           message,
           summary,
           taskInfos: updatedTaskInfos,
@@ -454,10 +476,17 @@ export function Execute({
           completionMessage: completion,
           error: null,
         });
-        handlers?.completeActive();
+        lifecycleHandlers?.completeActive();
       }
     },
-    [taskInfos, message, handlers, taskExecutionTimes, summary]
+    [
+      taskInfos,
+      message,
+      lifecycleHandlers,
+      taskExecutionTimes,
+      summary,
+      stateHandlers,
+    ]
   );
 
   const handleTaskError = useCallback(
@@ -474,7 +503,7 @@ export function Execute({
       if (isCritical) {
         // Critical failure - stop execution
         dispatch({ type: 'TASK_ERROR_CRITICAL', payload: { index, error } });
-        handlers?.updateState({
+        stateHandlers?.updateState({
           message,
           summary,
           taskInfos: updatedTaskInfos,
@@ -483,7 +512,7 @@ export function Execute({
           completionMessage: null,
           error,
         });
-        handlers?.onError(error);
+        errorHandlers?.onError(error);
       } else {
         // Non-critical failure - continue to next task
         const updatedTimes = [...taskExecutionTimes, elapsed];
@@ -493,7 +522,7 @@ export function Execute({
             type: 'TASK_ERROR_CONTINUE',
             payload: { index, elapsed },
           });
-          handlers?.updateState({
+          stateHandlers?.updateState({
             message,
             summary,
             taskInfos: updatedTaskInfos,
@@ -516,7 +545,7 @@ export function Execute({
           );
           const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
 
-          handlers?.updateState({
+          stateHandlers?.updateState({
             message,
             summary,
             taskInfos: updatedTaskInfos,
@@ -525,18 +554,26 @@ export function Execute({
             completionMessage: completion,
             error: null,
           });
-          handlers?.completeActive();
+          lifecycleHandlers?.completeActive();
         }
       }
     },
-    [taskInfos, message, handlers, taskExecutionTimes, summary]
+    [
+      taskInfos,
+      message,
+      stateHandlers,
+      lifecycleHandlers,
+      errorHandlers,
+      taskExecutionTimes,
+      summary,
+    ]
   );
 
   const handleTaskAbort = useCallback(
     (_index: number) => {
       // Task was aborted - execution already stopped by Escape handler
       // Just update state, don't call onAborted (already called at Execute level)
-      handlers?.updateState({
+      stateHandlers?.updateState({
         message,
         summary,
         taskInfos,
@@ -546,7 +583,7 @@ export function Execute({
         error: null,
       });
     },
-    [taskInfos, message, summary, completed, taskExecutionTimes, handlers]
+    [taskInfos, message, summary, completed, taskExecutionTimes, stateHandlers]
   );
 
   // Return null only when loading completes with no commands

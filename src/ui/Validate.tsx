@@ -6,10 +6,7 @@ import { ConfigRequirement } from '../types/skills.js';
 import { TaskType } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
-import {
-  addDebugToTimeline,
-  createConfigStepsFromSchema,
-} from '../services/components.js';
+import { createConfigStepsFromSchema } from '../services/components.js';
 import {
   DebugLevel,
   saveConfig,
@@ -36,9 +33,12 @@ export function Validate({
   onError,
   onComplete,
   onAborted,
-  handlers,
+  stateHandlers,
+  lifecycleHandlers,
+  workflowHandlers,
 }: ValidateProps) {
   const isActive = status === ComponentStatus.Active;
+
   const [error, setError] = useState<string | null>(state?.error ?? null);
   const [completionMessage, setCompletionMessage] = useState<string | null>(
     state?.completionMessage ?? null
@@ -78,7 +78,9 @@ export function Validate({
 
         if (mounted) {
           // Add debug components to timeline if present
-          addDebugToTimeline(result.debug, handlers);
+          if (result.debug?.length) {
+            workflowHandlers?.addToTimeline(...result.debug);
+          }
 
           // Extract CONFIG tasks with descriptions from result
           const configTasks = result.tasks.filter(
@@ -119,7 +121,7 @@ export function Validate({
           setConfigRequirements(withDescriptions);
 
           // Save state after validation completes
-          handlers?.updateState({
+          stateHandlers?.updateState({
             completionMessage: message,
             configRequirements: withDescriptions,
             validated: true,
@@ -134,7 +136,7 @@ export function Validate({
           setError(errorMessage);
 
           // Save error state
-          handlers?.updateState({
+          stateHandlers?.updateState({
             error: errorMessage,
             completionMessage: null,
             configRequirements: null,
@@ -205,7 +207,7 @@ export function Validate({
 
     // Mark validation component as complete before invoking callback
     // This allows the workflow to proceed to execution
-    handlers?.completeActive();
+    lifecycleHandlers?.completeActive();
 
     // Invoke callback which will queue the Execute component
     if (configRequirements) {
@@ -215,7 +217,7 @@ export function Validate({
 
   const handleConfigAborted = (operation: string) => {
     // Mark validation component as complete when aborted
-    handlers?.completeActive();
+    lifecycleHandlers?.completeActive();
     onAborted(operation);
   };
 
@@ -250,7 +252,6 @@ export function Validate({
             debug={debug}
             onFinished={handleConfigFinished}
             onAborted={handleConfigAborted}
-            handlers={handlers}
           />
         </Box>
       )}

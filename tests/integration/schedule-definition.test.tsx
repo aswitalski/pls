@@ -10,7 +10,12 @@ import { formatSkillsForPrompt } from '../../src/services/skills.js';
 import { handleRefinement } from '../../src/services/refinement.js';
 import { TaskType } from '../../src/types/types.js';
 import type { ScheduledTask, Task } from '../../src/types/types.js';
-import type { Handlers } from '../../src/types/components.js';
+import type {
+  QueueHandlers,
+  LifecycleHandlers,
+  WorkflowHandlers,
+  ErrorHandlers,
+} from '../../src/types/handlers.js';
 
 import {
   getAllLeafTasks,
@@ -138,12 +143,17 @@ describe('Define task flow', () => {
       ];
 
       // Mock handlers
-      const mockHandlers: Handlers = {
+      const queueHandlers: QueueHandlers = {
         addToQueue: vi.fn(),
-        updateState: vi.fn(),
+      };
+      const lifecycleHandlers: LifecycleHandlers = {
         completeActive: vi.fn(),
+      };
+      const workflowHandlers: WorkflowHandlers = {
         completeActiveAndPending: vi.fn(),
         addToTimeline: vi.fn(),
+      };
+      const errorHandlers: ErrorHandlers = {
         onAborted: vi.fn(),
         onError: vi.fn(),
       };
@@ -155,14 +165,22 @@ describe('Define task flow', () => {
       );
 
       // Call handleRefinement with selected tasks
-      await handleRefinement(selectedTasks, service, 'build', mockHandlers);
+      await handleRefinement(
+        selectedTasks,
+        service,
+        'build',
+        queueHandlers,
+        lifecycleHandlers,
+        workflowHandlers,
+        errorHandlers
+      );
 
       // Verify refinement was called correctly
-      expect(mockHandlers.addToQueue).toHaveBeenCalled();
-      expect(mockHandlers.completeActive).toHaveBeenCalled();
+      expect(queueHandlers.addToQueue).toHaveBeenCalled();
+      expect(lifecycleHandlers.completeActive).toHaveBeenCalled();
 
       // Verify schedule component was created
-      const queueCalls = (mockHandlers.addToQueue as ReturnType<typeof vi.fn>)
+      const queueCalls = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
         .mock.calls;
 
       const hasRefinement = queueCalls.some(
