@@ -1,6 +1,6 @@
 {
   "name": "prompt-language-shell",
-  "version": "0.8.2",
+  "version": "0.8.4",
   "description": "Your personal command-line concierge. Ask politely, and it gets things done.",
   "type": "module",
   "main": "dist/index.js",
@@ -51,7 +51,8 @@
     "ink": "^6.6.0",
     "ink-text-input": "^6.0.0",
     "react": "^19.2.3",
-    "yaml": "^2.8.2"
+    "yaml": "^2.8.2",
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@types/node": "^25.0.3",

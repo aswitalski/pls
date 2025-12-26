@@ -151,6 +151,7 @@ describe('Anthropic service - Tool-based processing', () => {
               tasks: [
                 {
                   action: 'list files',
+                  type: TaskType.Execute,
                 },
                 {
                   action: 'create directory',
@@ -173,6 +174,7 @@ describe('Anthropic service - Tool-based processing', () => {
       expect(result.tasks).toEqual([
         {
           action: 'list files',
+          type: TaskType.Execute,
         },
         {
           action: 'create directory',
@@ -270,7 +272,7 @@ describe('Anthropic service - Tool-based processing', () => {
       await expect(
         service.processWithTool('some command', 'schedule')
       ).rejects.toThrow(
-        'Invalid tool response: missing or invalid tasks array'
+        'I received an unexpected response while planning tasks'
       );
     });
 
@@ -522,7 +524,7 @@ describe('Anthropic service - Tool-based processing', () => {
       await expect(
         service.processWithTool('some command', 'schedule')
       ).rejects.toThrow(
-        "Invalid task at index 0: missing or invalid 'action' field"
+        'I received an unexpected response while planning tasks'
       );
     });
 
@@ -545,7 +547,7 @@ describe('Anthropic service - Tool-based processing', () => {
       await expect(
         service.processWithTool('some command', 'schedule')
       ).rejects.toThrow(
-        "Invalid task at index 0: missing or invalid 'action' field"
+        'I received an unexpected response while planning tasks'
       );
     });
 
@@ -568,7 +570,7 @@ describe('Anthropic service - Tool-based processing', () => {
       await expect(
         service.processWithTool('some command', 'schedule')
       ).rejects.toThrow(
-        'Invalid tool response: missing or invalid tasks array'
+        'I received an unexpected response while planning tasks'
       );
     });
   });

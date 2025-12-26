@@ -21,6 +21,24 @@ import { Task } from './Task.js';
 
 const MINIMUM_PROCESSING_TIME = 400;
 
+/**
+ * Validates that all placeholders in a command have been resolved.
+ * Throws an error if unresolved placeholders are found.
+ */
+function validatePlaceholderResolution(
+  command: string,
+  original: string
+): void {
+  const unresolvedPattern = /\{[^}]+\}/g;
+  const matches = command.match(unresolvedPattern);
+
+  if (matches && matches.length > 0) {
+    throw new Error(
+      `Unresolved placeholders in command: ${matches.join(', ')}\nCommand: ${original}`
+    );
+  }
+}
+
 interface ExecuteState {
   error: string | null;
   taskInfos: TaskInfo[];
@@ -355,10 +373,11 @@ export function Execute({
         }
 
         // Resolve placeholders in command strings
-        const resolvedCommands = result.commands.map((cmd) => ({
-          ...cmd,
-          command: replacePlaceholders(cmd.command, userConfig),
-        }));
+        const resolvedCommands = result.commands.map((cmd) => {
+          const resolved = replacePlaceholders(cmd.command, userConfig);
+          validatePlaceholderResolution(resolved, cmd.command);
+          return { ...cmd, command: resolved };
+        });
 
         // Set message, summary, and create task infos
         const newMessage = result.message;

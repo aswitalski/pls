@@ -431,8 +431,9 @@ describe('Execute component', () => {
       );
     });
 
-    it('keeps unresolved placeholders when not in config', async () => {
+    it('throws error when placeholders cannot be resolved', async () => {
       const { executeCommand } = await import('../../src/services/shell.js');
+      const errorHandlers = createErrorHandlers();
 
       const service = createMockAnthropicService({
         message: 'Deploying.',
@@ -457,7 +458,7 @@ describe('Execute component', () => {
           service={service}
           stateHandlers={createStateHandlers()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
+          errorHandlers={errorHandlers}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -465,16 +466,18 @@ describe('Execute component', () => {
 
       await vi.waitFor(
         () => {
-          expect(executeCommand).toHaveBeenCalled();
+          expect(errorHandlers.onError).toHaveBeenCalled();
         },
         { timeout: 500 }
       );
 
-      const commandArg = vi.mocked(executeCommand).mock.calls[0][0];
-      // project.alpha.path is resolved, api.secret is not (missing from config)
-      expect(commandArg.command).toBe(
-        'deploy --path /home/user/alpha --token {api.secret}'
-      );
+      // Verify error message mentions unresolved placeholders
+      const errorMessage = vi.mocked(errorHandlers.onError).mock.calls[0][0];
+      expect(errorMessage).toContain('Unresolved placeholders');
+      expect(errorMessage).toContain('{api.secret}');
+
+      // Verify executeCommand was never called
+      expect(executeCommand).not.toHaveBeenCalled();
     });
   });
 
