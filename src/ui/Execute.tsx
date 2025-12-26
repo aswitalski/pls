@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 import { Box, Text } from 'ink';
 
 import {
@@ -22,6 +22,200 @@ import { Task } from './Task.js';
 
 const MINIMUM_PROCESSING_TIME = 400;
 
+interface ExecuteState {
+  error: string | null;
+  taskInfos: TaskInfo[];
+  message: string;
+  completed: number;
+  hasProcessed: boolean;
+  taskExecutionTimes: number[];
+  completionMessage: string | null;
+  summary: string;
+}
+
+type ExecuteAction =
+  | { type: 'PROCESSING_COMPLETE'; payload: { message: string } }
+  | {
+      type: 'COMMANDS_READY';
+      payload: {
+        message: string;
+        summary: string;
+        taskInfos: TaskInfo[];
+      };
+    }
+  | { type: 'PROCESSING_ERROR'; payload: { error: string } }
+  | { type: 'TASK_COMPLETE'; payload: { index: number; elapsed: number } }
+  | {
+      type: 'ALL_TASKS_COMPLETE';
+      payload: { index: number; elapsed: number; summaryText: string };
+    }
+  | { type: 'TASK_ERROR_CRITICAL'; payload: { index: number; error: string } }
+  | {
+      type: 'TASK_ERROR_CONTINUE';
+      payload: { index: number; elapsed: number };
+    }
+  | {
+      type: 'LAST_TASK_ERROR';
+      payload: { index: number; elapsed: number; summaryText: string };
+    }
+  | { type: 'CANCEL_EXECUTION'; payload: { completed: number } };
+
+function executeReducer(
+  state: ExecuteState,
+  action: ExecuteAction
+): ExecuteState {
+  switch (action.type) {
+    case 'PROCESSING_COMPLETE':
+      return {
+        ...state,
+        message: action.payload.message,
+        hasProcessed: true,
+      };
+
+    case 'COMMANDS_READY':
+      return {
+        ...state,
+        message: action.payload.message,
+        summary: action.payload.summary,
+        taskInfos: action.payload.taskInfos,
+        completed: 0,
+      };
+
+    case 'PROCESSING_ERROR':
+      return {
+        ...state,
+        error: action.payload.error,
+        hasProcessed: true,
+      };
+
+    case 'TASK_COMPLETE': {
+      const updatedTimes = [
+        ...state.taskExecutionTimes,
+        action.payload.elapsed,
+      ];
+      const updatedTaskInfos = state.taskInfos.map((task, i) =>
+        i === action.payload.index
+          ? {
+              ...task,
+              status: ExecutionStatus.Success,
+              elapsed: action.payload.elapsed,
+            }
+          : task
+      );
+      return {
+        ...state,
+        taskInfos: updatedTaskInfos,
+        taskExecutionTimes: updatedTimes,
+        completed: action.payload.index + 1,
+      };
+    }
+
+    case 'ALL_TASKS_COMPLETE': {
+      const updatedTimes = [
+        ...state.taskExecutionTimes,
+        action.payload.elapsed,
+      ];
+      const updatedTaskInfos = state.taskInfos.map((task, i) =>
+        i === action.payload.index
+          ? {
+              ...task,
+              status: ExecutionStatus.Success,
+              elapsed: action.payload.elapsed,
+            }
+          : task
+      );
+      const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
+      const completion = `${action.payload.summaryText} in ${formatDuration(totalElapsed)}.`;
+      return {
+        ...state,
+        taskInfos: updatedTaskInfos,
+        taskExecutionTimes: updatedTimes,
+        completed: action.payload.index + 1,
+        completionMessage: completion,
+      };
+    }
+
+    case 'TASK_ERROR_CRITICAL': {
+      const updatedTaskInfos = state.taskInfos.map((task, i) =>
+        i === action.payload.index
+          ? { ...task, status: ExecutionStatus.Failed, elapsed: 0 }
+          : task
+      );
+      return {
+        ...state,
+        taskInfos: updatedTaskInfos,
+        error: action.payload.error,
+      };
+    }
+
+    case 'TASK_ERROR_CONTINUE': {
+      const updatedTimes = [
+        ...state.taskExecutionTimes,
+        action.payload.elapsed,
+      ];
+      const updatedTaskInfos = state.taskInfos.map((task, i) =>
+        i === action.payload.index
+          ? {
+              ...task,
+              status: ExecutionStatus.Failed,
+              elapsed: action.payload.elapsed,
+            }
+          : task
+      );
+      return {
+        ...state,
+        taskInfos: updatedTaskInfos,
+        taskExecutionTimes: updatedTimes,
+        completed: action.payload.index + 1,
+      };
+    }
+
+    case 'LAST_TASK_ERROR': {
+      const updatedTimes = [
+        ...state.taskExecutionTimes,
+        action.payload.elapsed,
+      ];
+      const updatedTaskInfos = state.taskInfos.map((task, i) =>
+        i === action.payload.index
+          ? {
+              ...task,
+              status: ExecutionStatus.Failed,
+              elapsed: action.payload.elapsed,
+            }
+          : task
+      );
+      const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
+      const completion = `${action.payload.summaryText} in ${formatDuration(totalElapsed)}.`;
+      return {
+        ...state,
+        taskInfos: updatedTaskInfos,
+        taskExecutionTimes: updatedTimes,
+        completed: action.payload.index + 1,
+        completionMessage: completion,
+      };
+    }
+
+    case 'CANCEL_EXECUTION': {
+      const updatedTaskInfos = state.taskInfos.map((task, taskIndex) => {
+        if (taskIndex < action.payload.completed) {
+          return { ...task, status: ExecutionStatus.Success };
+        } else if (taskIndex === action.payload.completed) {
+          return { ...task, status: ExecutionStatus.Aborted };
+        } else {
+          return { ...task, status: ExecutionStatus.Cancelled };
+        }
+      });
+      return {
+        ...state,
+        taskInfos: updatedTaskInfos,
+      };
+    }
+
+    default:
+      return state;
+  }
+}
+
 export function Execute({
   tasks,
   state,
@@ -30,20 +224,27 @@ export function Execute({
   handlers,
 }: ExecuteProps) {
   const isActive = status === ComponentStatus.Active;
-  const [error, setError] = useState<string | null>(state?.error ?? null);
-  const [taskInfos, setTaskInfos] = useState<TaskInfo[]>(
-    state?.taskInfos ?? []
-  );
-  const [message, setMessage] = useState<string>(state?.message ?? '');
-  const [completed, setCompleted] = useState<number>(state?.completed ?? 0);
-  const [hasProcessed, setHasProcessed] = useState(false);
-  const [taskExecutionTimes, setTaskExecutionTimes] = useState<number[]>(
-    state?.taskExecutionTimes ?? []
-  );
-  const [completionMessage, setCompletionMessage] = useState<string | null>(
-    state?.completionMessage ?? null
-  );
-  const [summary, setSummary] = useState<string>(state?.summary ?? '');
+  const [localState, dispatch] = useReducer(executeReducer, {
+    error: state?.error ?? null,
+    taskInfos: state?.taskInfos ?? [],
+    message: state?.message ?? '',
+    completed: state?.completed ?? 0,
+    hasProcessed: false,
+    taskExecutionTimes: state?.taskExecutionTimes ?? [],
+    completionMessage: state?.completionMessage ?? null,
+    summary: state?.summary ?? '',
+  });
+
+  const {
+    error,
+    taskInfos,
+    message,
+    completed,
+    hasProcessed,
+    taskExecutionTimes,
+    completionMessage,
+    summary,
+  } = localState;
 
   // Derive loading state from current conditions
   const isLoading =
@@ -53,24 +254,19 @@ export function Execute({
 
   // Handle cancel with useCallback to ensure we capture latest state
   const handleCancel = useCallback(() => {
-    // Mark tasks based on their status relative to completed:
-    // - Before completed: finished (Success)
-    // - At completed: interrupted (Aborted)
-    // - After completed: never started (Cancelled)
+    dispatch({ type: 'CANCEL_EXECUTION', payload: { completed } });
+
+    // Get updated task infos after cancel
     const updatedTaskInfos = taskInfos.map((task, taskIndex) => {
       if (taskIndex < completed) {
-        // Tasks that completed before interruption
         return { ...task, status: ExecutionStatus.Success };
       } else if (taskIndex === completed) {
-        // Task that was running when interrupted
         return { ...task, status: ExecutionStatus.Aborted };
       } else {
-        // Tasks that haven't started yet
         return { ...task, status: ExecutionStatus.Cancelled };
       }
     });
 
-    setTaskInfos(updatedTaskInfos);
     handlers?.updateState({
       message,
       summary,
@@ -129,7 +325,10 @@ export function Execute({
         addDebugToTimeline(result.debug, handlers);
 
         if (!result.commands || result.commands.length === 0) {
-          setHasProcessed(true);
+          dispatch({
+            type: 'PROCESSING_COMPLETE',
+            payload: { message: result.message },
+          });
           handlers?.updateState({
             message: result.message,
             summary: '',
@@ -157,10 +356,14 @@ export function Execute({
           command: cmd,
         }));
 
-        setMessage(newMessage);
-        setSummary(newSummary);
-        setTaskInfos(infos);
-        setCompleted(0); // Start with first task
+        dispatch({
+          type: 'COMMANDS_READY',
+          payload: {
+            message: newMessage,
+            summary: newSummary,
+            taskInfos: infos,
+          },
+        });
 
         // Update state after AI processing
         handlers?.updateState({
@@ -177,8 +380,10 @@ export function Execute({
 
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
-          setError(errorMessage);
-          setHasProcessed(true);
+          dispatch({
+            type: 'PROCESSING_ERROR',
+            payload: { error: errorMessage },
+          });
           handlers?.updateState({
             message: '',
             summary: '',
@@ -203,20 +408,17 @@ export function Execute({
   // Handle task completion - move to next task
   const handleTaskComplete = useCallback(
     (index: number, _output: CommandOutput, elapsed: number) => {
-      const updatedTimes = [...taskExecutionTimes, elapsed];
-      setTaskExecutionTimes(updatedTimes);
-
-      // Update task with elapsed time and success status
-      const updatedTaskInfos = taskInfos.map((task, i) =>
-        i === index
-          ? { ...task, status: ExecutionStatus.Success, elapsed }
-          : task
-      );
-      setTaskInfos(updatedTaskInfos);
-
       if (index < taskInfos.length - 1) {
         // More tasks to execute
-        setCompleted(index + 1);
+        dispatch({ type: 'TASK_COMPLETE', payload: { index, elapsed } });
+
+        const updatedTimes = [...taskExecutionTimes, elapsed];
+        const updatedTaskInfos = taskInfos.map((task, i) =>
+          i === index
+            ? { ...task, status: ExecutionStatus.Success, elapsed }
+            : task
+        );
+
         handlers?.updateState({
           message,
           summary,
@@ -228,10 +430,21 @@ export function Execute({
         });
       } else {
         // All tasks complete
-        const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
         const summaryText = summary.trim() || 'Execution completed';
+        dispatch({
+          type: 'ALL_TASKS_COMPLETE',
+          payload: { index, elapsed, summaryText },
+        });
+
+        const updatedTimes = [...taskExecutionTimes, elapsed];
+        const updatedTaskInfos = taskInfos.map((task, i) =>
+          i === index
+            ? { ...task, status: ExecutionStatus.Success, elapsed }
+            : task
+        );
+        const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
         const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
-        setCompletionMessage(completion);
+
         handlers?.updateState({
           message,
           summary,
@@ -252,17 +465,15 @@ export function Execute({
       const task = taskInfos[index];
       const isCritical = task.command.critical !== false; // Default to true
 
-      // Update task with elapsed time and failed status
       const updatedTaskInfos = taskInfos.map((task, i) =>
         i === index
           ? { ...task, status: ExecutionStatus.Failed, elapsed }
           : task
       );
-      setTaskInfos(updatedTaskInfos);
 
       if (isCritical) {
         // Critical failure - stop execution
-        setError(error);
+        dispatch({ type: 'TASK_ERROR_CRITICAL', payload: { index, error } });
         handlers?.updateState({
           message,
           summary,
@@ -276,10 +487,12 @@ export function Execute({
       } else {
         // Non-critical failure - continue to next task
         const updatedTimes = [...taskExecutionTimes, elapsed];
-        setTaskExecutionTimes(updatedTimes);
 
         if (index < taskInfos.length - 1) {
-          setCompleted(index + 1);
+          dispatch({
+            type: 'TASK_ERROR_CONTINUE',
+            payload: { index, elapsed },
+          });
           handlers?.updateState({
             message,
             summary,
@@ -291,13 +504,18 @@ export function Execute({
           });
         } else {
           // Last task, complete execution
+          const summaryText = summary.trim() || 'Execution completed';
+          dispatch({
+            type: 'LAST_TASK_ERROR',
+            payload: { index, elapsed, summaryText },
+          });
+
           const totalElapsed = updatedTimes.reduce(
             (sum, time) => sum + time,
             0
           );
-          const summaryText = summary.trim() || 'Execution completed';
           const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
-          setCompletionMessage(completion);
+
           handlers?.updateState({
             message,
             summary,
