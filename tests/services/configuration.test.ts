@@ -16,6 +16,7 @@ import {
   saveConfig,
   saveDebugSetting,
 } from '../../src/services/configuration.js';
+import { saveConfigLabels } from '../../src/services/config-labels.js';
 import { createConfigStepsFromSchema } from '../../src/services/components.js';
 import { MemoryFileSystem } from '../../src/services/filesystem.js';
 import { StepType } from '../../src/ui/Config.js';
@@ -653,6 +654,63 @@ config:
           expect(steps[0].value).toBeNull();
         }
         expect(steps[0].path).toBe('nonexistent.key');
+      });
+
+      it('uses cached label for discovered keys when available', () => {
+        // Save a cached label for the discovered key
+        saveConfigLabels(
+          { 'opera.gx.repo': 'Path to Opera GX repository' },
+          fs
+        );
+
+        const steps = createConfigStepsFromSchema(['opera.gx.repo'], fs);
+
+        expect(steps).toHaveLength(1);
+        expect(steps[0].type).toBe(StepType.Text);
+        expect(steps[0].path).toBe('opera.gx.repo');
+        expect(steps[0].description).toBe('Path to Opera GX repository');
+      });
+
+      it('falls back to raw key when no cached label exists', () => {
+        const steps = createConfigStepsFromSchema(['custom.unknown'], fs);
+
+        expect(steps).toHaveLength(1);
+        expect(steps[0].type).toBe(StepType.Text);
+        expect(steps[0].path).toBe('custom.unknown');
+        expect(steps[0].description).toBe('custom.unknown');
+      });
+
+      it('uses cached labels for multiple discovered keys', () => {
+        saveConfigLabels(
+          {
+            'opera.gx.repo': 'Path to Opera GX repository',
+            'opera.neon.repo': 'Path to Opera Neon repository',
+          },
+          fs
+        );
+
+        const steps = createConfigStepsFromSchema(
+          ['opera.gx.repo', 'opera.neon.repo'],
+          fs
+        );
+
+        expect(steps).toHaveLength(2);
+        expect(steps[0].description).toBe('Path to Opera GX repository');
+        expect(steps[1].description).toBe('Path to Opera Neon repository');
+      });
+
+      it('mixes cached labels and raw keys for discovered keys', () => {
+        // Only save label for one key
+        saveConfigLabels({ 'project.alpha.path': 'Alpha project path' }, fs);
+
+        const steps = createConfigStepsFromSchema(
+          ['project.alpha.path', 'project.beta.path'],
+          fs
+        );
+
+        expect(steps).toHaveLength(2);
+        expect(steps[0].description).toBe('Alpha project path');
+        expect(steps[1].description).toBe('project.beta.path');
       });
     });
   });

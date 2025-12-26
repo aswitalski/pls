@@ -1,6 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
+
+import { defaultFileSystem, FileSystem } from './filesystem.js';
 
 /**
  * Get the path to the config labels cache file
@@ -19,10 +20,10 @@ function getCacheDirectoryPath(): string {
 /**
  * Ensure the cache directory exists
  */
-function ensureCacheDirectoryExists(): void {
+function ensureCacheDirectoryExists(fs: FileSystem = defaultFileSystem): void {
   const cacheDir = getCacheDirectoryPath();
-  if (!existsSync(cacheDir)) {
-    mkdirSync(cacheDir, { recursive: true });
+  if (!fs.exists(cacheDir)) {
+    fs.createDirectory(cacheDir, { recursive: true });
   }
 }
 
@@ -30,14 +31,16 @@ function ensureCacheDirectoryExists(): void {
  * Load config labels from cache file
  * Returns empty object if file doesn't exist or is corrupted
  */
-export function loadConfigLabels(): Record<string, string> {
+export function loadConfigLabels(
+  fs: FileSystem = defaultFileSystem
+): Record<string, string> {
   try {
     const cachePath = getConfigLabelsCachePath();
-    if (!existsSync(cachePath)) {
+    if (!fs.exists(cachePath)) {
       return {};
     }
 
-    const content = readFileSync(cachePath, 'utf-8');
+    const content = fs.readFile(cachePath, 'utf-8');
     const parsed: unknown = JSON.parse(content);
 
     // Validate that parsed content is an object
@@ -59,30 +62,40 @@ export function loadConfigLabels(): Record<string, string> {
 /**
  * Save multiple config labels to cache
  */
-export function saveConfigLabels(labels: Record<string, string>): void {
-  ensureCacheDirectoryExists();
+export function saveConfigLabels(
+  labels: Record<string, string>,
+  fs: FileSystem = defaultFileSystem
+): void {
+  ensureCacheDirectoryExists(fs);
 
   // Load existing labels and merge with new ones
-  const existing = loadConfigLabels();
+  const existing = loadConfigLabels(fs);
   const merged = { ...existing, ...labels };
 
   const cachePath = getConfigLabelsCachePath();
   const content = JSON.stringify(merged, null, 2);
-  writeFileSync(cachePath, content, 'utf-8');
+  fs.writeFile(cachePath, content);
 }
 
 /**
  * Save a single config label to cache
  */
-export function saveConfigLabel(key: string, label: string): void {
-  saveConfigLabels({ [key]: label });
+export function saveConfigLabel(
+  key: string,
+  label: string,
+  fs: FileSystem = defaultFileSystem
+): void {
+  saveConfigLabels({ [key]: label }, fs);
 }
 
 /**
  * Get a config label from cache
  * Returns undefined if label doesn't exist
  */
-export function getConfigLabel(key: string): string | undefined {
-  const labels = loadConfigLabels();
+export function getConfigLabel(
+  key: string,
+  fs: FileSystem = defaultFileSystem
+): string | undefined {
+  const labels = loadConfigLabels(fs);
   return labels[key];
 }

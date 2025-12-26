@@ -55,6 +55,14 @@ vi.mock('../../src/services/configuration.js', async () => {
   };
 });
 
+// Mock saveConfigLabels to avoid file system operations in tests
+vi.mock('../../src/services/config-labels.js', () => ({
+  saveConfigLabels: vi.fn(),
+  saveConfigLabel: vi.fn(),
+  loadConfigLabels: vi.fn().mockReturnValue({}),
+  getConfigLabel: vi.fn().mockReturnValue(undefined),
+}));
+
 describe('Validate component', () => {
   beforeEach(() => {
     vi.clearAllMocks();

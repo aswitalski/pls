@@ -1,78 +1,64 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   getConfigLabel,
   loadConfigLabels,
   saveConfigLabels,
 } from '../../src/services/config-labels.js';
-import { safeRemoveDirectory } from '../test-utils.js';
+import { MemoryFileSystem } from '../../src/services/filesystem.js';
 
 describe('Config labels', () => {
   const testCacheDir = join(homedir(), '.pls', 'cache');
   const testCachePath = join(testCacheDir, 'config.json');
+  let fs: MemoryFileSystem;
 
   beforeEach(() => {
-    if (existsSync(testCachePath)) {
-      rmSync(testCachePath);
-    }
-  });
-
-  afterEach(() => {
-    if (existsSync(testCachePath)) {
-      rmSync(testCachePath);
-    }
+    fs = new MemoryFileSystem();
   });
 
   it('returns empty object when cache does not exist', () => {
-    expect(loadConfigLabels()).toEqual({});
+    expect(loadConfigLabels(fs)).toEqual({});
   });
 
   it('saves and loads labels', () => {
     const labels = { 'project.alpha.repo': 'Path to Alpha project' };
-    saveConfigLabels(labels);
+    saveConfigLabels(labels, fs);
 
-    expect(loadConfigLabels()).toEqual(labels);
+    expect(loadConfigLabels(fs)).toEqual(labels);
   });
 
   it('merges with existing labels', () => {
-    saveConfigLabels({ 'project.alpha.repo': 'Path to Alpha' });
-    saveConfigLabels({ 'project.beta.repo': 'Path to Beta' });
+    saveConfigLabels({ 'project.alpha.repo': 'Path to Alpha' }, fs);
+    saveConfigLabels({ 'project.beta.repo': 'Path to Beta' }, fs);
 
-    const labels = loadConfigLabels();
+    const labels = loadConfigLabels(fs);
     expect(labels['project.alpha.repo']).toBe('Path to Alpha');
     expect(labels['project.beta.repo']).toBe('Path to Beta');
   });
 
   it('returns undefined for missing key', () => {
-    expect(getConfigLabel('missing.key')).toBeUndefined();
+    expect(getConfigLabel('missing.key', fs)).toBeUndefined();
   });
 
   it('returns label for existing key', () => {
-    saveConfigLabels({ 'test.key': 'Test Label' });
+    saveConfigLabels({ 'test.key': 'Test Label' }, fs);
 
-    expect(getConfigLabel('test.key')).toBe('Test Label');
+    expect(getConfigLabel('test.key', fs)).toBe('Test Label');
   });
 
   it('handles corrupted cache gracefully', () => {
-    if (!existsSync(testCacheDir)) {
-      mkdirSync(testCacheDir, { recursive: true });
-    }
-    writeFileSync(testCachePath, 'invalid json');
+    fs.createDirectory(testCacheDir, { recursive: true });
+    fs.writeFile(testCachePath, 'invalid json');
 
-    expect(loadConfigLabels()).toEqual({});
+    expect(loadConfigLabels(fs)).toEqual({});
   });
 
   it('creates cache directory when saving', () => {
-    if (existsSync(testCacheDir)) {
-      safeRemoveDirectory(testCacheDir);
-    }
+    saveConfigLabels({ 'test.key': 'Test' }, fs);
 
-    saveConfigLabels({ 'test.key': 'Test' });
-
-    expect(existsSync(testCacheDir)).toBe(true);
-    expect(existsSync(testCachePath)).toBe(true);
+    expect(fs.exists(testCacheDir)).toBe(true);
+    expect(fs.exists(testCachePath)).toBe(true);
   });
 });

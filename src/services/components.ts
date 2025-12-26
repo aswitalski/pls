@@ -19,6 +19,7 @@ import {
 import { App, ComponentName, FeedbackType, Task } from '../types/types.js';
 
 import { LLMService } from './anthropic.js';
+import { getConfigLabel } from './config-labels.js';
 import {
   Config,
   ConfigDefinition,
@@ -121,7 +122,7 @@ export function createConfigStepsFromSchema(
     // Check if key is in schema (system config)
     if (!(key in schema)) {
       // Key is not in schema - it's from a skill or discovered config
-      // Create a simple text step with the full path as description
+      // Create a simple text step with cached label or full path as description
       const keyParts = key.split('.');
       const shortKey = keyParts[keyParts.length - 1];
 
@@ -132,8 +133,11 @@ export function createConfigStepsFromSchema(
           ? currentValue
           : null;
 
+      // Use cached label if available, fallback to key path
+      const cachedLabel = getConfigLabel(key, fs);
+
       return {
-        description: key,
+        description: cachedLabel ?? key,
         key: shortKey,
         path: key,
         type: StepType.Text,

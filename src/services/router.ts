@@ -7,6 +7,7 @@ import { asScheduledTasks } from '../types/guards.js';
 import { FeedbackType, Task, TaskType } from '../types/types.js';
 
 import { LLMService } from './anthropic.js';
+import { saveConfigLabels } from './config-labels.js';
 import {
   createAnswerDefinition,
   createConfigDefinitionWithKeys,
@@ -18,7 +19,11 @@ import {
   createScheduleDefinition,
   createValidateDefinition,
 } from './components.js';
-import { saveConfig, unflattenConfig } from './configuration.js';
+import {
+  getConfigSchema,
+  saveConfig,
+  unflattenConfig,
+} from './configuration.js';
 import {
   getCancellationMessage,
   getMixedTaskTypesError,
@@ -252,10 +257,24 @@ function routeTasksByType(
   } else if (taskType === TaskType.Introspect) {
     queueHandlers.addToQueue(createIntrospectDefinition(typeTasks, service));
   } else if (taskType === TaskType.Config) {
-    // Route to Config flow - extract keys from task params
+    // Route to Config flow - extract keys and descriptions from task params
     const configKeys = typeTasks
       .map((task) => task.params?.key as string | undefined)
       .filter((key): key is string => key !== undefined);
+
+    // Extract and cache labels from task descriptions
+    // Only cache labels for dynamically discovered keys (not in schema)
+    const schema = getConfigSchema();
+    const labels: Record<string, string> = {};
+    for (const task of typeTasks) {
+      const key = task.params?.key as string | undefined;
+      if (key && task.action && !(key in schema)) {
+        labels[key] = task.action;
+      }
+    }
+    if (Object.keys(labels).length > 0) {
+      saveConfigLabels(labels);
+    }
 
     queueHandlers.addToQueue(
       createConfigDefinitionWithKeys(

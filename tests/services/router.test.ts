@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ComponentName, Task, TaskType } from '../../src/types/types.js';
 import {
@@ -12,6 +12,7 @@ import {
   getOperationName,
   routeTasksWithConfirm,
 } from '../../src/services/router.js';
+import { saveConfigLabels } from '../../src/services/config-labels.js';
 
 import {
   createErrorHandlers,
@@ -19,7 +20,19 @@ import {
   createWorkflowHandlers,
 } from '../test-utils.js';
 
+// Mock saveConfigLabels to avoid file system operations in tests
+vi.mock('../../src/services/config-labels.js', () => ({
+  saveConfigLabels: vi.fn(),
+  saveConfigLabel: vi.fn(),
+  loadConfigLabels: vi.fn().mockReturnValue({}),
+  getConfigLabel: vi.fn().mockReturnValue(undefined),
+}));
+
 describe('Task Router', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe('getOperationName', () => {
     it('returns "introspection" when all tasks are Introspect type', () => {
       const tasks = [
@@ -903,6 +916,170 @@ describe('Task Router', () => {
         expect(configDef.props.steps).toBeDefined();
         expect(configDef.props.steps.length).toBe(2);
       }
+    });
+
+    it('caches config labels when routing Config tasks', () => {
+      const tasks = [
+        {
+          action: 'Project Alpha repository path',
+          type: TaskType.Config,
+          params: { key: 'project.alpha.path' },
+          config: [],
+        },
+        {
+          action: 'Project Beta repository path',
+          type: TaskType.Config,
+          params: { key: 'project.beta.path' },
+          config: [],
+        },
+      ];
+      const service = {} as LLMService;
+      const queueHandlers = createQueueHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const errorHandlers = createErrorHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Configure projects',
+        service,
+        'config',
+        queueHandlers,
+        workflowHandlers,
+        errorHandlers,
+        false
+      );
+
+      // Get Schedule from first addToQueue call
+      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
+        .mock.calls[0][0] as ComponentDefinition;
+
+      // Simulate Schedule completing
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
+        .mock.calls[1][0] as ComponentDefinition;
+
+      // Simulate user confirming
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Verify saveConfigLabels was called with task descriptions
+      expect(saveConfigLabels).toHaveBeenCalledWith({
+        'project.alpha.path': 'Project Alpha repository path',
+        'project.beta.path': 'Project Beta repository path',
+      });
+    });
+
+    it('does not cache labels for schema config keys', () => {
+      const tasks = [
+        {
+          action: 'Anthropic API key',
+          type: TaskType.Config,
+          params: { key: 'anthropic.key' },
+          config: [],
+        },
+        {
+          action: 'Anthropic model',
+          type: TaskType.Config,
+          params: { key: 'anthropic.model' },
+          config: [],
+        },
+        {
+          action: 'Project Alpha repository path',
+          type: TaskType.Config,
+          params: { key: 'project.alpha.path' },
+          config: [],
+        },
+      ];
+      const service = {} as LLMService;
+      const queueHandlers = createQueueHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const errorHandlers = createErrorHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Configure settings',
+        service,
+        'config',
+        queueHandlers,
+        workflowHandlers,
+        errorHandlers,
+        false
+      );
+
+      // Get Schedule from first addToQueue call
+      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
+        .mock.calls[0][0] as ComponentDefinition;
+
+      // Simulate Schedule completing
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
+        .mock.calls[1][0] as ComponentDefinition;
+
+      // Simulate user confirming
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Verify saveConfigLabels was called with ONLY non-schema keys
+      expect(saveConfigLabels).toHaveBeenCalledWith({
+        'project.alpha.path': 'Project Alpha repository path',
+      });
+    });
+
+    it('does not cache labels for Config tasks without keys', () => {
+      const tasks = [
+        {
+          action: 'Configure settings',
+          type: TaskType.Config,
+          params: { query: 'app' }, // No 'key' param
+          config: [],
+        },
+      ];
+      const service = {} as LLMService;
+      const queueHandlers = createQueueHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const errorHandlers = createErrorHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Configure app',
+        service,
+        'config',
+        queueHandlers,
+        workflowHandlers,
+        errorHandlers,
+        false
+      );
+
+      // Get Schedule from first addToQueue call
+      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
+        .mock.calls[0][0] as ComponentDefinition;
+
+      // Simulate Schedule completing
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
+        .mock.calls[1][0] as ComponentDefinition;
+
+      // Simulate user confirming
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Verify saveConfigLabels was NOT called (no keys to cache)
+      expect(saveConfigLabels).not.toHaveBeenCalled();
     });
 
     it('shows message when all tasks are Ignore type', () => {
