@@ -1,4 +1,5 @@
 import { Task, ScheduledTask, TaskType } from './types.js';
+import { TaskSchema } from './schemas.js';
 
 /**
  * Type guard to check if a task is a ScheduledTask
@@ -17,14 +18,9 @@ export function asScheduledTasks(tasks: Task[]): ScheduledTask[] {
 }
 
 /**
- * Type guard to check if a value is a valid Task
+ * Type guard to check if a value is a valid Task.
+ * Uses Zod schema for comprehensive runtime validation.
  */
 export function isTask(value: unknown): value is Task {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'action' in value &&
-    typeof (value as Task).action === 'string' &&
-    'type' in value
-  );
+  return TaskSchema.safeParse(value).success;
 }

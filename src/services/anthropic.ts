@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { z } from 'zod';
 
 import type { Capability, ComponentDefinition } from '../types/components.js';
 import type { Task } from '../types/types.js';
@@ -11,6 +12,10 @@ import {
 import { logPrompt, logResponse } from './logger.js';
 import { formatSkillsForPrompt, loadSkillsWithValidation } from './skills.js';
 import { toolRegistry } from './registry.js';
+import {
+  CommandResultSchema,
+  IntrospectResultSchema,
+} from '../types/schemas.js';
 
 export interface ExecuteCommand {
   description: string;
@@ -98,6 +103,21 @@ export function cleanAnswerText(text: string): string {
   cleaned = wrapText(cleaned, 80);
 
   return cleaned;
+}
+
+/**
+ * Formats Zod validation errors into readable error messages.
+ * Provides detailed information about what failed validation.
+ */
+function formatValidationError(error: z.ZodError): string {
+  const issues = error.issues
+    .map((issue) => {
+      const path = issue.path.length > 0 ? issue.path.join('.') : 'root';
+      return `  - ${path}: ${issue.message}`;
+    })
+    .join('\n');
+
+  return `LLM response validation failed:\n${issues}`;
 }
 
 export class AnthropicService implements LLMService {
@@ -250,128 +270,86 @@ export class AnthropicService implements LLMService {
 
     // Handle execute tool response
     if (toolName === 'execute') {
-      if (!input.message || typeof input.message !== 'string') {
-        throw new Error(
-          'Invalid tool response: missing or invalid message field'
-        );
-      }
-
-      if (!input.commands || !Array.isArray(input.commands)) {
-        throw new Error(
-          'Invalid tool response: missing or invalid commands array'
-        );
-      }
-
-      // Validate each command has required fields
-      input.commands.forEach((cmd, i) => {
-        if (!cmd.description || typeof cmd.description !== 'string') {
-          throw new Error(
-            `Invalid command at index ${String(i)}: missing or invalid 'description' field`
-          );
-        }
-        if (!cmd.command || typeof cmd.command !== 'string') {
-          throw new Error(
-            `Invalid command at index ${String(i)}: missing or invalid 'command' field`
-          );
-        }
-      });
-
-      return {
+      const validation = CommandResultSchema.safeParse({
         message: input.message,
         summary: input.summary,
         tasks: [],
         commands: input.commands,
         debug,
-      };
+      });
+
+      if (!validation.success) {
+        throw new Error(
+          `I received an unexpected response while preparing to execute commands:\n${formatValidationError(validation.error)}`
+        );
+      }
+
+      return validation.data as CommandResult;
     }
 
     // Handle answer tool response
     if (toolName === 'answer') {
+      // Validate question and answer fields exist
       if (!input.question || typeof input.question !== 'string') {
         throw new Error(
-          'Invalid tool response: missing or invalid question field'
+          'I received an unexpected response while answering your question:\nLLM response validation failed:\n  - question: missing or invalid'
         );
       }
 
       if (!input.answer || typeof input.answer !== 'string') {
         throw new Error(
-          'Invalid tool response: missing or invalid answer field'
+          'I received an unexpected response while answering your question:\nLLM response validation failed:\n  - answer: missing or invalid'
         );
       }
 
-      return {
+      // Validate the result structure with Zod
+      const validation = CommandResultSchema.safeParse({
         message: '',
         tasks: [],
         answer: cleanAnswerText(input.answer),
         debug,
-      };
+      });
+
+      if (!validation.success) {
+        throw new Error(
+          `I received an unexpected response while answering your question:\n${formatValidationError(validation.error)}`
+        );
+      }
+
+      return validation.data as CommandResult;
     }
 
     // Handle introspect tool response
     if (toolName === 'introspect') {
-      if (!input.message || typeof input.message !== 'string') {
-        throw new Error(
-          'Invalid tool response: missing or invalid message field'
-        );
-      }
-
-      if (!input.capabilities || !Array.isArray(input.capabilities)) {
-        throw new Error(
-          'Invalid tool response: missing or invalid capabilities array'
-        );
-      }
-
-      // Validate each capability has required fields
-      input.capabilities.forEach((cap, i) => {
-        if (!cap.name || typeof cap.name !== 'string') {
-          throw new Error(
-            `Invalid capability at index ${String(i)}: missing or invalid 'name' field`
-          );
-        }
-        if (!cap.description || typeof cap.description !== 'string') {
-          throw new Error(
-            `Invalid capability at index ${String(i)}: missing or invalid 'description' field`
-          );
-        }
-        if (typeof cap.origin !== 'string') {
-          throw new Error(
-            `Invalid capability at index ${String(i)}: invalid 'origin' field`
-          );
-        }
-      });
-
-      return {
+      const validation = IntrospectResultSchema.safeParse({
         message: input.message,
         capabilities: input.capabilities,
         debug,
-      };
+      });
+
+      if (!validation.success) {
+        throw new Error(
+          `I received an unexpected response while listing capabilities:\n${formatValidationError(validation.error)}`
+        );
+      }
+
+      return validation.data as IntrospectResult;
     }
 
     // Handle schedule tool responses
-    if (input.message === undefined || typeof input.message !== 'string') {
-      throw new Error(
-        'Invalid tool response: missing or invalid message field'
-      );
-    }
-
-    if (!input.tasks || !Array.isArray(input.tasks)) {
-      throw new Error('Invalid tool response: missing or invalid tasks array');
-    }
-
-    // Validate each task has required action field
-    input.tasks.forEach((task, i) => {
-      if (!task.action || typeof task.action !== 'string') {
-        throw new Error(
-          `Invalid task at index ${String(i)}: missing or invalid 'action' field`
-        );
-      }
-    });
-
-    return {
+    const validation = CommandResultSchema.safeParse({
       message: input.message,
       tasks: input.tasks,
       debug,
-    };
+    });
+
+    if (!validation.success) {
+      throw new Error(
+        `I received an unexpected response while planning tasks:\n${formatValidationError(validation.error)}`
+      );
+    }
+
+    return validation.data as CommandResult;
   }
 }
 

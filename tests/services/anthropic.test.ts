@@ -330,7 +330,9 @@ describe('Answer tool response handling', () => {
 
     await expect(
       service.processWithTool('What is TypeScript?', 'answer')
-    ).rejects.toThrow('missing or invalid question field');
+    ).rejects.toThrow(
+      'I received an unexpected response while answering your question'
+    );
   });
 
   it('validates answer tool response has answer field', async () => {
@@ -359,7 +361,9 @@ describe('Answer tool response handling', () => {
 
     await expect(
       service.processWithTool('What is TypeScript?', 'answer')
-    ).rejects.toThrow('missing or invalid answer field');
+    ).rejects.toThrow(
+      'I received an unexpected response while answering your question'
+    );
   });
 
   it('rejects answer tool response with non-string question', async () => {
@@ -389,7 +393,9 @@ describe('Answer tool response handling', () => {
 
     await expect(
       service.processWithTool('What is TypeScript?', 'answer')
-    ).rejects.toThrow('missing or invalid question field');
+    ).rejects.toThrow(
+      'I received an unexpected response while answering your question'
+    );
   });
 
   it('rejects answer tool response with non-string answer', async () => {
@@ -419,7 +425,9 @@ describe('Answer tool response handling', () => {
 
     await expect(
       service.processWithTool('What is TypeScript?', 'answer')
-    ).rejects.toThrow('missing or invalid answer field');
+    ).rejects.toThrow(
+      'I received an unexpected response while answering your question'
+    );
   });
 
   it('processes multi-line answers correctly', async () => {
@@ -503,7 +511,9 @@ describe('Introspect tool response handling', () => {
 
     await expect(
       service.processWithTool('list skills', 'introspect')
-    ).rejects.toThrow("missing or invalid 'name' field");
+    ).rejects.toThrow(
+      'I received an unexpected response while listing capabilities'
+    );
   });
 
   it('validates capability has description field', async () => {
@@ -538,7 +548,9 @@ describe('Introspect tool response handling', () => {
 
     await expect(
       service.processWithTool('list skills', 'introspect')
-    ).rejects.toThrow("missing or invalid 'description' field");
+    ).rejects.toThrow(
+      'I received an unexpected response while listing capabilities'
+    );
   });
 
   it('validates capability has valid origin field', async () => {
@@ -574,7 +586,9 @@ describe('Introspect tool response handling', () => {
 
     await expect(
       service.processWithTool('list skills', 'introspect')
-    ).rejects.toThrow("invalid 'origin' field");
+    ).rejects.toThrow(
+      'I received an unexpected response while listing capabilities'
+    );
   });
 
   it('rejects capability with non-string name', async () => {
@@ -610,7 +624,9 @@ describe('Introspect tool response handling', () => {
 
     await expect(
       service.processWithTool('list skills', 'introspect')
-    ).rejects.toThrow("missing or invalid 'name' field");
+    ).rejects.toThrow(
+      'I received an unexpected response while listing capabilities'
+    );
   });
 
   it('rejects capability with non-string description', async () => {
@@ -646,7 +662,9 @@ describe('Introspect tool response handling', () => {
 
     await expect(
       service.processWithTool('list skills', 'introspect')
-    ).rejects.toThrow("missing or invalid 'description' field");
+    ).rejects.toThrow(
+      'I received an unexpected response while listing capabilities'
+    );
   });
 });
 
