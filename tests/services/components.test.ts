@@ -5,11 +5,13 @@ import {
   createScheduleDefinition,
 } from '../../src/services/components.js';
 import {
-  BaseState,
-  CommandProps,
+  CommandDefinitionProps,
   CommandState,
   ComponentDefinition,
-  ConfigProps,
+  ComponentStatus,
+  ConfigDefinitionProps,
+  ConfigState,
+  ConfirmState,
 } from '../../src/types/components.js';
 import { App, ComponentName, TaskType } from '../../src/types/types.js';
 import { ConfigStep, StepType } from '../../src/ui/Config.js';
@@ -33,6 +35,7 @@ describe('Component Types', () => {
       const def: ComponentDefinition = {
         id: 'test-welcome-1',
         name: ComponentName.Welcome,
+        status: ComponentStatus.Awaiting,
         props: {
           app: mockApp,
         },
@@ -46,11 +49,16 @@ describe('Component Types', () => {
 
   describe('Config component definition', () => {
     it('creates valid stateful config definition', () => {
-      const state: BaseState = {};
+      const state: ConfigState = {
+        values: {},
+        completedStep: 0,
+        selectedIndex: 0,
+      };
 
       const def: ComponentDefinition = {
         id: 'test-config-1',
         name: ComponentName.Config,
+        status: ComponentStatus.Awaiting,
         state,
         props: {
           steps: [
@@ -105,7 +113,12 @@ describe('Component Types', () => {
       const def: ComponentDefinition = {
         id: 'test-config-2',
         name: ComponentName.Config,
-        state: {},
+        status: ComponentStatus.Awaiting,
+        state: {
+          values: {},
+          completedStep: 0,
+          selectedIndex: 0,
+        },
         props: {
           steps: stepConfigs,
           onFinished: () => {},
@@ -121,7 +134,7 @@ describe('Component Types', () => {
     });
 
     it('supports onFinished callback', () => {
-      const props: ConfigProps = {
+      const props: ConfigDefinitionProps = {
         steps: [
           {
             description: 'API Key',
@@ -147,7 +160,12 @@ describe('Component Types', () => {
       const def: ComponentDefinition = {
         id: 'test-config-3',
         name: ComponentName.Config,
-        state: {},
+        status: ComponentStatus.Awaiting,
+        state: {
+          values: {},
+          completedStep: 0,
+          selectedIndex: 0,
+        },
         props,
       };
 
@@ -157,11 +175,16 @@ describe('Component Types', () => {
 
   describe('Command component definition', () => {
     it('creates valid stateful command definition', () => {
-      const state: CommandState = {};
+      const state: CommandState = {
+        error: null,
+        message: null,
+        tasks: [],
+      };
 
       const def: ComponentDefinition = {
         id: 'test-command-1',
         name: ComponentName.Command,
+        status: ComponentStatus.Awaiting,
         state,
         props: {
           command: 'test command',
@@ -177,11 +200,14 @@ describe('Component Types', () => {
     it('supports error state', () => {
       const state: CommandState = {
         error: 'Test error',
+        message: null,
+        tasks: [],
       };
 
       const def: ComponentDefinition = {
         id: 'test-command-2',
         name: ComponentName.Command,
+        status: ComponentStatus.Awaiting,
         state,
         props: {
           command: 'failing command',
@@ -190,35 +216,45 @@ describe('Component Types', () => {
         },
       };
 
-      expect('state' in def && def.state.error).toBe('Test error');
+      if ('state' in def) {
+        expect(def.state.error).toBe('Test error');
+      }
     });
 
-    it('supports optional error prop', () => {
-      const props: CommandProps = {
+    it('command props do not include error', () => {
+      const props: CommandDefinitionProps = {
         command: 'test',
         service: mockService,
-        error: 'Some error',
         onAborted: vi.fn(),
       };
 
       const def: ComponentDefinition = {
         id: 'test-command-3',
         name: ComponentName.Command,
-        state: {},
+        status: ComponentStatus.Awaiting,
+        state: {
+          error: null,
+          message: null,
+          tasks: [],
+        },
         props,
       };
 
-      expect(def.props.error).toBe('Some error');
+      expect(def.name).toBe(ComponentName.Command);
     });
   });
 
   describe('Confirm component definition', () => {
     it('creates valid stateful confirm definition', () => {
-      const state: BaseState = {};
+      const state: ConfirmState = {
+        confirmed: false,
+        selectedIndex: 0,
+      };
 
       const def: ComponentDefinition = {
         id: 'test-confirm-1',
         name: ComponentName.Confirm,
+        status: ComponentStatus.Awaiting,
         state,
         props: {
           message: 'Should I execute this plan?',
@@ -238,12 +274,18 @@ describe('Component Types', () => {
         {
           id: 'test-welcome-2',
           name: ComponentName.Welcome,
+          status: ComponentStatus.Awaiting,
           props: { app: mockApp },
         },
         {
           id: 'test-config-4',
           name: ComponentName.Config,
-          state: {},
+          status: ComponentStatus.Awaiting,
+          state: {
+            values: {},
+            completedStep: 0,
+            selectedIndex: 0,
+          },
           props: {
             steps: [
               {
@@ -261,7 +303,12 @@ describe('Component Types', () => {
         {
           id: 'test-command-4',
           name: ComponentName.Command,
-          state: {},
+          status: ComponentStatus.Awaiting,
+          state: {
+            error: null,
+            message: null,
+            tasks: [],
+          },
           props: {
             command: 'test',
             service: mockService,
@@ -279,11 +326,13 @@ describe('Component Types', () => {
           case ComponentName.Config:
             expect('state' in def).toBe(true);
             if ('state' in def) {
+              expect(def.state.values).toBeDefined();
             }
             break;
           case ComponentName.Command:
             expect('state' in def).toBe(true);
             if ('state' in def) {
+              expect(def.state.error).toBeDefined();
             }
             expect(def.props.command).toBeDefined();
             break;
@@ -296,13 +345,20 @@ describe('Component Types', () => {
     it('tracks command component error states', () => {
       const errorState: CommandState = {
         error: 'Processing failed',
+        message: null,
+        tasks: [],
       };
 
-      const successState: CommandState = {};
+      const successState: CommandState = {
+        error: null,
+        message: 'Success',
+        tasks: [],
+      };
 
       const errorDef: ComponentDefinition = {
         id: 'test-command-error',
         name: ComponentName.Command,
+        status: ComponentStatus.Awaiting,
         state: errorState,
         props: { command: 'test', service: mockService, onAborted: vi.fn() },
       };
@@ -310,15 +366,18 @@ describe('Component Types', () => {
       const successDef: ComponentDefinition = {
         id: 'test-command-success',
         name: ComponentName.Command,
+        status: ComponentStatus.Awaiting,
         state: successState,
         props: { command: 'test', service: mockService, onAborted: vi.fn() },
       };
 
-      expect('state' in errorDef && errorDef.state.error).toBe(
-        'Processing failed'
-      );
+      if ('state' in errorDef) {
+        expect(errorDef.state.error).toBe('Processing failed');
+      }
 
-      expect('state' in successDef && successDef.state.error).toBeUndefined();
+      if ('state' in successDef) {
+        expect(successDef.state.error).toBeNull();
+      }
     });
   });
 

@@ -6,11 +6,16 @@ import { ComponentStatus, ConfigState } from '../../src/types/components.js';
 
 import { AnthropicModel } from '../../src/services/configuration.js';
 
-import { Config, ConfigStep, StepType } from '../../src/ui/Config.js';
+import {
+  Config,
+  ConfigView,
+  ConfigStep,
+  StepType,
+} from '../../src/ui/Config.js';
 
 import {
   Keys,
-  createStateHandlers,
+  createRequestHandlers,
   createLifecycleHandlers,
 } from '../test-utils.js';
 
@@ -30,7 +35,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+        <Config
+          steps={steps}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+        />
       );
 
       expect(result.props.steps).toHaveLength(1);
@@ -48,7 +58,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+        <Config
+          steps={steps}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+        />
       );
 
       expect(result.props.steps[0].value).toBe(AnthropicModel.Haiku);
@@ -69,9 +84,10 @@ describe('Config component interaction flows', () => {
       const result = (
         <Config
           steps={steps}
-          state={{}}
           onFinished={onFinished}
           status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
         />
       );
 
@@ -106,7 +122,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+        <Config
+          steps={steps}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+        />
       );
 
       expect(result.props.steps).toHaveLength(3);
@@ -138,7 +159,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+        <Config
+          steps={steps}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+        />
       );
 
       expect(result.props.steps[0].value).toBeNull();
@@ -168,9 +194,10 @@ describe('Config component interaction flows', () => {
       const result = (
         <Config
           steps={steps}
-          state={{}}
           onFinished={onFinished}
           status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
         />
       );
 
@@ -194,9 +221,10 @@ describe('Config component interaction flows', () => {
       const result = (
         <Config
           steps={steps}
-          state={{}}
           onAborted={onAborted}
           status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
         />
       );
 
@@ -215,7 +243,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+        <Config
+          steps={steps}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+        />
       );
 
       expect(result.props.onAborted).toBeUndefined();
@@ -235,7 +268,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+        <Config
+          steps={steps}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+        />
       );
 
       expect(result.props.steps[0].value).toBe('sk-ant-test');
@@ -267,7 +305,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+        <Config
+          steps={steps}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+        />
       );
 
       expect(result.props.steps).toHaveLength(3);
@@ -290,7 +333,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+        <Config
+          steps={steps}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+        />
       );
 
       expect(result.props.onFinished).toBeUndefined();
@@ -312,10 +360,11 @@ describe('Config component interaction flows', () => {
       const result = (
         <Config
           steps={steps}
-          state={{}}
           onFinished={onFinished}
           onAborted={onAborted}
           status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
         />
       );
 
@@ -344,7 +393,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+        <Config
+          steps={steps}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+        />
       );
 
       expect(result.props.steps[0].description).toBe('API Key (required)');
@@ -363,7 +417,12 @@ describe('Config component interaction flows', () => {
       ];
 
       const result = (
-        <Config steps={steps} state={{}} status={ComponentStatus.Active} />
+        <Config
+          steps={steps}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+        />
       );
 
       expect(result.props.steps[0].value).toBe('你好世界 🌍');
@@ -393,6 +452,8 @@ describe('Config component interaction flows', () => {
           steps={steps}
           onFinished={onFinished}
           status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
         />
       );
 
@@ -421,6 +482,8 @@ describe('Config component interaction flows', () => {
           steps={steps}
           onAborted={onAborted}
           status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
         />
       );
 
@@ -452,6 +515,8 @@ describe('Config component interaction flows', () => {
           steps={steps}
           onAborted={onAborted}
           status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
         />
       );
 
@@ -496,9 +561,8 @@ describe('Config component interaction flows', () => {
       ];
 
       const { lastFrame } = render(
-        <Config
+        <ConfigView
           steps={steps}
-          status={ComponentStatus.Done}
           state={{
             values: {
               'opera.gx.repo': '~/Developer/gx',
@@ -506,7 +570,9 @@ describe('Config component interaction flows', () => {
               'opera.one.repo': '~/Developer/one',
             },
             completedStep: 3,
+            selectedIndex: 0,
           }}
+          status={ComponentStatus.Done}
         />
       );
 
@@ -538,16 +604,17 @@ describe('Config component interaction flows', () => {
 
       // State values should override defaults when not active
       const { lastFrame } = render(
-        <Config
+        <ConfigView
           steps={steps}
-          status={ComponentStatus.Done}
           state={{
             values: {
               'section.first': 'saved1',
               'section.second': 'saved2',
             },
             completedStep: 2,
+            selectedIndex: 0,
           }}
+          status={ComponentStatus.Done}
         />
       );
 
@@ -560,8 +627,8 @@ describe('Config component interaction flows', () => {
 
     it('calls updateState BEFORE onFinished to preserve state', () => {
       const callOrder: string[] = [];
-      const stateHandlers = createStateHandlers({
-        updateState: vi.fn(() => callOrder.push('updateState')),
+      const stateHandlers = createRequestHandlers({
+        onCompleted: vi.fn(() => callOrder.push('updateState')),
       });
       const lifecycleHandlers = createLifecycleHandlers({
         completeActive: vi.fn((..._items) => callOrder.push('completeActive')),
@@ -586,7 +653,7 @@ describe('Config component interaction flows', () => {
       const { stdin } = render(
         <Config
           steps={steps}
-          stateHandlers={stateHandlers}
+          requestHandlers={stateHandlers}
           lifecycleHandlers={lifecycleHandlers}
           onFinished={onFinished}
           status={ComponentStatus.Active}
@@ -602,7 +669,7 @@ describe('Config component interaction flows', () => {
         'onFinished',
         'completeActive',
       ]);
-      expect(stateHandlers.updateState).toHaveBeenCalledWith({
+      expect(stateHandlers.onCompleted).toHaveBeenCalledWith({
         values: { 'settings.debug': 'true' },
         completedStep: 1,
         selectedIndex: 0,
@@ -611,8 +678,8 @@ describe('Config component interaction flows', () => {
 
     it('completion success: calls handlers.completeActive with success feedback', () => {
       const callOrder: string[] = [];
-      const stateHandlers = createStateHandlers<ConfigState>({
-        updateState: vi.fn(() => callOrder.push('updateState')),
+      const stateHandlers = createRequestHandlers<ConfigState>({
+        onCompleted: vi.fn(() => callOrder.push('updateState')),
       });
       const lifecycleHandlers = createLifecycleHandlers({
         completeActive: vi.fn(),
@@ -648,7 +715,7 @@ describe('Config component interaction flows', () => {
       const { stdin } = render(
         <Config
           steps={steps}
-          stateHandlers={stateHandlers}
+          requestHandlers={stateHandlers}
           lifecycleHandlers={lifecycleHandlers}
           status={ComponentStatus.Active}
         />
@@ -663,10 +730,10 @@ describe('Config component interaction flows', () => {
       // Verify updateState was called at least twice:
       // 1. After completing first step
       // 2. Before aborting
-      expect(stateHandlers.updateState).toHaveBeenCalled();
+      expect(stateHandlers.onCompleted).toHaveBeenCalled();
 
       // Check that the final updateState call saved the first value
-      const updateStateMock = vi.mocked(stateHandlers.updateState);
+      const updateStateMock = vi.mocked(stateHandlers.onCompleted);
       const lastCall = updateStateMock.mock.calls.at(-1)![0];
       expect(lastCall.values).toEqual(
         expect.objectContaining({ 'section.first': 'optionA' })
@@ -675,8 +742,8 @@ describe('Config component interaction flows', () => {
 
     it('abort: works without onAborted callback', () => {
       let lastFeedback: any;
-      const stateHandlers = createStateHandlers({
-        updateState: vi.fn(),
+      const stateHandlers = createRequestHandlers({
+        onCompleted: vi.fn(),
       });
       const lifecycleHandlers = createLifecycleHandlers({
         completeActive: vi.fn((feedback) => {
@@ -697,7 +764,7 @@ describe('Config component interaction flows', () => {
       const { stdin } = render(
         <Config
           steps={steps}
-          stateHandlers={stateHandlers}
+          requestHandlers={stateHandlers}
           lifecycleHandlers={lifecycleHandlers}
           status={ComponentStatus.Active}
         />
@@ -730,13 +797,14 @@ describe('Config component interaction flows', () => {
 
       // Render as inactive (in timeline) with saved state
       const { lastFrame } = render(
-        <Config
+        <ConfigView
           steps={steps}
-          status={ComponentStatus.Done}
           state={{
             values: { 'settings.debug': 'false' },
             completedStep: 1,
+            selectedIndex: 0,
           }}
+          status={ComponentStatus.Done}
         />
       );
 
@@ -764,13 +832,14 @@ describe('Config component interaction flows', () => {
 
       // User changed from default 'no' to 'yes'
       const { lastFrame } = render(
-        <Config
+        <ConfigView
           steps={steps}
-          status={ComponentStatus.Done}
           state={{
             values: { 'feature.enabled': 'true' },
             completedStep: 1,
+            selectedIndex: 0,
           }}
+          status={ComponentStatus.Done}
         />
       );
 

@@ -6,7 +6,7 @@ import { ComponentStatus } from '../../src/types/components.js';
 
 import { Confirm } from '../../src/ui/Confirm.js';
 
-import { Keys, createStateHandlers } from '../test-utils.js';
+import { Keys, createRequestHandlers } from '../test-utils.js';
 
 describe('Confirm component', () => {
   describe('Rendering', () => {
@@ -17,7 +17,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers()}
         />
       );
 
@@ -32,7 +32,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers()}
         />
       );
 
@@ -48,7 +48,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers()}
         />
       );
 
@@ -67,7 +67,7 @@ describe('Confirm component', () => {
           onConfirmed={onConfirmed}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers()}
         />
       );
 
@@ -84,7 +84,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={onCancelled}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers()}
         />
       );
 
@@ -103,7 +103,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers()}
         />
       );
 
@@ -122,9 +122,8 @@ describe('Confirm component', () => {
       const { stdin } = render(
         <Confirm
           message="Continue?"
-          state={{}}
           status={ComponentStatus.Done}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers()}
           onConfirmed={onConfirmed}
           onCancelled={() => {}}
         />
@@ -143,7 +142,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={onCancelled}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers()}
         />
       );
 
@@ -159,11 +158,10 @@ describe('Confirm component', () => {
       const { lastFrame } = render(
         <Confirm
           message="Continue?"
-          state={{}}
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers()}
         />
       );
 
@@ -179,7 +177,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers()}
         />
       );
 
@@ -196,7 +194,7 @@ describe('Confirm component', () => {
           onConfirmed={() => {}}
           onCancelled={() => {}}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers()}
         />
       );
 

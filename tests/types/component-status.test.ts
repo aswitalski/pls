@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   ComponentStatus,
-  BaseRuntimeProps,
   ComponentDefinition,
 } from '../../src/types/components.js';
 import { ComponentName } from '../../src/types/types.js';
@@ -32,7 +31,7 @@ describe('ComponentDefinition with status', () => {
     const definition: ComponentDefinition = {
       id: 'test-2',
       name: ComponentName.Confirm,
-      state: {},
+      state: { confirmed: false, selectedIndex: 0 },
       props: {
         message: 'Test?',
         onConfirmed: vi.fn(),
@@ -44,16 +43,17 @@ describe('ComponentDefinition with status', () => {
     expect(definition.status).toBe(ComponentStatus.Active);
   });
 
-  it('allows component without status', () => {
+  it('allows component with status', () => {
     const definition: ComponentDefinition = {
       id: 'test-3',
       name: ComponentName.Message,
+      status: ComponentStatus.Done,
       props: {
         text: 'Hello',
       },
     };
 
-    expect(definition.status).toBeUndefined();
+    expect(definition.status).toBe(ComponentStatus.Done);
   });
 
   it('allows all status values on components', () => {
@@ -73,24 +73,6 @@ describe('ComponentDefinition with status', () => {
       };
       expect(definition.status).toBe(status);
     });
-  });
-});
-
-describe('BaseRuntimeProps with status', () => {
-  it('includes optional status field', () => {
-    const props: BaseRuntimeProps = {
-      status: ComponentStatus.Active,
-    };
-
-    expect(props.status).toBe(ComponentStatus.Active);
-  });
-
-  it('allows status without isActive', () => {
-    const props: BaseRuntimeProps = {
-      status: ComponentStatus.Pending,
-    };
-
-    expect(props.status).toBe(ComponentStatus.Pending);
   });
 });
 
@@ -141,7 +123,7 @@ describe('Type safety', () => {
     const definition: ComponentDefinition = {
       id: 'test',
       name: ComponentName.Confirm,
-      state: { confirmed: true },
+      state: { confirmed: true, selectedIndex: 0 },
       props: {
         message: 'Test?',
         onConfirmed: vi.fn(),
@@ -150,7 +132,8 @@ describe('Type safety', () => {
       status: ComponentStatus.Active,
     };
 
-    expect('state' in definition).toBe(true);
-    expect(definition.state).toEqual({ confirmed: true });
+    if ('state' in definition) {
+      expect(definition.state).toEqual({ confirmed: true, selectedIndex: 0 });
+    }
   });
 });

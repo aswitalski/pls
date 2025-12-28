@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ComponentStatus } from '../../src/types/components.js';
+import { ComponentStatus, ValidateState } from '../../src/types/components.js';
 import { ConfigRequirement } from '../../src/types/skills.js';
 import { Task, TaskType } from '../../src/types/types.js';
 
@@ -12,7 +12,7 @@ import {
   createLifecycleHandlers,
   createMockAnthropicService,
   createMockDebugComponents,
-  createStateHandlers,
+  createRequestHandlers,
   createWorkflowHandlers,
   Keys,
 } from '../test-utils.js';
@@ -90,10 +90,10 @@ describe('Validate component', () => {
           missingConfig={missingConfig}
           userRequest="build alpha"
           service={service}
-          onComplete={vi.fn()}
+          onValidationComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ValidateState>()}
           lifecycleHandlers={createLifecycleHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
@@ -123,10 +123,12 @@ describe('Validate component', () => {
         <Validate
           missingConfig={missingConfig}
           userRequest="build alpha"
-          state={{}}
           status={ComponentStatus.Done}
+          requestHandlers={createRequestHandlers<ValidateState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           service={service}
-          onComplete={vi.fn()}
+          onValidationComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
         />
@@ -137,7 +139,7 @@ describe('Validate component', () => {
   });
 
   describe('Completion with single property', () => {
-    it('calls onComplete with config requirements', async () => {
+    it('adds config component to queue', async () => {
       const missingConfig: ConfigRequirement[] = [
         { path: 'product.alpha.path', type: 'string' },
       ];
@@ -152,32 +154,26 @@ describe('Validate component', () => {
       ];
 
       const service = createMockAnthropicService({ tasks });
-      const onComplete = vi.fn();
+      const workflowHandlers = createWorkflowHandlers();
 
       render(
         <Validate
           missingConfig={missingConfig}
           userRequest="build alpha"
           service={service}
-          onComplete={onComplete}
+          onValidationComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ValidateState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          workflowHandlers={createWorkflowHandlers()}
+          workflowHandlers={workflowHandlers}
           status={ComponentStatus.Active}
         />
       );
 
       await vi.waitFor(
         () => {
-          expect(onComplete).toHaveBeenCalledWith([
-            {
-              path: 'product.alpha.path',
-              type: 'string',
-              description: 'Product Alpha path {product.alpha.path}',
-            },
-          ]);
+          expect(workflowHandlers.addToQueue).toHaveBeenCalled();
         },
         { timeout: 500 }
       );
@@ -204,10 +200,10 @@ describe('Validate component', () => {
           missingConfig={missingConfig}
           userRequest="setup api"
           service={service}
-          onComplete={vi.fn()}
+          onValidationComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ValidateState>()}
           lifecycleHandlers={createLifecycleHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
@@ -231,7 +227,7 @@ describe('Validate component', () => {
   });
 
   describe('Completion with multiple properties', () => {
-    it('calls onComplete with multiple config requirements', async () => {
+    it('adds config component to queue', async () => {
       const missingConfig: ConfigRequirement[] = [
         { path: 'product.alpha.path', type: 'string' },
         { path: 'product.alpha.enabled', type: 'boolean' },
@@ -253,37 +249,26 @@ describe('Validate component', () => {
       ];
 
       const service = createMockAnthropicService({ tasks });
-      const onComplete = vi.fn();
+      const workflowHandlers = createWorkflowHandlers();
 
       render(
         <Validate
           missingConfig={missingConfig}
           userRequest="build alpha"
           service={service}
-          onComplete={onComplete}
+          onValidationComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ValidateState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          workflowHandlers={createWorkflowHandlers()}
+          workflowHandlers={workflowHandlers}
           status={ComponentStatus.Active}
         />
       );
 
       await vi.waitFor(
         () => {
-          expect(onComplete).toHaveBeenCalledWith([
-            {
-              path: 'product.alpha.path',
-              type: 'string',
-              description: 'Product Alpha path',
-            },
-            {
-              path: 'product.alpha.enabled',
-              type: 'boolean',
-              description: 'Product Alpha enabled',
-            },
-          ]);
+          expect(workflowHandlers.addToQueue).toHaveBeenCalled();
         },
         { timeout: 500 }
       );
@@ -317,10 +302,10 @@ describe('Validate component', () => {
           missingConfig={missingConfig}
           userRequest="build all"
           service={service}
-          onComplete={vi.fn()}
+          onValidationComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ValidateState>()}
           lifecycleHandlers={createLifecycleHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
@@ -358,10 +343,10 @@ describe('Validate component', () => {
           missingConfig={missingConfig}
           userRequest="setup"
           service={service}
-          onComplete={vi.fn()}
+          onValidationComplete={vi.fn()}
           onError={onError}
           onAborted={vi.fn()}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ValidateState>()}
           lifecycleHandlers={createLifecycleHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
@@ -401,10 +386,10 @@ describe('Validate component', () => {
           missingConfig={missingConfig}
           userRequest="setup"
           service={service}
-          onComplete={vi.fn()}
+          onValidationComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={onAborted}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ValidateState>()}
           lifecycleHandlers={createLifecycleHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
@@ -435,26 +420,26 @@ describe('Validate component', () => {
       ];
 
       const service = createMockAnthropicService({ tasks });
-      const onComplete = vi.fn();
+      const workflowHandlers = createWorkflowHandlers();
 
       render(
         <Validate
           missingConfig={missingConfig}
           userRequest="quick setup"
           service={service}
-          onComplete={onComplete}
+          onValidationComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ValidateState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          workflowHandlers={createWorkflowHandlers()}
+          workflowHandlers={workflowHandlers}
           status={ComponentStatus.Active}
         />
       );
 
       await vi.waitFor(
         () => {
-          expect(onComplete).toHaveBeenCalled();
+          expect(workflowHandlers.addToQueue).toHaveBeenCalled();
         },
         { timeout: 500 }
       );
@@ -480,32 +465,26 @@ describe('Validate component', () => {
       ];
 
       const service = createMockAnthropicService({ tasks });
-      const onComplete = vi.fn();
+      const workflowHandlers = createWorkflowHandlers();
 
       render(
         <Validate
           missingConfig={missingConfig}
           userRequest="enable feature"
           service={service}
-          onComplete={onComplete}
+          onValidationComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ValidateState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          workflowHandlers={createWorkflowHandlers()}
+          workflowHandlers={workflowHandlers}
           status={ComponentStatus.Active}
         />
       );
 
       await vi.waitFor(
         () => {
-          expect(onComplete).toHaveBeenCalledWith([
-            {
-              path: 'feature.enabled',
-              type: 'boolean',
-              description: 'Feature enabled',
-            },
-          ]);
+          expect(workflowHandlers.addToQueue).toHaveBeenCalled();
         },
         { timeout: 500 }
       );
@@ -526,32 +505,26 @@ describe('Validate component', () => {
       ];
 
       const service = createMockAnthropicService({ tasks });
-      const onComplete = vi.fn();
+      const workflowHandlers = createWorkflowHandlers();
 
       render(
         <Validate
           missingConfig={missingConfig}
           userRequest="setup"
           service={service}
-          onComplete={onComplete}
+          onValidationComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ValidateState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          workflowHandlers={createWorkflowHandlers()}
+          workflowHandlers={workflowHandlers}
           status={ComponentStatus.Active}
         />
       );
 
       await vi.waitFor(
         () => {
-          expect(onComplete).toHaveBeenCalledWith([
-            {
-              path: 'unknown.key',
-              type: 'string',
-              description: 'Unknown setting',
-            },
-          ]);
+          expect(workflowHandlers.addToQueue).toHaveBeenCalled();
         },
         { timeout: 500 }
       );
@@ -584,10 +557,10 @@ describe('Validate component', () => {
           missingConfig={missingConfig}
           userRequest="setup"
           service={service}
-          onComplete={vi.fn()}
+          onValidationComplete={vi.fn()}
           onError={vi.fn()}
           onAborted={vi.fn()}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ValidateState>()}
           lifecycleHandlers={createLifecycleHandlers()}
           workflowHandlers={workflowHandlers}
           status={ComponentStatus.Active}

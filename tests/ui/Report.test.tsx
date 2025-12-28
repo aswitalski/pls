@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it } from 'vitest';
 
-import { Capability } from '../../src/types/components.js';
+import { ComponentStatus, Capability } from '../../src/types/components.js';
 import { Origin } from '../../src/types/types.js';
 
 import { Report } from '../../src/ui/Report.js';
@@ -23,7 +23,11 @@ describe('Report component', () => {
     ];
 
     const { lastFrame } = render(
-      <Report message="Here are my capabilities:" capabilities={capabilities} />
+      <Report
+        message="Here are my capabilities:"
+        capabilities={capabilities}
+        status={ComponentStatus.Done}
+      />
     );
 
     expect(lastFrame()).toContain('Here are my capabilities:');
@@ -37,7 +41,11 @@ describe('Report component', () => {
     ];
 
     const { lastFrame } = render(
-      <Report message="Available:" capabilities={capabilities} />
+      <Report
+        message="Available:"
+        capabilities={capabilities}
+        status={ComponentStatus.Done}
+      />
     );
 
     const output = lastFrame();
@@ -47,7 +55,11 @@ describe('Report component', () => {
 
   it('handles empty capabilities list', () => {
     const { lastFrame } = render(
-      <Report message="No capabilities found:" capabilities={[]} />
+      <Report
+        message="No capabilities found:"
+        capabilities={[]}
+        status={ComponentStatus.Done}
+      />
     );
 
     expect(lastFrame()).toContain('No capabilities found:');

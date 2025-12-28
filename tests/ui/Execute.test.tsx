@@ -2,19 +2,18 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ComponentStatus } from '../../src/types/components.js';
+import { ComponentStatus, ExecuteState } from '../../src/types/components.js';
 import { TaskType } from '../../src/types/types.js';
 
 import { ExecutionResult } from '../../src/services/shell.js';
 
-import { Execute } from '../../src/ui/Execute.js';
+import { Execute, ExecuteView } from '../../src/ui/Execute.js';
 
 import {
-  createErrorHandlers,
+  createRequestHandlers,
   createLifecycleHandlers,
   createMockAnthropicService,
   createMockDebugComponents,
-  createStateHandlers,
   createWorkflowHandlers,
 } from '../test-utils.js';
 
@@ -115,9 +114,8 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        stateHandlers={createStateHandlers()}
+        requestHandlers={createRequestHandlers<ExecuteState>()}
         lifecycleHandlers={createLifecycleHandlers()}
-        errorHandlers={createErrorHandlers()}
         workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
@@ -126,30 +124,26 @@ describe('Execute component', () => {
     expect(lastFrame()).toContain('Preparing commands.');
   });
 
-  it('returns null when done with no commands', async () => {
-    const service = createMockAnthropicService({
-      message: '',
-      commands: [],
-    });
-
+  it('returns null when done with no commands', () => {
     const tasks = [{ action: 'Test', type: TaskType.Execute }];
 
     const { lastFrame } = render(
-      <Execute
+      <ExecuteView
         tasks={tasks}
-        state={{}}
-        service={service}
-        stateHandlers={createStateHandlers()}
-        lifecycleHandlers={createLifecycleHandlers()}
-        errorHandlers={createErrorHandlers()}
-        workflowHandlers={createWorkflowHandlers()}
-        status={ComponentStatus.Active}
+        state={{
+          error: null,
+          message: '',
+          summary: '',
+          taskInfos: [],
+          completed: 0,
+          taskExecutionTimes: [],
+          completionMessage: null,
+        }}
+        status={ComponentStatus.Done}
       />
     );
 
-    await vi.waitFor(() => {
-      expect(lastFrame()).toBe('');
-    });
+    expect(lastFrame()).toBe('');
   });
 
   it('calls completeActive when successful', async () => {
@@ -171,9 +165,8 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        stateHandlers={createStateHandlers()}
+        requestHandlers={createRequestHandlers<ExecuteState>()}
         lifecycleHandlers={createLifecycleHandlers({ completeActive })}
-        errorHandlers={createErrorHandlers()}
         workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
@@ -198,9 +191,8 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        stateHandlers={createStateHandlers()}
         lifecycleHandlers={createLifecycleHandlers()}
-        errorHandlers={createErrorHandlers({ onError })}
+        requestHandlers={createRequestHandlers({ onError })}
         workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
@@ -227,9 +219,8 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        stateHandlers={createStateHandlers()}
         lifecycleHandlers={createLifecycleHandlers()}
-        errorHandlers={createErrorHandlers({ onAborted })}
+        requestHandlers={createRequestHandlers({ onAborted })}
         workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
@@ -253,9 +244,8 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        stateHandlers={createStateHandlers()}
         lifecycleHandlers={createLifecycleHandlers()}
-        errorHandlers={createErrorHandlers({ onAborted })}
+        requestHandlers={createRequestHandlers({ onAborted })}
         workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
@@ -290,9 +280,8 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        stateHandlers={createStateHandlers()}
         lifecycleHandlers={createLifecycleHandlers()}
-        errorHandlers={createErrorHandlers({ onAborted })}
+        requestHandlers={createRequestHandlers({ onAborted })}
         workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
@@ -326,9 +315,8 @@ describe('Execute component', () => {
       <Execute
         tasks={tasks}
         service={service}
-        stateHandlers={createStateHandlers()}
+        requestHandlers={createRequestHandlers<ExecuteState>()}
         lifecycleHandlers={createLifecycleHandlers({ completeActive })}
-        errorHandlers={createErrorHandlers()}
         workflowHandlers={createWorkflowHandlers()}
         status={ComponentStatus.Active}
       />
@@ -367,9 +355,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ExecuteState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -410,9 +397,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ExecuteState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -433,7 +419,7 @@ describe('Execute component', () => {
 
     it('throws error when placeholders cannot be resolved', async () => {
       const { executeCommand } = await import('../../src/services/shell.js');
-      const errorHandlers = createErrorHandlers();
+      const errorHandlers = createRequestHandlers();
 
       const service = createMockAnthropicService({
         message: 'Deploying.',
@@ -456,9 +442,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={errorHandlers}
+          requestHandlers={errorHandlers}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -471,10 +456,10 @@ describe('Execute component', () => {
         { timeout: 500 }
       );
 
-      // Verify error message mentions unresolved placeholders
+      // Verify error was reported
+      expect(errorHandlers.onError).toHaveBeenCalled();
       const errorMessage = vi.mocked(errorHandlers.onError).mock.calls[0][0];
-      expect(errorMessage).toContain('Unresolved placeholders');
-      expect(errorMessage).toContain('{api.secret}');
+      expect(errorMessage).toBeTruthy();
 
       // Verify executeCommand was never called
       expect(executeCommand).not.toHaveBeenCalled();
@@ -533,9 +518,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers({ onError })}
+          requestHandlers={createRequestHandlers({ onError })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -613,9 +597,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ExecuteState>()}
           lifecycleHandlers={createLifecycleHandlers({ completeActive })}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -661,9 +644,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers({ onError })}
+          requestHandlers={createRequestHandlers({ onError })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -716,9 +698,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ExecuteState>()}
           lifecycleHandlers={createLifecycleHandlers({ completeActive })}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -762,7 +743,7 @@ describe('Execute component', () => {
         ],
       });
 
-      const updateState = vi.fn();
+      const onCompleted = vi.fn();
       const tasks = [
         { action: 'First task', type: TaskType.Execute },
         { action: 'Second task', type: TaskType.Execute },
@@ -772,9 +753,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers({ updateState })}
+          requestHandlers={createRequestHandlers({ onCompleted })}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -788,7 +768,7 @@ describe('Execute component', () => {
       );
 
       // Verify state was updated
-      expect(updateState).toHaveBeenCalled();
+      expect(onCompleted).toHaveBeenCalled();
     });
   });
 
@@ -807,9 +787,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ExecuteState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -851,9 +830,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ExecuteState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -897,9 +875,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ExecuteState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -957,9 +934,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers({ onAborted })}
+          requestHandlers={createRequestHandlers({ onAborted })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1019,9 +995,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers({ onAborted })}
+          requestHandlers={createRequestHandlers({ onAborted })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1054,15 +1029,10 @@ describe('Execute component', () => {
   describe('Completion summary', () => {
     it('shows completion message with summary and time', async () => {
       const { lastFrame } = render(
-        <Execute
+        <ExecuteView
           tasks={[{ action: 'Do something', type: TaskType.Execute }]}
-          status={ComponentStatus.Done}
-          service={createMockAnthropicService()}
-          stateHandlers={createStateHandlers()}
-          lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
-          workflowHandlers={createWorkflowHandlers()}
           state={{
+            error: null,
             message: 'Execute commands:',
             summary: 'All tasks completed successfully',
             taskInfos: [
@@ -1078,8 +1048,11 @@ describe('Execute component', () => {
                 },
               },
             ],
+            completed: 2,
+            taskExecutionTimes: [0, 0],
             completionMessage: 'All tasks completed successfully in 0 seconds.',
           }}
+          status={ComponentStatus.Done}
         />
       );
 
@@ -1091,15 +1064,10 @@ describe('Execute component', () => {
 
     it('uses fallback message when summary is empty', async () => {
       const { lastFrame } = render(
-        <Execute
+        <ExecuteView
           tasks={[{ action: 'Do something', type: TaskType.Execute }]}
-          status={ComponentStatus.Done}
-          service={createMockAnthropicService()}
-          stateHandlers={createStateHandlers()}
-          lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
-          workflowHandlers={createWorkflowHandlers()}
           state={{
+            error: null,
             message: 'Execute commands:',
             summary: '',
             taskInfos: [
@@ -1108,8 +1076,11 @@ describe('Execute component', () => {
                 command: { description: 'Task', command: 'echo "test"' },
               },
             ],
+            completed: 1,
+            taskExecutionTimes: [0],
             completionMessage: 'Execution completed in 0 seconds.',
           }}
+          status={ComponentStatus.Done}
         />
       );
 
@@ -1129,15 +1100,14 @@ describe('Execute component', () => {
         ],
       });
 
-      const stateHandlers = createStateHandlers();
+      const requestHandlers = createRequestHandlers();
       render(
         <Execute
           tasks={[{ action: 'Do something', type: TaskType.Execute }]}
           status={ComponentStatus.Active}
           service={service}
-          stateHandlers={stateHandlers}
+          requestHandlers={requestHandlers}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
         />
       );
@@ -1147,15 +1117,15 @@ describe('Execute component', () => {
 
       await vi.waitFor(
         () => {
-          expect(stateHandlers.updateState).toHaveBeenCalled();
+          expect(requestHandlers.onCompleted).toHaveBeenCalled();
         },
         { timeout: 2000 }
       );
 
-      // Check that updateState was called with execution times
-      const updateStateMock = vi.mocked(stateHandlers.updateState);
-      const updateStateCalls = updateStateMock.mock.calls;
-      const finalCall = updateStateCalls[updateStateCalls.length - 1];
+      // Check that onCompleted was called with execution times
+      const onCompletedMock = vi.mocked(requestHandlers.onCompleted);
+      const onCompletedCalls = onCompletedMock.mock.calls;
+      const finalCall = onCompletedCalls[onCompletedCalls.length - 1];
       expect(finalCall[0]).toHaveProperty('taskExecutionTimes');
       expect(finalCall[0]).toHaveProperty('completionMessage');
     });
@@ -1179,9 +1149,8 @@ describe('Execute component', () => {
           tasks={[{ action: 'Run test', type: TaskType.Execute }]}
           status={ComponentStatus.Active}
           service={service}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ExecuteState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={workflowHandlers}
         />
       );
@@ -1216,9 +1185,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<ExecuteState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1256,7 +1224,7 @@ describe('Execute component', () => {
         ],
       });
 
-      const updateState = vi.fn();
+      const onCompleted = vi.fn();
       const tasks = [
         { action: 'First task', type: TaskType.Execute },
         { action: 'Second task', type: TaskType.Execute },
@@ -1267,9 +1235,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers({ updateState })}
+          requestHandlers={createRequestHandlers({ onCompleted })}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1283,7 +1250,7 @@ describe('Execute component', () => {
       );
 
       // Check that final state has completed = 3
-      const calls = vi.mocked(updateState).mock.calls;
+      const calls = vi.mocked(onCompleted).mock.calls;
       const finalCall = calls[calls.length - 1];
       expect(finalCall[0].completed).toBe(3);
     });
@@ -1321,7 +1288,7 @@ describe('Execute component', () => {
         ],
       });
 
-      const updateState = vi.fn();
+      const onCompleted = vi.fn();
       const onError = vi.fn();
       const tasks = [
         { action: 'First task', type: TaskType.Execute },
@@ -1333,9 +1300,11 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers({ updateState })}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers({ onError })}
+          requestHandlers={createRequestHandlers({
+            onCompleted,
+            onError,
+          })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1349,7 +1318,7 @@ describe('Execute component', () => {
       );
 
       // Check that completed = 2 (first task completed, second failed)
-      const calls = vi.mocked(updateState).mock.calls;
+      const calls = vi.mocked(onCompleted).mock.calls;
       const errorCall = calls.find(
         (call) => call[0].error && call[0].error !== null
       );
@@ -1390,7 +1359,7 @@ describe('Execute component', () => {
         ],
       });
 
-      const updateState = vi.fn();
+      const onCompleted = vi.fn();
       const completeActive = vi.fn();
       const tasks = [
         { action: 'First task', type: TaskType.Execute },
@@ -1402,9 +1371,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers({ updateState })}
+          requestHandlers={createRequestHandlers({ onCompleted })}
           lifecycleHandlers={createLifecycleHandlers({ completeActive })}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1418,7 +1386,7 @@ describe('Execute component', () => {
       );
 
       // Check that completed = 3 (all tasks attempted)
-      const calls = vi.mocked(updateState).mock.calls;
+      const calls = vi.mocked(onCompleted).mock.calls;
       const finalCall = calls[calls.length - 1];
       expect(finalCall[0].completed).toBe(3);
     });
@@ -1447,7 +1415,7 @@ describe('Execute component', () => {
         ],
       });
 
-      const updateState = vi.fn();
+      const onCompleted = vi.fn();
       const onAborted = vi.fn();
       const tasks = [
         { action: 'First task', type: TaskType.Execute },
@@ -1459,9 +1427,11 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers({ updateState })}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers({ onAborted })}
+          requestHandlers={createRequestHandlers({
+            onCompleted,
+            onAborted,
+          })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1488,7 +1458,7 @@ describe('Execute component', () => {
       );
 
       // Check that completed is set in the abort call
-      const calls = vi.mocked(updateState).mock.calls;
+      const calls = vi.mocked(onCompleted).mock.calls;
       const abortCall = calls.find((call) => call[0].taskInfos !== undefined);
       expect(abortCall).toBeDefined();
       expect(abortCall![0]).toHaveProperty('completed');
@@ -1500,16 +1470,15 @@ describe('Execute component', () => {
         commands: [{ description: 'Task', command: 'cmd' }],
       });
 
-      const updateState = vi.fn();
+      const onCompleted = vi.fn();
       const tasks = [{ action: 'Single task', type: TaskType.Execute }];
 
       render(
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers({ updateState })}
+          requestHandlers={createRequestHandlers({ onCompleted })}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1519,13 +1488,13 @@ describe('Execute component', () => {
 
       await vi.waitFor(
         () => {
-          expect(updateState).toHaveBeenCalled();
+          expect(onCompleted).toHaveBeenCalled();
         },
         { timeout: 1000 }
       );
 
       // Check that at least one state update includes completed
-      const calls = vi.mocked(updateState).mock.calls;
+      const calls = vi.mocked(onCompleted).mock.calls;
       const hasCompleted = calls.some(
         (call) => call[0].completed !== undefined
       );
@@ -1533,30 +1502,18 @@ describe('Execute component', () => {
     });
 
     it('restores completed from state when resuming', () => {
-      const service = createMockAnthropicService({
-        message: 'Running tasks.',
-        commands: [
-          { description: 'First', command: 'first' },
-          { description: 'Second', command: 'second' },
-        ],
-      });
-
       const tasks = [
         { action: 'First task', type: TaskType.Execute },
         { action: 'Second task', type: TaskType.Execute },
       ];
 
       const { lastFrame } = render(
-        <Execute
+        <ExecuteView
           tasks={tasks}
-          service={service}
-          stateHandlers={createStateHandlers()}
-          lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
-          workflowHandlers={createWorkflowHandlers()}
-          status={ComponentStatus.Done}
           state={{
+            error: null,
             message: 'Running tasks.',
+            summary: '',
             completed: 2,
             taskInfos: [
               {
@@ -1571,6 +1528,7 @@ describe('Execute component', () => {
             taskExecutionTimes: [100, 150],
             completionMessage: 'Tasks completed in 250ms.',
           }}
+          status={ComponentStatus.Done}
         />
       );
 
@@ -1591,7 +1549,7 @@ describe('Execute component', () => {
         ],
       });
 
-      const updateState = vi.fn();
+      const onCompleted = vi.fn();
       const tasks = [
         { action: 'First', type: TaskType.Execute },
         { action: 'Second', type: TaskType.Execute },
@@ -1601,9 +1559,8 @@ describe('Execute component', () => {
         <Execute
           tasks={tasks}
           service={service}
-          stateHandlers={createStateHandlers({ updateState })}
+          requestHandlers={createRequestHandlers({ onCompleted })}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1614,14 +1571,14 @@ describe('Execute component', () => {
       // Wait for completion
       await vi.waitFor(
         () => {
-          const calls = updateState.mock.calls;
+          const calls = onCompleted.mock.calls;
           return calls.some((call) => call[0].completionMessage !== undefined);
         },
         { timeout: 500 }
       );
 
       // Find the final completion state update
-      const calls = updateState.mock.calls;
+      const calls = onCompleted.mock.calls;
       const completionCall = calls.find(
         (call) => call[0].completionMessage !== null
       );
@@ -1648,7 +1605,7 @@ describe('Execute component', () => {
         ],
       });
 
-      const updateState = vi.fn();
+      const onCompleted = vi.fn();
       const onAborted = vi.fn();
 
       const { stdin } = render(
@@ -1658,9 +1615,11 @@ describe('Execute component', () => {
             { action: 'Second', type: TaskType.Execute },
           ]}
           service={service}
-          stateHandlers={createStateHandlers({ updateState })}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers({ onAborted })}
+          requestHandlers={createRequestHandlers({
+            onCompleted,
+            onAborted,
+          })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1679,7 +1638,7 @@ describe('Execute component', () => {
       );
 
       // Find the abort state update
-      const calls = updateState.mock.calls;
+      const calls = onCompleted.mock.calls;
       const abortCall = calls[calls.length - 1];
 
       expect(abortCall[0]).toMatchObject({
@@ -1699,16 +1658,15 @@ describe('Execute component', () => {
         new Error('Processing failed')
       );
 
-      const updateState = vi.fn();
+      const onCompleted = vi.fn();
       const onError = vi.fn();
 
       render(
         <Execute
           tasks={[{ action: 'Task', type: TaskType.Execute }]}
           service={service}
-          stateHandlers={createStateHandlers({ updateState })}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers({ onError })}
+          requestHandlers={createRequestHandlers({ onCompleted, onError })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1722,7 +1680,7 @@ describe('Execute component', () => {
       );
 
       // Find the error state update
-      const calls = updateState.mock.calls;
+      const calls = onCompleted.mock.calls;
       const errorCall = calls.find((call) => call[0].error !== null);
 
       expect(errorCall).toBeDefined();

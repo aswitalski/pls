@@ -1,58 +1,37 @@
 import { useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { ComponentStatus, ConfirmProps } from '../types/components.js';
+import {
+  ComponentStatus,
+  ConfirmProps,
+  ConfirmState,
+} from '../types/components.js';
 
 import { Colors, getTextColor, Palette } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
 
 import { UserQuery } from './UserQuery.js';
 
-export function Confirm({
-  message,
-  state,
-  status,
-  stateHandlers,
-  onConfirmed,
-  onCancelled,
-}: ConfirmProps) {
+/**
+ * Confirm view: Displays yes/no confirmation prompt
+ */
+
+export interface ConfirmViewProps {
+  message: string;
+  state: ConfirmState;
+  status: ComponentStatus;
+}
+
+export const ConfirmView = ({ message, state, status }: ConfirmViewProps) => {
   const isActive = status === ComponentStatus.Active;
-  const [selectedIndex, setSelectedIndex] = useState(state?.selectedIndex ?? 0); // 0 = Yes, 1 = No
-
-  useInput(
-    (input, key) => {
-      if (!isActive) return;
-
-      if (key.escape) {
-        // Escape: highlight "No" and cancel
-        setSelectedIndex(1);
-        stateHandlers?.updateState({ selectedIndex: 1 });
-        onCancelled();
-      } else if (key.tab) {
-        // Toggle between Yes (0) and No (1)
-        const newIndex = selectedIndex === 0 ? 1 : 0;
-        setSelectedIndex(newIndex);
-        stateHandlers?.updateState({ selectedIndex: newIndex });
-      } else if (key.return) {
-        // Confirm selection
-        stateHandlers?.updateState({ selectedIndex, confirmed: true });
-        if (selectedIndex === 0) {
-          onConfirmed();
-        } else {
-          onCancelled();
-        }
-      }
-    },
-    { isActive }
-  );
-
+  const { selectedIndex } = state;
   const options = [
     { label: 'yes', value: 'yes', color: Palette.BrightGreen },
     { label: 'no', value: 'no', color: Colors.Status.Error },
   ];
 
-  if (!isActive) {
-    // When done, show both the message and user's choice in timeline
+  // Timeline rendering (Done status)
+  if (status === ComponentStatus.Done) {
     return (
       <Box flexDirection="column">
         <Box marginBottom={1} marginLeft={1}>
@@ -63,6 +42,7 @@ export function Confirm({
     );
   }
 
+  // Active/Pending rendering
   return (
     <Box flexDirection="column">
       <Box marginBottom={1} marginLeft={1}>
@@ -89,4 +69,52 @@ export function Confirm({
       </Box>
     </Box>
   );
+};
+
+/**
+ * Confirm controller: Manages yes/no selection
+ */
+
+export function Confirm({
+  message,
+  status,
+  requestHandlers,
+  onConfirmed,
+  onCancelled,
+}: ConfirmProps) {
+  const isActive = status === ComponentStatus.Active;
+  const [selectedIndex, setSelectedIndex] = useState(0); // 0 = Yes, 1 = No
+
+  useInput(
+    (input, key) => {
+      if (!isActive) return;
+
+      if (key.escape) {
+        // Escape: highlight "No" and cancel
+        const finalState: ConfirmState = { selectedIndex: 1, confirmed: false };
+        requestHandlers.onCompleted(finalState);
+        onCancelled();
+      } else if (key.tab) {
+        // Toggle between Yes (0) and No (1)
+        setSelectedIndex((prev) => (prev === 0 ? 1 : 0));
+      } else if (key.return) {
+        // Confirm selection
+        const finalState: ConfirmState = {
+          selectedIndex,
+          confirmed: true,
+        };
+        requestHandlers.onCompleted(finalState);
+        if (selectedIndex === 0) {
+          onConfirmed();
+        } else {
+          onCancelled();
+        }
+      }
+    },
+    { isActive }
+  );
+
+  // Controller always renders View, passing current state
+  const state: ConfirmState = { selectedIndex, confirmed: false };
+  return <ConfirmView message={message} state={state} status={status} />;
 }

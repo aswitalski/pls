@@ -90,6 +90,43 @@ export function getMixedTaskTypesError(types: string[]): string {
 }
 
 /**
+ * Returns a message for unresolved placeholders/missing configuration.
+ * Each message has two sentences: what's missing + what will be done.
+ * Both sentences are randomly selected independently for variety.
+ * Supports singular and plural forms.
+ */
+export function getUnresolvedPlaceholdersMessage(count: number): string {
+  const plural = count === 1 ? '' : 's';
+  const it = count === 1 ? 'it' : 'them';
+  const valueWord = count === 1 ? 'value' : 'values';
+
+  // First sentence: what's missing
+  const firstSentences = [
+    `Missing configuration ${valueWord} detected.`,
+    `Configuration ${valueWord} needed.`,
+    `Found unresolved placeholder${plural}.`,
+    `Additional configuration ${valueWord} required.`,
+    `Setup requires configuration ${valueWord}.`,
+  ];
+
+  // Second sentence: what will be done
+  const secondSentences = [
+    `Let me gather ${it} now.`,
+    `I'll set ${it} up for you.`,
+    `Let me configure ${it} first.`,
+    `I'll help you provide ${it}.`,
+    `Let me collect ${it} from you.`,
+  ];
+
+  const first =
+    firstSentences[Math.floor(Math.random() * firstSentences.length)];
+  const second =
+    secondSentences[Math.floor(Math.random() * secondSentences.length)];
+
+  return `${first} ${second}`;
+}
+
+/**
  * Feedback messages for various operations
  */
 export const FeedbackMessages = {

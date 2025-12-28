@@ -1,7 +1,7 @@
+import { BaseState, ComponentDefinition } from '../types/components.js';
 import {
-  ErrorHandlers,
   LifecycleHandlers,
-  QueueHandlers,
+  RequestHandlers,
   WorkflowHandlers,
 } from '../types/handlers.js';
 import { Task } from '../types/types.js';
@@ -15,24 +15,23 @@ import { routeTasksWithConfirm } from './router.js';
  * Handle refinement flow for DEFINE tasks
  * Called when user selects options from a plan with DEFINE tasks
  */
-export async function handleRefinement(
+export async function handleRefinement<TState extends BaseState = BaseState>(
   selectedTasks: Task[],
   service: LLMService,
   originalCommand: string,
-  queueHandlers: QueueHandlers,
-  lifecycleHandlers: LifecycleHandlers,
-  workflowHandlers: WorkflowHandlers,
-  errorHandlers: ErrorHandlers
+  lifecycleHandlers: LifecycleHandlers<ComponentDefinition>,
+  workflowHandlers: WorkflowHandlers<ComponentDefinition>,
+  requestHandlers: RequestHandlers<TState>
 ): Promise<void> {
   // Create and add refinement component to queue
   const refinementDef = createRefinement(
     getRefiningMessage(),
     (operation: string) => {
-      errorHandlers.onAborted(operation);
+      requestHandlers.onAborted(operation);
     }
   );
 
-  queueHandlers.addToQueue(refinementDef);
+  workflowHandlers.addToQueue(refinementDef);
 
   try {
     // Build refined command from selected tasks
@@ -50,7 +49,7 @@ export async function handleRefinement(
       'schedule'
     );
 
-    // Complete the Refinement component
+    // Complete the Refinement component with success state
     lifecycleHandlers.completeActive();
 
     // Add debug components to timeline if present
@@ -64,14 +63,14 @@ export async function handleRefinement(
       refinedResult.message,
       service,
       originalCommand,
-      queueHandlers,
+      lifecycleHandlers,
       workflowHandlers,
-      errorHandlers,
+      requestHandlers,
       false // No DEFINE tasks in refined result
     );
   } catch (err) {
     lifecycleHandlers.completeActive();
     const errorMessage = formatErrorMessage(err);
-    errorHandlers.onError(errorMessage);
+    requestHandlers.onError(errorMessage);
   }
 }

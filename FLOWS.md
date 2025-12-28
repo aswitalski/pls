@@ -504,11 +504,13 @@ flowchart TD
    - Based on skill context
    - Human-friendly descriptions
 5. Config steps created with descriptions
-6. Config component displayed with contextual prompts
-7. User provides values for missing config
-8. Values saved to ~/.plsrc
-9. Success feedback displayed
-10. Resume execution with Execute component
+6. Validation message displayed (e.g., "Missing configuration values
+   detected. Let me gather them now.")
+7. Config component displayed
+8. User provides values for missing config
+9. Values saved to ~/.plsrc
+10. Success feedback displayed
+11. Execute resumes with fresh configuration
 
 ```mermaid
 flowchart TD
@@ -518,7 +520,8 @@ flowchart TD
 
     Analyze --> GenDesc[Generate contextual<br/>descriptions for each key]
     GenDesc --> CreateSteps[Create config steps<br/>with descriptions]
-    CreateSteps --> DisplayConfig[Display Config component]
+    CreateSteps --> AddMsg[Add validation message<br/>to timeline]
+    AddMsg --> DisplayConfig[Display Config component]
 
     DisplayConfig --> UserInput[User provides values]
     UserInput --> UserAction{User action}
@@ -842,9 +845,11 @@ Missing configuration during execution:
 1. Execute tasks require config
 2. Validator detects missing paths
 3. Validate generates contextual descriptions
-4. Config prompts for missing values
-5. Values saved to ~/.plsrc
-6. Execute resumes with complete config
+4. Validation message added to timeline
+5. Config prompts for missing values
+6. Values saved to ~/.plsrc
+7. After save, Execute component added to queue
+8. Execute runs with complete config
 
 ```mermaid
 flowchart LR

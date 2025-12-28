@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { ComponentStatus, IntrospectProps } from '../types/components.js';
+import {
+  Capability,
+  ComponentStatus,
+  IntrospectProps,
+  IntrospectState,
+} from '../types/components.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
 import { createReportDefinition } from '../services/components.js';
@@ -14,28 +19,73 @@ import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000;
 
+/**
+ * Introspect view: Displays capabilities list
+ */
+
+export interface IntrospectViewProps {
+  state: IntrospectState;
+  status: ComponentStatus;
+  children?: ReactNode;
+}
+
+export const IntrospectView = ({
+  state,
+  status,
+  children,
+}: IntrospectViewProps) => {
+  const isActive = status === ComponentStatus.Active;
+  const { error } = state;
+
+  // Don't render wrapper when done and nothing to show
+  if (!isActive && !error && !children) {
+    return null;
+  }
+
+  return (
+    <Box alignSelf="flex-start" flexDirection="column">
+      {isActive && (
+        <Box marginLeft={1}>
+          <Text color={getTextColor(isActive)}>Listing capabilities. </Text>
+          <Spinner />
+        </Box>
+      )}
+
+      {error && (
+        <Box marginTop={1} marginLeft={1}>
+          <Text color={Colors.Status.Error}>Error: {error}</Text>
+        </Box>
+      )}
+
+      {children}
+    </Box>
+  );
+};
+
+/**
+ * Introspect controller: Lists capabilities via LLM
+ */
+
 export function Introspect({
   tasks,
-  state: _state,
   status,
   service,
   children,
   debug = DebugLevel.None,
-  stateHandlers,
+  requestHandlers,
   lifecycleHandlers,
-  queueHandlers,
-  errorHandlers,
   workflowHandlers,
 }: IntrospectProps) {
   const isActive = status === ComponentStatus.Active;
 
-  // isActive passed as prop
   const [error, setError] = useState<string | null>(null);
+  const [capabilities, setCapabilities] = useState<Capability[] | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   useInput(
     (input, key) => {
       if (key.escape && isActive) {
-        errorHandlers?.onAborted('introspection');
+        requestHandlers.onAborted('introspection');
       }
     },
     { isActive }
@@ -67,15 +117,15 @@ export function Introspect({
         if (mounted) {
           // Add debug components to timeline if present
           if (result.debug?.length) {
-            workflowHandlers?.addToTimeline(...result.debug);
+            workflowHandlers.addToTimeline(...result.debug);
           }
 
           // Capabilities come directly from result - no parsing needed
-          let capabilities = result.capabilities;
+          let caps = result.capabilities;
 
           // Filter out internal capabilities when not in debug mode
           if (debug === DebugLevel.None) {
-            capabilities = capabilities.filter(
+            caps = caps.filter(
               (cap) =>
                 cap.name.toUpperCase() !== 'SCHEDULE' &&
                 cap.name.toUpperCase() !== 'VALIDATE' &&
@@ -83,19 +133,23 @@ export function Introspect({
             );
           }
 
-          // Save state before completing
-          stateHandlers?.updateState({
-            capabilities,
+          setCapabilities(caps);
+          setMessage(result.message);
+
+          const finalState: IntrospectState = {
+            error: null,
+            capabilities: caps,
             message: result.message,
-          });
+          };
+          requestHandlers.onCompleted(finalState);
 
           // Add Report component to queue
-          queueHandlers?.addToQueue(
-            createReportDefinition(result.message, capabilities)
+          workflowHandlers.addToQueue(
+            createReportDefinition(result.message, caps)
           );
 
           // Signal completion
-          lifecycleHandlers?.completeActive();
+          lifecycleHandlers.completeActive();
         }
       } catch (err) {
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
@@ -104,12 +158,14 @@ export function Introspect({
           const errorMessage = formatErrorMessage(err);
           setError(errorMessage);
 
-          // Save error state
-          stateHandlers?.updateState({
+          const finalState: IntrospectState = {
             error: errorMessage,
-          });
+            capabilities: [],
+            message: null,
+          };
+          requestHandlers.onCompleted(finalState);
 
-          errorHandlers?.onError(errorMessage);
+          requestHandlers.onError(errorMessage);
         }
       }
     }
@@ -119,29 +175,24 @@ export function Introspect({
     return () => {
       mounted = false;
     };
-  }, [tasks, isActive, service, debug]);
+  }, [
+    tasks,
+    isActive,
+    service,
+    debug,
+    requestHandlers,
+    lifecycleHandlers,
+    workflowHandlers,
+  ]);
 
-  // Don't render wrapper when done and nothing to show
-  if (!isActive && !error && !children) {
-    return null;
-  }
-
+  const state: IntrospectState = {
+    error,
+    capabilities: capabilities || [],
+    message,
+  };
   return (
-    <Box alignSelf="flex-start" flexDirection="column">
-      {isActive && (
-        <Box marginLeft={1}>
-          <Text color={getTextColor(isActive)}>Listing capabilities. </Text>
-          <Spinner />
-        </Box>
-      )}
-
-      {error && (
-        <Box marginTop={1} marginLeft={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
-        </Box>
-      )}
-
+    <IntrospectView state={state} status={status}>
       {children}
-    </Box>
+    </IntrospectView>
   );
 }

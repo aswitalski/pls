@@ -2,16 +2,15 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ComponentStatus } from '../../src/types/components.js';
+import { AnswerState, ComponentStatus } from '../../src/types/components.js';
 
-import { Answer } from '../../src/ui/Answer.js';
+import { Answer, AnswerView } from '../../src/ui/Answer.js';
 
 import {
-  createErrorHandlers,
+  createRequestHandlers,
   createLifecycleHandlers,
   createMockAnthropicService,
   createMockDebugComponents,
-  createStateHandlers,
   createWorkflowHandlers,
 } from '../test-utils.js';
 
@@ -38,9 +37,8 @@ describe('Answer component', () => {
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
         status={ComponentStatus.Active}
-        stateHandlers={createStateHandlers()}
+        requestHandlers={createRequestHandlers<AnswerState>()}
         lifecycleHandlers={createLifecycleHandlers()}
-        errorHandlers={createErrorHandlers()}
         workflowHandlers={createWorkflowHandlers()}
       />
     );
@@ -49,20 +47,14 @@ describe('Answer component', () => {
   });
 
   it('displays question and answer when done', () => {
-    const service = createMockAnthropicService({
-      answer: 'The 55 inch Samsung The Frame costs around $1,500.',
-    });
-
     const { lastFrame } = render(
-      <Answer
+      <AnswerView
         question="What is the price of Samsung The Frame 55 inch?"
-        state={{ answer: 'The 55 inch Samsung The Frame costs around $1,500.' }}
-        service={service}
+        state={{
+          answer: 'The 55 inch Samsung The Frame costs around $1,500.',
+          error: null,
+        }}
         status={ComponentStatus.Done}
-        stateHandlers={createStateHandlers()}
-        lifecycleHandlers={createLifecycleHandlers()}
-        errorHandlers={createErrorHandlers()}
-        workflowHandlers={createWorkflowHandlers()}
       />
     );
 
@@ -84,9 +76,8 @@ describe('Answer component', () => {
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
         status={ComponentStatus.Active}
-        stateHandlers={createStateHandlers()}
+        requestHandlers={createRequestHandlers<AnswerState>()}
         lifecycleHandlers={lifecycleHandlers}
-        errorHandlers={createErrorHandlers()}
         workflowHandlers={createWorkflowHandlers()}
       />
     );
@@ -108,16 +99,15 @@ describe('Answer component', () => {
     const errorMessage = 'Network error';
     const service = createMockAnthropicService({}, new Error(errorMessage));
     const onError = vi.fn();
-    const errorHandlers = createErrorHandlers({ onError });
+    const errorHandlers = createRequestHandlers({ onError });
 
     render(
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
         status={ComponentStatus.Active}
-        stateHandlers={createStateHandlers()}
         lifecycleHandlers={createLifecycleHandlers()}
-        errorHandlers={errorHandlers}
+        requestHandlers={errorHandlers}
         workflowHandlers={createWorkflowHandlers()}
       />
     );
@@ -136,16 +126,15 @@ describe('Answer component', () => {
       answer: 'The 55 inch Samsung The Frame costs around $1,500.',
     });
     const onAborted = vi.fn();
-    const errorHandlers = createErrorHandlers({ onAborted });
+    const errorHandlers = createRequestHandlers({ onAborted });
 
     const { stdin } = render(
       <Answer
         question="What is the price of Samsung The Frame 55 inch?"
         service={service}
         status={ComponentStatus.Active}
-        stateHandlers={createStateHandlers()}
         lifecycleHandlers={createLifecycleHandlers()}
-        errorHandlers={errorHandlers}
+        requestHandlers={errorHandlers}
         workflowHandlers={createWorkflowHandlers()}
       />
     );
@@ -167,9 +156,8 @@ describe('Answer component', () => {
         question="Quick question?"
         service={service}
         status={ComponentStatus.Active}
-        stateHandlers={createStateHandlers()}
+        requestHandlers={createRequestHandlers<AnswerState>()}
         lifecycleHandlers={lifecycleHandlers}
-        errorHandlers={createErrorHandlers()}
         workflowHandlers={createWorkflowHandlers()}
       />
     );
@@ -201,9 +189,8 @@ describe('Answer component', () => {
         question="Test question?"
         service={service}
         status={ComponentStatus.Active}
-        stateHandlers={createStateHandlers()}
+        requestHandlers={createRequestHandlers<AnswerState>()}
         lifecycleHandlers={createLifecycleHandlers()}
-        errorHandlers={createErrorHandlers()}
         workflowHandlers={workflowHandlers}
       />
     );

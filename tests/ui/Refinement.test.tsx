@@ -6,7 +6,7 @@ import { ComponentStatus } from '../../src/types/components.js';
 
 import { Refinement } from '../../src/ui/Refinement.js';
 
-import { Keys } from '../test-utils.js';
+import { Keys, createRequestHandlers } from '../test-utils.js';
 
 describe('Refinement', () => {
   const mockOnAborted = vi.fn();
@@ -15,9 +15,9 @@ describe('Refinement', () => {
     const { lastFrame } = render(
       <Refinement
         text="Processing your request"
-        state={{}}
         onAborted={mockOnAborted}
         status={ComponentStatus.Active}
+        requestHandlers={createRequestHandlers()}
       />
     );
 
@@ -30,9 +30,9 @@ describe('Refinement', () => {
     const { lastFrame } = render(
       <Refinement
         text="Processing complete"
-        state={{}}
         status={ComponentStatus.Done}
         onAborted={mockOnAborted}
+        requestHandlers={createRequestHandlers()}
       />
     );
 
@@ -47,6 +47,7 @@ describe('Refinement', () => {
         text="Loading"
         onAborted={mockOnAborted}
         status={ComponentStatus.Active}
+        requestHandlers={createRequestHandlers()}
       />
     );
 
@@ -60,9 +61,9 @@ describe('Refinement', () => {
     const { stdin } = render(
       <Refinement
         text="Processing"
-        state={{}}
         onAborted={onAborted}
         status={ComponentStatus.Active}
+        requestHandlers={createRequestHandlers()}
       />
     );
 
@@ -76,9 +77,9 @@ describe('Refinement', () => {
     const { stdin } = render(
       <Refinement
         text="Processing"
-        state={{}}
         status={ComponentStatus.Done}
         onAborted={onAborted}
+        requestHandlers={createRequestHandlers()}
       />
     );
 

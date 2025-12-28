@@ -38,6 +38,7 @@ export function createWelcomeDefinition(app: App): ComponentDefinition {
     id: randomUUID(),
     name: ComponentName.Welcome,
     props: { app },
+    status: ComponentStatus.Awaiting,
   };
 }
 
@@ -291,7 +292,11 @@ export function createCommandDefinition(
     id: randomUUID(),
     name: ComponentName.Command,
     status: ComponentStatus.Awaiting,
-    state: {},
+    state: {
+      error: null,
+      message: null,
+      tasks: [],
+    },
     props: {
       command,
       service,
@@ -332,6 +337,7 @@ export function createFeedback(
       type,
       message: messages.join('\n\n'),
     },
+    status: ComponentStatus.Awaiting,
   };
 }
 
@@ -342,6 +348,7 @@ export function createMessage(text: string): ComponentDefinition {
     props: {
       text,
     },
+    status: ComponentStatus.Awaiting,
   };
 }
 
@@ -358,6 +365,7 @@ export function createDebugDefinition(
       content,
       color,
     },
+    status: ComponentStatus.Awaiting,
   };
 }
 
@@ -385,7 +393,10 @@ export function createConfirmDefinition(
     id: randomUUID(),
     name: ComponentName.Confirm,
     status: ComponentStatus.Awaiting,
-    state: {},
+    state: {
+      confirmed: false,
+      selectedIndex: 0,
+    },
     props: {
       message: getConfirmationMessage(),
       onConfirmed,
@@ -402,7 +413,11 @@ export function createIntrospectDefinition(
     id: randomUUID(),
     name: ComponentName.Introspect,
     status: ComponentStatus.Awaiting,
-    state: {},
+    state: {
+      error: null,
+      capabilities: [],
+      message: null,
+    },
     props: {
       tasks,
       service,
@@ -421,6 +436,7 @@ export function createReportDefinition(
       message,
       capabilities,
     },
+    status: ComponentStatus.Awaiting,
   };
 }
 
@@ -432,7 +448,10 @@ export function createAnswerDefinition(
     id: randomUUID(),
     name: ComponentName.Answer,
     status: ComponentStatus.Awaiting,
-    state: {},
+    state: {
+      error: null,
+      answer: null,
+    },
     props: {
       question,
       service,
@@ -440,7 +459,7 @@ export function createAnswerDefinition(
   };
 }
 
-export function isStateless(component: ComponentDefinition): boolean {
+export function isSimple(component: ComponentDefinition): boolean {
   return !('state' in component);
 }
 
@@ -484,7 +503,7 @@ export function createValidateDefinition(
   userRequest: string,
   service: LLMService,
   onError: (error: string) => void,
-  onComplete: (configWithDescriptions: ConfigRequirement[]) => void,
+  onValidationComplete: (configWithDescriptions: ConfigRequirement[]) => void,
   onAborted: (operation: string) => void
 ): ComponentDefinition {
   return {
@@ -494,7 +513,7 @@ export function createValidateDefinition(
     state: {
       error: null,
       completionMessage: null,
-      configRequirements: null,
+      configRequirements: [],
       validated: false,
     },
     props: {
@@ -502,7 +521,7 @@ export function createValidateDefinition(
       userRequest,
       service,
       onError,
-      onComplete,
+      onValidationComplete,
       onAborted,
     } satisfies ValidateDefinitionProps,
   };

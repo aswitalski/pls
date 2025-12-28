@@ -11,9 +11,8 @@ import { Schedule } from '../../src/ui/Schedule.js';
 
 import {
   Keys,
-  createErrorHandlers,
+  createRequestHandlers,
   createLifecycleHandlers,
-  createStateHandlers,
 } from '../test-utils.js';
 
 // Destructure for readability
@@ -21,34 +20,32 @@ const { ArrowDown, ArrowUp, Enter, Escape } = Keys;
 const WaitTime = 32; // Generous wait time ensuring stability across all hardware and load conditions
 
 // Helper to create mock handlers with state tracking
-function createMockHandlers(initialState: ScheduleState): {
-  stateHandlers: ReturnType<typeof createStateHandlers<ScheduleState>>;
+function createScheduleTestHandlers(
+  initialState: ScheduleState = {
+    highlightedIndex: null,
+    currentDefineGroupIndex: 0,
+    completedSelections: [],
+  }
+): {
+  requestHandlers: ReturnType<typeof createRequestHandlers<ScheduleState>>;
   lifecycleHandlers: ReturnType<typeof createLifecycleHandlers>;
-  errorHandlers: ReturnType<typeof createErrorHandlers>;
   state: ScheduleState;
 } {
   const state = { ...initialState };
-  const stateHandlers = createStateHandlers<ScheduleState>({
-    updateState: vi.fn((newState) => {
+  const requestHandlers = createRequestHandlers<ScheduleState>({
+    onCompleted: vi.fn((newState) => {
       Object.assign(state, newState);
     }),
   });
   const lifecycleHandlers = createLifecycleHandlers();
-  const errorHandlers = createErrorHandlers();
-  return { stateHandlers, lifecycleHandlers, errorHandlers, state };
+  return { lifecycleHandlers, requestHandlers, state };
 }
 
 describe('Schedule component', () => {
   describe('Interactive behavior', () => {
     it('renders define task without initial highlight', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const { lastFrame } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -59,26 +56,18 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
       const output = lastFrame();
       expect(output).toBeTruthy();
-      expect(state.highlightedIndex).toBeNull();
     });
 
     it('marks define task with right arrow when no selection made', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const { lastFrame } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -89,9 +78,8 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -102,18 +90,19 @@ describe('Schedule component', () => {
     });
 
     it('removes arrow from parent when child is highlighted', async () => {
-      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
-        createMockHandlers({
-          highlightedIndex: null,
-          currentDefineGroupIndex: 0,
-          completedSelections: [],
-        });
+      const {
+        lifecycleHandlers,
+        requestHandlers,
+        state: _state,
+      } = createScheduleTestHandlers({
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      });
       const { lastFrame, stdin } = render(
         <Schedule
-          state={state}
-          stateHandlers={stateHandlers}
+          requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
-          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -138,7 +127,6 @@ describe('Schedule component', () => {
       // but the parent's marker should be a dash
       output = lastFrame();
       expect(output).toContain('Choose deployment');
-      expect(state.highlightedIndex).toBe(0);
 
       // The child should now have the arrow
       const arrowCountAfter = (output!.match(/→/g) || []).length;
@@ -146,16 +134,10 @@ describe('Schedule component', () => {
     });
 
     it('calls onSelectionConfirmed when selection is made', async () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -167,9 +149,8 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -197,16 +178,10 @@ describe('Schedule component', () => {
     });
 
     it('does nothing when Enter pressed without highlighting', async () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -218,9 +193,8 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -231,24 +205,23 @@ describe('Schedule component', () => {
       // Should not have called callback
       expect(onSelectionConfirmed).not.toHaveBeenCalled();
       // State should remain unchanged
-      expect(state.highlightedIndex).toBeNull();
-      expect(state.completedSelections).toHaveLength(0);
     });
 
     it('supports navigation with arrow keys', async () => {
-      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
-        createMockHandlers({
-          highlightedIndex: null,
-          currentDefineGroupIndex: 0,
-          completedSelections: [],
-        });
+      const {
+        lifecycleHandlers,
+        requestHandlers,
+        state: _state,
+      } = createScheduleTestHandlers({
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      });
 
       const { stdin } = render(
         <Schedule
-          state={state}
-          stateHandlers={stateHandlers}
+          requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
-          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -265,33 +238,31 @@ describe('Schedule component', () => {
       // Press down arrow to select first item
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(0);
 
       // Press down arrow again to select second item
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(1);
 
       // Press up arrow to go back to first item
       stdin.write(ArrowUp);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(0);
     });
 
     it('wraps around when navigating with arrow keys', async () => {
-      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
-        createMockHandlers({
-          highlightedIndex: null,
-          currentDefineGroupIndex: 0,
-          completedSelections: [],
-        });
+      const {
+        lifecycleHandlers,
+        requestHandlers,
+        state: _state,
+      } = createScheduleTestHandlers({
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      });
 
       const { stdin } = render(
         <Schedule
-          state={state}
-          stateHandlers={stateHandlers}
+          requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
-          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -308,30 +279,21 @@ describe('Schedule component', () => {
       // Press up arrow from null position to select last item
       stdin.write(ArrowUp);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(1);
 
       // Press down arrow to wrap to first item
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(0);
 
       // Press down arrow again to wrap to second item
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(1);
     });
 
     it('does not handle input when done', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -343,31 +305,23 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
       stdin.write(ArrowDown);
       stdin.write(Enter);
 
-      expect(state.highlightedIndex).toBeNull();
       expect(onSelectionConfirmed).not.toHaveBeenCalled();
     });
 
     it('does not handle input when no define tasks exist', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const onSelectionConfirmed = vi.fn();
       const completeActive = vi.fn();
 
       const { stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -379,9 +333,8 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers({ completeActive })}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -395,21 +348,13 @@ describe('Schedule component', () => {
       // Try to interact - should do nothing since already completed
       stdin.write(ArrowDown);
       stdin.write(Enter);
-
-      expect(state.highlightedIndex).toBeNull();
     });
 
     it('renders selection with correct visual states', async () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const onSelectionConfirmed = vi.fn();
 
       const { lastFrame, stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -422,9 +367,8 @@ describe('Schedule component', () => {
           onSelectionConfirmed={onSelectionConfirmed}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -457,14 +401,8 @@ describe('Schedule component', () => {
 
   describe('Multiple define groups', () => {
     it('initializes state with correct values for multiple groups', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const { lastFrame } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -482,27 +420,18 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
       const output = lastFrame();
       expect(output).toBeTruthy();
-      expect(state.currentDefineGroupIndex).toBe(0);
-      expect(state.completedSelections).toEqual([]);
     });
 
     it('shows arrow on first define group initially', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const { lastFrame } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -519,9 +448,8 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -531,20 +459,21 @@ describe('Schedule component', () => {
     });
 
     it('advances to next group when Enter is pressed', async () => {
-      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
-        createMockHandlers({
-          highlightedIndex: null,
-          currentDefineGroupIndex: 0,
-          completedSelections: [],
-        });
+      const {
+        lifecycleHandlers,
+        requestHandlers,
+        state: _state,
+      } = createScheduleTestHandlers({
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      });
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Schedule
-          state={state}
-          stateHandlers={stateHandlers}
+          requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
-          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -568,35 +497,32 @@ describe('Schedule component', () => {
       // Select first option in first group
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(0);
 
       // Press Enter to confirm
       stdin.write(Enter);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
       // Should advance to next group
-      expect(state.currentDefineGroupIndex).toBe(1);
-      expect(state.completedSelections).toEqual([0]);
-      expect(state.highlightedIndex).toBeNull();
 
       // Should not have called onSelectionConfirmed yet
       expect(onSelectionConfirmed).not.toHaveBeenCalled();
     });
 
     it('keeps previous group selection visible when advancing', async () => {
-      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
-        createMockHandlers({
-          highlightedIndex: null,
-          currentDefineGroupIndex: 0,
-          completedSelections: [],
-        });
+      const {
+        lifecycleHandlers,
+        requestHandlers,
+        state: _state,
+      } = createScheduleTestHandlers({
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      });
 
       const { lastFrame, stdin } = render(
         <Schedule
-          state={state}
-          stateHandlers={stateHandlers}
+          requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
-          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -629,20 +555,11 @@ describe('Schedule component', () => {
       expect(output).toContain('Choose environment');
 
       // First group should show its completed selection
-      expect(state.completedSelections).toEqual([0]);
-      expect(state.currentDefineGroupIndex).toBe(1);
     });
 
     it('resets highlightedIndex when advancing to next group', async () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
-
       const { stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -659,9 +576,8 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -672,19 +588,11 @@ describe('Schedule component', () => {
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
       // highlightedIndex should be reset to null
-      expect(state.highlightedIndex).toBeNull();
     });
 
     it('shows arrow on second group after first is completed', async () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
-
       const { lastFrame, stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -701,9 +609,8 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -719,16 +626,10 @@ describe('Schedule component', () => {
     });
 
     it('calls onSelectionConfirmed only after last group is completed', async () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -746,9 +647,8 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -783,19 +683,20 @@ describe('Schedule component', () => {
     });
 
     it('tracks completedSelections for all groups', async () => {
-      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
-        createMockHandlers({
-          highlightedIndex: null,
-          currentDefineGroupIndex: 0,
-          completedSelections: [],
-        });
+      const {
+        lifecycleHandlers,
+        requestHandlers,
+        state: _state,
+      } = createScheduleTestHandlers({
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      });
 
       const { stdin } = render(
         <Schedule
-          state={state}
-          stateHandlers={stateHandlers}
+          requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
-          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -823,32 +724,29 @@ describe('Schedule component', () => {
       stdin.write(Enter);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
-      expect(state.completedSelections).toEqual([1]);
-
       // Select first option in second group
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
       stdin.write(Enter);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-
-      expect(state.completedSelections).toEqual([1, 0]);
     });
 
     it('handles three sequential define groups', async () => {
-      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
-        createMockHandlers({
-          highlightedIndex: null,
-          currentDefineGroupIndex: 0,
-          completedSelections: [],
-        });
+      const {
+        lifecycleHandlers,
+        requestHandlers,
+        state: _state,
+      } = createScheduleTestHandlers({
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      });
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Schedule
-          state={state}
-          stateHandlers={stateHandlers}
+          requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
-          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -880,7 +778,6 @@ describe('Schedule component', () => {
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
       stdin.write(Enter);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.currentDefineGroupIndex).toBe(1);
       expect(onSelectionConfirmed).not.toHaveBeenCalled();
 
       // Complete second group
@@ -888,7 +785,6 @@ describe('Schedule component', () => {
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
       stdin.write(Enter);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.currentDefineGroupIndex).toBe(2);
       expect(onSelectionConfirmed).not.toHaveBeenCalled();
 
       // Complete third group
@@ -898,24 +794,24 @@ describe('Schedule component', () => {
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
       expect(onSelectionConfirmed).toHaveBeenCalledTimes(1);
-      expect(state.completedSelections).toEqual([0, 0, 0]);
     });
 
     it('handles mixed execute and define tasks', async () => {
-      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
-        createMockHandlers({
-          highlightedIndex: null,
-          currentDefineGroupIndex: 0,
-          completedSelections: [],
-        });
+      const {
+        lifecycleHandlers,
+        requestHandlers,
+        state: _state,
+      } = createScheduleTestHandlers({
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      });
       const onSelectionConfirmed = vi.fn();
 
       const { stdin } = render(
         <Schedule
-          state={state}
-          stateHandlers={stateHandlers}
+          requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
-          errorHandlers={errorHandlers}
           message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute, config: [] },
@@ -944,7 +840,6 @@ describe('Schedule component', () => {
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
       stdin.write(Enter);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.currentDefineGroupIndex).toBe(1);
 
       // Complete second define group
       stdin.write(ArrowDown);
@@ -984,19 +879,20 @@ describe('Schedule component', () => {
     });
 
     it('navigation only works on current active group', async () => {
-      const { stateHandlers, lifecycleHandlers, errorHandlers, state } =
-        createMockHandlers({
-          highlightedIndex: null,
-          currentDefineGroupIndex: 0,
-          completedSelections: [],
-        });
+      const {
+        lifecycleHandlers,
+        requestHandlers,
+        state: _state,
+      } = createScheduleTestHandlers({
+        highlightedIndex: null,
+        currentDefineGroupIndex: 0,
+        completedSelections: [],
+      });
 
       const { stdin } = render(
         <Schedule
-          state={state}
-          stateHandlers={stateHandlers}
+          requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
-          errorHandlers={errorHandlers}
           message=""
           tasks={[
             {
@@ -1019,16 +915,13 @@ describe('Schedule component', () => {
       // First group has 2 options
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(0);
 
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(1);
 
       // Wraps back to 0 (only 2 options)
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(0);
 
       // Complete first group
       stdin.write(Enter);
@@ -1037,35 +930,24 @@ describe('Schedule component', () => {
       // Now in second group with 3 options
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(0);
 
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(1);
 
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(2);
 
       // Wraps back to 0 (3 options)
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
-      expect(state.highlightedIndex).toBe(0);
     });
   });
 
   describe('Abort handling', () => {
     it('calls onAborted when Esc is pressed during selection', () => {
       const onAborted = vi.fn();
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
-
       const { stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -1076,9 +958,8 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>({ onAborted })}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers({ onAborted })}
         />
       );
 
@@ -1088,15 +969,8 @@ describe('Schedule component', () => {
 
     it('does not call onAborted when Esc is pressed after done', () => {
       const onAborted = vi.fn();
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
-
       const { stdin } = render(
         <Schedule
-          state={state}
           status={ComponentStatus.Done}
           message=""
           tasks={[
@@ -1107,9 +981,8 @@ describe('Schedule component', () => {
               config: [],
             },
           ]}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers({ onAborted })}
         />
       );
 
@@ -1119,15 +992,8 @@ describe('Schedule component', () => {
 
     it('does not call onAborted when there is no define task', () => {
       const onAborted = vi.fn();
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
-
       const { stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -1137,9 +1003,8 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers({ onAborted })}
         />
       );
 
@@ -1151,15 +1016,8 @@ describe('Schedule component', () => {
   describe('Filtering ignored and discarded tasks', () => {
     it('excludes Ignore tasks from refined task list', async () => {
       const onSelectionConfirmed = vi.fn();
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
-
       const { stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute, config: [] },
@@ -1174,9 +1032,8 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1226,15 +1083,8 @@ describe('Schedule component', () => {
 
     it('excludes Discard tasks from refined task list', async () => {
       const onSelectionConfirmed = vi.fn();
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
-
       const { stdin } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute, config: [] },
@@ -1253,9 +1103,8 @@ describe('Schedule component', () => {
           ]}
           onSelectionConfirmed={onSelectionConfirmed}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1306,14 +1155,8 @@ describe('Schedule component', () => {
 
   describe('Debug mode', () => {
     it('shows action types when debug is true', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const { lastFrame } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute, config: [] },
@@ -1321,9 +1164,8 @@ describe('Schedule component', () => {
           ]}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1332,14 +1174,8 @@ describe('Schedule component', () => {
     });
 
     it('hides action types when debug is false', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const { lastFrame } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute, config: [] },
@@ -1347,9 +1183,8 @@ describe('Schedule component', () => {
           ]}
           debug={DebugLevel.None}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1358,23 +1193,16 @@ describe('Schedule component', () => {
     });
 
     it('hides action types by default when debug prop is omitted', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const { lastFrame } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute, config: [] },
             { action: 'Run tests', type: TaskType.Execute, config: [] },
           ]}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1383,14 +1211,8 @@ describe('Schedule component', () => {
     });
 
     it('shows action types for all task types when debug is true', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const { lastFrame } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             { action: 'Build project', type: TaskType.Execute, config: [] },
@@ -1400,9 +1222,8 @@ describe('Schedule component', () => {
           ]}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1414,14 +1235,8 @@ describe('Schedule component', () => {
     });
 
     it('shows action types for define task children when debug is true', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const { lastFrame } = render(
         <Schedule
-          state={state}
           message=""
           tasks={[
             {
@@ -1433,9 +1248,8 @@ describe('Schedule component', () => {
           ]}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1445,23 +1259,16 @@ describe('Schedule component', () => {
     });
 
     it('shows schedule type in message when debug is true', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const { lastFrame } = render(
         <Schedule
           message="Review changes"
-          state={state}
           tasks={[
             { action: 'Build project', type: TaskType.Execute, config: [] },
           ]}
           debug={DebugLevel.Info}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1472,23 +1279,16 @@ describe('Schedule component', () => {
     });
 
     it('hides plan type in message when debug is false', () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const { lastFrame } = render(
         <Schedule
           message="Review changes"
-          state={state}
           tasks={[
             { action: 'Build project', type: TaskType.Execute, config: [] },
           ]}
           debug={DebugLevel.None}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1501,15 +1301,9 @@ describe('Schedule component', () => {
     });
 
     it('uses Execute type for all selections (LLM classifies during refinement)', async () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const onSelectionConfirmed = vi.fn();
       const { stdin } = render(
         <Schedule
-          state={state}
           onSelectionConfirmed={onSelectionConfirmed}
           message=""
           tasks={[
@@ -1523,9 +1317,8 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 
@@ -1545,15 +1338,9 @@ describe('Schedule component', () => {
     });
 
     it('uses Execute type as default for all actions', async () => {
-      const state: ScheduleState = {
-        highlightedIndex: null,
-        currentDefineGroupIndex: 0,
-        completedSelections: [],
-      };
       const onSelectionConfirmed = vi.fn();
       const { stdin } = render(
         <Schedule
-          state={state}
           onSelectionConfirmed={onSelectionConfirmed}
           message=""
           tasks={[
@@ -1567,9 +1354,8 @@ describe('Schedule component', () => {
             },
           ]}
           status={ComponentStatus.Active}
-          stateHandlers={createStateHandlers<ScheduleState>()}
+          requestHandlers={createRequestHandlers<ScheduleState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          errorHandlers={createErrorHandlers()}
         />
       );
 

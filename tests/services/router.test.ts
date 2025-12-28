@@ -15,8 +15,8 @@ import {
 import { saveConfigLabels } from '../../src/services/config-labels.js';
 
 import {
-  createErrorHandlers,
-  createQueueHandlers,
+  createRequestHandlers,
+  createLifecycleHandlers,
   createWorkflowHandlers,
 } from '../test-utils.js';
 
@@ -91,22 +91,22 @@ describe('Task Router', () => {
 
   describe('routeTasksWithConfirm', () => {
     it('does nothing when tasks array is empty', () => {
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         [],
         'Empty message',
         {} as LLMService,
         'test command',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
-      expect(queueHandlers.addToQueue).not.toHaveBeenCalled();
+      expect(workflowHandlers.addToQueue).not.toHaveBeenCalled();
       expect(workflowHandlers.addToTimeline).not.toHaveBeenCalled();
     });
 
@@ -119,26 +119,26 @@ describe('Task Router', () => {
           config: [],
         },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Select environment',
         {} as LLMService,
         'deploy app',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         true
       );
 
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(1);
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
       expect(workflowHandlers.addToTimeline).not.toHaveBeenCalled();
 
       const queuedComponent = (
-        queueHandlers.addToQueue as ReturnType<typeof vi.fn>
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls[0][0] as ComponentDefinition;
       expect(queuedComponent.name).toBe(ComponentName.Schedule);
       if (queuedComponent.name === ComponentName.Schedule) {
@@ -152,27 +152,28 @@ describe('Task Router', () => {
         { action: 'npm install', type: TaskType.Execute, config: [] },
         { action: 'npm test', type: TaskType.Execute, config: [] },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Build project',
         {} as LLMService,
         'build',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // First call adds Plan only
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(1);
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
       expect(workflowHandlers.addToTimeline).not.toHaveBeenCalled();
 
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan completing (calls onSelectionConfirmed)
@@ -181,9 +182,10 @@ describe('Task Router', () => {
       }
 
       // Second call adds Confirm
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
     });
 
@@ -192,26 +194,27 @@ describe('Task Router', () => {
         { action: 'Build project', type: TaskType.Execute, config: [] },
         { action: 'Run tests', type: TaskType.Execute, config: [] },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Building and testing.',
         {} as LLMService,
         'build and test',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false // No DEFINE tasks
       );
 
       // Should have added Schedule to queue
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(1);
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
 
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       if (scheduleDef.name === ComponentName.Schedule) {
@@ -227,10 +230,11 @@ describe('Task Router', () => {
       void scheduleProps.onSelectionConfirmed?.(tasks);
 
       // Should have added Confirm component
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
 
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Verify Confirm has proper callbacks
@@ -242,10 +246,10 @@ describe('Task Router', () => {
       confirmProps.onConfirmed();
 
       // Should complete both components
-      expect(workflowHandlers.completeActiveAndPending).toHaveBeenCalled();
+      expect(lifecycleHandlers.completeActiveAndPending).toHaveBeenCalled();
 
       // Should route tasks to execution
-      expect(queueHandlers.addToQueue).toHaveBeenCalled();
+      expect(workflowHandlers.addToQueue).toHaveBeenCalled();
     });
 
     it('does not add callback to Schedule when DEFINE tasks exist', () => {
@@ -257,25 +261,26 @@ describe('Task Router', () => {
           config: [],
         },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Select environment.',
         {} as LLMService,
         'deploy',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         true // Has DEFINE tasks
       );
 
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(1);
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
 
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Schedule with DEFINE tasks should NOT have onSelectionConfirmed
@@ -289,24 +294,25 @@ describe('Task Router', () => {
         { action: 'Explain unit testing', type: TaskType.Answer, config: [] },
       ];
       const service = {} as LLMService;
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Answer question',
         service,
         'explain testing',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Plan from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan completing
@@ -315,9 +321,10 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
@@ -326,13 +333,14 @@ describe('Task Router', () => {
       }
 
       // Should complete active and pending, then add Answer to queue
-      expect(workflowHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
+      expect(lifecycleHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
         1
       );
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
 
-      const answerDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[2][0] as ComponentDefinition;
+      const answerDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
       expect(answerDef.name).toBe(ComponentName.Answer);
       if (answerDef.name === ComponentName.Answer) {
         expect(answerDef.props.question).toBe('Explain unit testing');
@@ -347,24 +355,25 @@ describe('Task Router', () => {
         { action: 'Explain Angular', type: TaskType.Answer, config: [] },
       ];
       const service = {} as LLMService;
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Answer questions',
         service,
         'explain react, vue, angular',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Schedule from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Schedule completing
@@ -373,9 +382,10 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
@@ -384,14 +394,15 @@ describe('Task Router', () => {
       }
 
       // Should complete active and pending, then add 3 Answer components to queue
-      expect(workflowHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
+      expect(lifecycleHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
         1
       );
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(5); // Schedule, Confirm, Answer1, Answer2, Answer3
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(5); // Schedule, Confirm, Answer1, Answer2, Answer3
 
       // Verify first Answer component
-      const answer1Def = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[2][0] as ComponentDefinition;
+      const answer1Def = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
       expect(answer1Def.name).toBe(ComponentName.Answer);
       if (answer1Def.name === ComponentName.Answer) {
         expect(answer1Def.props.question).toBe('Explain React');
@@ -399,8 +410,9 @@ describe('Task Router', () => {
       }
 
       // Verify second Answer component
-      const answer2Def = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[3][0] as ComponentDefinition;
+      const answer2Def = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[3][0] as ComponentDefinition;
       expect(answer2Def.name).toBe(ComponentName.Answer);
       if (answer2Def.name === ComponentName.Answer) {
         expect(answer2Def.props.question).toBe('Explain Vue');
@@ -408,8 +420,9 @@ describe('Task Router', () => {
       }
 
       // Verify third Answer component
-      const answer3Def = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[4][0] as ComponentDefinition;
+      const answer3Def = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[4][0] as ComponentDefinition;
       expect(answer3Def.name).toBe(ComponentName.Answer);
       if (answer3Def.name === ComponentName.Answer) {
         expect(answer3Def.props.question).toBe('Explain Angular');
@@ -423,24 +436,25 @@ describe('Task Router', () => {
         { action: 'Show skills', type: TaskType.Introspect, config: [] },
       ];
       const service = {} as LLMService;
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'List capabilities',
         service,
         'list skills',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Plan from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan completing
@@ -449,9 +463,10 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
@@ -460,9 +475,9 @@ describe('Task Router', () => {
       }
 
       // Should add Introspect to queue
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
       const introspectDef = (
-        queueHandlers.addToQueue as ReturnType<typeof vi.fn>
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls[2][0] as ComponentDefinition;
       expect(introspectDef.name).toBe(ComponentName.Introspect);
       if (introspectDef.name === ComponentName.Introspect) {
@@ -476,24 +491,25 @@ describe('Task Router', () => {
         { action: 'npm install', type: TaskType.Execute, config: [] },
       ];
       const service = {} as LLMService;
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Install dependencies',
         service,
         'install',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Plan from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan completing
@@ -502,9 +518,10 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
@@ -513,9 +530,10 @@ describe('Task Router', () => {
       }
 
       // Should add Execute to queue (no Validate needed)
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(3);
-      const executeDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[2][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      const executeDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
       expect(executeDef.name).toBe(ComponentName.Execute);
       if (executeDef.name === ComponentName.Execute) {
         expect(executeDef.props.tasks).toEqual(tasks);
@@ -532,24 +550,25 @@ describe('Task Router', () => {
         },
       ];
       const service = {} as LLMService;
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Deploy to alpha',
         service,
         'deploy alpha',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Plan from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan completing
@@ -558,9 +577,10 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
@@ -569,9 +589,10 @@ describe('Task Router', () => {
       }
 
       // Should add Validate to queue
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(3);
-      const validateDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[2][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      const validateDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
       expect(validateDef.name).toBe(ComponentName.Validate);
       if (validateDef.name === ComponentName.Validate) {
         expect(validateDef.props.missingConfig).toEqual([
@@ -586,24 +607,25 @@ describe('Task Router', () => {
       const tasks = [
         { action: 'npm install', type: TaskType.Execute, config: [] },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Install dependencies',
         {} as LLMService,
         'install',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Plan from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan completing
@@ -612,9 +634,10 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user cancelling
@@ -623,14 +646,15 @@ describe('Task Router', () => {
       }
 
       // Should complete both active and pending
-      expect(workflowHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
+      expect(lifecycleHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
         1
       );
 
       // Should add feedback to queue
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(3);
-      const feedbackDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[2][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      const feedbackDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
       expect(feedbackDef.name).toBe(ComponentName.Feedback);
     });
 
@@ -638,24 +662,25 @@ describe('Task Router', () => {
       const tasks = [
         { action: 'List capabilities', type: TaskType.Introspect, config: [] },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Capabilities',
         {} as LLMService,
         'list',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Plan from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan completing
@@ -664,9 +689,10 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user cancelling
@@ -675,14 +701,15 @@ describe('Task Router', () => {
       }
 
       // Should complete both active and pending
-      expect(workflowHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
+      expect(lifecycleHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
         1
       );
 
       // Should add feedback to queue
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(3);
-      const feedbackDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[2][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      const feedbackDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
       expect(feedbackDef.name).toBe(ComponentName.Feedback);
     });
 
@@ -690,24 +717,25 @@ describe('Task Router', () => {
       const tasks = [
         { action: 'Explain testing', type: TaskType.Answer, config: [] },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Answer',
         {} as LLMService,
         'explain',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Plan from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan completing
@@ -716,9 +744,10 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user cancelling
@@ -727,14 +756,15 @@ describe('Task Router', () => {
       }
 
       // Should complete both active and pending
-      expect(workflowHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
+      expect(lifecycleHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
         1
       );
 
       // Should add feedback to queue
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(3);
-      const feedbackDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[2][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      const feedbackDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
       expect(feedbackDef.name).toBe(ComponentName.Feedback);
     });
 
@@ -749,27 +779,28 @@ describe('Task Router', () => {
           ],
         },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Mixed group tasks',
         {} as LLMService,
         'build and explain',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Plan should be added to queue
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(1);
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
       expect(workflowHandlers.addToTimeline).not.toHaveBeenCalled();
 
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan completing
@@ -778,9 +809,10 @@ describe('Task Router', () => {
       }
 
       // Confirm should be added to queue
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
@@ -789,13 +821,13 @@ describe('Task Router', () => {
       }
 
       // Should complete active and pending components
-      expect(workflowHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
+      expect(lifecycleHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
         1
       );
 
       // Should call onError with mixed types error message
-      expect(errorHandlers.onError).toHaveBeenCalledTimes(1);
-      const errorMessage = (errorHandlers.onError as ReturnType<typeof vi.fn>)
+      expect(requestHandlers.onError).toHaveBeenCalledTimes(1);
+      const errorMessage = (requestHandlers.onError as ReturnType<typeof vi.fn>)
         .mock.calls[0][0] as string;
       expect(errorMessage).toContain('execute');
       expect(errorMessage).toContain('answer');
@@ -807,9 +839,9 @@ describe('Task Router', () => {
         { action: 'Ignore unknown request', type: TaskType.Ignore, config: [] },
         { action: 'Discarded option', type: TaskType.Discard, config: [] },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
       const service = {} as LLMService;
 
       routeTasksWithConfirm(
@@ -817,15 +849,16 @@ describe('Task Router', () => {
         'Execute with ignored tasks',
         service,
         'build',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Plan from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan completing
@@ -834,9 +867,10 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
@@ -845,12 +879,13 @@ describe('Task Router', () => {
       }
 
       // Should not trigger error (only Execute tasks validated)
-      expect(errorHandlers.onError).not.toHaveBeenCalled();
+      expect(requestHandlers.onError).not.toHaveBeenCalled();
 
       // Should add Execute component (only valid task type)
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(3);
-      const executeDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[2][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      const executeDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
       expect(executeDef.name).toBe(ComponentName.Execute);
     });
 
@@ -870,24 +905,25 @@ describe('Task Router', () => {
         },
       ];
       const service = {} as LLMService;
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Configure settings',
         service,
         'config',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Plan from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan completing
@@ -896,9 +932,10 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       // Simulate user confirming
@@ -907,9 +944,10 @@ describe('Task Router', () => {
       }
 
       // Should add Config component to queue
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(3);
-      const configDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[2][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      const configDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
       expect(configDef.name).toBe(ComponentName.Config);
       if (configDef.name === ComponentName.Config) {
         // Should have steps for both config keys
@@ -934,24 +972,25 @@ describe('Task Router', () => {
         },
       ];
       const service = {} as LLMService;
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Configure projects',
         service,
         'config',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Schedule from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
 
       // Simulate Schedule completing
       if (scheduleDef.name === ComponentName.Schedule) {
@@ -959,8 +998,9 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
 
       // Simulate user confirming
       if (confirmDef.name === ComponentName.Confirm) {
@@ -996,24 +1036,25 @@ describe('Task Router', () => {
         },
       ];
       const service = {} as LLMService;
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Configure settings',
         service,
         'config',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Schedule from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
 
       // Simulate Schedule completing
       if (scheduleDef.name === ComponentName.Schedule) {
@@ -1021,8 +1062,9 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
 
       // Simulate user confirming
       if (confirmDef.name === ComponentName.Confirm) {
@@ -1045,24 +1087,25 @@ describe('Task Router', () => {
         },
       ];
       const service = {} as LLMService;
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Configure app',
         service,
         'config',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Get Schedule from first addToQueue call
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
 
       // Simulate Schedule completing
       if (scheduleDef.name === ComponentName.Schedule) {
@@ -1070,8 +1113,9 @@ describe('Task Router', () => {
       }
 
       // Get Confirm from second addToQueue call
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
 
       // Simulate user confirming
       if (confirmDef.name === ComponentName.Confirm) {
@@ -1096,25 +1140,26 @@ describe('Task Router', () => {
         },
       ];
       const service = {} as LLMService;
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Here is what I found',
         service,
         'test and validate',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Should add Message component to queue
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(1);
-      const messageDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
+      const messageDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
 
       expect(messageDef.name).toBe(ComponentName.Message);
       if (messageDef.name === ComponentName.Message) {
@@ -1145,9 +1190,9 @@ describe('Task Router', () => {
           ],
         },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
       const service = {} as LLMService;
 
       routeTasksWithConfirm(
@@ -1155,18 +1200,19 @@ describe('Task Router', () => {
         'Mixed tasks',
         service,
         'explain tdd and build',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Should create Plan and not error
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(1);
-      expect(errorHandlers.onError).not.toHaveBeenCalled();
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
+      expect(requestHandlers.onError).not.toHaveBeenCalled();
 
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Simulate Plan and Confirm completing
@@ -1174,17 +1220,18 @@ describe('Task Router', () => {
         void scheduleDef.props.onSelectionConfirmed?.(tasks);
       }
 
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
       // Should route Answer and Execute separately
-      expect(queueHandlers.addToQueue).toHaveBeenCalledWith(
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
         expect.objectContaining({ name: ComponentName.Answer })
       );
-      expect(queueHandlers.addToQueue).toHaveBeenCalledWith(
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
         expect.objectContaining({ name: ComponentName.Execute })
       );
     });
@@ -1201,9 +1248,9 @@ describe('Task Router', () => {
           ],
         },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
       const service = {} as LLMService;
 
       routeTasksWithConfirm(
@@ -1211,28 +1258,30 @@ describe('Task Router', () => {
         'Workflow',
         service,
         'complete workflow',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Simulate Plan and Confirm completing
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       if (scheduleDef.name === ComponentName.Schedule) {
         void scheduleDef.props.onSelectionConfirmed?.(tasks);
       }
 
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
       // Should route to Execute with flattened subtasks (3 tasks)
       const executeDef = (
-        queueHandlers.addToQueue as ReturnType<typeof vi.fn>
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls.find(
         (call) =>
           (call[0] as ComponentDefinition).name === ComponentName.Execute
@@ -1273,9 +1322,9 @@ describe('Task Router', () => {
           ],
         },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
       const service = {} as LLMService;
 
       routeTasksWithConfirm(
@@ -1283,33 +1332,35 @@ describe('Task Router', () => {
         'Multiple groups',
         service,
         'build and config',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Should not error
-      expect(errorHandlers.onError).not.toHaveBeenCalled();
+      expect(requestHandlers.onError).not.toHaveBeenCalled();
 
       // Simulate Plan and Confirm completing
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       if (scheduleDef.name === ComponentName.Schedule) {
         void scheduleDef.props.onSelectionConfirmed?.(tasks);
       }
 
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
       // Should route to both Execute and Config
-      expect(queueHandlers.addToQueue).toHaveBeenCalledWith(
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
         expect.objectContaining({ name: ComponentName.Execute })
       );
-      expect(queueHandlers.addToQueue).toHaveBeenCalledWith(
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
         expect.objectContaining({ name: ComponentName.Config })
       );
     });
@@ -1351,9 +1402,9 @@ describe('Task Router', () => {
           ],
         },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
       const service = {} as LLMService;
 
       routeTasksWithConfirm(
@@ -1361,28 +1412,30 @@ describe('Task Router', () => {
         'Deploy projects',
         service,
         'deploy frontend, deploy backend',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Simulate Schedule and Confirm completing
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       if (scheduleDef.name === ComponentName.Schedule) {
         void scheduleDef.props.onSelectionConfirmed?.(tasks);
       }
 
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
       // Should create TWO separate Execute components, not one merged component
       const executeComponents = (
-        queueHandlers.addToQueue as ReturnType<typeof vi.fn>
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls
         .map((call) => call[0] as ComponentDefinition)
         .filter((def) => def.name === ComponentName.Execute);
@@ -1433,9 +1486,9 @@ describe('Task Router', () => {
         },
         { action: 'Explain REST', type: TaskType.Answer, config: [] },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
       const service = {} as LLMService;
 
       routeTasksWithConfirm(
@@ -1443,28 +1496,30 @@ describe('Task Router', () => {
         'Mixed tasks',
         service,
         'explain graphql, deploy frontend, deploy backend, explain rest',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Simulate Schedule and Confirm completing
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       if (scheduleDef.name === ComponentName.Schedule) {
         void scheduleDef.props.onSelectionConfirmed?.(tasks);
       }
 
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
       // Get all components added to queue after Schedule and Confirm
       const components = (
-        queueHandlers.addToQueue as ReturnType<typeof vi.fn>
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls
         .slice(2) // Skip Schedule and Confirm
         .map((call) => call[0] as ComponentDefinition);
@@ -1510,9 +1565,9 @@ describe('Task Router', () => {
         },
         { action: 'Show capabilities', type: TaskType.Introspect, config: [] },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
       const service = {} as LLMService;
 
       routeTasksWithConfirm(
@@ -1520,33 +1575,35 @@ describe('Task Router', () => {
         'Multiple types',
         service,
         'answer, execute, introspect',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Simulate Plan and Confirm completing
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       if (scheduleDef.name === ComponentName.Schedule) {
         void scheduleDef.props.onSelectionConfirmed?.(tasks);
       }
 
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
       // Should route to all three component types
-      expect(queueHandlers.addToQueue).toHaveBeenCalledWith(
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
         expect.objectContaining({ name: ComponentName.Answer })
       );
-      expect(queueHandlers.addToQueue).toHaveBeenCalledWith(
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
         expect.objectContaining({ name: ComponentName.Execute })
       );
-      expect(queueHandlers.addToQueue).toHaveBeenCalledWith(
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
         expect.objectContaining({ name: ComponentName.Introspect })
       );
     });
@@ -1562,37 +1619,39 @@ describe('Task Router', () => {
           ],
         },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Invalid mixed group',
         {} as LLMService,
         'mixed group',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Simulate Plan and Confirm completing
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       if (scheduleDef.name === ComponentName.Schedule) {
         void scheduleDef.props.onSelectionConfirmed?.(tasks);
       }
 
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
       // Should call onError with mixed types message
-      expect(errorHandlers.onError).toHaveBeenCalledTimes(1);
-      const errorMessage = (errorHandlers.onError as ReturnType<typeof vi.fn>)
+      expect(requestHandlers.onError).toHaveBeenCalledTimes(1);
+      const errorMessage = (requestHandlers.onError as ReturnType<typeof vi.fn>)
         .mock.calls[0][0] as string;
       expect(errorMessage).toContain('Mixed task types');
       expect(errorMessage).toContain('execute');
@@ -1608,9 +1667,9 @@ describe('Task Router', () => {
         },
         { action: 'Execute task', type: TaskType.Execute, config: [] },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
       const service = {} as LLMService;
 
       routeTasksWithConfirm(
@@ -1618,30 +1677,32 @@ describe('Task Router', () => {
         'With empty group',
         service,
         'empty and execute',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Should not error
-      expect(errorHandlers.onError).not.toHaveBeenCalled();
+      expect(requestHandlers.onError).not.toHaveBeenCalled();
 
       // Simulate Plan and Confirm completing
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       if (scheduleDef.name === ComponentName.Schedule) {
         void scheduleDef.props.onSelectionConfirmed?.(tasks);
       }
 
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
       // Should route Execute task (empty Group is skipped during flattening)
-      expect(queueHandlers.addToQueue).toHaveBeenCalledWith(
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
         expect.objectContaining({ name: ComponentName.Execute })
       );
     });
@@ -1663,37 +1724,39 @@ describe('Task Router', () => {
           ],
         },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Nested mixed group',
         {} as LLMService,
         'nested',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Simulate Plan and Confirm completing
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       if (scheduleDef.name === ComponentName.Schedule) {
         void scheduleDef.props.onSelectionConfirmed?.(tasks);
       }
 
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       if (confirmDef.name === ComponentName.Confirm) {
         confirmDef.props.onConfirmed();
       }
 
       // Should detect mixed types in nested Group
-      expect(errorHandlers.onError).toHaveBeenCalledTimes(1);
-      const errorMessage = (errorHandlers.onError as ReturnType<typeof vi.fn>)
+      expect(requestHandlers.onError).toHaveBeenCalledTimes(1);
+      const errorMessage = (requestHandlers.onError as ReturnType<typeof vi.fn>)
         .mock.calls[0][0] as string;
       expect(errorMessage).toContain('Mixed task types');
     });
@@ -1709,27 +1772,28 @@ describe('Task Router', () => {
           ],
         },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasks,
         'Group with ignores',
         {} as LLMService,
         'ignores',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Group itself is not filtered (it's not Ignore type, it's Group type)
       // Plan is created, showing the Group with its Ignore subtasks
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(1);
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
 
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // When user confirms, Ignore subtasks are flattened but have no handler
@@ -1738,16 +1802,17 @@ describe('Task Router', () => {
         scheduleDef.props as ScheduleDefinitionProps
       ).onSelectionConfirmed?.(tasks);
 
-      const confirmDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[1][0] as ComponentDefinition;
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
       expect(confirmDef.name).toBe(ComponentName.Confirm);
 
       (confirmDef.props as ConfirmDefinitionProps).onConfirmed();
 
       // After confirmation, Ignore tasks have no handler, so nothing is queued
-      expect(workflowHandlers.completeActiveAndPending).toHaveBeenCalled();
+      expect(lifecycleHandlers.completeActiveAndPending).toHaveBeenCalled();
       // Only Plan and Confirm were queued, no Execute/Answer/etc
-      expect(queueHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
     });
 
     it('filters Ignore tasks early from Groups', () => {
@@ -1757,25 +1822,26 @@ describe('Task Router', () => {
         { action: 'Ignore 1', type: TaskType.Ignore, config: [] },
         { action: 'Execute 2', type: TaskType.Execute, config: [] },
       ];
-      const queueHandlers = createQueueHandlers();
+      const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       routeTasksWithConfirm(
         tasksWithIgnore,
         'Mixed tasks',
         {} as LLMService,
         'mixed',
-        queueHandlers,
+        lifecycleHandlers,
         workflowHandlers,
-        errorHandlers,
+        requestHandlers,
         false
       );
 
       // Should filter out Ignore task before creating Plan
       // Plan should only contain Execute tasks
-      const scheduleDef = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
       // Verify filtered tasks only contain Execute tasks

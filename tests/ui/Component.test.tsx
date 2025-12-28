@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { ComponentDefinition } from '../../src/types/components.js';
+import {
+  ComponentStatus,
+  ComponentDefinition,
+} from '../../src/types/components.js';
 import {
   App,
   ComponentName,
@@ -10,10 +13,18 @@ import {
 
 import { DebugLevel } from '../../src/services/configuration.js';
 
-import { Component } from '../../src/ui/Component.js';
+import {
+  SimpleComponent,
+  ControllerComponent,
+} from '../../src/ui/Component.js';
 import { StepType } from '../../src/ui/Config.js';
 
-import { createMockAnthropicService } from '../test-utils.js';
+import {
+  createLifecycleHandlers,
+  createMockAnthropicService,
+  createRequestHandlers,
+  createWorkflowHandlers,
+} from '../test-utils.js';
 
 describe('Component', () => {
   const mockApp: App = {
@@ -30,12 +41,13 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-welcome-1',
       name: ComponentName.Welcome,
+      status: ComponentStatus.Awaiting,
       props: {
         app: mockApp,
       },
     };
 
-    const result = <Component def={def} debug={DebugLevel.None} />;
+    const result = <SimpleComponent def={def} />;
 
     expect(result).toBeDefined();
     expect(result.type).toBeDefined();
@@ -46,7 +58,8 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-config-1',
       name: ComponentName.Config,
-      state: {},
+      status: ComponentStatus.Awaiting,
+      state: { values: {}, completedStep: 0, selectedIndex: 0 },
       props: {
         steps: [
           {
@@ -69,7 +82,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={DebugLevel.None} />;
+    const result = <SimpleComponent def={def} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.state).toBeDefined();
@@ -79,7 +92,8 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-config-2',
       name: ComponentName.Config,
-      state: {},
+      status: ComponentStatus.Awaiting,
+      state: { values: {}, completedStep: 0, selectedIndex: 0 },
       props: {
         steps: [
           {
@@ -109,7 +123,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={DebugLevel.None} />;
+    const result = <SimpleComponent def={def} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.steps).toHaveLength(3);
@@ -119,7 +133,8 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-command-1',
       name: ComponentName.Command,
-      state: {},
+      status: ComponentStatus.Awaiting,
+      state: { error: null, message: null, tasks: [] },
       props: {
         command: 'test command',
         service: mockService,
@@ -127,7 +142,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={DebugLevel.None} />;
+    const result = <SimpleComponent def={def} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.command).toBe('test command');
@@ -137,21 +152,22 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-command-3',
       name: ComponentName.Command,
+      status: ComponentStatus.Awaiting,
       state: {
         error: 'Something went wrong',
+        message: null,
+        tasks: [],
       },
       props: {
         command: 'failing command',
         service: mockService,
-        error: 'Something went wrong',
         onAborted: vi.fn(),
       },
     };
 
-    const result = <Component def={def} debug={DebugLevel.None} />;
+    const result = <SimpleComponent def={def} />;
 
     expect(result).toBeDefined();
-    expect(result.props.def.props.error).toBe('Something went wrong');
     expect(result.props.def.state.error).toBe('Something went wrong');
   });
 
@@ -159,12 +175,13 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-welcome-2',
       name: ComponentName.Welcome,
+      status: ComponentStatus.Awaiting,
       props: {
         app: mockApp,
       },
     };
 
-    const result = <Component def={def} debug={DebugLevel.None} />;
+    const result = <SimpleComponent def={def} />;
 
     // Welcome component doesn't have state, but we verify it doesn't break
     expect(result).toBeDefined();
@@ -175,6 +192,7 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-schedule-1',
       name: ComponentName.Schedule,
+      status: ComponentStatus.Awaiting,
       state: {
         highlightedIndex: null,
         currentDefineGroupIndex: 0,
@@ -189,7 +207,7 @@ describe('Component', () => {
       },
     };
 
-    const result = <Component def={def} debug={DebugLevel.None} />;
+    const result = <SimpleComponent def={def} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.tasks).toHaveLength(2);
@@ -200,13 +218,14 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-feedback-1',
       name: ComponentName.Feedback,
+      status: ComponentStatus.Awaiting,
       props: {
         type: FeedbackType.Info,
         message: 'Configuration complete',
       },
     };
 
-    const result = <Component def={def} debug={DebugLevel.None} />;
+    const result = <SimpleComponent def={def} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.type).toBe(FeedbackType.Info);
@@ -217,12 +236,13 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-message-1',
       name: ComponentName.Message,
+      status: ComponentStatus.Awaiting,
       props: {
         text: 'Processing your request',
       },
     };
 
-    const result = <Component def={def} debug={DebugLevel.None} />;
+    const result = <SimpleComponent def={def} />;
 
     expect(result).toBeDefined();
     expect(result.props.def.props.text).toBe('Processing your request');
@@ -233,14 +253,23 @@ describe('Component', () => {
     const def: ComponentDefinition = {
       id: 'test-refinement-1',
       name: ComponentName.Refinement,
-      state: {},
+      status: ComponentStatus.Awaiting,
+      state: { values: {}, completedStep: 0, selectedIndex: 0 },
       props: {
         text: 'Loading data',
         onAborted,
       },
     };
 
-    const result = <Component def={def} debug={DebugLevel.None} />;
+    const result = (
+      <ControllerComponent
+        def={def}
+        debug={DebugLevel.None}
+        requestHandlers={createRequestHandlers()}
+        lifecycleHandlers={createLifecycleHandlers()}
+        workflowHandlers={createWorkflowHandlers()}
+      />
+    );
 
     expect(result).toBeDefined();
     expect(result.props.def.props.text).toBe('Loading data');
@@ -252,12 +281,14 @@ describe('Component', () => {
       {
         id: 'test-welcome-3',
         name: ComponentName.Welcome,
+        status: ComponentStatus.Awaiting,
         props: { app: mockApp },
       },
       {
         id: 'test-config-3',
         name: ComponentName.Config,
-        state: {},
+        status: ComponentStatus.Awaiting,
+        state: { values: {}, completedStep: 0, selectedIndex: 0 },
         props: {
           steps: [
             {
@@ -275,12 +306,14 @@ describe('Component', () => {
       {
         id: 'test-command-4',
         name: ComponentName.Command,
-        state: {},
+        status: ComponentStatus.Awaiting,
+        state: { error: null, message: null, tasks: [] },
         props: { command: 'test', service: mockService, onAborted: vi.fn() },
       },
       {
         id: 'test-schedule-2',
         name: ComponentName.Schedule,
+        status: ComponentStatus.Awaiting,
         state: {
           highlightedIndex: null,
           currentDefineGroupIndex: 0,
@@ -294,6 +327,7 @@ describe('Component', () => {
       {
         id: 'test-feedback-2',
         name: ComponentName.Feedback,
+        status: ComponentStatus.Awaiting,
         props: {
           type: FeedbackType.Succeeded,
           message: 'All done',
@@ -302,6 +336,7 @@ describe('Component', () => {
       {
         id: 'test-message-2',
         name: ComponentName.Message,
+        status: ComponentStatus.Awaiting,
         props: {
           text: 'Simple message',
         },
@@ -309,7 +344,8 @@ describe('Component', () => {
       {
         id: 'test-refinement-2',
         name: ComponentName.Refinement,
-        state: {},
+        status: ComponentStatus.Awaiting,
+        state: { values: {}, completedStep: 0, selectedIndex: 0 },
         props: {
           text: 'Loading',
           onAborted: vi.fn(),
@@ -317,9 +353,22 @@ describe('Component', () => {
       },
     ];
 
-    const results = definitions.map((def) => (
-      <Component def={def} debug={DebugLevel.None} />
-    ));
+    const results = definitions.map((def) => {
+      // Render stateful components with ControllerComponent
+      if ('state' in def) {
+        return (
+          <ControllerComponent
+            def={def}
+            debug={DebugLevel.None}
+            requestHandlers={createRequestHandlers()}
+            lifecycleHandlers={createLifecycleHandlers()}
+            workflowHandlers={createWorkflowHandlers()}
+          />
+        );
+      }
+      // Render stateless components with SimpleComponent
+      return <SimpleComponent def={def} />;
+    });
 
     expect(results).toHaveLength(7);
     results.forEach((result) => {

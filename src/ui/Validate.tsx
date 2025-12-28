@@ -1,51 +1,100 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { ComponentStatus, ValidateProps } from '../types/components.js';
+import {
+  ComponentStatus,
+  ValidateProps,
+  ValidateState,
+} from '../types/components.js';
 import { ConfigRequirement } from '../types/skills.js';
 import { TaskType } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
-import { createConfigStepsFromSchema } from '../services/components.js';
 import {
-  DebugLevel,
-  saveConfig,
-  unflattenConfig,
-} from '../services/configuration.js';
+  createConfigDefinitionWithKeys,
+  createMessage,
+} from '../services/components.js';
+import { saveConfig, unflattenConfig } from '../services/configuration.js';
 import { saveConfigLabels } from '../services/config-labels.js';
 import { useInput } from '../services/keyboard.js';
-import { formatErrorMessage } from '../services/messages.js';
+import {
+  formatErrorMessage,
+  getUnresolvedPlaceholdersMessage,
+} from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';
-
-import { Config, ConfigStep } from './Config.js';
 import { Spinner } from './Spinner.js';
 
 const MIN_PROCESSING_TIME = 1000;
 
+/**
+ * Validate view: Displays validation and config prompt
+ */
+
+export interface ValidateViewProps {
+  state: ValidateState;
+  status: ComponentStatus;
+}
+
+export const ValidateView = ({ state, status }: ValidateViewProps) => {
+  const isActive = status === ComponentStatus.Active;
+  const { error, completionMessage } = state;
+
+  // Don't render when not active and nothing to show
+  if (!isActive && !completionMessage && !error) {
+    return null;
+  }
+
+  return (
+    <Box alignSelf="flex-start" flexDirection="column">
+      {isActive && !completionMessage && !error && (
+        <Box marginLeft={1}>
+          <Text color={getTextColor(isActive)}>
+            Validating configuration requirements.{' '}
+          </Text>
+          <Spinner />
+        </Box>
+      )}
+
+      {completionMessage && (
+        <Box marginLeft={1}>
+          <Text color={getTextColor(isActive)}>{completionMessage}</Text>
+        </Box>
+      )}
+
+      {error && (
+        <Box marginTop={1}>
+          <Text color={Colors.Status.Error}>Error: {error}</Text>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+/**
+ * Validate controller: Validates missing config
+ */
+
 export function Validate({
   missingConfig,
   userRequest,
-  state,
   status,
   service,
-  children,
-  debug = DebugLevel.None,
   onError,
-  onComplete,
+  requestHandlers,
+  onValidationComplete,
   onAborted,
-  stateHandlers,
   lifecycleHandlers,
   workflowHandlers,
 }: ValidateProps) {
   const isActive = status === ComponentStatus.Active;
 
-  const [error, setError] = useState<string | null>(state?.error ?? null);
+  const [error, setError] = useState<string | null>(null);
   const [completionMessage, setCompletionMessage] = useState<string | null>(
-    state?.completionMessage ?? null
+    null
   );
   const [configRequirements, setConfigRequirements] = useState<
-    ConfigRequirement[] | null
-  >(state?.configRequirements ?? null);
+    ConfigRequirement[]
+  >([]);
 
   useInput(
     (_, key) => {
@@ -79,7 +128,7 @@ export function Validate({
         if (mounted) {
           // Add debug components to timeline if present
           if (result.debug?.length) {
-            workflowHandlers?.addToTimeline(...result.debug);
+            workflowHandlers.addToTimeline(...result.debug);
           }
 
           // Extract CONFIG tasks with descriptions from result
@@ -105,28 +154,71 @@ export function Validate({
           );
 
           // Build completion message showing which config properties are needed
-          const count = withDescriptions.length;
-          const propertyWord = count === 1 ? 'property' : 'properties';
-
-          // Shuffle between different message variations
-          const messages = [
-            `Additional configuration ${propertyWord} required.`,
-            `Configuration ${propertyWord} needed.`,
-            `Missing configuration ${propertyWord} detected.`,
-            `Setup requires configuration ${propertyWord}.`,
-          ];
-          const message = messages[Math.floor(Math.random() * messages.length)];
+          const message = getUnresolvedPlaceholdersMessage(
+            withDescriptions.length
+          );
 
           setCompletionMessage(message);
           setConfigRequirements(withDescriptions);
 
-          // Save state after validation completes
-          stateHandlers?.updateState({
+          // Add validation message to timeline before Config component
+          workflowHandlers.addToTimeline(createMessage(message));
+
+          // Create Config component and add to queue
+          const keys = withDescriptions.map((req) => req.path);
+          const configDef = createConfigDefinitionWithKeys(
+            keys,
+            (config: Record<string, string>) => {
+              // Convert flat dotted keys to nested structure grouped by section
+              const configBySection = unflattenConfig(config);
+
+              // Extract and save labels to cache
+              const labels: Record<string, string> = {};
+              for (const req of withDescriptions) {
+                if (req.description) {
+                  labels[req.path] = req.description;
+                }
+              }
+              saveConfigLabels(labels);
+
+              // Save each section
+              for (const [section, sectionConfig] of Object.entries(
+                configBySection
+              )) {
+                saveConfig(section, sectionConfig);
+              }
+
+              // After config is saved, invoke callback to add Execute component to queue
+              onValidationComplete(withDescriptions);
+            },
+            (operation: string) => {
+              onAborted(operation);
+            }
+          );
+
+          // Override descriptions with LLM-generated ones
+          if ('props' in configDef && 'steps' in configDef.props) {
+            configDef.props.steps = configDef.props.steps.map(
+              (step, index) => ({
+                ...step,
+                description:
+                  withDescriptions[index].description ||
+                  withDescriptions[index].path,
+              })
+            );
+          }
+
+          workflowHandlers.addToQueue(configDef);
+
+          lifecycleHandlers.completeActive();
+
+          const finalState: ValidateState = {
+            error: null,
             completionMessage: message,
             configRequirements: withDescriptions,
             validated: true,
-            error: null,
-          });
+          };
+          requestHandlers.onCompleted(finalState);
         }
       } catch (err) {
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
@@ -135,13 +227,13 @@ export function Validate({
           const errorMessage = formatErrorMessage(err);
           setError(errorMessage);
 
-          // Save error state
-          stateHandlers?.updateState({
+          const finalState: ValidateState = {
             error: errorMessage,
             completionMessage: null,
-            configRequirements: null,
+            configRequirements: [],
             validated: false,
-          });
+          };
+          requestHandlers.onCompleted(finalState);
 
           onError(errorMessage);
         }
@@ -158,115 +250,21 @@ export function Validate({
     userRequest,
     isActive,
     service,
-    onComplete,
+    requestHandlers,
     onError,
     onAborted,
+    onValidationComplete,
+    lifecycleHandlers,
+    workflowHandlers,
   ]);
 
-  // Don't render when not active and nothing to show
-  if (!isActive && !completionMessage && !error && !children) {
-    return null;
-  }
-
-  // Create ConfigSteps from requirements using createConfigStepsFromSchema
-  // to load current values from config file, then override descriptions
-  const configSteps: ConfigStep[] | null = configRequirements
-    ? (() => {
-        const keys = configRequirements.map((req) => req.path);
-        const steps = createConfigStepsFromSchema(keys);
-
-        // Override descriptions with LLM-generated ones
-        return steps.map((step, index) => ({
-          ...step,
-          description:
-            configRequirements[index].description ||
-            configRequirements[index].path,
-        }));
-      })()
-    : null;
-
-  const handleConfigFinished = (config: Record<string, string>) => {
-    // Convert flat dotted keys to nested structure grouped by section
-    const configBySection = unflattenConfig(config);
-
-    // Extract and save labels to cache
-    if (configRequirements) {
-      const labels: Record<string, string> = {};
-      for (const req of configRequirements) {
-        if (req.description) {
-          labels[req.path] = req.description;
-        }
-      }
-      saveConfigLabels(labels);
-    }
-
-    // Save each section
-    for (const [section, sectionConfig] of Object.entries(configBySection)) {
-      saveConfig(section, sectionConfig);
-    }
-
-    // Mark validation component as complete before invoking callback
-    // This allows the workflow to proceed to execution
-    lifecycleHandlers?.completeActive();
-
-    // Invoke callback which will queue the Execute component
-    if (configRequirements) {
-      onComplete(configRequirements);
-    }
+  const state: ValidateState = {
+    error,
+    completionMessage,
+    configRequirements,
+    validated: error === null && completionMessage !== null,
   };
-
-  const handleConfigAborted = (operation: string) => {
-    // Mark validation component as complete when aborted
-    lifecycleHandlers?.completeActive();
-    onAborted(operation);
-  };
-
-  return (
-    <Box alignSelf="flex-start" flexDirection="column">
-      {isActive && !completionMessage && !error && (
-        <Box marginLeft={1}>
-          <Text color={getTextColor(isActive)}>
-            Validating configuration requirements.{' '}
-          </Text>
-          <Spinner />
-        </Box>
-      )}
-
-      {completionMessage && (
-        <Box marginLeft={1}>
-          <Text color={getTextColor(isActive)}>{completionMessage}</Text>
-        </Box>
-      )}
-
-      {error && (
-        <Box marginTop={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
-        </Box>
-      )}
-
-      {configSteps && configSteps.length > 0 && !error && (
-        <Box marginTop={1}>
-          <Config
-            steps={configSteps}
-            status={status}
-            debug={debug}
-            onFinished={handleConfigFinished}
-            onAborted={handleConfigAborted}
-          />
-        </Box>
-      )}
-
-      {configSteps && configSteps.length === 0 && !error && (
-        <Box marginTop={1} marginLeft={1}>
-          <Text color={Colors.Status.Error}>
-            Error: No configuration steps generated. Please try again.
-          </Text>
-        </Box>
-      )}
-
-      {children}
-    </Box>
-  );
+  return <ValidateView state={state} status={status} />;
 }
 
 /**
