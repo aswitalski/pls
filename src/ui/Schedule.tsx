@@ -8,7 +8,11 @@ import {
 } from '../types/components.js';
 import { ScheduledTask, Task, TaskType } from '../types/types.js';
 
-import { getTaskColors, getTaskTypeLabel } from '../services/colors.js';
+import {
+  getTaskColors,
+  getTaskTypeLabel,
+  Palette,
+} from '../services/colors.js';
 import { DebugLevel } from '../configuration/types.js';
 import { useInput } from '../services/keyboard.js';
 
@@ -19,10 +23,16 @@ function taskToListItem(
   task: Task,
   highlightedChildIndex: number | null = null,
   isDefineTaskWithoutSelection: boolean = false,
-  isCurrent: boolean = false,
+  status: ComponentStatus = ComponentStatus.Done,
   debug: DebugLevel = DebugLevel.None
 ) {
-  const taskColors = getTaskColors(task.type, isCurrent);
+  const taskColors = getTaskColors(task.type, status);
+
+  // Determine description color based on status
+  let descriptionColor = taskColors.description;
+  if (status === ComponentStatus.Pending) {
+    descriptionColor = Palette.SoftWhite;
+  }
 
   const item: {
     description: { text: string; color: string | undefined };
@@ -36,7 +46,7 @@ function taskToListItem(
   } = {
     description: {
       text: task.action,
-      color: taskColors.description,
+      color: descriptionColor,
     },
     type: { text: getTaskTypeLabel(task.type, debug), color: taskColors.type },
     children: [],
@@ -45,7 +55,7 @@ function taskToListItem(
   // Mark define tasks with right arrow when no selection has been made
   if (isDefineTaskWithoutSelection) {
     item.marker = '  → ';
-    item.markerColor = getTaskColors(TaskType.Schedule, isCurrent).type;
+    item.markerColor = getTaskColors(TaskType.Schedule, status).type;
   }
 
   // Add children for Define tasks with options
@@ -59,8 +69,8 @@ function taskToListItem(
           index === highlightedChildIndex ? TaskType.Execute : TaskType.Discard;
       }
 
-      const colors = getTaskColors(childType, isCurrent);
-      const planColors = getTaskColors(TaskType.Schedule, isCurrent);
+      const colors = getTaskColors(childType, status);
+      const planColors = getTaskColors(TaskType.Schedule, status);
       return {
         description: {
           text: option,
@@ -85,11 +95,11 @@ function taskToListItem(
     scheduledTask.subtasks.length > 0
   ) {
     item.children = scheduledTask.subtasks.map((subtask) => {
-      const subtaskColors = getTaskColors(subtask.type, isCurrent);
+      const subtaskColors = getTaskColors(subtask.type, status);
       return {
         description: {
           text: subtask.action,
-          color: subtaskColors.description,
+          color: Palette.LightGray,
         },
         type: {
           text: getTaskTypeLabel(subtask.type, debug),
@@ -167,7 +177,7 @@ export const ScheduleView = ({
       task,
       childIndex,
       isDefineWithoutSelection,
-      isActive,
+      status,
       debug
     );
   });
@@ -180,7 +190,7 @@ export const ScheduleView = ({
             description={message}
             taskType={TaskType.Schedule}
             showType={debug !== DebugLevel.None}
-            isCurrent={isActive}
+            status={status}
             debug={debug}
           />
         </Box>

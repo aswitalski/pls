@@ -2,6 +2,7 @@ import { DebugLevel } from '../configuration/types.js';
 import { FeedbackType, Origin, TaskType } from '../types/types.js';
 
 import { ExecutionStatus } from './shell.js';
+import { ComponentStatus } from '../types/components.js';
 
 /**
  * Base color palette - raw color values with descriptive names.
@@ -9,7 +10,9 @@ import { ExecutionStatus } from './shell.js';
  */
 export const Palette = {
   White: '#ffffff',
+  SoftWhite: '#fafafa',
   AshGray: '#d0d0d0',
+  LightGray: '#aaaaaa',
   Gray: '#888888',
   DarkGray: '#666666',
   CharcoalGray: '#282828',
@@ -35,6 +38,7 @@ export const Palette = {
 export const Colors = {
   Text: {
     Active: Palette.White,
+    Pending: Palette.SoftWhite,
     Inactive: Palette.AshGray,
     UserQuery: Palette.White,
   },
@@ -160,13 +164,19 @@ const originColors: Record<Origin, string> = {
  */
 function processColor(
   color: string | null,
-  isCurrent: boolean
+  status: ComponentStatus
 ): string | undefined {
-  return color === null
-    ? isCurrent
-      ? Colors.Text.Active
-      : Colors.Text.Inactive
-    : color;
+  const getColor = () => {
+    switch (status) {
+      case ComponentStatus.Active:
+        return Colors.Text.Active;
+      case ComponentStatus.Pending:
+        return Colors.Text.Pending;
+      default:
+        return Colors.Text.Inactive;
+    }
+  };
+  return color || getColor();
 }
 
 /**
@@ -178,13 +188,13 @@ function processColor(
  */
 export function getTaskColors(
   type: TaskType,
-  isCurrent: boolean
+  status: ComponentStatus
 ): { description: string | undefined; type: string | undefined } {
   const colors = taskColors[type];
 
   return {
-    description: processColor(colors.description, isCurrent),
-    type: processColor(colors.type, isCurrent),
+    description: processColor(colors.description, status),
+    type: processColor(colors.type, status),
   };
 }
 
@@ -197,9 +207,9 @@ export function getTaskColors(
  */
 export function getFeedbackColor(
   type: FeedbackType,
-  isCurrent: boolean
+  status: ComponentStatus
 ): string | undefined {
-  return processColor(feedbackColors[type], isCurrent);
+  return processColor(feedbackColors[type], status);
 }
 
 /**
