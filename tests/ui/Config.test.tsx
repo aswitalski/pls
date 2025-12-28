@@ -493,6 +493,39 @@ describe('Config component interaction flows', () => {
       expect(onAborted).toHaveBeenCalled();
     });
 
+    it('abortion: does not call completeActive when onAborted is provided', () => {
+      const onAborted = vi.fn();
+      const lifecycleHandlers = createLifecycleHandlers({
+        completeActive: vi.fn(),
+      });
+      const steps: ConfigStep[] = [
+        {
+          description: 'API Key',
+          key: 'apiKey',
+          type: StepType.Text,
+          value: null,
+          validate: (val) => val.length > 0,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config
+          steps={steps}
+          onAborted={onAborted}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={lifecycleHandlers}
+        />
+      );
+
+      // Press Escape
+      stdin.write(Keys.Escape);
+
+      // Should call onAborted but NOT completeActive to avoid duplicate messages
+      expect(onAborted).toHaveBeenCalledWith('configuration');
+      expect(lifecycleHandlers.completeActive).not.toHaveBeenCalled();
+    });
+
     it('abortion: preserves selected value from selection step', () => {
       const onAborted = vi.fn();
       const steps: ConfigStep[] = [

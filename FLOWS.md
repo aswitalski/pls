@@ -694,11 +694,11 @@ flowchart TD
 2. Abort handler called with operation name
 3. Current component marked as done
 4. Feedback component created with type "aborted"
-5. Cancellation message displayed:
-   - "Configuration cancelled."
-   - "Task selection cancelled."
-   - "Request cancelled."
-   - "Execution aborted." (with elapsed time)
+5. Cancellation message displayed (varies randomly):
+   - "I've cancelled the [operation]."
+   - "I've aborted the [operation]."
+   - "The [operation] was cancelled."
+   - "The [operation] has been aborted."
 6. Application exits with code 0
 
 ```mermaid

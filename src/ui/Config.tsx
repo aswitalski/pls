@@ -382,13 +382,16 @@ export function Config<
         };
         requestHandlers.onCompleted(finalState);
 
+        // Abort configuration
         if (onAborted) {
+          // Let Workflow handler complete and add feedback
           onAborted('configuration');
+        } else {
+          // Fallback: complete with abort feedback directly
+          lifecycleHandlers.completeActive(
+            createFeedback(FeedbackType.Aborted, 'Configuration cancelled.')
+          );
         }
-        // Complete with abort feedback
-        lifecycleHandlers.completeActive(
-          createFeedback(FeedbackType.Aborted, 'Configuration cancelled.')
-        );
         return;
       }
 
