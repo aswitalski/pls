@@ -43,6 +43,7 @@ export async function processTasks(
     message: result.message,
     summary: result.summary || '',
     commands: resolvedCommands,
+    error: result.error,
     debug: result.debug,
   };
 }

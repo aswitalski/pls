@@ -52,6 +52,11 @@ export const executeTool: Tool = {
           required: ['description', 'command'],
         },
       },
+      error: {
+        type: 'string',
+        description:
+          'Error message when execution cannot proceed. Only include this field when returning an empty commands array due to validation failure (e.g., skill not found, missing Steps/Execution sections). Describes what went wrong.',
+      },
     },
     required: ['message', 'summary', 'commands'],
   },

@@ -100,6 +100,7 @@ export const CommandResultSchema = z.object({
   tasks: z.array(ScheduledTaskSchema),
   answer: z.string().optional(),
   commands: z.array(ExecuteCommandSchema).optional(),
+  error: z.string().optional(),
   debug: z.array(ComponentDefinitionSchema).optional(),
 });
 

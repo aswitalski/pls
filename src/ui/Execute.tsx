@@ -10,7 +10,10 @@ import { Task as TaskType } from '../types/types.js';
 
 import { getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
-import { formatErrorMessage } from '../services/messages.js';
+import {
+  formatErrorMessage,
+  getExecutionErrorMessage,
+} from '../services/messages.js';
 import { CommandOutput, ExecutionStatus } from '../services/shell.js';
 import { ensureMinimumTime } from '../services/timing.js';
 
@@ -22,6 +25,7 @@ import {
 import { processTasks } from '../execution/processing.js';
 import { executeReducer, initialState } from '../execution/reducer.js';
 import { ExecuteActionType } from '../execution/types.js';
+import { createMessage, markAsDone } from '../services/components.js';
 
 import { Message } from './Message.js';
 import { Spinner } from './Spinner.js';
@@ -225,6 +229,30 @@ export function Execute({
         }
 
         if (result.commands.length === 0) {
+          // Check if this is an error response (has error field)
+          if (result.error) {
+            // Add error message to timeline
+            const errorMessage = getExecutionErrorMessage(result.error);
+            workflowHandlers.addToTimeline(
+              markAsDone(createMessage(errorMessage))
+            );
+
+            // Complete without error in state (message already in timeline)
+            const finalState: ExecuteState = {
+              message: result.message,
+              summary: '',
+              taskInfos: [],
+              completed: 0,
+              taskExecutionTimes: [],
+              completionMessage: null,
+              error: null,
+            };
+            requestHandlers.onCompleted(finalState);
+            lifecycleHandlers.completeActive();
+            return;
+          }
+
+          // No commands and no error - just complete
           dispatch({
             type: ExecuteActionType.ProcessingComplete,
             payload: { message: result.message },

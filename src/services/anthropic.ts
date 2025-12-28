@@ -31,6 +31,7 @@ export interface CommandResult {
   tasks: Task[];
   answer?: string;
   commands?: ExecuteCommand[];
+  error?: string;
   debug?: ComponentDefinition[];
 }
 
@@ -266,6 +267,7 @@ export class AnthropicService implements LLMService {
       question?: string;
       answer?: string;
       commands?: ExecuteCommand[];
+      error?: string;
     };
 
     // Handle execute tool response
@@ -275,6 +277,7 @@ export class AnthropicService implements LLMService {
         summary: input.summary,
         tasks: [],
         commands: input.commands,
+        error: input.error,
         debug,
       });
 

@@ -65,6 +65,7 @@ export interface TaskProcessingResult {
   message: string;
   summary: string;
   commands: ExecuteCommand[];
+  error?: string;
   debug?: ComponentDefinition[];
 }
 

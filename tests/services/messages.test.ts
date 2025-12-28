@@ -11,6 +11,7 @@ import {
   formatErrorMessage,
   getCancellationMessage,
   getConfirmationMessage,
+  getExecutionErrorMessage,
   getRefiningMessage,
 } from '../../src/services/messages.js';
 
@@ -219,6 +220,66 @@ describe('Message functions', () => {
         /task selection/
       );
       expect(getCancellationMessage('introspection')).toMatch(/introspection/);
+    });
+  });
+
+  describe('getExecutionErrorMessage', () => {
+    const expectedPrefixes = [
+      "I can't execute this",
+      "I'm unable to execute this",
+      "I can't proceed with this",
+      "I'm unable to proceed with this",
+      'This cannot be executed',
+    ];
+
+    it('returns a message with one of the expected prefixes', () => {
+      const message = getExecutionErrorMessage('skill not found');
+      const hasExpectedPrefix = expectedPrefixes.some((prefix) =>
+        message.startsWith(prefix)
+      );
+      expect(hasExpectedPrefix).toBe(true);
+    });
+
+    it('capitalizes the first letter of error text', () => {
+      const message = getExecutionErrorMessage('skill not found');
+      expect(message).toMatch(/\. Skill not found\.$/);
+    });
+
+    it('adds period to error if missing', () => {
+      const message = getExecutionErrorMessage('no skills available');
+      expect(message).toMatch(/\. No skills available\.$/);
+    });
+
+    it('preserves period if already present', () => {
+      const message = getExecutionErrorMessage('skill not found.');
+      expect(message).toMatch(/\. Skill not found\.$/);
+    });
+
+    it('returns a string with proper format', () => {
+      const message = getExecutionErrorMessage('test error');
+      // Should be: [prefix]. [Capitalized error].
+      expect(message).toMatch(/^.+\. [A-Z].+\.$/);
+    });
+
+    it('varies prefixes across multiple calls', () => {
+      const prefixes = new Set<string>();
+      for (let i = 0; i < 50; i++) {
+        const message = getExecutionErrorMessage('test');
+        const prefix = message.split('.')[0];
+        prefixes.add(prefix);
+      }
+      expect(prefixes.size).toBeGreaterThan(1);
+    });
+
+    it('handles different error messages correctly', () => {
+      const message1 = getExecutionErrorMessage('no skills available');
+      expect(message1).toMatch(/No skills available\.$/);
+
+      const message2 = getExecutionErrorMessage('skill incomplete');
+      expect(message2).toMatch(/Skill incomplete\.$/);
+
+      const message3 = getExecutionErrorMessage("skill 'Build' not found");
+      expect(message3).toMatch(/Skill 'Build' not found\.$/);
     });
   });
 
