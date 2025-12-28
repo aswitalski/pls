@@ -77,12 +77,9 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
       },
       onAborted: (operation: string) => {
         moveActiveToTimeline();
-        // Add feedback to queue
+        // Clear queue and add only feedback to prevent subsequent components from executing
         const message = getCancellationMessage(operation);
-        setQueue((queue) => [
-          ...queue,
-          createFeedback(FeedbackType.Aborted, message),
-        ]);
+        setQueue([createFeedback(FeedbackType.Aborted, message)]);
       },
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
       onCompleted: <T extends BaseState>(finalState: T) => {
