@@ -128,6 +128,22 @@ components (e.g., {project.VARIANT.path}, {env.TYPE.config},
    - Example: "build alpha" → variant is "alpha"
    - Example: "deploy to staging" → variant is "staging"
    - Example: "process experimental" → variant is "experimental"
+   - **CRITICAL**: If the variant CANNOT be identified from the user's
+     request, you MUST create a DEFINE task instead (see step 1a below)
+
+1a. **When variant is unclear** - Create a DEFINE task:
+   - **NEVER use placeholder values** like `<UNKNOWN>`, `UNKNOWN`, or any
+     other placeholder
+   - **NEVER leave variant unresolved** or use temporary values
+   - **ALWAYS create a DEFINE task** with type "define" that includes:
+     - params.skill: the skill name requiring variant selection
+     - params.options: array of descriptive options for each available
+       variant
+   - Example: User says "deploy" without specifying environment → Create
+     DEFINE task with options like "Deploy to staging environment" and
+     "Deploy to production environment"
+   - The define task will prompt the user to select the variant before
+     execution continues
 
 2. **Normalize to lowercase**: Convert variant name to lowercase
    - "Alpha" → "alpha"
@@ -188,6 +204,10 @@ User request with multiple config expressions
 - Multiple config expressions from the same task's commands
 
 **Critical Rules**:
+- **NEVER use placeholder values** like `<UNKNOWN>`, `UNKNOWN`, or
+  leave variant unresolved
+- **If variant cannot be determined** from user request, create a
+  DEFINE task with options
 - NEVER leave uppercase placeholder components unresolved
 - The uppercase word can be ANY name (VARIANT, TARGET, TYPE,
   PRODUCT, etc.)
