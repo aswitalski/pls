@@ -88,13 +88,35 @@ export function saveConfig(
   fs: FileSystem = defaultFileSystem
 ): void {
   const configFile = getConfigFile();
+  const tempFile = `${configFile}.tmp`;
+
   const existingContent = fs.exists(configFile)
     ? fs.readFile(configFile, 'utf-8')
     : '';
 
   const newContent = mergeConfig(existingContent, section, config);
 
-  fs.writeFile(configFile, newContent);
+  try {
+    // Write to temp file first
+    fs.writeFile(tempFile, newContent);
+
+    // Validate the temp file can be parsed
+    const tempContent = fs.readFile(tempFile, 'utf-8');
+    parseYamlConfig(tempContent);
+
+    // Atomic rename (on POSIX systems)
+    fs.rename(tempFile, configFile);
+  } catch (error) {
+    // Clean up temp file if it exists
+    if (fs.exists(tempFile)) {
+      try {
+        fs.remove(tempFile);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+    throw error;
+  }
 }
 
 export function saveAnthropicConfig(

@@ -3,6 +3,8 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  renameSync,
+  unlinkSync,
   writeFileSync,
 } from 'fs';
 import { dirname } from 'path';
@@ -17,6 +19,8 @@ export interface FileSystem {
   writeFile(path: string, data: string): void;
   readDirectory(path: string): string[];
   createDirectory(path: string, options?: { recursive?: boolean }): void;
+  rename(oldPath: string, newPath: string): void;
+  remove(path: string): void;
 }
 
 /**
@@ -41,6 +45,14 @@ export class RealFileSystem implements FileSystem {
 
   createDirectory(path: string, options?: { recursive?: boolean }): void {
     mkdirSync(path, options);
+  }
+
+  rename(oldPath: string, newPath: string): void {
+    renameSync(oldPath, newPath);
+  }
+
+  remove(path: string): void {
+    unlinkSync(path);
   }
 }
 
@@ -125,6 +137,22 @@ export class MemoryFileSystem implements FileSystem {
       }
       this.directories.add(path);
     }
+  }
+
+  rename(oldPath: string, newPath: string): void {
+    const content = this.files.get(oldPath);
+    if (content === undefined) {
+      throw new Error(`ENOENT: no such file or directory, rename '${oldPath}'`);
+    }
+    this.files.delete(oldPath);
+    this.files.set(newPath, content);
+  }
+
+  remove(path: string): void {
+    if (!this.files.has(path)) {
+      throw new Error(`ENOENT: no such file or directory, unlink '${path}'`);
+    }
+    this.files.delete(path);
   }
 
   /**
