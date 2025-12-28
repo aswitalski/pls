@@ -1,4 +1,4 @@
-import { DebugLevel } from '../services/configuration.js';
+import { DebugLevel } from '../configuration/types.js';
 
 export interface App {
   name: string;

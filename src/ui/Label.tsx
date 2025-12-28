@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 import { TaskType } from '../types/types.js';
 
 import { getTaskColors, getTaskTypeLabel } from '../services/colors.js';
-import { DebugLevel } from '../services/configuration.js';
+import { DebugLevel } from '../configuration/types.js';
 
 import { Separator } from './Separator.js';
 

@@ -15,7 +15,7 @@ import {
   isSimple,
   markAsDone,
 } from '../services/components.js';
-import { DebugLevel } from '../services/configuration.js';
+import { DebugLevel } from '../configuration/types.js';
 import { getWarnings } from '../services/logger.js';
 import { getCancellationMessage } from '../services/messages.js';
 import { exitApp } from '../services/process.js';

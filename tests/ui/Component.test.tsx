@@ -11,7 +11,7 @@ import {
   TaskType,
 } from '../../src/types/types.js';
 
-import { DebugLevel } from '../../src/services/configuration.js';
+import { DebugLevel } from '../../src/configuration/types.js';
 
 import {
   SimpleComponent,

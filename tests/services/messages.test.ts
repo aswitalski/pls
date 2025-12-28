@@ -3,10 +3,9 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  DebugLevel,
-  saveDebugSetting,
-} from '../../src/services/configuration.js';
+import { DebugLevel } from '../../src/configuration/types.js';
+
+import { saveDebugSetting } from '../../src/configuration/io.js';
 import {
   FeedbackMessages,
   formatErrorMessage,

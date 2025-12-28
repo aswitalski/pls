@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 
+import { DebugLevel } from '../configuration/types.js';
 import { App, ComponentName, FeedbackType, Origin, Task } from './types.js';
 import {
   BaseState,
@@ -10,7 +11,6 @@ import {
 import { ConfigRequirement } from './skills.js';
 
 import { ExecuteCommand, LLMService } from '../services/anthropic.js';
-import { DebugLevel } from '../services/configuration.js';
 import { ExecutionStatus } from '../services/shell.js';
 
 import { ConfigStep } from '../ui/Config.js';

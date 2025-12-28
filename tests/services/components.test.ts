@@ -17,7 +17,7 @@ import { App, ComponentName, TaskType } from '../../src/types/types.js';
 import { ConfigStep, StepType } from '../../src/ui/Config.js';
 
 import { createMockAnthropicService } from '../test-utils.js';
-import { DebugLevel } from '../../src/services/configuration.js';
+import { DebugLevel } from '../../src/configuration/types.js';
 
 describe('Component Types', () => {
   const mockApp: App = {

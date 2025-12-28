@@ -12,7 +12,7 @@ import {
   WorkflowHandlers,
 } from '../types/handlers.js';
 
-import { DebugLevel } from '../services/configuration.js';
+import { DebugLevel } from '../configuration/types.js';
 
 import { Answer, AnswerView } from './Answer.js';
 import { Command, CommandView } from './Command.js';

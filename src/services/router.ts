@@ -7,6 +7,9 @@ import {
 import { asScheduledTasks } from '../types/guards.js';
 import { FeedbackType, Task, TaskType } from '../types/types.js';
 
+import { saveConfig } from '../configuration/io.js';
+import { getConfigSchema } from '../configuration/schema.js';
+import { unflattenConfig } from '../configuration/transformation.js';
 import { LLMService } from './anthropic.js';
 import { saveConfigLabels } from './config-labels.js';
 import {
@@ -20,11 +23,6 @@ import {
   createScheduleDefinition,
   createValidateDefinition,
 } from './components.js';
-import {
-  getConfigSchema,
-  saveConfig,
-  unflattenConfig,
-} from './configuration.js';
 import {
   getCancellationMessage,
   getMixedTaskTypesError,

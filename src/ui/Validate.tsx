@@ -9,12 +9,13 @@ import {
 import { ConfigRequirement } from '../types/skills.js';
 import { TaskType } from '../types/types.js';
 
+import { saveConfig } from '../configuration/io.js';
+import { unflattenConfig } from '../configuration/transformation.js';
 import { Colors, getTextColor } from '../services/colors.js';
 import {
   createConfigDefinitionWithKeys,
   createMessage,
 } from '../services/components.js';
-import { saveConfig, unflattenConfig } from '../services/configuration.js';
 import { saveConfigLabels } from '../services/config-labels.js';
 import { useInput } from '../services/keyboard.js';
 import {

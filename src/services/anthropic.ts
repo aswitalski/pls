@@ -4,11 +4,11 @@ import { z } from 'zod';
 import type { Capability, ComponentDefinition } from '../types/components.js';
 import type { Task } from '../types/types.js';
 
+import { AnthropicConfig } from '../configuration/types.js';
 import {
-  AnthropicConfig,
   getAvailableConfigStructure,
   getConfiguredKeys,
-} from './configuration.js';
+} from '../configuration/schema.js';
 import { logPrompt, logResponse } from './logger.js';
 import { formatSkillsForPrompt, loadSkillsWithValidation } from './skills.js';
 import { toolRegistry } from './registry.js';

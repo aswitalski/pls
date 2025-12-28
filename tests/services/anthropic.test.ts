@@ -7,10 +7,11 @@ import {
   AnthropicService,
   cleanAnswerText,
 } from '../../src/services/anthropic.js';
+
 import {
   hasValidAnthropicKey,
   saveAnthropicConfig,
-} from '../../src/services/configuration.js';
+} from '../../src/configuration/io.js';
 
 import { safeRemoveDirectory } from '../test-utils.js';
 

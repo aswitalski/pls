@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { parse as parseYaml } from 'yaml';
 
+import {
+  Config,
+  ConfigDefinition,
+  ConfigDefinitionType,
+} from '../configuration/types.js';
 import { ConfigRequirement } from '../types/skills.js';
 import {
   AnswerDefinitionProps,
@@ -18,16 +23,10 @@ import {
 } from '../types/components.js';
 import { App, ComponentName, FeedbackType, Task } from '../types/types.js';
 
+import { getConfigPath, loadConfig } from '../configuration/io.js';
+import { getConfigSchema } from '../configuration/schema.js';
 import { LLMService } from './anthropic.js';
 import { getConfigLabel } from './config-labels.js';
-import {
-  Config,
-  ConfigDefinition,
-  ConfigDefinitionType,
-  getConfigPath,
-  getConfigSchema,
-  loadConfig,
-} from './configuration.js';
 import { defaultFileSystem, FileSystem } from './filesystem.js';
 import { getConfirmationMessage } from './messages.js';
 

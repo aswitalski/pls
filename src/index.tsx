@@ -5,7 +5,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { render } from 'ink';
 
-import { DebugLevel } from './services/configuration.js';
+import { DebugLevel } from './configuration/types.js';
 
 import { Main } from './ui/Main.js';
 

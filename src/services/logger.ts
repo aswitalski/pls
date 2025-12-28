@@ -1,7 +1,8 @@
+import { DebugLevel } from '../configuration/types.js';
 import { ComponentDefinition } from '../types/components.js';
 
 import { createDebugDefinition } from './components.js';
-import { DebugLevel, loadDebugSetting } from './configuration.js';
+import { loadDebugSetting } from '../configuration/io.js';
 import { Palette } from './colors.js';
 
 /**

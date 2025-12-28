@@ -4,7 +4,7 @@ import { AnthropicService } from '../../src/services/anthropic.js';
 import {
   hasValidAnthropicKey,
   loadConfig,
-} from '../../src/services/configuration.js';
+} from '../../src/configuration/io.js';
 import { toolRegistry } from '../../src/services/registry.js';
 import { formatSkillsForPrompt } from '../../src/services/skills.js';
 import type { ScheduledTask } from '../../src/types/types.js';

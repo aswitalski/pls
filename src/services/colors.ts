@@ -1,5 +1,6 @@
+import { DebugLevel } from '../configuration/types.js';
 import { FeedbackType, Origin, TaskType } from '../types/types.js';
-import { DebugLevel } from './configuration.js';
+
 import { ExecutionStatus } from './shell.js';
 
 /**

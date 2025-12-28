@@ -9,7 +9,7 @@ import {
 import { ScheduledTask, Task, TaskType } from '../types/types.js';
 
 import { getTaskColors, getTaskTypeLabel } from '../services/colors.js';
-import { DebugLevel } from '../services/configuration.js';
+import { DebugLevel } from '../configuration/types.js';
 import { useInput } from '../services/keyboard.js';
 
 import { Label } from './Label.js';

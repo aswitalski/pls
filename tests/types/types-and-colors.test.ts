@@ -11,7 +11,7 @@ import {
   Palette,
   STATUS_ICONS,
 } from '../../src/services/colors.js';
-import { DebugLevel } from '../../src/services/configuration.js';
+import { DebugLevel } from '../../src/configuration/types.js';
 import { ExecutionStatus } from '../../src/services/shell.js';
 import { FeedbackType, Origin, TaskType } from '../../src/types/types.js';
 

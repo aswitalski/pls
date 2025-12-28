@@ -5,7 +5,7 @@ import {
   ComponentDefinition,
 } from '../../src/types/components.js';
 import { ComponentName } from '../../src/types/types.js';
-import { DebugLevel } from '../../src/services/configuration.js';
+import { DebugLevel } from '../../src/configuration/types.js';
 
 describe('ComponentDefinition with status', () => {
   it('allows stateless component with status', () => {

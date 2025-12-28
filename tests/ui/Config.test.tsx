@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ComponentStatus, ConfigState } from '../../src/types/components.js';
 
-import { AnthropicModel } from '../../src/services/configuration.js';
+import { AnthropicModel } from '../../src/configuration/types.js';
 
 import {
   Config,

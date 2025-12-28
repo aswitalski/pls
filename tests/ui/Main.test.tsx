@@ -2,13 +2,11 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DebugLevel } from '../../src/configuration/types.js';
 import { App } from '../../src/types/types.js';
 
-import {
-  DebugLevel,
-  getMissingConfigKeys,
-  loadConfig,
-} from '../../src/services/configuration.js';
+import { loadConfig } from '../../src/configuration/io.js';
+import { getMissingConfigKeys } from '../../src/configuration/schema.js';
 
 import { Main } from '../../src/ui/Main.js';
 
@@ -20,14 +18,23 @@ vi.mock('../../src/services/timing.js', () => ({
     .mockImplementation(async (operation) => await operation()),
 }));
 
-// Mock configuration module
-vi.mock('../../src/services/configuration.js', async () => {
+// Mock configuration modules
+vi.mock('../../src/configuration/schema.js', async () => {
   const actual = await vi.importActual<
-    typeof import('../../src/services/configuration.js')
-  >('../../src/services/configuration.js');
+    typeof import('../../src/configuration/schema.js')
+  >('../../src/configuration/schema.js');
   return {
     ...actual,
     getMissingConfigKeys: vi.fn(),
+  };
+});
+
+vi.mock('../../src/configuration/io.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../src/configuration/io.js')
+  >('../../src/configuration/io.js');
+  return {
+    ...actual,
     loadConfig: vi.fn(),
   };
 });
@@ -192,8 +199,8 @@ describe('Main component queue-based architecture', () => {
     });
 
     it('shows error feedback when config save fails during initial setup', async () => {
-      const configurationModule =
-        await import('../../src/services/configuration.js');
+      const schemaModule = await import('../../src/configuration/schema.js');
+      const ioModule = await import('../../src/configuration/io.js');
       const processModule = await import('../../src/services/process.js');
 
       // Mock exitApp to prevent process.exit
@@ -202,18 +209,16 @@ describe('Main component queue-based architecture', () => {
         .mockImplementation(() => {});
 
       // Mock getMissingConfigKeys to simulate missing config
-      vi.spyOn(configurationModule, 'getMissingConfigKeys').mockReturnValue([
+      vi.spyOn(schemaModule, 'getMissingConfigKeys').mockReturnValue([
         'key',
         'model',
       ]);
 
       // Mock saveAnthropicConfig to throw error
       const saveError = new Error('Failed to write config file');
-      vi.spyOn(configurationModule, 'saveAnthropicConfig').mockImplementation(
-        () => {
-          throw saveError;
-        }
-      );
+      vi.spyOn(ioModule, 'saveAnthropicConfig').mockImplementation(() => {
+        throw saveError;
+      });
 
       const { lastFrame } = render(<Main app={mockApp} command={null} />);
 

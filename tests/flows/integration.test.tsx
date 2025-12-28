@@ -3,13 +3,11 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DebugLevel } from '../../src/configuration/types.js';
 import { App, TaskType } from '../../src/types/types.js';
 
-import {
-  DebugLevel,
-  getMissingConfigKeys,
-  loadConfig,
-} from '../../src/services/configuration.js';
+import { loadConfig } from '../../src/configuration/io.js';
+import { getMissingConfigKeys } from '../../src/configuration/schema.js';
 import { exitApp } from '../../src/services/process.js';
 
 import { Main } from '../../src/ui/Main.js';
@@ -24,18 +22,28 @@ vi.mock('../../src/services/timing.js', () => ({
     .mockImplementation(async (operation) => await operation()),
 }));
 
-// Mock configuration and process modules
-vi.mock('../../src/services/configuration.js', async () => {
+// Mock configuration modules
+vi.mock('../../src/configuration/schema.js', async () => {
   const actual = await vi.importActual<
-    typeof import('../../src/services/configuration.js')
-  >('../../src/services/configuration.js');
+    typeof import('../../src/configuration/schema.js')
+  >('../../src/configuration/schema.js');
   return {
     ...actual,
     getMissingConfigKeys: vi.fn(),
+  };
+});
+
+vi.mock('../../src/configuration/io.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../src/configuration/io.js')
+  >('../../src/configuration/io.js');
+  return {
+    ...actual,
     loadConfig: vi.fn(),
   };
 });
 
+// Mock process module
 vi.mock('../../src/services/process.js', async () => {
   const actual = await vi.importActual<
     typeof import('../../src/services/process.js')

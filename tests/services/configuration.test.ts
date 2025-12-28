@@ -3,22 +3,28 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   AnthropicModel,
   ConfigError,
-  configExists,
   DebugLevel,
-  getAvailableConfigStructure,
-  getConfigSchema,
-  getConfigurationRequiredMessage,
-  getConfiguredKeys,
+} from '../../src/configuration/types.js';
+import {
+  configExists,
   loadConfig,
   loadDebugSetting,
   mergeConfig,
   saveAnthropicConfig,
   saveConfig,
   saveDebugSetting,
-} from '../../src/services/configuration.js';
+} from '../../src/configuration/io.js';
+import { getConfigurationRequiredMessage } from '../../src/configuration/messages.js';
+import {
+  getAvailableConfigStructure,
+  getConfigSchema,
+  getConfiguredKeys,
+} from '../../src/configuration/schema.js';
+
 import { saveConfigLabels } from '../../src/services/config-labels.js';
 import { createConfigStepsFromSchema } from '../../src/services/components.js';
 import { MemoryFileSystem } from '../../src/services/filesystem.js';
+
 import { StepType } from '../../src/ui/Config.js';
 
 describe('Configuration management', () => {

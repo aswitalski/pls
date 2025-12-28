@@ -7,7 +7,7 @@ import { FeedbackType } from '../types/types.js';
 
 import { Colors } from '../services/colors.js';
 import { createFeedback } from '../services/components.js';
-import { DebugLevel } from '../services/configuration.js';
+import { DebugLevel } from '../configuration/types.js';
 import { useInput } from '../services/keyboard.js';
 
 export interface ConfigState {

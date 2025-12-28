@@ -10,7 +10,7 @@ import {
 
 import { Colors, getTextColor } from '../services/colors.js';
 import { createReportDefinition } from '../services/components.js';
-import { DebugLevel } from '../services/configuration.js';
+import { DebugLevel } from '../configuration/types.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { ensureMinimumTime } from '../services/timing.js';

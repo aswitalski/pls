@@ -1,4 +1,6 @@
-import { DebugLevel, loadDebugSetting } from './configuration.js';
+import { DebugLevel } from '../configuration/types.js';
+
+import { loadDebugSetting } from '../configuration/io.js';
 
 export { formatDuration } from './utils.js';
 

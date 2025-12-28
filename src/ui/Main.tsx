@@ -1,8 +1,18 @@
 import { useEffect, useState } from 'react';
 
+import { AnthropicConfig, DebugLevel } from '../configuration/types.js';
 import { ComponentDefinition } from '../types/components.js';
 import { App, FeedbackType } from '../types/types.js';
 
+import {
+  loadConfig,
+  loadDebugSetting,
+  saveConfig,
+  saveDebugSetting,
+} from '../configuration/io.js';
+import { getConfigurationRequiredMessage } from '../configuration/messages.js';
+import { getMissingConfigKeys } from '../configuration/schema.js';
+import { unflattenConfig } from '../configuration/transformation.js';
 import { LLMService, createAnthropicService } from '../services/anthropic.js';
 import {
   createCommandDefinition,
@@ -11,17 +21,6 @@ import {
   createMessage,
   createWelcomeDefinition,
 } from '../services/components.js';
-import {
-  AnthropicConfig,
-  DebugLevel,
-  getConfigurationRequiredMessage,
-  getMissingConfigKeys,
-  loadConfig,
-  loadDebugSetting,
-  saveConfig,
-  saveDebugSetting,
-  unflattenConfig,
-} from '../services/configuration.js';
 import { registerGlobalShortcut } from '../services/keyboard.js';
 import { initializeLogger, setDebugLevel } from '../services/logger.js';
 

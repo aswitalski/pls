@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ComponentStatus, ScheduleState } from '../../src/types/components.js';
 import { Task, TaskType } from '../../src/types/types.js';
 
-import { DebugLevel } from '../../src/services/configuration.js';
+import { DebugLevel } from '../../src/configuration/types.js';
 
 import { Schedule } from '../../src/ui/Schedule.js';
 

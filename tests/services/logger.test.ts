@@ -6,7 +6,7 @@ import {
   DebugDefinitionProps,
 } from '../../src/types/components.js';
 
-import { DebugLevel } from '../../src/services/configuration.js';
+import { DebugLevel } from '../../src/configuration/types.js';
 import {
   getDebugLevel,
   getWarnings,
