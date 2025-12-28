@@ -31,6 +31,21 @@ import {
 import { validateExecuteTasks } from './validator.js';
 
 /**
+ * Context for routing operations - bundles dependencies needed by handlers
+ */
+interface RoutingContext {
+  service: LLMService;
+  userRequest: string;
+  workflowHandlers: WorkflowHandlers<ComponentDefinition>;
+  requestHandlers: RequestHandlers<BaseState>;
+}
+
+/**
+ * Handler function type for routing tasks of a specific type
+ */
+type TaskRouteHandler = (tasks: Task[], context: RoutingContext) => void;
+
+/**
  * Determine the operation name based on task types
  */
 export function getOperationName(tasks: Task[]): string {
@@ -67,12 +82,20 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
 
   // Check if no valid tasks remain after filtering
   if (validTasks.length === 0) {
-    const message = createMessage(getUnknownRequestMessage());
-    workflowHandlers.addToQueue(message);
+    const msg = createMessage(getUnknownRequestMessage());
+    workflowHandlers.addToQueue(msg);
     return;
   }
 
   const operation = getOperationName(validTasks);
+
+  // Create routing context for downstream functions
+  const context: RoutingContext = {
+    service,
+    userRequest,
+    workflowHandlers,
+    requestHandlers: requestHandlers as RequestHandlers<BaseState>,
+  };
 
   if (hasDefineTask) {
     // Has DEFINE tasks - add Schedule to queue for user selection
@@ -91,15 +114,9 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
         // Schedule completed - add Confirm to queue
         const confirmDefinition = createConfirmDefinition(
           () => {
-            // User confirmed - complete both Confirm and Schedule, then route to appropriate component
+            // User confirmed - complete both Confirm and Schedule, then route
             lifecycleHandlers.completeActiveAndPending();
-            executeTasksAfterConfirm(
-              validTasks,
-              service,
-              userRequest,
-              workflowHandlers,
-              requestHandlers
-            );
+            executeTasksAfterConfirm(validTasks, context);
           },
           () => {
             // User cancelled - complete both Confirm and Schedule, then show cancellation
@@ -150,13 +167,12 @@ function validateTaskTypes(tasks: Task[]): void {
  * Validates task types and routes each type appropriately
  * Supports mixed types at top level with Groups
  */
-function executeTasksAfterConfirm<TState extends BaseState = BaseState>(
+function executeTasksAfterConfirm(
   tasks: Task[],
-  service: LLMService,
-  userRequest: string,
-  workflowHandlers: WorkflowHandlers<ComponentDefinition>,
-  requestHandlers: RequestHandlers<TState>
+  context: RoutingContext
 ): void {
+  const { service, userRequest, workflowHandlers, requestHandlers } = context;
+
   // Validate task types (Groups must have uniform subtasks)
   try {
     validateTaskTypes(tasks);
@@ -212,13 +228,7 @@ function executeTasksAfterConfirm<TState extends BaseState = BaseState>(
             },
             () => {
               // After config is complete, resume task routing
-              routeTasksAfterConfig(
-                scheduledTasks,
-                service,
-                userRequest,
-                workflowHandlers,
-                requestHandlers
-              );
+              routeTasksAfterConfig(scheduledTasks, context);
             },
             (operation: string) => {
               requestHandlers.onAborted(operation);
@@ -236,25 +246,16 @@ function executeTasksAfterConfirm<TState extends BaseState = BaseState>(
   }
 
   // No missing config - proceed with normal routing
-  routeTasksAfterConfig(
-    scheduledTasks,
-    service,
-    userRequest,
-    workflowHandlers,
-    requestHandlers
-  );
+  routeTasksAfterConfig(scheduledTasks, context);
 }
 
 /**
  * Route tasks after config is complete (or when no config is needed)
  * Processes tasks in order, grouping by type
  */
-function routeTasksAfterConfig<TState extends BaseState = BaseState>(
+function routeTasksAfterConfig(
   scheduledTasks: ScheduledTask[],
-  service: LLMService,
-  userRequest: string,
-  workflowHandlers: WorkflowHandlers<ComponentDefinition>,
-  requestHandlers: RequestHandlers<TState>
+  context: RoutingContext
 ): void {
   // Process tasks in order, preserving Group boundaries
   // Track consecutive standalone tasks to group them by type
@@ -280,15 +281,7 @@ function routeTasksAfterConfig<TState extends BaseState = BaseState>(
     for (const [type, typeTasks] of Object.entries(tasksByType)) {
       const taskType = type as TaskType;
       if (typeTasks.length === 0) continue;
-
-      routeTasksByType(
-        taskType,
-        typeTasks,
-        service,
-        userRequest,
-        workflowHandlers,
-        requestHandlers
-      );
+      routeTasksByType(taskType, typeTasks, context);
     }
 
     consecutiveStandaloneTasks = [];
@@ -304,14 +297,7 @@ function routeTasksAfterConfig<TState extends BaseState = BaseState>(
       if (task.subtasks.length > 0) {
         const subtasks = task.subtasks as Task[];
         const taskType = subtasks[0].type;
-        routeTasksByType(
-          taskType,
-          subtasks,
-          service,
-          userRequest,
-          workflowHandlers,
-          requestHandlers
-        );
+        routeTasksByType(taskType, subtasks, context);
       }
     } else {
       // Accumulate standalone task
@@ -324,74 +310,107 @@ function routeTasksAfterConfig<TState extends BaseState = BaseState>(
 }
 
 /**
- * Route tasks by type to appropriate components
- * Extracted to allow reuse for both Groups and standalone tasks
+ * Route Answer tasks - creates separate Answer component for each question
  */
-function routeTasksByType<TState extends BaseState = BaseState>(
-  taskType: TaskType,
-  typeTasks: Task[],
-  service: LLMService,
-  userRequest: string,
-  workflowHandlers: WorkflowHandlers<ComponentDefinition>,
-  requestHandlers: RequestHandlers<TState>
-): void {
-  if (taskType === TaskType.Answer) {
-    // Create separate Answer component for each question
-    for (const task of typeTasks) {
-      workflowHandlers.addToQueue(createAnswerDefinition(task.action, service));
-    }
-  } else if (taskType === TaskType.Introspect) {
-    workflowHandlers.addToQueue(createIntrospectDefinition(typeTasks, service));
-  } else if (taskType === TaskType.Config) {
-    // Route to Config flow - extract keys and descriptions from task params
-    const configKeys = typeTasks
-      .map((task) => task.params?.key as string | undefined)
-      .filter((key): key is string => key !== undefined);
-
-    // Extract and cache labels from task descriptions
-    // Only cache labels for dynamically discovered keys (not in schema)
-    const schema = getConfigSchema();
-    const labels: Record<string, string> = {};
-    for (const task of typeTasks) {
-      const key = task.params?.key as string | undefined;
-      if (key && task.action && !(key in schema)) {
-        labels[key] = task.action;
-      }
-    }
-    if (Object.keys(labels).length > 0) {
-      saveConfigLabels(labels);
-    }
-
-    workflowHandlers.addToQueue(
-      createConfigDefinitionWithKeys(
-        configKeys,
-        (config: Record<string, string>) => {
-          // Save config - Config component will handle completion and feedback
-          try {
-            // Convert flat dotted keys to nested structure grouped by section
-            const configBySection = unflattenConfig(config);
-
-            // Save each section
-            for (const [section, sectionConfig] of Object.entries(
-              configBySection
-            )) {
-              saveConfig(section, sectionConfig);
-            }
-          } catch (error) {
-            const errorMessage =
-              error instanceof Error
-                ? error.message
-                : 'Failed to save configuration';
-            throw new Error(errorMessage);
-          }
-        },
-        (operation: string) => {
-          requestHandlers.onAborted(operation);
-        }
-      )
+function routeAnswerTasks(tasks: Task[], context: RoutingContext): void {
+  for (const task of tasks) {
+    context.workflowHandlers.addToQueue(
+      createAnswerDefinition(task.action, context.service)
     );
-  } else if (taskType === TaskType.Execute) {
-    // Execute tasks (validation already happened upfront in executeTasksAfterConfirm)
-    workflowHandlers.addToQueue(createExecuteDefinition(typeTasks, service));
+  }
+}
+
+/**
+ * Route Introspect tasks - creates single Introspect component for all tasks
+ */
+function routeIntrospectTasks(tasks: Task[], context: RoutingContext): void {
+  context.workflowHandlers.addToQueue(
+    createIntrospectDefinition(tasks, context.service)
+  );
+}
+
+/**
+ * Route Config tasks - extracts keys, caches labels, creates Config component
+ */
+function routeConfigTasks(tasks: Task[], context: RoutingContext): void {
+  const configKeys = tasks
+    .map((task) => task.params?.key as string | undefined)
+    .filter((key): key is string => key !== undefined);
+
+  // Extract and cache labels from task descriptions
+  // Only cache labels for dynamically discovered keys (not in schema)
+  const schema = getConfigSchema();
+  const labels: Record<string, string> = {};
+  for (const task of tasks) {
+    const key = task.params?.key as string | undefined;
+    if (key && task.action && !(key in schema)) {
+      labels[key] = task.action;
+    }
+  }
+  if (Object.keys(labels).length > 0) {
+    saveConfigLabels(labels);
+  }
+
+  context.workflowHandlers.addToQueue(
+    createConfigDefinitionWithKeys(
+      configKeys,
+      (config: Record<string, string>) => {
+        // Save config - Config component will handle completion and feedback
+        try {
+          // Convert flat dotted keys to nested structure grouped by section
+          const configBySection = unflattenConfig(config);
+
+          // Save each section
+          for (const [section, sectionConfig] of Object.entries(
+            configBySection
+          )) {
+            saveConfig(section, sectionConfig);
+          }
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : 'Failed to save configuration';
+          throw new Error(errorMessage);
+        }
+      },
+      (operation: string) => {
+        context.requestHandlers.onAborted(operation);
+      }
+    )
+  );
+}
+
+/**
+ * Route Execute tasks - creates Execute component (validation already done)
+ */
+function routeExecuteTasks(tasks: Task[], context: RoutingContext): void {
+  context.workflowHandlers.addToQueue(
+    createExecuteDefinition(tasks, context.service)
+  );
+}
+
+/**
+ * Registry mapping task types to their route handlers
+ */
+const taskRouteHandlers: Partial<Record<TaskType, TaskRouteHandler>> = {
+  [TaskType.Answer]: routeAnswerTasks,
+  [TaskType.Introspect]: routeIntrospectTasks,
+  [TaskType.Config]: routeConfigTasks,
+  [TaskType.Execute]: routeExecuteTasks,
+};
+
+/**
+ * Route tasks by type to appropriate components
+ * Uses registry pattern for extensibility
+ */
+function routeTasksByType(
+  taskType: TaskType,
+  tasks: Task[],
+  context: RoutingContext
+): void {
+  const handler = taskRouteHandlers[taskType];
+  if (handler) {
+    handler(tasks, context);
   }
 }
