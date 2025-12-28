@@ -3,11 +3,12 @@ import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ComponentStatus, ScheduleState } from '../../src/types/components.js';
-import { Task, TaskType } from '../../src/types/types.js';
+import { ScheduledTask, Task, TaskType } from '../../src/types/types.js';
 
 import { DebugLevel } from '../../src/configuration/types.js';
 
-import { Schedule } from '../../src/ui/Schedule.js';
+import { Schedule, taskToListItem } from '../../src/ui/Schedule.js';
+import { Palette } from '../../src/services/colors.js';
 
 import {
   Keys,
@@ -1372,6 +1373,82 @@ describe('Schedule component', () => {
           config: [],
         },
       ]);
+    });
+  });
+
+  describe('Subtask styling', () => {
+    it('uses AshGray color for subtask descriptions', () => {
+      const groupTask: ScheduledTask = {
+        action: 'Build products',
+        type: TaskType.Group,
+        config: [],
+        subtasks: [
+          { action: 'Build alpha', type: TaskType.Execute, config: [] },
+          { action: 'Build beta', type: TaskType.Execute, config: [] },
+        ],
+      };
+
+      const listItem = taskToListItem(
+        groupTask,
+        null,
+        false,
+        ComponentStatus.Pending
+      );
+
+      expect(listItem.children).toHaveLength(2);
+      expect(listItem.children[0].description.color).toBe(Palette.AshGray);
+      expect(listItem.children[1].description.color).toBe(Palette.AshGray);
+    });
+
+    it('uses AshGray for subtasks regardless of component status', () => {
+      const groupTask: ScheduledTask = {
+        action: 'Deploy services',
+        type: TaskType.Group,
+        config: [],
+        subtasks: [
+          { action: 'Deploy API', type: TaskType.Execute, config: [] },
+        ],
+      };
+
+      const pendingItem = taskToListItem(
+        groupTask,
+        null,
+        false,
+        ComponentStatus.Pending
+      );
+      const activeItem = taskToListItem(
+        groupTask,
+        null,
+        false,
+        ComponentStatus.Active
+      );
+      const doneItem = taskToListItem(
+        groupTask,
+        null,
+        false,
+        ComponentStatus.Done
+      );
+
+      expect(pendingItem.children[0].description.color).toBe(Palette.AshGray);
+      expect(activeItem.children[0].description.color).toBe(Palette.AshGray);
+      expect(doneItem.children[0].description.color).toBe(Palette.AshGray);
+    });
+
+    it('uses SoftWhite for top-level pending task descriptions', () => {
+      const task: Task = {
+        action: 'Deploy application',
+        type: TaskType.Execute,
+        config: [],
+      };
+
+      const listItem = taskToListItem(
+        task,
+        null,
+        false,
+        ComponentStatus.Pending
+      );
+
+      expect(listItem.description.color).toBe(Palette.SoftWhite);
     });
   });
 });

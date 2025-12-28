@@ -36,9 +36,10 @@ export const List: FC<ListProps> = ({
   showType = false,
 }) => {
   const marginLeft = level > 0 ? 2 : 0;
+  const gap = level === 0 ? 1 : 0;
 
   return (
-    <Box flexDirection="column" marginLeft={marginLeft}>
+    <Box flexDirection="column" marginLeft={marginLeft} gap={gap}>
       {items.map((item, index) => {
         // At level 0, track which parent is active for child highlighting
         // At level > 0, only highlight if this parent is the active one
@@ -79,14 +80,16 @@ export const List: FC<ListProps> = ({
               )}
             </Box>
             {item.children && item.children.length > 0 && (
-              <List
-                items={item.children}
-                level={level + 1}
-                highlightedIndex={
-                  shouldHighlightChildren ? highlightedIndex : null
-                }
-                showType={showType}
-              />
+              <Box marginTop={1}>
+                <List
+                  items={item.children}
+                  level={level + 1}
+                  highlightedIndex={
+                    shouldHighlightChildren ? highlightedIndex : null
+                  }
+                  showType={showType}
+                />
+              </Box>
             )}
           </Box>
         );

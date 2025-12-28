@@ -12,6 +12,7 @@ import {
   STATUS_ICONS,
 } from '../../src/services/colors.js';
 import { DebugLevel } from '../../src/configuration/types.js';
+import { ComponentStatus } from '../../src/types/components.js';
 import { ExecutionStatus } from '../../src/services/shell.js';
 import { FeedbackType, Origin, TaskType } from '../../src/types/types.js';
 
@@ -56,30 +57,33 @@ describe('Origin colors for capability display', () => {
 
 describe('getTaskColors', () => {
   it('returns colors for Introspect type', () => {
-    const colors = getTaskColors(TaskType.Introspect, false);
+    const colors = getTaskColors(TaskType.Introspect, ComponentStatus.Done);
     expect(colors).toBeDefined();
     expect(colors).toHaveProperty('description');
     expect(colors).toHaveProperty('type');
   });
 
   it('returns null description as inactive color for historical items', () => {
-    const colors = getTaskColors(TaskType.Schedule, false);
+    const colors = getTaskColors(TaskType.Schedule, ComponentStatus.Done);
     expect(colors.description).toBe(Colors.Text.Inactive);
   });
 
   it('returns null description as active color for current items', () => {
-    const colors = getTaskColors(TaskType.Schedule, true);
+    const colors = getTaskColors(TaskType.Schedule, ComponentStatus.Active);
     expect(colors.description).toBe(Colors.Text.Active);
   });
 
   it('returns correct type color for Introspect', () => {
-    const colors = getTaskColors(TaskType.Introspect, false);
+    const colors = getTaskColors(TaskType.Introspect, ComponentStatus.Done);
     expect(colors.type).toBe(Colors.Type.Introspect);
   });
 
   it('returns same type color for Introspect and Answer', () => {
-    const introspectColors = getTaskColors(TaskType.Introspect, false);
-    const answerColors = getTaskColors(TaskType.Answer, false);
+    const introspectColors = getTaskColors(
+      TaskType.Introspect,
+      ComponentStatus.Done
+    );
+    const answerColors = getTaskColors(TaskType.Answer, ComponentStatus.Done);
     expect(introspectColors.type).toBe(answerColors.type);
   });
 
@@ -87,7 +91,7 @@ describe('getTaskColors', () => {
     const taskTypes = Object.values(TaskType);
 
     taskTypes.forEach((type) => {
-      const colors = getTaskColors(type, false);
+      const colors = getTaskColors(type, ComponentStatus.Done);
       expect(colors).toBeDefined();
       expect(colors).toHaveProperty('description');
       expect(colors).toHaveProperty('type');
@@ -97,30 +101,40 @@ describe('getTaskColors', () => {
 
 describe('getFeedbackColor', () => {
   it('returns Info color', () => {
-    const color = getFeedbackColor(FeedbackType.Info, false);
+    const color = getFeedbackColor(FeedbackType.Info);
     expect(color).toBe(Colors.Status.Info);
   });
 
   it('returns Success color for Succeeded', () => {
-    const color = getFeedbackColor(FeedbackType.Succeeded, false);
+    const color = getFeedbackColor(FeedbackType.Succeeded);
     expect(color).toBe(Colors.Status.Success);
   });
 
   it('returns MediumOrange color for Aborted', () => {
-    const color = getFeedbackColor(FeedbackType.Aborted, false);
+    const color = getFeedbackColor(FeedbackType.Aborted);
     expect(color).toBe(Palette.MediumOrange);
   });
 
   it('returns Error color for Failed', () => {
-    const color = getFeedbackColor(FeedbackType.Failed, false);
+    const color = getFeedbackColor(FeedbackType.Failed);
     expect(color).toBe(Colors.Status.Error);
+  });
+
+  it('defaults to ComponentStatus.Done when status parameter is omitted', () => {
+    const colorWithDefault = getFeedbackColor(FeedbackType.Info);
+    const colorWithExplicitDone = getFeedbackColor(
+      FeedbackType.Info,
+      ComponentStatus.Done
+    );
+    expect(colorWithDefault).toBe(colorWithExplicitDone);
+    expect(colorWithDefault).toBe(Colors.Status.Info);
   });
 
   it('works for all FeedbackType values', () => {
     const feedbackTypes = Object.values(FeedbackType);
 
     feedbackTypes.forEach((type) => {
-      const color = getFeedbackColor(type, false);
+      const color = getFeedbackColor(type);
       expect(color).toBeDefined();
     });
   });
@@ -161,18 +175,24 @@ describe('getTextColor', () => {
 describe('Real-world color scenarios', () => {
   describe('Task description colors based on state', () => {
     it('uses active text color for current task descriptions', () => {
-      const colors = getTaskColors(TaskType.Execute, true);
+      const colors = getTaskColors(TaskType.Execute, ComponentStatus.Active);
       expect(colors.description).toBe(Colors.Text.Active);
     });
 
     it('uses inactive text color for historical task descriptions', () => {
-      const colors = getTaskColors(TaskType.Execute, false);
+      const colors = getTaskColors(TaskType.Execute, ComponentStatus.Done);
       expect(colors.description).toBe(Colors.Text.Inactive);
     });
 
     it('preserves task type colors regardless of current/historical state', () => {
-      const currentColors = getTaskColors(TaskType.Execute, true);
-      const historicalColors = getTaskColors(TaskType.Execute, false);
+      const currentColors = getTaskColors(
+        TaskType.Execute,
+        ComponentStatus.Active
+      );
+      const historicalColors = getTaskColors(
+        TaskType.Execute,
+        ComponentStatus.Done
+      );
       expect(currentColors.type).toBe(historicalColors.type);
       expect(currentColors.type).toBe(Colors.Type.Execute);
     });
@@ -362,7 +382,7 @@ describe('Execution status colors and icons', () => {
 
   describe('Color palette additions', () => {
     it('uses MediumOrange for aborted feedback', () => {
-      const color = getFeedbackColor(FeedbackType.Aborted, false);
+      const color = getFeedbackColor(FeedbackType.Aborted);
       expect(color).toBe(Palette.MediumOrange);
     });
   });
