@@ -63,7 +63,13 @@ describe('Schedule component', () => {
       );
 
       const output = lastFrame();
-      expect(output).toBeTruthy();
+      // Verify task content is rendered
+      expect(output).toContain('Choose deployment');
+      // Verify options are rendered
+      expect(output).toContain('Production');
+      expect(output).toContain('Staging');
+      // Arrow should be on parent define task (no child highlighted)
+      expect(output).toContain('→');
     });
 
     it('marks define task with right arrow when no selection made', () => {
@@ -219,7 +225,7 @@ describe('Schedule component', () => {
         completedSelections: [],
       });
 
-      const { stdin } = render(
+      const { lastFrame, stdin } = render(
         <Schedule
           requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
@@ -236,17 +242,36 @@ describe('Schedule component', () => {
         />
       );
 
+      // Verify all options are rendered
+      let output = lastFrame();
+      expect(output).toContain('Production');
+      expect(output).toContain('Staging');
+      expect(output).toContain('Development');
+
       // Press down arrow to select first item
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      // Verify arrow moved to first option
+      output = lastFrame();
+      expect(output).toContain('→');
+      expect(output).toContain('Production');
 
       // Press down arrow again to select second item
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
+      // Verify Staging is now highlighted
+      output = lastFrame();
+      expect(output).toContain('Staging');
+
       // Press up arrow to go back to first item
       stdin.write(ArrowUp);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      // Verify Production is highlighted again
+      output = lastFrame();
+      expect(output).toContain('Production');
     });
 
     it('wraps around when navigating with arrow keys', async () => {
@@ -260,7 +285,7 @@ describe('Schedule component', () => {
         completedSelections: [],
       });
 
-      const { stdin } = render(
+      const { lastFrame, stdin } = render(
         <Schedule
           requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
@@ -277,17 +302,32 @@ describe('Schedule component', () => {
         />
       );
 
-      // Press up arrow from null position to select last item
+      // Verify options are rendered
+      let output = lastFrame();
+      expect(output).toContain('Production');
+      expect(output).toContain('Staging');
+
+      // Press up arrow from null position to select last item (Staging)
       stdin.write(ArrowUp);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
-      // Press down arrow to wrap to first item
+      output = lastFrame();
+      expect(output).toContain('Staging');
+      expect(output).toContain('→');
+
+      // Press down arrow to wrap to first item (Production)
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
-      // Press down arrow again to wrap to second item
+      output = lastFrame();
+      expect(output).toContain('Production');
+
+      // Press down arrow again to go to second item (Staging)
       stdin.write(ArrowDown);
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      output = lastFrame();
+      expect(output).toContain('Staging');
     });
 
     it('does not handle input when done', () => {
@@ -427,7 +467,15 @@ describe('Schedule component', () => {
       );
 
       const output = lastFrame();
-      expect(output).toBeTruthy();
+      // Verify both define groups are rendered
+      expect(output).toContain('Choose target');
+      expect(output).toContain('Alpha');
+      expect(output).toContain('Beta');
+      expect(output).toContain('Choose environment');
+      expect(output).toContain('Development');
+      expect(output).toContain('Production');
+      // Verify execute task is rendered
+      expect(output).toContain('Build project');
     });
 
     it('shows arrow on first define group initially', () => {
@@ -1294,8 +1342,9 @@ describe('Schedule component', () => {
       );
 
       const output = lastFrame();
-      expect(output).toBeTruthy();
+      // Verify message and task are rendered
       expect(output).toContain('Review changes');
+      expect(output).toContain('Build project');
       // When debug is false, separator and type should not appear
       const hasTypeIndicator = output!.includes('Review changes ›');
       expect(hasTypeIndicator).toBe(false);

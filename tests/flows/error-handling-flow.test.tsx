@@ -1,0 +1,293 @@
+import React from 'react';
+import { render } from 'ink-testing-library';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { DebugLevel } from '../../src/configuration/types.js';
+import { App, TaskType } from '../../src/types/types.js';
+
+import { loadConfig } from '../../src/configuration/io.js';
+import { getMissingConfigKeys } from '../../src/configuration/schema.js';
+import { exitApp } from '../../src/services/process.js';
+
+import { Main } from '../../src/ui/Main.js';
+
+import { Keys } from '../test-utils.js';
+
+// Mock timing helpers to skip delays in tests
+vi.mock('../../src/services/timing.js', () => ({
+  ensureMinimumTime: vi.fn().mockResolvedValue(undefined),
+  withMinimumTime: vi
+    .fn()
+    .mockImplementation(async (operation) => await operation()),
+}));
+
+// Mock configuration modules
+vi.mock('../../src/configuration/schema.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../src/configuration/schema.js')
+  >('../../src/configuration/schema.js');
+  return {
+    ...actual,
+    getMissingConfigKeys: vi.fn(),
+  };
+});
+
+vi.mock('../../src/configuration/io.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../src/configuration/io.js')
+  >('../../src/configuration/io.js');
+  return {
+    ...actual,
+    loadConfig: vi.fn(),
+  };
+});
+
+// Mock process module
+vi.mock('../../src/services/process.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../src/services/process.js')
+  >('../../src/services/process.js');
+  return {
+    ...actual,
+    exitApp: vi.fn(),
+  };
+});
+
+const ShortWait = 50;
+const WorkflowWait = 100;
+
+describe('Error handling flow', () => {
+  const mockApp: App = {
+    name: 'test-app',
+    version: '1.0.0',
+    description: 'Test application',
+    isDev: false,
+    debug: DebugLevel.None,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getMissingConfigKeys).mockReturnValue([]);
+    vi.mocked(loadConfig).mockReturnValue({
+      anthropic: { key: 'test-key', model: 'test-model' },
+    });
+    vi.mocked(exitApp).mockImplementation(() => {});
+  });
+
+  it('shows error feedback when LLM call fails', async () => {
+    const anthropicModule = await import('../../src/services/anthropic.js');
+
+    const mockService = {
+      processWithTool: vi
+        .fn()
+        .mockRejectedValue(new Error('API connection failed')),
+    };
+
+    vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+      mockService as any
+    );
+
+    const { lastFrame } = render(<Main app={mockApp} command="test command" />);
+
+    await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+    const output = lastFrame();
+    expect(output).toMatch(/✗|API connection failed/);
+
+    vi.restoreAllMocks();
+  });
+
+  it('exits with error code on failures', async () => {
+    const anthropicModule = await import('../../src/services/anthropic.js');
+
+    const mockService = {
+      processWithTool: vi.fn().mockRejectedValue(new Error('Test error')),
+    };
+
+    vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+      mockService as any
+    );
+
+    render(<Main app={mockApp} command="test" />);
+
+    await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+    expect(exitApp).toHaveBeenCalledWith(1);
+
+    vi.restoreAllMocks();
+  });
+});
+
+describe('Abort and cancellation flow', () => {
+  const mockApp: App = {
+    name: 'test-app',
+    version: '1.0.0',
+    description: 'Test application',
+    isDev: false,
+    debug: DebugLevel.None,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getMissingConfigKeys).mockReturnValue([]);
+    vi.mocked(loadConfig).mockReturnValue({
+      anthropic: { key: 'test-key', model: 'test-model' },
+    });
+    vi.mocked(exitApp).mockImplementation(() => {});
+  });
+
+  it('shows cancellation message when aborting confirmation', async () => {
+    const anthropicModule = await import('../../src/services/anthropic.js');
+
+    const mockService = {
+      processWithTool: vi.fn().mockResolvedValue({
+        message: 'Execute these tasks.',
+        tasks: [{ action: 'Task 1', type: TaskType.Execute }],
+      }),
+    };
+
+    vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+      mockService as any
+    );
+
+    const { lastFrame, stdin } = render(<Main app={mockApp} command="test" />);
+
+    await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+    stdin.write(Keys.Escape);
+
+    await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+    const output = lastFrame();
+    expect(output).toMatch(/(cancelled|aborted)/i);
+
+    vi.restoreAllMocks();
+  });
+
+  it('shows cancellation message when aborting plan selection', async () => {
+    const anthropicModule = await import('../../src/services/anthropic.js');
+
+    const mockService = {
+      processWithTool: vi.fn().mockResolvedValue({
+        message: 'Choose an option:',
+        tasks: [
+          {
+            action: 'Select target',
+            type: TaskType.Define,
+            params: { options: ['Option A', 'Option B'] },
+          },
+        ],
+      }),
+    };
+
+    vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+      mockService as any
+    );
+
+    const { lastFrame, stdin } = render(<Main app={mockApp} command="test" />);
+
+    await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+    stdin.write(Keys.Escape);
+
+    await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+    const output = lastFrame();
+    expect(output).toMatch(/(cancelled|aborted)/i);
+    expect(output).toContain('task selection');
+
+    vi.restoreAllMocks();
+  });
+
+  it('exits with code 0 when user cancels', async () => {
+    const anthropicModule = await import('../../src/services/anthropic.js');
+
+    const mockService = {
+      processWithTool: vi.fn().mockResolvedValue({
+        message: 'Execute these tasks.',
+        tasks: [{ action: 'Task 1', type: TaskType.Execute }],
+      }),
+    };
+
+    vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+      mockService as any
+    );
+
+    const { stdin } = render(<Main app={mockApp} command="test" />);
+
+    await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+    stdin.write(Keys.Escape);
+
+    await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+    expect(exitApp).toHaveBeenCalledWith(0);
+
+    vi.restoreAllMocks();
+  });
+
+  it('handles cancellation during introspection', async () => {
+    const anthropicModule = await import('../../src/services/anthropic.js');
+
+    const mockService = {
+      processWithTool: vi.fn().mockResolvedValue({
+        message: 'Here are my capabilities:',
+        tasks: [
+          { action: 'Capability 1', type: TaskType.Introspect },
+          { action: 'Capability 2', type: TaskType.Introspect },
+        ],
+      }),
+    };
+
+    vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+      mockService as any
+    );
+
+    const { lastFrame, stdin } = render(
+      <Main app={mockApp} command="list skills" />
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+    stdin.write(Keys.Escape);
+
+    await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+    const output = lastFrame();
+    expect(output).toMatch(/(cancelled|aborted)/i);
+    expect(output).toContain('introspection');
+
+    vi.restoreAllMocks();
+  });
+
+  it('handles cancellation during answer', async () => {
+    const anthropicModule = await import('../../src/services/anthropic.js');
+
+    const mockService = {
+      processWithTool: vi.fn().mockResolvedValue({
+        message: "I'll answer your question.",
+        tasks: [{ action: 'Explain something', type: TaskType.Answer }],
+      }),
+    };
+
+    vi.spyOn(anthropicModule, 'createAnthropicService').mockReturnValue(
+      mockService as any
+    );
+
+    const { lastFrame, stdin } = render(
+      <Main app={mockApp} command="explain something" />
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
+
+    stdin.write(Keys.Escape);
+
+    await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+    const output = lastFrame();
+    expect(output).toMatch(/(cancelled|aborted)/i);
+    expect(output).toContain('answer');
+
+    vi.restoreAllMocks();
+  });
+});
