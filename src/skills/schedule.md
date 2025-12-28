@@ -95,7 +95,11 @@ Before creating tasks, evaluate the request type:
 
 3. **Action requests** (commands) - Must match available skills:
    - Action verbs like "compile", "deploy", "process", "validate"
-   - If verb matches a skill → extract skill steps as subtasks
+   - If verb matches a skill → examine the skill's Execution section
+     to determine structure:
+     - Multiple execution steps → create ONLY a group task with those
+       steps as subtasks (never create a flat execute task)
+     - Single execution step → can use a leaf execute task
    - If verb does NOT match any skill → ignore type with action
      "Ignore unknown 'X' request" where X is the verb/phrase
    - Example: "compile" with no skill → action "Ignore unknown
@@ -175,6 +179,19 @@ components (e.g., {project.VARIANT.path}, {env.TYPE.config},
    - Example: Task with `cd {project.beta.repo}` and `cat
      {project.beta.config}` should include config:
      ["project.beta.repo", "project.beta.config"]
+
+6. **Multi-step skills MUST use group structure**:
+   - **CRITICAL**: When a skill has multiple execution steps, it MUST
+     be represented as a group task with those steps as subtasks
+   - **NEVER use a flat execute task** for multi-step skills
+   - Single execution step: Can be represented as a leaf execute task
+   - Multiple execution steps: ALWAYS use group structure, never flat
+   - Note: The same skill can appear multiple times if the user
+     requests it in sequence (e.g., "deploy alpha, test, deploy beta")
+     - Each occurrence must still use group structure
+   - Example: "deploy alpha" → "Deploy Alpha" (group) with subtasks
+   - Example: "deploy alpha, test, deploy alpha" → "Deploy Alpha"
+     (group), "Run tests" (execute), "Deploy Alpha" (group)
 
 **Examples**:
 

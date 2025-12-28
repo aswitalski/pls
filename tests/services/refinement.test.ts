@@ -89,7 +89,7 @@ describe('Refinement service', () => {
 
       // Should call processWithTool with formatted command
       expect(mockProcessWithTool).toHaveBeenCalledWith(
-        'deploy to dev (type: execute), run tests (type: execute)',
+        'deploy to dev (shell execution), run tests (shell execution)',
         'schedule'
       );
     });
@@ -124,7 +124,42 @@ describe('Refinement service', () => {
 
       // Should replace commas with dashes
       expect(mockProcessWithTool).toHaveBeenCalledWith(
-        'deploy to dev - alpha (type: execute)',
+        'deploy to dev - alpha (shell execution)',
+        'schedule'
+      );
+    });
+
+    it('uses shell execution format for group tasks', async () => {
+      const selectedTasks = [
+        { action: 'Deploy application', type: TaskType.Group, config: [] },
+      ];
+      const mockProcessWithTool = vi.fn().mockResolvedValue({
+        message: 'Refined plan',
+        tasks: [
+          { action: 'Deploy application', type: TaskType.Group, config: [] },
+        ],
+      });
+      const mockService = {
+        processWithTool: mockProcessWithTool,
+      } as unknown as LLMService;
+
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+
+      await handleRefinement(
+        selectedTasks,
+        mockService,
+        'deploy',
+
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers
+      );
+
+      // Should use shell execution format for group tasks
+      expect(mockProcessWithTool).toHaveBeenCalledWith(
+        'deploy application (shell execution)',
         'schedule'
       );
     });

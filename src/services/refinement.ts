@@ -4,7 +4,7 @@ import {
   RequestHandlers,
   WorkflowHandlers,
 } from '../types/handlers.js';
-import { Task } from '../types/types.js';
+import { Task, TaskType } from '../types/types.js';
 
 import { LLMService } from './anthropic.js';
 import { createRefinement } from './components.js';
@@ -39,6 +39,10 @@ export async function handleRefinement<TState extends BaseState = BaseState>(
       .map((task) => {
         const action = task.action.toLowerCase().replace(/,/g, ' -');
         const type = task.type;
+        // For execute/group tasks, use generic hint - let LLM decide based on skill
+        if (type === TaskType.Execute || type === TaskType.Group) {
+          return `${action} (shell execution)`;
+        }
         return `${action} (type: ${type})`;
       })
       .join(', ');
