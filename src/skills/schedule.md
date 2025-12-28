@@ -325,12 +325,6 @@ even if they use the same action verb.
   - Task 2: "Process data" (skill-based with subtasks)
   - Task 3: "Explain Kubernetes" (type: answer)
 
-- "explain tdd, process files, explain tbd" → THREE separate task
-  groups:
-  - Task 1: "Explain Test-Driven Development" (type: answer)
-  - Task 2: "Process files" (skill-based with subtasks)
-  - Task 3: "Explain TBD" (type: answer)
-
 - "process files and validate" where only "process" has a skill →
   - Task 1: "Process files" (skill-based with subtasks)
   - Task 2: type "ignore" for unmatched "validate"

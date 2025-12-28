@@ -352,32 +352,34 @@ For complex multi-step operations:
 
 ## Common Mistakes to Avoid
 
-❌ Generating commands that don't match the task description
-❌ Using platform-specific commands without consideration
-❌ Forgetting to quote paths with spaces
-❌ Setting unrealistic timeouts for long operations
-❌ Running destructive commands without safeguards
-❌ Ignoring task parameters when generating commands
-❌ **CRITICAL: Inventing commands instead of using skill's Execution
-   section**
-❌ **CRITICAL: Ignoring params.skill and making up your own commands**
-❌ **CRITICAL: Generating commands when the skill doesn't exist in
-   Available Skills**
-❌ Not substituting parameter placeholders in skill commands
-❌ **CRITICAL: Assuming what commands to run when skill is missing**
+**DO NOT:**
+- Generate commands that don't match the task description
+- Use platform-specific commands without consideration
+- Forget to quote paths with spaces
+- Set unrealistic timeouts for long operations
+- Run destructive commands without safeguards
+- Ignore task parameters when generating commands
+- **CRITICAL: Invent commands instead of using skill's Execution
+  section**
+- **CRITICAL: Ignore params.skill and make up your own commands**
+- **CRITICAL: Generate commands when the skill doesn't exist in
+  Available Skills**
+- Fail to substitute parameter placeholders in skill commands
+- **CRITICAL: Assume what commands to run when skill is missing**
 
-✅ Match commands precisely to task descriptions
-✅ Use task params to fill in specific values
-✅ Quote all file paths properly
-✅ Set appropriate timeouts for each operation type
-✅ Include safety checks for destructive operations
-✅ Generate portable commands when possible
-✅ **CRITICAL: Verify skill exists in Available Skills before generating
-   commands**
-✅ **CRITICAL: Return error response if skill not found, never invent
-   commands**
-✅ Always use skill's Execution section when params.skill is present
-✅ Replace all {PARAM} placeholders with values from task params
+**DO:**
+- Match commands precisely to task descriptions
+- Use task params to fill in specific values
+- Quote all file paths properly
+- Set appropriate timeouts for each operation type
+- Include safety checks for destructive operations
+- Generate portable commands when possible
+- **CRITICAL: Verify skill exists in Available Skills before generating
+  commands**
+- **CRITICAL: Return error response if skill not found, never invent
+  commands**
+- Always use skill's Execution section when params.skill is present
+- Replace all {PARAM} placeholders with values from task params
 
 ## Final Validation
 

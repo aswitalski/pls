@@ -110,15 +110,17 @@ They enable cleaner, more reusable component logic.
 
 ## Common Mistakes to Avoid
 
-❌ Starting with "Here's the answer:" or "Let me explain:"
-❌ Exceeding 4 lines or 80 characters per line
-❌ Including unnecessary details
-❌ Using overly technical jargon without explanation
-❌ Repeating the question in the answer
-❌ Using citation tags like `<cite>` or any HTML/XML markup
+**DO NOT:**
+- Start with "Here's the answer:" or "Let me explain:"
+- Exceed 4 lines or 80 characters per line
+- Include unnecessary details
+- Use overly technical jargon without explanation
+- Repeat the question in the answer
+- Use citation tags like `<cite>` or any HTML/XML markup
 
-✅ Direct, concise answers
-✅ Proper line breaks at natural phrase boundaries
-✅ Essential information only
-✅ Clear, accessible language
-✅ Plain text only - no markup tags
+**DO:**
+- Give direct, concise answers
+- Use proper line breaks at natural phrase boundaries
+- Include essential information only
+- Use clear, accessible language
+- Use plain text only - no markup tags

@@ -64,7 +64,7 @@ capability list.
 
 ## Capabilities Structure
 
-**⚠️ CRITICAL ORDERING REQUIREMENT ⚠️**
+**CRITICAL ORDERING REQUIREMENT**
 
 You MUST present capabilities in the EXACT order specified below. This is
 NON-NEGOTIABLE and applies to EVERY response.
@@ -81,20 +81,20 @@ NON-NEGOTIABLE and applies to EVERY response.
 
 These MUST appear FIRST, in this EXACT sequence:
 
-1. **Introspect** ← ALWAYS FIRST
-2. **Configure** ← ALWAYS SECOND
-3. **Answer** ← ALWAYS THIRD
-4. **Execute** ← ALWAYS FOURTH
+1. **Introspect**
+2. **Configure**
+3. **Answer**
+4. **Execute**
 
 ### Position 5-7: meta workflow capabilities (origin: "meta")
 
 These MUST appear AFTER Execute and BEFORE user-provided skills:
 
-5. **Schedule** ← NEVER FIRST, ALWAYS position 5 (after Execute)
-6. **Validate** ← ALWAYS position 6 (after Schedule)
-7. **Report** ← NEVER FIRST, ALWAYS position 7 (after Validate)
+5. **Schedule**
+6. **Validate**
+7. **Report**
 
-### 3. user-provided skills (origin: "user")
+### Position 8+: user-provided skills (origin: "user")
 
 If skills are provided in the "Available Skills" section below, include
 them in the response. For each skill:
