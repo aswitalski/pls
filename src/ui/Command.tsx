@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { CommandProps, ComponentStatus } from '../types/components.js';
+import {
+  CommandProps,
+  CommandState,
+  ComponentStatus,
+} from '../types/components.js';
 import { Task, TaskType } from '../types/types.js';
+
 import { Colors } from '../services/colors.js';
 import { createScheduleDefinition } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
@@ -16,25 +21,63 @@ import { UserQuery } from './UserQuery.js';
 
 const MIN_PROCESSING_TIME = 400; // purely for visual effect
 
+/**
+ * Command view: Displays command with spinner
+ */
+export interface CommandViewProps {
+  command: string;
+  state: CommandState;
+  status: ComponentStatus;
+}
+
+export const CommandView = ({ command, state, status }: CommandViewProps) => {
+  const isActive = status === ComponentStatus.Active;
+  const { error } = state;
+
+  return (
+    <Box alignSelf="flex-start" flexDirection="column">
+      {!isActive ? (
+        <UserQuery>&gt; pls {command}</UserQuery>
+      ) : (
+        <Box marginLeft={1}>
+          <Text color={Colors.Text.Active}>&gt; pls {command}</Text>
+          <Text> </Text>
+          <Spinner />
+        </Box>
+      )}
+
+      {error && (
+        <Box marginTop={1} marginLeft={1}>
+          <Text color={Colors.Status.Error}>Error: {error}</Text>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+/**
+ * Command controller: Processes and routes command
+ */
+
 export function Command({
   command,
-  state,
   status,
   service,
-  stateHandlers,
+  requestHandlers,
   lifecycleHandlers,
-  queueHandlers,
-  errorHandlers,
   workflowHandlers,
   onAborted,
 }: CommandProps) {
   const isActive = status === ComponentStatus.Active;
-  const [error, setError] = useState<string | null>(state?.error ?? null);
+
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   useInput(
     (_, key) => {
       if (key.escape && isActive) {
-        errorHandlers?.onAborted('request');
+        requestHandlers.onAborted('request');
         onAborted?.('request');
       }
     },
@@ -81,29 +124,25 @@ export function Command({
             ? [...scheduleDebug, ...(result.debug || [])]
             : scheduleDebug;
           if (debugComponents.length > 0) {
-            workflowHandlers?.addToTimeline(...debugComponents);
+            workflowHandlers.addToTimeline(...debugComponents);
           }
 
-          // Save result to state for timeline display
-          stateHandlers?.updateState({
+          // Update local state
+          setMessage(result.message);
+          setTasks(result.tasks);
+
+          // Expose final state
+          const finalState: CommandState = {
+            error: null,
             message: result.message,
             tasks: result.tasks,
-          });
+          };
+          requestHandlers.onCompleted(finalState);
 
           // Check if tasks contain DEFINE type (variant selection needed)
           const hasDefineTask = result.tasks.some(
             (task) => task.type === TaskType.Define
           );
-
-          // Guard: ensure all required handlers are present
-          if (
-            !queueHandlers ||
-            !lifecycleHandlers ||
-            !workflowHandlers ||
-            !errorHandlers
-          ) {
-            return;
-          }
 
           // Create Schedule definition
           const scheduleDefinition = createScheduleDefinition(
@@ -116,10 +155,9 @@ export function Command({
                     selectedTasks,
                     svc,
                     command,
-                    queueHandlers,
                     lifecycleHandlers,
                     workflowHandlers,
-                    errorHandlers
+                    requestHandlers
                   );
                 }
               : undefined
@@ -128,7 +166,7 @@ export function Command({
           if (hasDefineTask) {
             // DEFINE tasks: Move Command to timeline, add Schedule to queue
             lifecycleHandlers.completeActive();
-            queueHandlers.addToQueue(scheduleDefinition);
+            workflowHandlers.addToQueue(scheduleDefinition);
           } else {
             // No DEFINE tasks: Complete Command, then route to Confirm flow
             lifecycleHandlers.completeActive();
@@ -137,9 +175,9 @@ export function Command({
               result.message,
               svc,
               command,
-              queueHandlers,
+              lifecycleHandlers,
               workflowHandlers,
-              errorHandlers,
+              requestHandlers,
               false
             );
           }
@@ -150,10 +188,16 @@ export function Command({
         if (mounted) {
           const errorMessage = formatErrorMessage(err);
           setError(errorMessage);
-          stateHandlers?.updateState({
+
+          // Expose final state with error
+          const finalState: CommandState = {
             error: errorMessage,
-          });
-          errorHandlers?.onError(errorMessage);
+            message: null,
+            tasks: [],
+          };
+          requestHandlers.onCompleted(finalState);
+
+          requestHandlers.onError(errorMessage);
         }
       }
     }
@@ -163,25 +207,16 @@ export function Command({
     return () => {
       mounted = false;
     };
-  }, [command, isActive, service]);
+  }, [
+    command,
+    isActive,
+    service,
+    requestHandlers,
+    lifecycleHandlers,
 
-  return (
-    <Box alignSelf="flex-start" flexDirection="column">
-      {!isActive ? (
-        <UserQuery>&gt; pls {command}</UserQuery>
-      ) : (
-        <Box marginLeft={1}>
-          <Text color={Colors.Text.Active}>&gt; pls {command}</Text>
-          <Text> </Text>
-          <Spinner />
-        </Box>
-      )}
+    workflowHandlers,
+  ]);
 
-      {error && (
-        <Box marginTop={1} marginLeft={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
-        </Box>
-      )}
-    </Box>
-  );
+  const state: CommandState = { error, message, tasks };
+  return <CommandView command={command} state={state} status={status} />;
 }

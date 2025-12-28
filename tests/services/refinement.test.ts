@@ -7,10 +7,9 @@ import { LLMService } from '../../src/services/anthropic.js';
 import { handleRefinement } from '../../src/services/refinement.js';
 
 import {
-  createQueueHandlers,
   createLifecycleHandlers,
   createWorkflowHandlers,
-  createErrorHandlers,
+  createRequestHandlers,
 } from '../test-utils.js';
 
 describe('Refinement service', () => {
@@ -31,25 +30,26 @@ describe('Refinement service', () => {
           ],
         }),
       } as unknown as LLMService;
-      const queueHandlers = createQueueHandlers();
+
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       await handleRefinement(
         selectedTasks,
         mockService,
         'deploy to dev',
-        queueHandlers,
+
         lifecycleHandlers,
         workflowHandlers,
-        errorHandlers
+        requestHandlers
       );
 
       // Should add Refinement component to queue
-      expect(queueHandlers.addToQueue).toHaveBeenCalled();
-      const firstCall = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as ComponentDefinition;
+      expect(workflowHandlers.addToQueue).toHaveBeenCalled();
+      const firstCall = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
       expect(firstCall.name).toBe(ComponentName.Refinement);
     });
 
@@ -72,19 +72,19 @@ describe('Refinement service', () => {
       const mockService = {
         processWithTool: mockProcessWithTool,
       } as unknown as LLMService;
-      const queueHandlers = createQueueHandlers();
+
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       await handleRefinement(
         selectedTasks,
         mockService,
         'deploy and test',
-        queueHandlers,
+
         lifecycleHandlers,
         workflowHandlers,
-        errorHandlers
+        requestHandlers
       );
 
       // Should call processWithTool with formatted command
@@ -107,19 +107,19 @@ describe('Refinement service', () => {
       const mockService = {
         processWithTool: mockProcessWithTool,
       } as unknown as LLMService;
-      const queueHandlers = createQueueHandlers();
+
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       await handleRefinement(
         selectedTasks,
         mockService,
         'deploy',
-        queueHandlers,
+
         lifecycleHandlers,
         workflowHandlers,
-        errorHandlers
+        requestHandlers
       );
 
       // Should replace commas with dashes
@@ -141,19 +141,19 @@ describe('Refinement service', () => {
           ],
         }),
       } as unknown as LLMService;
-      const queueHandlers = createQueueHandlers();
+
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       await handleRefinement(
         selectedTasks,
         mockService,
         'build',
-        queueHandlers,
+
         lifecycleHandlers,
         workflowHandlers,
-        errorHandlers
+        requestHandlers
       );
 
       // Should complete active component (Refinement)
@@ -174,19 +174,19 @@ describe('Refinement service', () => {
       const mockService = {
         processWithTool: mockProcessWithTool,
       } as unknown as LLMService;
-      const queueHandlers = createQueueHandlers();
+
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       await handleRefinement(
         selectedTasks,
         mockService,
         'install deps',
-        queueHandlers,
+
         lifecycleHandlers,
         workflowHandlers,
-        errorHandlers
+        requestHandlers
       );
 
       // After completing Refinement, should route tasks
@@ -205,27 +205,27 @@ describe('Refinement service', () => {
           .fn()
           .mockRejectedValue(new Error('LLM service unavailable')),
       } as unknown as LLMService;
-      const queueHandlers = createQueueHandlers();
+
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       await handleRefinement(
         selectedTasks,
         mockService,
         'deploy',
-        queueHandlers,
+
         lifecycleHandlers,
         workflowHandlers,
-        errorHandlers
+        requestHandlers
       );
 
       // Should complete active component even on error
       expect(lifecycleHandlers.completeActive).toHaveBeenCalledTimes(1);
 
       // Should call onError with error message
-      expect(errorHandlers.onError).toHaveBeenCalledTimes(1);
-      const errorMessage = (errorHandlers.onError as ReturnType<typeof vi.fn>)
+      expect(requestHandlers.onError).toHaveBeenCalledTimes(1);
+      const errorMessage = (requestHandlers.onError as ReturnType<typeof vi.fn>)
         .mock.calls[0][0] as string;
       expect(errorMessage).toContain('LLM service unavailable');
     });
@@ -237,27 +237,27 @@ describe('Refinement service', () => {
       const mockService = {
         processWithTool: vi.fn().mockRejectedValue('String error'),
       } as unknown as LLMService;
-      const queueHandlers = createQueueHandlers();
+
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       await handleRefinement(
         selectedTasks,
         mockService,
         'deploy',
-        queueHandlers,
+
         lifecycleHandlers,
         workflowHandlers,
-        errorHandlers
+        requestHandlers
       );
 
       // Should complete active component even on error
       expect(lifecycleHandlers.completeActive).toHaveBeenCalledTimes(1);
 
       // Should call onError with stringified error
-      expect(errorHandlers.onError).toHaveBeenCalledTimes(1);
-      const errorMessage = (errorHandlers.onError as ReturnType<typeof vi.fn>)
+      expect(requestHandlers.onError).toHaveBeenCalledTimes(1);
+      const errorMessage = (requestHandlers.onError as ReturnType<typeof vi.fn>)
         .mock.calls[0][0] as string;
       expect(errorMessage).toBeTruthy();
     });
@@ -273,20 +273,20 @@ describe('Refinement service', () => {
       const mockService = {
         processWithTool: mockProcessWithTool,
       } as unknown as LLMService;
-      const queueHandlers = createQueueHandlers();
+
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
       const originalCommand = 'run all tests';
 
       await handleRefinement(
         selectedTasks,
         mockService,
         originalCommand,
-        queueHandlers,
+
         lifecycleHandlers,
         workflowHandlers,
-        errorHandlers
+        requestHandlers
       );
 
       // Verify processWithTool was called
@@ -304,19 +304,19 @@ describe('Refinement service', () => {
       const mockService = {
         processWithTool: mockProcessWithTool,
       } as unknown as LLMService;
-      const queueHandlers = createQueueHandlers();
+
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       await handleRefinement(
         selectedTasks,
         mockService,
         'nothing',
-        queueHandlers,
+
         lifecycleHandlers,
         workflowHandlers,
-        errorHandlers
+        requestHandlers
       );
 
       // Should still call processWithTool with empty string
@@ -334,23 +334,23 @@ describe('Refinement service', () => {
           tasks: [{ action: 'Deploy app', type: TaskType.Execute, config: [] }],
         }),
       } as unknown as LLMService;
-      const queueHandlers = createQueueHandlers();
+
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
-      const errorHandlers = createErrorHandlers();
+      const requestHandlers = createRequestHandlers();
 
       await handleRefinement(
         selectedTasks,
         mockService,
         'deploy',
-        queueHandlers,
+
         lifecycleHandlers,
         workflowHandlers,
-        errorHandlers
+        requestHandlers
       );
 
       // Get the Refinement component that was added to queue
-      const refinementDef = vi.mocked(queueHandlers.addToQueue).mock
+      const refinementDef = vi.mocked(workflowHandlers.addToQueue).mock
         .calls[0][0] as ComponentDefinition;
 
       // Verify it's a Refinement component with an onAborted callback
@@ -363,8 +363,8 @@ describe('Refinement service', () => {
         // Simulate abort
         refinementDef.props.onAborted('refinement');
 
-        // Verify errorHandlers.onAborted was called
-        expect(errorHandlers.onAborted).toHaveBeenCalledWith('refinement');
+        // Verify requestHandlers.onAborted was called
+        expect(requestHandlers.onAborted).toHaveBeenCalledWith('refinement');
       }
     });
   });

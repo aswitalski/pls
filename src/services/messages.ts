@@ -90,6 +90,21 @@ export function getMixedTaskTypesError(types: string[]): string {
 }
 
 /**
+ * Returns a message indicating configuration properties are needed.
+ * Randomly selects from variations to sound natural.
+ */
+export function getConfigValidationMessage(count: number): string {
+  const propertyWord = count === 1 ? 'property' : 'properties';
+  const messages = [
+    `Additional configuration ${propertyWord} required.`,
+    `Configuration ${propertyWord} needed.`,
+    `Missing configuration ${propertyWord} detected.`,
+    `Setup requires configuration ${propertyWord}.`,
+  ];
+  return messages[Math.floor(Math.random() * messages.length)];
+}
+
+/**
  * Feedback messages for various operations
  */
 export const FeedbackMessages = {

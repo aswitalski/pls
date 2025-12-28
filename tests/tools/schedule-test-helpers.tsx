@@ -5,6 +5,7 @@ import { render } from 'ink-testing-library';
 
 import { Palette } from '../../src/services/colors.js';
 import { formatSkillsForPrompt } from '../../src/services/skills.js';
+import { ComponentStatus } from '../../src/types/components.js';
 import type { ScheduledTask } from '../../src/types/types.js';
 import { Debug } from '../../src/ui/Debug.js';
 
@@ -39,6 +40,7 @@ export function renderBasePrompt(basePrompt: string): void {
       title={`SYSTEM PROMPT (${String(lines)} lines, ${String(bytes)} bytes)`}
       content={`\n${basePrompt}`}
       color={Palette.Gray}
+      status={ComponentStatus.Done}
     />
   );
   console.log(box.lastFrame());
@@ -76,6 +78,7 @@ export function renderCompactPrompt(
       title={`USER PROMPT (${String(totalLines)} lines, ${String(totalBytes)} bytes)`}
       content={content}
       color={Palette.Gray}
+      status={ComponentStatus.Done}
     />
   );
   console.log(box.lastFrame());
@@ -98,6 +101,7 @@ export function renderResponse(duration: number, response: unknown): void {
       title={`LLM RESPONSE (${String(duration)} ms)`}
       content={responseContent}
       color={Palette.AshGray}
+      status={ComponentStatus.Done}
     />
   );
   console.log(responseBox.lastFrame());

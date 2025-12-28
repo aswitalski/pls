@@ -1,17 +1,15 @@
-import { ComponentStatus } from '../../src/types/components.js';
+import { CommandState, ComponentStatus } from '../../src/types/components.js';
 import { TaskType } from '../../src/types/types.js';
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Command } from '../../src/ui/Command.js';
+import { Command, CommandView } from '../../src/ui/Command.js';
 import {
   Keys,
-  createErrorHandlers,
+  createRequestHandlers,
   createLifecycleHandlers,
   createMockAnthropicService,
-  createQueueHandlers,
-  createStateHandlers,
   createWorkflowHandlers,
 } from '../test-utils.js';
 
@@ -24,10 +22,9 @@ describe('Command component error handling', () => {
   describe('Error display', () => {
     it('displays error from state', () => {
       const { lastFrame } = render(
-        <Command
+        <CommandView
           command="test command"
-          service={mockService}
-          state={{ error: 'Test error' }}
+          state={{ error: 'Test error', message: null, tasks: [] }}
           status={ComponentStatus.Done}
         />
       );
@@ -43,6 +40,9 @@ describe('Command component error handling', () => {
           service={mockService}
           command="test command"
           status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<CommandState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -56,6 +56,9 @@ describe('Command component error handling', () => {
           service={mockService}
           command="test command"
           status={ComponentStatus.Done}
+          requestHandlers={createRequestHandlers<CommandState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -71,6 +74,9 @@ describe('Command component error handling', () => {
           service={mockService}
           status={ComponentStatus.Active}
           command="commit changes with message 'add new feature'"
+          requestHandlers={createRequestHandlers<CommandState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -88,10 +94,8 @@ describe('Command component error handling', () => {
           service={mockService}
           status={ComponentStatus.Active}
           command="test command"
-          stateHandlers={createStateHandlers()}
+          requestHandlers={createRequestHandlers<CommandState>()}
           lifecycleHandlers={createLifecycleHandlers()}
-          queueHandlers={createQueueHandlers()}
-          errorHandlers={createErrorHandlers()}
           workflowHandlers={createWorkflowHandlers()}
         />
       );
@@ -101,17 +105,15 @@ describe('Command component error handling', () => {
     });
 
     it('calls handler when aborted', () => {
-      const errorHandlers = createErrorHandlers();
+      const errorHandlers = createRequestHandlers();
       const { stdin } = render(
         <Command
           onAborted={vi.fn()}
           service={mockService}
           status={ComponentStatus.Active}
           command="test command"
-          stateHandlers={createStateHandlers()}
           lifecycleHandlers={createLifecycleHandlers()}
-          queueHandlers={createQueueHandlers()}
-          errorHandlers={errorHandlers}
+          requestHandlers={errorHandlers}
           workflowHandlers={createWorkflowHandlers()}
         />
       );
@@ -129,6 +131,9 @@ describe('Command component error handling', () => {
           service={mockService}
           command="test command"
           status={ComponentStatus.Done}
+          requestHandlers={createRequestHandlers<CommandState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 

@@ -4,8 +4,10 @@ import { Box, Text } from 'ink';
 import {
   ComponentStatus,
   ExecuteProps,
+  ExecuteState,
   TaskInfo,
 } from '../types/components.js';
+import { Task as TaskType } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
@@ -39,17 +41,6 @@ function validatePlaceholderResolution(
   }
 }
 
-interface ExecuteState {
-  error: string | null;
-  taskInfos: TaskInfo[];
-  message: string;
-  completed: number;
-  hasProcessed: boolean;
-  taskExecutionTimes: number[];
-  completionMessage: string | null;
-  summary: string;
-}
-
 type ExecuteAction =
   | { type: 'PROCESSING_COMPLETE'; payload: { message: string } }
   | {
@@ -77,10 +68,15 @@ type ExecuteAction =
     }
   | { type: 'CANCEL_EXECUTION'; payload: { completed: number } };
 
+// Internal state for reducer - extends ExecuteState with hasProcessed
+interface InternalExecuteState extends ExecuteState {
+  hasProcessed: boolean;
+}
+
 function executeReducer(
-  state: ExecuteState,
+  state: InternalExecuteState,
   action: ExecuteAction
-): ExecuteState {
+): InternalExecuteState {
   switch (action.type) {
     case 'PROCESSING_COMPLETE':
       return {
@@ -233,26 +229,123 @@ function executeReducer(
   }
 }
 
-export function Execute({
-  tasks,
+/**
+ * Execute view: Displays task execution progress
+ */
+
+export interface ExecuteViewProps {
+  tasks: TaskType[];
+  state: ExecuteState;
+  status: ComponentStatus;
+  onTaskComplete?: (
+    index: number,
+    output: CommandOutput,
+    elapsed: number
+  ) => void;
+  onTaskAbort?: (index: number) => void;
+  onTaskError?: (index: number, error: string, elapsed: number) => void;
+}
+
+export const ExecuteView = ({
   state,
   status,
+  onTaskComplete,
+  onTaskAbort,
+  onTaskError,
+}: ExecuteViewProps) => {
+  const isActive = status === ComponentStatus.Active;
+  const { error, taskInfos, message, completed, completionMessage } = state;
+  const hasProcessed = taskInfos.length > 0;
+
+  // Derive loading state from current conditions
+  const isLoading =
+    isActive && taskInfos.length === 0 && !error && !hasProcessed;
+  const isExecuting = completed < taskInfos.length;
+
+  // Return null only when loading completes with no commands
+  if (!isActive && taskInfos.length === 0 && !error) {
+    return null;
+  }
+
+  // Show completed steps when not active
+  const showTasks = !isActive && taskInfos.length > 0;
+
+  return (
+    <Box alignSelf="flex-start" flexDirection="column">
+      {isLoading && (
+        <Box marginLeft={1}>
+          <Text color={getTextColor(isActive)}>Preparing commands. </Text>
+          <Spinner />
+        </Box>
+      )}
+
+      {(isExecuting || showTasks) && (
+        <Box flexDirection="column" marginLeft={1}>
+          {message && (
+            <Box marginBottom={1} gap={1}>
+              <Text color={getTextColor(isActive)}>{message}</Text>
+              {isExecuting && <Spinner />}
+            </Box>
+          )}
+
+          {taskInfos.map((taskInfo, index) => (
+            <Box
+              key={index}
+              marginBottom={index < taskInfos.length - 1 ? 1 : 0}
+            >
+              <Task
+                label={taskInfo.label}
+                command={taskInfo.command}
+                isActive={isActive && index === completed}
+                index={index}
+                initialStatus={taskInfo.status}
+                initialElapsed={taskInfo.elapsed}
+                onComplete={onTaskComplete}
+                onAbort={onTaskAbort}
+                onError={onTaskError}
+              />
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      {completionMessage && !isActive && (
+        <Box marginTop={1} marginLeft={1}>
+          <Text color={getTextColor(false)}>{completionMessage}</Text>
+        </Box>
+      )}
+
+      {error && (
+        <Box marginTop={1}>
+          <Text color={Colors.Status.Error}>Error: {error}</Text>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+/**
+ * Execute controller: Runs tasks sequentially
+ */
+
+export function Execute({
+  tasks,
+  status,
   service,
-  stateHandlers,
+  requestHandlers,
   lifecycleHandlers,
-  errorHandlers,
   workflowHandlers,
 }: ExecuteProps) {
   const isActive = status === ComponentStatus.Active;
   const [localState, dispatch] = useReducer(executeReducer, {
-    error: state?.error ?? null,
-    taskInfos: state?.taskInfos ?? [],
-    message: state?.message ?? '',
-    completed: state?.completed ?? 0,
+    error: null,
+    taskInfos: [],
+    message: '',
+    completed: 0,
     hasProcessed: false,
-    taskExecutionTimes: state?.taskExecutionTimes ?? [],
-    completionMessage: state?.completionMessage ?? null,
-    summary: state?.summary ?? '',
+    taskExecutionTimes: [],
+    completionMessage: null,
+    summary: '',
   });
 
   const {
@@ -287,7 +380,8 @@ export function Execute({
       }
     });
 
-    stateHandlers?.updateState({
+    // Expose final state
+    const finalState: ExecuteState = {
       message,
       summary,
       taskInfos: updatedTaskInfos,
@@ -295,16 +389,17 @@ export function Execute({
       taskExecutionTimes,
       completionMessage: null,
       error: null,
-    });
-    errorHandlers?.onAborted('execution');
+    };
+    requestHandlers.onCompleted(finalState);
+
+    requestHandlers.onAborted('execution');
   }, [
     message,
     summary,
     taskInfos,
     completed,
     taskExecutionTimes,
-    stateHandlers,
-    errorHandlers,
+    requestHandlers,
   ]);
 
   useInput(
@@ -351,7 +446,7 @@ export function Execute({
 
         // Add debug components to timeline if present
         if (result.debug?.length) {
-          workflowHandlers?.addToTimeline(...result.debug);
+          workflowHandlers.addToTimeline(...result.debug);
         }
 
         if (!result.commands || result.commands.length === 0) {
@@ -359,7 +454,7 @@ export function Execute({
             type: 'PROCESSING_COMPLETE',
             payload: { message: result.message },
           });
-          stateHandlers?.updateState({
+          const finalState: ExecuteState = {
             message: result.message,
             summary: '',
             taskInfos: [],
@@ -367,8 +462,9 @@ export function Execute({
             taskExecutionTimes: [],
             completionMessage: null,
             error: null,
-          });
-          lifecycleHandlers?.completeActive();
+          };
+          requestHandlers.onCompleted(finalState);
+          lifecycleHandlers.completeActive();
           return;
         }
 
@@ -397,7 +493,7 @@ export function Execute({
         });
 
         // Update state after AI processing
-        stateHandlers?.updateState({
+        const finalState: ExecuteState = {
           message: newMessage,
           summary: newSummary,
           taskInfos: infos,
@@ -405,7 +501,8 @@ export function Execute({
           taskExecutionTimes: [],
           completionMessage: null,
           error: null,
-        });
+        };
+        requestHandlers.onCompleted(finalState);
       } catch (err) {
         await ensureMinimumTime(startTime, MINIMUM_PROCESSING_TIME);
 
@@ -415,7 +512,7 @@ export function Execute({
             type: 'PROCESSING_ERROR',
             payload: { error: errorMessage },
           });
-          stateHandlers?.updateState({
+          const finalState: ExecuteState = {
             message: '',
             summary: '',
             taskInfos: [],
@@ -423,8 +520,9 @@ export function Execute({
             taskExecutionTimes: [],
             completionMessage: null,
             error: errorMessage,
-          });
-          errorHandlers?.onError(errorMessage);
+          };
+          requestHandlers.onCompleted(finalState);
+          requestHandlers.onError(errorMessage);
         }
       }
     }
@@ -438,10 +536,10 @@ export function Execute({
     tasks,
     isActive,
     service,
-    stateHandlers,
+    requestHandlers,
     lifecycleHandlers,
     workflowHandlers,
-    errorHandlers,
+
     taskInfos.length,
     hasProcessed,
   ]);
@@ -460,7 +558,7 @@ export function Execute({
             : task
         );
 
-        stateHandlers?.updateState({
+        const finalState: ExecuteState = {
           message,
           summary,
           taskInfos: updatedTaskInfos,
@@ -468,7 +566,8 @@ export function Execute({
           taskExecutionTimes: updatedTimes,
           completionMessage: null,
           error: null,
-        });
+        };
+        requestHandlers.onCompleted(finalState);
       } else {
         // All tasks complete
         const summaryText = summary.trim() || 'Execution completed';
@@ -486,7 +585,7 @@ export function Execute({
         const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
         const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
 
-        stateHandlers?.updateState({
+        const finalState: ExecuteState = {
           message,
           summary,
           taskInfos: updatedTaskInfos,
@@ -494,8 +593,9 @@ export function Execute({
           taskExecutionTimes: updatedTimes,
           completionMessage: completion,
           error: null,
-        });
-        lifecycleHandlers?.completeActive();
+        };
+        requestHandlers.onCompleted(finalState);
+        lifecycleHandlers.completeActive();
       }
     },
     [
@@ -504,7 +604,7 @@ export function Execute({
       lifecycleHandlers,
       taskExecutionTimes,
       summary,
-      stateHandlers,
+      requestHandlers,
     ]
   );
 
@@ -522,7 +622,7 @@ export function Execute({
       if (isCritical) {
         // Critical failure - stop execution
         dispatch({ type: 'TASK_ERROR_CRITICAL', payload: { index, error } });
-        stateHandlers?.updateState({
+        const finalState: ExecuteState = {
           message,
           summary,
           taskInfos: updatedTaskInfos,
@@ -530,8 +630,9 @@ export function Execute({
           taskExecutionTimes,
           completionMessage: null,
           error,
-        });
-        errorHandlers?.onError(error);
+        };
+        requestHandlers.onCompleted(finalState);
+        requestHandlers.onError(error);
       } else {
         // Non-critical failure - continue to next task
         const updatedTimes = [...taskExecutionTimes, elapsed];
@@ -541,7 +642,7 @@ export function Execute({
             type: 'TASK_ERROR_CONTINUE',
             payload: { index, elapsed },
           });
-          stateHandlers?.updateState({
+          const finalState: ExecuteState = {
             message,
             summary,
             taskInfos: updatedTaskInfos,
@@ -549,7 +650,8 @@ export function Execute({
             taskExecutionTimes: updatedTimes,
             completionMessage: null,
             error: null,
-          });
+          };
+          requestHandlers.onCompleted(finalState);
         } else {
           // Last task, complete execution
           const summaryText = summary.trim() || 'Execution completed';
@@ -564,7 +666,7 @@ export function Execute({
           );
           const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
 
-          stateHandlers?.updateState({
+          const finalState: ExecuteState = {
             message,
             summary,
             taskInfos: updatedTaskInfos,
@@ -572,17 +674,18 @@ export function Execute({
             taskExecutionTimes: updatedTimes,
             completionMessage: completion,
             error: null,
-          });
-          lifecycleHandlers?.completeActive();
+          };
+          requestHandlers.onCompleted(finalState);
+          lifecycleHandlers.completeActive();
         }
       }
     },
     [
       taskInfos,
       message,
-      stateHandlers,
+      requestHandlers,
       lifecycleHandlers,
-      errorHandlers,
+
       taskExecutionTimes,
       summary,
     ]
@@ -592,7 +695,7 @@ export function Execute({
     (_index: number) => {
       // Task was aborted - execution already stopped by Escape handler
       // Just update state, don't call onAborted (already called at Execute level)
-      stateHandlers?.updateState({
+      const finalState: ExecuteState = {
         message,
         summary,
         taskInfos,
@@ -600,69 +703,38 @@ export function Execute({
         taskExecutionTimes,
         completionMessage: null,
         error: null,
-      });
+      };
+      requestHandlers.onCompleted(finalState);
     },
-    [taskInfos, message, summary, completed, taskExecutionTimes, stateHandlers]
+    [
+      taskInfos,
+      message,
+      summary,
+      completed,
+      taskExecutionTimes,
+      requestHandlers,
+    ]
   );
 
-  // Return null only when loading completes with no commands
-  if (!isActive && taskInfos.length === 0 && !error) {
-    return null;
-  }
-
-  // Show completed steps when not active
-  const showTasks = !isActive && taskInfos.length > 0;
+  // Controller always renders View with current state
+  const viewState: ExecuteState = {
+    error,
+    taskInfos,
+    message,
+    summary,
+    completed,
+    taskExecutionTimes,
+    completionMessage,
+  };
 
   return (
-    <Box alignSelf="flex-start" flexDirection="column">
-      {isLoading && (
-        <Box marginLeft={1}>
-          <Text color={getTextColor(isActive)}>Preparing commands. </Text>
-          <Spinner />
-        </Box>
-      )}
-
-      {(isExecuting || showTasks) && (
-        <Box flexDirection="column" marginLeft={1}>
-          {message && (
-            <Box marginBottom={1} gap={1}>
-              <Text color={getTextColor(isActive)}>{message}</Text>
-              {isExecuting && <Spinner />}
-            </Box>
-          )}
-
-          {taskInfos.map((taskInfo, index) => (
-            <Box
-              key={index}
-              marginBottom={index < taskInfos.length - 1 ? 1 : 0}
-            >
-              <Task
-                label={taskInfo.label}
-                command={taskInfo.command}
-                isActive={isActive && index === completed}
-                index={index}
-                initialStatus={taskInfo.status}
-                initialElapsed={taskInfo.elapsed}
-                onComplete={handleTaskComplete}
-                onAbort={handleTaskAbort}
-                onError={handleTaskError}
-              />
-            </Box>
-          ))}
-        </Box>
-      )}
-
-      {completionMessage && !isActive && (
-        <Box marginTop={1} marginLeft={1}>
-          <Text color={getTextColor(false)}>{completionMessage}</Text>
-        </Box>
-      )}
-
-      {error && (
-        <Box marginTop={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
-        </Box>
-      )}
-    </Box>
+    <ExecuteView
+      tasks={tasks}
+      state={viewState}
+      status={status}
+      onTaskComplete={handleTaskComplete}
+      onTaskAbort={handleTaskAbort}
+      onTaskError={handleTaskError}
+    />
   );
 }

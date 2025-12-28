@@ -10,11 +10,11 @@ import { formatSkillsForPrompt } from '../../src/services/skills.js';
 import { handleRefinement } from '../../src/services/refinement.js';
 import { TaskType } from '../../src/types/types.js';
 import type { ScheduledTask, Task } from '../../src/types/types.js';
+import type { BaseState } from '../../src/types/components.js';
 import type {
-  QueueHandlers,
   LifecycleHandlers,
+  RequestHandlers,
   WorkflowHandlers,
-  ErrorHandlers,
 } from '../../src/types/handlers.js';
 
 import {
@@ -143,19 +143,18 @@ describe('Define task flow', () => {
       ];
 
       // Mock handlers
-      const queueHandlers: QueueHandlers = {
-        addToQueue: vi.fn(),
-      };
       const lifecycleHandlers: LifecycleHandlers = {
         completeActive: vi.fn(),
+        completeActiveAndPending: vi.fn(),
       };
       const workflowHandlers: WorkflowHandlers = {
-        completeActiveAndPending: vi.fn(),
+        addToQueue: vi.fn(),
         addToTimeline: vi.fn(),
       };
-      const errorHandlers: ErrorHandlers = {
+      const requestHandlers: RequestHandlers<BaseState> = {
         onAborted: vi.fn(),
         onError: vi.fn(),
+        onCompleted: vi.fn(),
       };
 
       const config = loadConfig();
@@ -169,19 +168,19 @@ describe('Define task flow', () => {
         selectedTasks,
         service,
         'build',
-        queueHandlers,
         lifecycleHandlers,
         workflowHandlers,
-        errorHandlers
+        requestHandlers
       );
 
       // Verify refinement was called correctly
-      expect(queueHandlers.addToQueue).toHaveBeenCalled();
+      expect(workflowHandlers.addToQueue).toHaveBeenCalled();
       expect(lifecycleHandlers.completeActive).toHaveBeenCalled();
 
       // Verify schedule component was created
-      const queueCalls = (queueHandlers.addToQueue as ReturnType<typeof vi.fn>)
-        .mock.calls;
+      const queueCalls = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls;
 
       const hasRefinement = queueCalls.some(
         (call) => call[0]?.name === 'refinement'

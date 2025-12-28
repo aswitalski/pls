@@ -16,12 +16,6 @@ import { DebugLevel } from '../../src/services/configuration.js';
 
 import { Workflow } from '../../src/ui/Workflow.js';
 
-import {
-  createErrorHandlers,
-  createLifecycleHandlers,
-  createStateHandlers,
-} from '../test-utils.js';
-
 // Mock exitApp to prevent process.exit
 vi.mock('../../src/services/process.js', () => ({
   exitApp: vi.fn(),
@@ -66,7 +60,7 @@ describe('Workflow component lifecycle', () => {
       const confirmComponent: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: {},
+        state: { confirmed: false, selectedIndex: 0 },
         props: {
           message: 'Proceed?',
           onConfirmed,
@@ -125,7 +119,7 @@ describe('Workflow component lifecycle', () => {
       const confirm: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: {},
+        state: { confirmed: false, selectedIndex: 0 },
         props: {
           message: 'Continue?',
           onConfirmed: vi.fn(),
@@ -279,7 +273,7 @@ describe('Workflow component lifecycle', () => {
       const confirm: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: {},
+        state: { confirmed: false, selectedIndex: 0 },
         props: {
           message: 'Active item?',
           onConfirmed: vi.fn(),
@@ -327,9 +321,6 @@ describe('Workflow component lifecycle', () => {
             },
           ],
           onSelectionConfirmed: vi.fn(),
-          stateHandlers: createStateHandlers(),
-          lifecycleHandlers: createLifecycleHandlers(),
-          errorHandlers: createErrorHandlers(),
         },
         status: ComponentStatus.Awaiting,
       };
@@ -365,9 +356,6 @@ describe('Workflow component lifecycle', () => {
             },
           ],
           onSelectionConfirmed: vi.fn(),
-          stateHandlers: createStateHandlers(),
-          lifecycleHandlers: createLifecycleHandlers(),
-          errorHandlers: createErrorHandlers(),
         },
         status: ComponentStatus.Awaiting,
       };
@@ -424,9 +412,6 @@ describe('Workflow component lifecycle', () => {
             },
           ],
           onSelectionConfirmed: vi.fn(),
-          stateHandlers: createStateHandlers(),
-          lifecycleHandlers: createLifecycleHandlers(),
-          errorHandlers: createErrorHandlers(),
         },
         status: ComponentStatus.Awaiting,
       };
@@ -468,7 +453,7 @@ describe('Workflow component lifecycle', () => {
       const confirm: ComponentDefinition = {
         id: 'confirm-1',
         name: ComponentName.Confirm,
-        state: {},
+        state: { confirmed: false, selectedIndex: 0 },
         props: {
           message: 'Test?',
           onConfirmed: vi.fn(),
@@ -500,12 +485,12 @@ describe('Workflow component lifecycle', () => {
       expect(lastFrame()).toBeDefined();
     });
 
-    it('handles components without initial status', async () => {
+    it('handles simple message components', async () => {
       const message: ComponentDefinition = {
         id: 'msg-1',
         name: ComponentName.Message,
-        props: { text: 'No status' },
-        // No status field
+        status: ComponentStatus.Awaiting,
+        props: { text: 'Test message' },
       };
 
       const { lastFrame } = render(
@@ -515,7 +500,7 @@ describe('Workflow component lifecycle', () => {
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
       // Should still render correctly
-      expect(lastFrame()).toContain('No status');
+      expect(lastFrame()).toContain('Test message');
     });
   });
 

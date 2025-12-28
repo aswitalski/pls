@@ -5,13 +5,14 @@ import {
   BaseState,
   ComponentDefinition,
   ComponentStatus,
-  StatefulComponentDefinition,
+  ManagedComponentDefinition,
 } from '../types/components.js';
+import { LifecycleHandlers, WorkflowHandlers } from '../types/handlers.js';
 import { ComponentName, FeedbackType } from '../types/types.js';
 
 import {
   createFeedback,
-  isStateless,
+  isSimple,
   markAsDone,
 } from '../services/components.js';
 import { DebugLevel } from '../services/configuration.js';
@@ -19,7 +20,11 @@ import { getWarnings } from '../services/logger.js';
 import { getCancellationMessage } from '../services/messages.js';
 import { exitApp } from '../services/process.js';
 
-import { Component } from './Component.js';
+import {
+  SimpleComponent,
+  ControllerComponent,
+  TimelineComponent,
+} from './Component.js';
 
 interface WorkflowProps {
   initialQueue: ComponentDefinition[];
@@ -59,53 +64,17 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
     });
   }, []);
 
-  // Focused handler instances - segregated by responsibility
-  const stateHandlers = useMemo(
+  // Request handlers - manages errors, aborts, and completions
+  const requestHandlers = useMemo(
     () => ({
-      updateState: <T extends BaseState>(newState: Partial<T>) => {
-        setCurrent((curr) => {
-          const { active, pending } = curr;
-          if (!active || !('state' in active)) return curr;
-
-          const stateful = active as StatefulComponentDefinition;
-          const updated = {
-            ...stateful,
-            state: {
-              ...stateful.state,
-              ...newState,
-            },
-          } as ComponentDefinition;
-
-          return { active: updated, pending };
-        });
+      onError: (error: string) => {
+        moveActiveToTimeline();
+        // Add feedback to queue
+        setQueue((queue) => [
+          ...queue,
+          createFeedback(FeedbackType.Failed, error),
+        ]);
       },
-    }),
-    []
-  );
-
-  const lifecycleHandlers = useMemo(
-    () => ({
-      completeActive: (...items: ComponentDefinition[]) => {
-        moveActiveToPending();
-        if (items.length > 0) {
-          setQueue((queue) => [...items, ...queue]);
-        }
-      },
-    }),
-    [moveActiveToPending]
-  );
-
-  const queueHandlers = useMemo(
-    () => ({
-      addToQueue: (...items: ComponentDefinition[]) => {
-        setQueue((queue) => [...queue, ...items]);
-      },
-    }),
-    []
-  );
-
-  const errorHandlers = useMemo(
-    () => ({
       onAborted: (operation: string) => {
         moveActiveToTimeline();
         // Add feedback to queue
@@ -115,21 +84,35 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
           createFeedback(FeedbackType.Aborted, message),
         ]);
       },
-      onError: (error: string) => {
-        moveActiveToTimeline();
-        // Add feedback to queue
-        setQueue((queue) => [
-          ...queue,
-          createFeedback(FeedbackType.Failed, error),
-        ]);
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+      onCompleted: <T extends BaseState>(finalState: T) => {
+        setCurrent((curr) => {
+          const { active, pending } = curr;
+          if (!active || !('state' in active)) return curr;
+
+          // Save final state to definition
+          const managed = active as ManagedComponentDefinition;
+          const updated = {
+            ...managed,
+            state: finalState,
+          } as ComponentDefinition;
+
+          return { active: updated, pending };
+        });
       },
     }),
     [moveActiveToTimeline]
   );
 
-  // Workflow handlers - used for timeline/queue management
-  const workflowHandlers = useMemo(
+  // Lifecycle handlers - for components with active/pending states
+  const lifecycleHandlers = useMemo<LifecycleHandlers<ComponentDefinition>>(
     () => ({
+      completeActive: (...items: ComponentDefinition[]) => {
+        moveActiveToPending();
+        if (items.length > 0) {
+          setQueue((queue) => [...items, ...queue]);
+        }
+      },
       completeActiveAndPending: (...items: ComponentDefinition[]) => {
         setCurrent((curr) => {
           const { active, pending } = curr;
@@ -150,6 +133,16 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
         if (items.length > 0) {
           setQueue((queue) => [...items, ...queue]);
         }
+      },
+    }),
+    [moveActiveToPending]
+  );
+
+  // Workflow handlers - manages queue and timeline
+  const workflowHandlers = useMemo<WorkflowHandlers<ComponentDefinition>>(
+    () => ({
+      addToQueue: (...items: ComponentDefinition[]) => {
+        setQueue((queue) => [...queue, ...items]);
       },
       addToTimeline: (...items: ComponentDefinition[]) => {
         setTimeline((prev) => [...prev, ...items]);
@@ -194,13 +187,13 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
     const { active, pending } = current;
     if (!active) return;
 
-    if (isStateless(active)) {
-      // Stateless components move directly to timeline
+    if (isSimple(active)) {
+      // Simple components move directly to timeline
       const doneComponent = markAsDone(active);
       setTimeline((prev) => [...prev, doneComponent]);
       setCurrent({ active: null, pending });
     }
-    // Stateful components stay in active until handlers move them to pending
+    // Managed components stay in active until handlers move them to pending
   }, [current]);
 
   // Check for accumulated warnings and add them to timeline
@@ -245,103 +238,49 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
     exitApp(isFailed ? 1 : 0);
   }, [current, queue, timeline]);
 
-  // Render active and pending components
-  const activeComponent = useMemo(() => {
-    const { active } = current;
-    if (!active) return null;
+  // Render component with handlers (used for both active and pending)
+  const renderComponent = useCallback(
+    (def: ComponentDefinition | null, status: ComponentStatus) => {
+      if (!def) return null;
 
-    // For stateless components, render as-is
-    if (isStateless(active)) {
-      return <Component key={active.id} def={active} debug={debug} />;
-    }
+      // For simple components, render as-is
+      if (isSimple(def)) {
+        return <SimpleComponent key={def.id} def={def} />;
+      }
 
-    // For stateful components, inject focused handlers
-    const statefulActive = active as StatefulComponentDefinition;
-    const wrappedDef = {
-      ...statefulActive,
-      props: {
-        ...statefulActive.props,
-        stateHandlers,
-        lifecycleHandlers,
-        queueHandlers,
-        errorHandlers,
-        workflowHandlers,
-      },
-    } as unknown as ComponentDefinition;
+      // For managed components, inject handlers via ControllerComponent
+      return (
+        <ControllerComponent
+          key={def.id}
+          def={{ ...def, status } as ManagedComponentDefinition}
+          debug={debug}
+          requestHandlers={requestHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          workflowHandlers={workflowHandlers}
+        />
+      );
+    },
+    [debug, requestHandlers, lifecycleHandlers, workflowHandlers]
+  );
 
-    return <Component key={active.id} def={wrappedDef} debug={debug} />;
-  }, [
-    current,
-    debug,
-    stateHandlers,
-    lifecycleHandlers,
-    queueHandlers,
-    errorHandlers,
-    workflowHandlers,
-  ]);
-
-  const pendingComponent = useMemo(() => {
-    const { pending } = current;
-    if (!pending) return null;
-
-    // For stateless components, render as-is
-    if (isStateless(pending)) {
-      return <Component key={pending.id} def={pending} debug={debug} />;
-    }
-
-    // For stateful components, inject focused handlers (they may have useEffect hooks)
-    const statefulPending = pending as StatefulComponentDefinition;
-    const wrappedDef = {
-      ...statefulPending,
-      props: {
-        ...statefulPending.props,
-        stateHandlers,
-        lifecycleHandlers,
-        queueHandlers,
-        errorHandlers,
-        workflowHandlers,
-      },
-    } as unknown as ComponentDefinition;
-
-    return <Component key={pending.id} def={wrappedDef} debug={debug} />;
-  }, [
-    current,
-    debug,
-    stateHandlers,
-    lifecycleHandlers,
-    queueHandlers,
-    errorHandlers,
-    workflowHandlers,
-  ]);
+  const activeComponent = useMemo(
+    () => renderComponent(current.active, ComponentStatus.Active),
+    [current.active, renderComponent]
+  );
+  const pendingComponent = useMemo(
+    () => renderComponent(current.pending, ComponentStatus.Pending),
+    [current.pending, renderComponent]
+  );
 
   return (
     <Box flexDirection="column">
       {/* Timeline - finished, never re-renders */}
       <Static key="timeline" items={timeline}>
-        {(item) => {
-          // For stateful timeline components, inject handlers (useEffect hooks may still run)
-          let def = item;
-          if (!isStateless(item)) {
-            const statefulItem = item as StatefulComponentDefinition;
-            def = {
-              ...statefulItem,
-              props: {
-                ...statefulItem.props,
-                stateHandlers,
-                lifecycleHandlers,
-                queueHandlers,
-                errorHandlers,
-                workflowHandlers,
-              },
-            } as unknown as ComponentDefinition;
-          }
-
-          return (
-            <Box key={item.id} marginTop={1}>
-              <Component def={def} debug={DebugLevel.None} />
-            </Box>
-          );
-        }}
+        {(item) => (
+          <Box key={item.id} marginTop={1}>
+            <TimelineComponent def={item} />
+          </Box>
+        )}
       </Static>
 
       {/* Current - pending and active together */}

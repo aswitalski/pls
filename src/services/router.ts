@@ -1,6 +1,7 @@
+import { BaseState, ComponentDefinition } from '../types/components.js';
 import {
-  ErrorHandlers,
-  QueueHandlers,
+  LifecycleHandlers,
+  RequestHandlers,
   WorkflowHandlers,
 } from '../types/handlers.js';
 import { asScheduledTasks } from '../types/guards.js';
@@ -49,14 +50,14 @@ export function getOperationName(tasks: Task[]): string {
  * Route tasks to appropriate components with Confirm flow
  * Handles the complete flow: Plan → Confirm → Execute/Answer/Introspect
  */
-export function routeTasksWithConfirm(
+export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
   tasks: Task[],
   message: string,
   service: LLMService,
   userRequest: string,
-  queueHandlers: QueueHandlers,
-  workflowHandlers: WorkflowHandlers,
-  errorHandlers: ErrorHandlers,
+  lifecycleHandlers: LifecycleHandlers<ComponentDefinition>,
+  workflowHandlers: WorkflowHandlers<ComponentDefinition>,
+  requestHandlers: RequestHandlers<TState>,
   hasDefineTask: boolean = false
 ): void {
   if (tasks.length === 0) return;
@@ -69,7 +70,7 @@ export function routeTasksWithConfirm(
   // Check if no valid tasks remain after filtering
   if (validTasks.length === 0) {
     const message = createMessage(getUnknownRequestMessage());
-    queueHandlers.addToQueue(message);
+    workflowHandlers.addToQueue(message);
     return;
   }
 
@@ -79,7 +80,7 @@ export function routeTasksWithConfirm(
     // Has DEFINE tasks - add Schedule to queue for user selection
     // Refinement flow will call this function again with refined tasks
     const scheduleDefinition = createScheduleDefinition(message, validTasks);
-    queueHandlers.addToQueue(scheduleDefinition);
+    workflowHandlers.addToQueue(scheduleDefinition);
   } else {
     // No DEFINE tasks - Schedule auto-completes and adds Confirm to queue
     // When Schedule activates, Command moves to timeline
@@ -93,29 +94,29 @@ export function routeTasksWithConfirm(
         const confirmDefinition = createConfirmDefinition(
           () => {
             // User confirmed - complete both Confirm and Schedule, then route to appropriate component
-            workflowHandlers.completeActiveAndPending();
+            lifecycleHandlers.completeActiveAndPending();
             executeTasksAfterConfirm(
               validTasks,
               service,
               userRequest,
-              queueHandlers,
-              errorHandlers
+              workflowHandlers,
+              requestHandlers
             );
           },
           () => {
             // User cancelled - complete both Confirm and Schedule, then show cancellation
-            workflowHandlers.completeActiveAndPending();
+            lifecycleHandlers.completeActiveAndPending();
             const message = getCancellationMessage(operation);
-            queueHandlers.addToQueue(
+            workflowHandlers.addToQueue(
               createFeedback(FeedbackType.Aborted, message)
             );
           }
         );
-        queueHandlers.addToQueue(confirmDefinition);
+        workflowHandlers.addToQueue(confirmDefinition);
       }
     );
 
-    queueHandlers.addToQueue(scheduleDefinition);
+    workflowHandlers.addToQueue(scheduleDefinition);
   }
 }
 
@@ -151,18 +152,18 @@ function validateTaskTypes(tasks: Task[]): void {
  * Validates task types and routes each type appropriately
  * Supports mixed types at top level with Groups
  */
-function executeTasksAfterConfirm(
+function executeTasksAfterConfirm<TState extends BaseState = BaseState>(
   tasks: Task[],
   service: LLMService,
   userRequest: string,
-  queueHandlers: QueueHandlers,
-  errorHandlers: ErrorHandlers
+  workflowHandlers: WorkflowHandlers<ComponentDefinition>,
+  requestHandlers: RequestHandlers<TState>
 ): void {
   // Validate task types (Groups must have uniform subtasks)
   try {
     validateTaskTypes(tasks);
   } catch (error) {
-    errorHandlers.onError(
+    requestHandlers.onError(
       error instanceof Error ? error.message : String(error)
     );
     return;
@@ -200,8 +201,8 @@ function executeTasksAfterConfirm(
         typeTasks,
         service,
         userRequest,
-        queueHandlers,
-        errorHandlers
+        workflowHandlers,
+        requestHandlers
       );
     }
 
@@ -223,8 +224,8 @@ function executeTasksAfterConfirm(
           subtasks,
           service,
           userRequest,
-          queueHandlers,
-          errorHandlers
+          workflowHandlers,
+          requestHandlers
         );
       }
     } else {
@@ -241,21 +242,21 @@ function executeTasksAfterConfirm(
  * Route tasks by type to appropriate components
  * Extracted to allow reuse for both Groups and standalone tasks
  */
-function routeTasksByType(
+function routeTasksByType<TState extends BaseState = BaseState>(
   taskType: TaskType,
   typeTasks: Task[],
   service: LLMService,
   userRequest: string,
-  queueHandlers: QueueHandlers,
-  errorHandlers: ErrorHandlers
+  workflowHandlers: WorkflowHandlers<ComponentDefinition>,
+  requestHandlers: RequestHandlers<TState>
 ): void {
   if (taskType === TaskType.Answer) {
     // Create separate Answer component for each question
     for (const task of typeTasks) {
-      queueHandlers.addToQueue(createAnswerDefinition(task.action, service));
+      workflowHandlers.addToQueue(createAnswerDefinition(task.action, service));
     }
   } else if (taskType === TaskType.Introspect) {
-    queueHandlers.addToQueue(createIntrospectDefinition(typeTasks, service));
+    workflowHandlers.addToQueue(createIntrospectDefinition(typeTasks, service));
   } else if (taskType === TaskType.Config) {
     // Route to Config flow - extract keys and descriptions from task params
     const configKeys = typeTasks
@@ -276,7 +277,7 @@ function routeTasksByType(
       saveConfigLabels(labels);
     }
 
-    queueHandlers.addToQueue(
+    workflowHandlers.addToQueue(
       createConfigDefinitionWithKeys(
         configKeys,
         (config: Record<string, string>) => {
@@ -300,7 +301,7 @@ function routeTasksByType(
           }
         },
         (operation: string) => {
-          errorHandlers.onAborted(operation);
+          requestHandlers.onAborted(operation);
         }
       )
     );
@@ -318,37 +319,39 @@ function routeTasksByType(
           return `Invalid skill definition "${error.skill}":\n\n${issuesList}`;
         });
 
-        queueHandlers.addToQueue(
+        workflowHandlers.addToQueue(
           createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
         );
       } else if (validation.missingConfig.length > 0) {
-        queueHandlers.addToQueue(
+        workflowHandlers.addToQueue(
           createValidateDefinition(
             validation.missingConfig,
             userRequest,
             service,
             (error: string) => {
-              errorHandlers.onError(error);
+              requestHandlers.onError(error);
             },
             () => {
-              queueHandlers.addToQueue(
+              workflowHandlers.addToQueue(
                 createExecuteDefinition(typeTasks, service)
               );
             },
             (operation: string) => {
-              errorHandlers.onAborted(operation);
+              requestHandlers.onAborted(operation);
             }
           )
         );
       } else {
-        queueHandlers.addToQueue(createExecuteDefinition(typeTasks, service));
+        workflowHandlers.addToQueue(
+          createExecuteDefinition(typeTasks, service)
+        );
       }
     } catch (error) {
       // Handle skill reference errors (e.g., unknown skills)
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       const message = createMessage(errorMessage);
-      queueHandlers.addToQueue(message);
+      workflowHandlers.addToQueue(message);
     }
   }
 }
