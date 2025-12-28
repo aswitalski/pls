@@ -603,6 +603,329 @@ describe('Task Router', () => {
       }
     });
 
+    it('collects all missing config from multiple tasks in a single Validate component', () => {
+      const tasks = [
+        {
+          action: 'Build GX',
+          type: TaskType.Execute,
+          config: ['opera.gx.path'],
+        },
+        {
+          action: 'Build Air',
+          type: TaskType.Execute,
+          config: ['opera.air.path'],
+        },
+      ];
+      const service = {} as LLMService;
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Build browsers',
+        service,
+        'build gx and air',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Get Schedule from first call
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      expect(scheduleDef.name).toBe(ComponentName.Schedule);
+
+      // Simulate Schedule completing
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second call
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
+
+      // Simulate Confirm completing
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Should add Validate to queue with ALL missing config from both tasks
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      const validateDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
+      expect(validateDef.name).toBe(ComponentName.Validate);
+      if (validateDef.name === ComponentName.Validate) {
+        expect(validateDef.props.missingConfig).toHaveLength(2);
+        expect(validateDef.props.missingConfig).toEqual(
+          expect.arrayContaining([
+            { path: 'opera.gx.path', type: 'string' },
+            { path: 'opera.air.path', type: 'string' },
+          ])
+        );
+      }
+    });
+
+    it('collects all missing config from multiple Groups in a single Validate component', () => {
+      const tasks = [
+        {
+          action: 'Build GX browser',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Navigate to GX',
+              type: TaskType.Execute,
+              config: ['opera.gx.path'],
+            },
+            {
+              action: 'Compile GX',
+              type: TaskType.Execute,
+              config: [],
+            },
+          ],
+        },
+        {
+          action: 'Build Air browser',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Navigate to Air',
+              type: TaskType.Execute,
+              config: ['opera.air.path'],
+            },
+            {
+              action: 'Compile Air',
+              type: TaskType.Execute,
+              config: [],
+            },
+          ],
+        },
+      ];
+      const service = {} as LLMService;
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Build browsers',
+        service,
+        'build gx and air',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Get Schedule from first call
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      expect(scheduleDef.name).toBe(ComponentName.Schedule);
+
+      // Simulate Schedule completing
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second call
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
+
+      // Simulate Confirm completing
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Should add Validate to queue with ALL missing config from both groups
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      const validateDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
+      expect(validateDef.name).toBe(ComponentName.Validate);
+      if (validateDef.name === ComponentName.Validate) {
+        expect(validateDef.props.missingConfig).toHaveLength(2);
+        expect(validateDef.props.missingConfig).toEqual(
+          expect.arrayContaining([
+            { path: 'opera.gx.path', type: 'string' },
+            { path: 'opera.air.path', type: 'string' },
+          ])
+        );
+      }
+    });
+
+    it('collects all missing config from mixed standalone and Group tasks', () => {
+      const tasks = [
+        {
+          action: 'Setup environment',
+          type: TaskType.Execute,
+          config: ['env.path'],
+        },
+        {
+          action: 'Build GX browser',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Navigate to GX',
+              type: TaskType.Execute,
+              config: ['opera.gx.path'],
+            },
+            {
+              action: 'Compile GX',
+              type: TaskType.Execute,
+              config: [],
+            },
+          ],
+        },
+        {
+          action: 'Deploy',
+          type: TaskType.Execute,
+          config: ['deploy.server'],
+        },
+      ];
+      const service = {} as LLMService;
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Setup, build and deploy',
+        service,
+        'setup build and deploy',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Get Schedule from first call
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      expect(scheduleDef.name).toBe(ComponentName.Schedule);
+
+      // Simulate Schedule completing
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second call
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
+
+      // Simulate Confirm completing
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Should add Validate to queue with ALL missing config from all tasks
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+      const validateDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
+      expect(validateDef.name).toBe(ComponentName.Validate);
+      if (validateDef.name === ComponentName.Validate) {
+        expect(validateDef.props.missingConfig).toHaveLength(3);
+        expect(validateDef.props.missingConfig).toEqual(
+          expect.arrayContaining([
+            { path: 'env.path', type: 'string' },
+            { path: 'opera.gx.path', type: 'string' },
+            { path: 'deploy.server', type: 'string' },
+          ])
+        );
+      }
+    });
+
+    it('does not create duplicate Validate components for multiple groups', () => {
+      const tasks = [
+        {
+          action: 'Build GX',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Compile GX',
+              type: TaskType.Execute,
+              config: ['opera.gx.path'],
+            },
+          ],
+        },
+        {
+          action: 'Build Air',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Compile Air',
+              type: TaskType.Execute,
+              config: ['opera.air.path'],
+            },
+          ],
+        },
+      ];
+      const service = {} as LLMService;
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Build browsers',
+        service,
+        'build gx and air',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Get Schedule from first call
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      expect(scheduleDef.name).toBe(ComponentName.Schedule);
+
+      // Simulate Schedule completing
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second call
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
+
+      // Simulate Confirm completing
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Should create exactly 3 components: Schedule → Confirm → Validate
+      // NOT: Schedule → Confirm → Validate (for GX) → Validate (for Air)
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+
+      // Verify only one Validate component was created
+      const calls = (workflowHandlers.addToQueue as ReturnType<typeof vi.fn>)
+        .mock.calls;
+      const validateCalls = calls.filter(
+        (call) => call[0].name === ComponentName.Validate
+      );
+      expect(validateCalls).toHaveLength(1);
+    });
+
     it('completes both components and shows cancellation when user cancels confirmation', () => {
       const tasks = [
         { action: 'npm install', type: TaskType.Execute, config: [] },

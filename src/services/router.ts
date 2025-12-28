@@ -5,7 +5,7 @@ import {
   WorkflowHandlers,
 } from '../types/handlers.js';
 import { asScheduledTasks } from '../types/guards.js';
-import { FeedbackType, Task, TaskType } from '../types/types.js';
+import { FeedbackType, ScheduledTask, Task, TaskType } from '../types/types.js';
 
 import { saveConfig } from '../configuration/io.js';
 import { getConfigSchema } from '../configuration/schema.js';
@@ -169,6 +169,93 @@ function executeTasksAfterConfirm<TState extends BaseState = BaseState>(
 
   const scheduledTasks = asScheduledTasks(tasks);
 
+  // Collect ALL Execute tasks (standalone and from groups) for upfront validation
+  const allExecuteTasks: Task[] = [];
+  for (const task of scheduledTasks) {
+    if (task.type === TaskType.Execute) {
+      allExecuteTasks.push(task as Task);
+    } else if (task.type === TaskType.Group && task.subtasks) {
+      const subtasks = task.subtasks as Task[];
+      if (subtasks.length > 0 && subtasks[0].type === TaskType.Execute) {
+        allExecuteTasks.push(...subtasks);
+      }
+    }
+  }
+
+  // Validate ALL Execute tasks together to collect ALL missing config upfront
+  if (allExecuteTasks.length > 0) {
+    try {
+      const validation = validateExecuteTasks(allExecuteTasks);
+
+      if (validation.validationErrors.length > 0) {
+        // Show error feedback for invalid skills
+        const errorMessages = validation.validationErrors.map((error) => {
+          const issuesList = error.issues
+            .map((issue) => `  - ${issue}`)
+            .join('\n');
+          return `Invalid skill definition "${error.skill}":\n\n${issuesList}`;
+        });
+
+        workflowHandlers.addToQueue(
+          createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
+        );
+        return;
+      } else if (validation.missingConfig.length > 0) {
+        // Missing config detected - create ONE Validate component for ALL missing config
+        workflowHandlers.addToQueue(
+          createValidateDefinition(
+            validation.missingConfig,
+            userRequest,
+            service,
+            (error: string) => {
+              requestHandlers.onError(error);
+            },
+            () => {
+              // After config is complete, resume task routing
+              routeTasksAfterConfig(
+                scheduledTasks,
+                service,
+                userRequest,
+                workflowHandlers,
+                requestHandlers
+              );
+            },
+            (operation: string) => {
+              requestHandlers.onAborted(operation);
+            }
+          )
+        );
+        return;
+      }
+    } catch (error) {
+      requestHandlers.onError(
+        error instanceof Error ? error.message : String(error)
+      );
+      return;
+    }
+  }
+
+  // No missing config - proceed with normal routing
+  routeTasksAfterConfig(
+    scheduledTasks,
+    service,
+    userRequest,
+    workflowHandlers,
+    requestHandlers
+  );
+}
+
+/**
+ * Route tasks after config is complete (or when no config is needed)
+ * Processes tasks in order, grouping by type
+ */
+function routeTasksAfterConfig<TState extends BaseState = BaseState>(
+  scheduledTasks: ScheduledTask[],
+  service: LLMService,
+  userRequest: string,
+  workflowHandlers: WorkflowHandlers<ComponentDefinition>,
+  requestHandlers: RequestHandlers<TState>
+): void {
   // Process tasks in order, preserving Group boundaries
   // Track consecutive standalone tasks to group them by type
   let consecutiveStandaloneTasks: Task[] = [];
@@ -304,52 +391,7 @@ function routeTasksByType<TState extends BaseState = BaseState>(
       )
     );
   } else if (taskType === TaskType.Execute) {
-    // Execute tasks with validation
-    try {
-      const validation = validateExecuteTasks(typeTasks);
-
-      if (validation.validationErrors.length > 0) {
-        // Show error feedback for invalid skills
-        const errorMessages = validation.validationErrors.map((error) => {
-          const issuesList = error.issues
-            .map((issue) => `  - ${issue}`)
-            .join('\n');
-          return `Invalid skill definition "${error.skill}":\n\n${issuesList}`;
-        });
-
-        workflowHandlers.addToQueue(
-          createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
-        );
-      } else if (validation.missingConfig.length > 0) {
-        workflowHandlers.addToQueue(
-          createValidateDefinition(
-            validation.missingConfig,
-            userRequest,
-            service,
-            (error: string) => {
-              requestHandlers.onError(error);
-            },
-            () => {
-              workflowHandlers.addToQueue(
-                createExecuteDefinition(typeTasks, service)
-              );
-            },
-            (operation: string) => {
-              requestHandlers.onAborted(operation);
-            }
-          )
-        );
-      } else {
-        workflowHandlers.addToQueue(
-          createExecuteDefinition(typeTasks, service)
-        );
-      }
-    } catch (error) {
-      // Handle skill reference errors (e.g., unknown skills)
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      const message = createMessage(errorMessage);
-      workflowHandlers.addToQueue(message);
-    }
+    // Execute tasks (validation already happened upfront in executeTasksAfterConfirm)
+    workflowHandlers.addToQueue(createExecuteDefinition(typeTasks, service));
   }
 }
