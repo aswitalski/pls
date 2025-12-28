@@ -198,11 +198,11 @@ config:
       expect(error.name).toBe('ConfigError');
     });
 
-    it('creates error with origin', () => {
-      const origin = new Error('Original error');
-      const error = new ConfigError('Test error', origin);
+    it('creates error with cause', () => {
+      const cause = new Error('Original error');
+      const error = new ConfigError('Test error', cause);
       expect(error.message).toBe('Test error');
-      expect(error.origin).toBe(origin);
+      expect(error.cause).toBe(cause);
     });
 
     it('is instance of Error', () => {

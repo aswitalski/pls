@@ -1,3 +1,5 @@
+import { AppError, ErrorCode } from '../types/errors.js';
+
 export enum AnthropicModel {
   Sonnet = 'claude-sonnet-4-5',
   Haiku = 'claude-haiku-4-5',
@@ -69,12 +71,9 @@ export type ConfigDefinition =
       type: ConfigDefinitionType.Boolean;
     });
 
-export class ConfigError extends Error {
-  origin?: Error;
-
+export class ConfigError extends AppError {
   constructor(message: string, origin?: Error) {
-    super(message);
+    super(message, ErrorCode.MissingConfig, origin);
     this.name = 'ConfigError';
-    this.origin = origin;
   }
 }

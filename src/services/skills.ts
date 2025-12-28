@@ -1,6 +1,7 @@
 import { homedir } from 'os';
 import { join } from 'path';
 
+import { AppError, ErrorCode } from '../types/errors.js';
 import { SkillDefinition } from '../types/skills.js';
 
 import { defaultFileSystem, FileSystem } from './filesystem.js';
@@ -239,8 +240,9 @@ export function expandSkillReferences(
 
     // Check for circular reference
     if (visited.has(skillName)) {
-      throw new Error(
-        `Circular skill reference detected: ${Array.from(visited).join(' → ')} → ${skillName}`
+      throw new AppError(
+        `Circular skill reference detected: ${Array.from(visited).join(' → ')} → ${skillName}`,
+        ErrorCode.CircularReference
       );
     }
 
