@@ -224,62 +224,39 @@ describe('Message functions', () => {
   });
 
   describe('getExecutionErrorMessage', () => {
-    const expectedPrefixes = [
-      "I can't execute this",
-      "I'm unable to execute this",
-      "I can't proceed with this",
-      "I'm unable to proceed with this",
-      'This cannot be executed',
+    const expectedMessages = [
+      'The execution failed.',
+      'Execution has failed.',
+      'The execution was not successful.',
+      'Execution did not succeed.',
+      'The execution encountered an error.',
     ];
 
-    it('returns a message with one of the expected prefixes', () => {
-      const message = getExecutionErrorMessage('skill not found');
-      const hasExpectedPrefix = expectedPrefixes.some((prefix) =>
-        message.startsWith(prefix)
-      );
-      expect(hasExpectedPrefix).toBe(true);
+    it('returns one of the expected generic messages', () => {
+      const message = getExecutionErrorMessage('any error');
+      expect(expectedMessages).toContain(message);
     });
 
-    it('capitalizes the first letter of error text', () => {
-      const message = getExecutionErrorMessage('skill not found');
-      expect(message).toMatch(/\. Skill not found\.$/);
-    });
-
-    it('adds period to error if missing', () => {
-      const message = getExecutionErrorMessage('no skills available');
-      expect(message).toMatch(/\. No skills available\.$/);
-    });
-
-    it('preserves period if already present', () => {
-      const message = getExecutionErrorMessage('skill not found.');
-      expect(message).toMatch(/\. Skill not found\.$/);
-    });
-
-    it('returns a string with proper format', () => {
+    it('returns a message ending with a period', () => {
       const message = getExecutionErrorMessage('test error');
-      // Should be: [prefix]. [Capitalized error].
-      expect(message).toMatch(/^.+\. [A-Z].+\.$/);
+      expect(message).toMatch(/\.$/);
     });
 
-    it('varies prefixes across multiple calls', () => {
-      const prefixes = new Set<string>();
+    it('varies messages across multiple calls', () => {
+      const messages = new Set<string>();
       for (let i = 0; i < 50; i++) {
         const message = getExecutionErrorMessage('test');
-        const prefix = message.split('.')[0];
-        prefixes.add(prefix);
+        messages.add(message);
       }
-      expect(prefixes.size).toBeGreaterThan(1);
+      expect(messages.size).toBeGreaterThan(1);
     });
 
-    it('handles different error messages correctly', () => {
-      const message1 = getExecutionErrorMessage('no skills available');
-      expect(message1).toMatch(/No skills available\.$/);
-
-      const message2 = getExecutionErrorMessage('skill incomplete');
-      expect(message2).toMatch(/Skill incomplete\.$/);
-
-      const message3 = getExecutionErrorMessage("skill 'Build' not found");
-      expect(message3).toMatch(/Skill 'Build' not found\.$/);
+    it('ignores the error parameter', () => {
+      const message1 = getExecutionErrorMessage('error 1');
+      const message2 = getExecutionErrorMessage('error 2');
+      // Both should be valid messages regardless of input
+      expect(expectedMessages).toContain(message1);
+      expect(expectedMessages).toContain(message2);
     });
   });
 

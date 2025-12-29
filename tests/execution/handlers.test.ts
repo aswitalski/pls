@@ -151,9 +151,9 @@ describe('Task completion handling', () => {
       const result = handleTaskFailure(0, 'Build failed', 1000, context);
 
       expect(result.shouldComplete).toBe(true);
-      expect(result.shouldReportError).toBe(true);
       expect(result.action.type).toBe(ExecuteActionType.TaskErrorCritical);
-      expect(result.finalState.error).toBe('Build failed');
+      expect(result.finalState.error).toBeNull();
+      expect(result.finalState.completionMessage).toBeNull();
     });
 
     it('continues execution on non-critical task failure', () => {
@@ -166,7 +166,6 @@ describe('Task completion handling', () => {
       const result = handleTaskFailure(0, 'Warning: test failed', 500, context);
 
       expect(result.shouldComplete).toBe(false);
-      expect(result.shouldReportError).toBe(false);
       expect(result.action.type).toBe(ExecuteActionType.TaskErrorContinue);
       expect(result.finalState.error).toBeNull();
     });
@@ -178,7 +177,6 @@ describe('Task completion handling', () => {
       const result = handleTaskFailure(0, 'Error', 100, context);
 
       expect(result.shouldComplete).toBe(true);
-      expect(result.shouldReportError).toBe(true);
       expect(result.action.type).toBe(ExecuteActionType.TaskErrorCritical);
     });
 
@@ -192,27 +190,6 @@ describe('Task completion handling', () => {
         ExecutionStatus.Failed
       );
       expect(result.finalState.taskInfos[0].elapsed).toBe(1500);
-    });
-
-    it('returns shouldReportError true only for critical failures', () => {
-      const criticalTask = [createTaskInfo('Task', true)];
-      const nonCriticalTask = [createTaskInfo('Task', false)];
-
-      const criticalResult = handleTaskFailure(
-        0,
-        'Error',
-        100,
-        createContext(criticalTask)
-      );
-      const nonCriticalResult = handleTaskFailure(
-        0,
-        'Error',
-        100,
-        createContext(nonCriticalTask)
-      );
-
-      expect(criticalResult.shouldReportError).toBe(true);
-      expect(nonCriticalResult.shouldReportError).toBe(false);
     });
 
     it('handles last non-critical task failure and completes execution', () => {

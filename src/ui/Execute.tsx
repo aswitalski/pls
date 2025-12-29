@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { Box, Text } from 'ink';
 
 import {
@@ -25,11 +25,16 @@ import {
 import { processTasks } from '../execution/processing.js';
 import { executeReducer, initialState } from '../execution/reducer.js';
 import { ExecuteActionType } from '../execution/types.js';
-import { createMessage, markAsDone } from '../services/components.js';
+import {
+  createFeedback,
+  createMessage,
+  markAsDone,
+} from '../services/components.js';
+import { FeedbackType } from '../types/types.js';
 
 import { Message } from './Message.js';
 import { Spinner } from './Spinner.js';
-import { Task } from './Task.js';
+import { Task, TaskOutput } from './Task.js';
 
 const MINIMUM_PROCESSING_TIME = 400;
 
@@ -41,18 +46,26 @@ export interface ExecuteViewProps {
   tasks: TaskType[];
   state: ExecuteState;
   status: ComponentStatus;
+  onOutputChange?: (index: number, taskOutput: TaskOutput) => void;
   onTaskComplete?: (
     index: number,
     output: CommandOutput,
-    elapsed: number
+    elapsed: number,
+    taskOutput: TaskOutput
   ) => void;
-  onTaskAbort?: (index: number) => void;
-  onTaskError?: (index: number, error: string, elapsed: number) => void;
+  onTaskAbort?: (index: number, taskOutput: TaskOutput) => void;
+  onTaskError?: (
+    index: number,
+    error: string,
+    elapsed: number,
+    taskOutput: TaskOutput
+  ) => void;
 }
 
 export const ExecuteView = ({
   state,
   status,
+  onOutputChange,
   onTaskComplete,
   onTaskAbort,
   onTaskError,
@@ -104,6 +117,16 @@ export const ExecuteView = ({
                 index={index}
                 initialStatus={taskInfo.status}
                 initialElapsed={taskInfo.elapsed}
+                initialOutput={
+                  taskInfo.stdout || taskInfo.stderr || taskInfo.error
+                    ? {
+                        stdout: taskInfo.stdout ?? '',
+                        stderr: taskInfo.stderr ?? '',
+                        error: taskInfo.error ?? '',
+                      }
+                    : undefined
+                }
+                onOutputChange={onOutputChange}
                 onComplete={onTaskComplete}
                 onAbort={onTaskAbort}
                 onError={onTaskError}
@@ -139,6 +162,9 @@ export function Execute({
   const isActive = status === ComponentStatus.Active;
   const [localState, dispatch] = useReducer(executeReducer, initialState);
 
+  // Ref to store current output for each task (avoids re-renders)
+  const taskOutputRef = useRef<Map<number, TaskOutput>>(new Map());
+
   const {
     error,
     taskInfos,
@@ -156,6 +182,14 @@ export function Execute({
 
   const isExecuting = completed < taskInfos.length;
 
+  // Handle output changes from Task - store in ref (no re-render)
+  const handleOutputChange = useCallback(
+    (index: number, taskOutput: TaskOutput) => {
+      taskOutputRef.current.set(index, taskOutput);
+    },
+    []
+  );
+
   // Handle cancel with useCallback to ensure we capture latest state
   const handleCancel = useCallback(() => {
     dispatch({
@@ -163,14 +197,24 @@ export function Execute({
       payload: { completed },
     });
 
-    // Get updated task infos after cancel
+    // Get updated task infos after cancel, merging output from ref
     const updatedTaskInfos = taskInfos.map((task, taskIndex) => {
+      const output = taskOutputRef.current.get(taskIndex);
+      const baseTask = output
+        ? {
+            ...task,
+            stdout: output.stdout,
+            stderr: output.stderr,
+            error: output.error,
+          }
+        : task;
+
       if (taskIndex < completed) {
-        return { ...task, status: ExecutionStatus.Success };
+        return { ...baseTask, status: ExecutionStatus.Success };
       } else if (taskIndex === completed) {
-        return { ...task, status: ExecutionStatus.Aborted };
+        return { ...baseTask, status: ExecutionStatus.Aborted };
       } else {
-        return { ...task, status: ExecutionStatus.Cancelled };
+        return { ...baseTask, status: ExecutionStatus.Cancelled };
       }
     });
 
@@ -340,9 +384,26 @@ export function Execute({
 
   // Handle task completion - move to next task
   const handleTaskComplete = useCallback(
-    (index: number, _output: CommandOutput, elapsed: number) => {
+    (
+      index: number,
+      _output: CommandOutput,
+      elapsed: number,
+      taskOutput: TaskOutput
+    ) => {
+      // Update taskInfos with output before calling handler
+      const taskInfosWithOutput = taskInfos.map((task, i) =>
+        i === index
+          ? {
+              ...task,
+              stdout: taskOutput.stdout,
+              stderr: taskOutput.stderr,
+              error: taskOutput.error,
+            }
+          : task
+      );
+
       const result = handleTaskCompletion(index, elapsed, {
-        taskInfos,
+        taskInfos: taskInfosWithOutput,
         message,
         summary,
         taskExecutionTimes,
@@ -366,9 +427,21 @@ export function Execute({
   );
 
   const handleTaskError = useCallback(
-    (index: number, error: string, elapsed: number) => {
+    (index: number, error: string, elapsed: number, taskOutput: TaskOutput) => {
+      // Update taskInfos with output before calling handler
+      const taskInfosWithOutput = taskInfos.map((task, i) =>
+        i === index
+          ? {
+              ...task,
+              stdout: taskOutput.stdout,
+              stderr: taskOutput.stderr,
+              error: taskOutput.error,
+            }
+          : task
+      );
+
       const result = handleTaskFailure(index, error, elapsed, {
-        taskInfos,
+        taskInfos: taskInfosWithOutput,
         message,
         summary,
         taskExecutionTimes,
@@ -377,8 +450,12 @@ export function Execute({
       dispatch(result.action);
       requestHandlers.onCompleted(result.finalState);
 
-      if (result.shouldReportError) {
-        requestHandlers.onError(error);
+      // Add error feedback to queue for critical failures
+      if (result.action.type === ExecuteActionType.TaskErrorCritical) {
+        const errorMessage = getExecutionErrorMessage(error);
+        workflowHandlers.addToQueue(
+          createFeedback(FeedbackType.Failed, errorMessage)
+        );
       }
 
       if (result.shouldComplete) {
@@ -392,20 +469,33 @@ export function Execute({
       taskExecutionTimes,
       requestHandlers,
       lifecycleHandlers,
+      workflowHandlers,
     ]
   );
 
   const handleTaskAbort = useCallback(
-    (_index: number) => {
+    (index: number, taskOutput: TaskOutput) => {
       // Task was aborted - execution already stopped by Escape handler
-      // Just update state, don't call onAborted (already called at Execute level)
+      // Update taskInfos with output before building state
+      const taskInfosWithOutput = taskInfos.map((task, i) =>
+        i === index
+          ? {
+              ...task,
+              stdout: taskOutput.stdout,
+              stderr: taskOutput.stderr,
+              error: taskOutput.error,
+            }
+          : task
+      );
+
       const finalState = buildAbortedState(
-        taskInfos,
+        taskInfosWithOutput,
         message,
         summary,
         completed,
         taskExecutionTimes
       );
+
       requestHandlers.onCompleted(finalState);
     },
     [
@@ -434,6 +524,7 @@ export function Execute({
       tasks={tasks}
       state={viewState}
       status={status}
+      onOutputChange={handleOutputChange}
       onTaskComplete={handleTaskComplete}
       onTaskAbort={handleTaskAbort}
       onTaskError={handleTaskError}

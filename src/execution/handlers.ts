@@ -19,7 +19,6 @@ export interface TaskErrorResult {
   action: ExecuteAction;
   finalState: ExecuteState;
   shouldComplete: boolean;
-  shouldReportError: boolean;
 }
 
 /**
@@ -98,6 +97,8 @@ export function handleTaskFailure(
 
   if (isCritical) {
     // Critical failure - stop execution
+    const updatedTimes = [...taskExecutionTimes, elapsed];
+
     return {
       action: {
         type: ExecuteActionType.TaskErrorCritical,
@@ -108,12 +109,11 @@ export function handleTaskFailure(
         summary,
         taskInfos: updatedTaskInfos,
         completed: index + 1,
-        taskExecutionTimes,
+        taskExecutionTimes: updatedTimes,
         completionMessage: null,
-        error,
+        error: null,
       },
       shouldComplete: true,
-      shouldReportError: true,
     };
   }
 
@@ -136,11 +136,11 @@ export function handleTaskFailure(
         error: null,
       },
       shouldComplete: false,
-      shouldReportError: false,
     };
   }
 
-  // Last task, complete execution
+  // Last task failed (non-critical), complete execution
+  // Non-critical failures still show completion message with summary
   const summaryText = summary.trim() || 'Execution completed';
   const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
   const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
@@ -160,7 +160,6 @@ export function handleTaskFailure(
       error: null,
     },
     shouldComplete: true,
-    shouldReportError: false,
   };
 }
 

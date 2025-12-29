@@ -208,6 +208,9 @@ export interface TaskInfo {
   command: ExecuteCommand;
   status?: ExecutionStatus;
   elapsed?: number;
+  stdout?: string;
+  stderr?: string;
+  error?: string;
 }
 
 export interface ExecuteDefinitionProps {

@@ -8,6 +8,16 @@ import { TaskProcessingResult } from './types.js';
 import { validatePlaceholderResolution } from './validation.js';
 
 /**
+ * Fix escaped quotes in commands
+ * JSON parsing removes backslashes before quotes in patterns like key="value"
+ * This restores them: key="value" -> key=\"value\"
+ */
+export function fixEscapedQuotes(command: string): string {
+  // Replace ="value" with =\"value\"
+  return command.replace(/="([^"]*)"/g, '=\\"$1\\"');
+}
+
+/**
  * Processes tasks through the AI service to generate executable commands.
  * Resolves placeholders in task descriptions and validates the results.
  */
@@ -34,7 +44,9 @@ export async function processTasks(
 
   // Resolve placeholders in command strings
   const resolvedCommands = (result.commands || []).map((cmd) => {
-    const resolved = replacePlaceholders(cmd.command, userConfig);
+    // Fix escaped quotes lost in JSON parsing
+    const fixed = fixEscapedQuotes(cmd.command);
+    const resolved = replacePlaceholders(fixed, userConfig);
     validatePlaceholderResolution(resolved);
     return { ...cmd, command: resolved };
   });

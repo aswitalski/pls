@@ -133,9 +133,26 @@ Given tasks from this skill:
 Do NOT invent different commands - use exactly what the skill specifies,
 with parameter placeholders replaced by actual values.
 
-**CRITICAL**: Take the exact command from the ### Execution section. Do
-not modify, improve, or rewrite the command in any way. The user wrote
-these commands specifically for their environment and workflow.
+**CRITICAL - VERBATIM EXECUTION**: Run shell commands EXACTLY as written in
+the ### Execution section. Do NOT:
+- Modify the command string in any way
+- Optimize or improve the command
+- Add flags or options
+- Change paths or filenames
+- Rewrite using different syntax
+- "Fix" perceived issues in the command
+- Expand aliases or shortcuts
+- Strip or modify escape characters (backslashes, quotes)
+- Convert `\"` to `"` or `\'` to `'`
+- Remove or change any escaping sequences
+
+The ONLY allowed change is replacing `{placeholder}` tokens with their
+resolved values. Everything else must remain character-for-character
+identical to what the user wrote in their skill definition.
+
+**PRESERVE ALL CHARACTERS**: If the skill has `x=\"y\"`, output `x=\"y\"`.
+If it has `path/to/file\ with\ spaces`, keep it exactly as written.
+Escape sequences are intentional - do not "clean" or "simplify" them.
 
 ## Response Format
 
@@ -350,6 +367,26 @@ For complex multi-step operations:
 4. **Error handling**: For non-critical cleanup steps, set critical:
    false
 
+## Handling Config Placeholders
+
+When substituting parameter placeholders in skill commands:
+
+1. **Known values**: Replace `{PARAM}` with the actual value from task params
+2. **Unknown values**: If a placeholder value is not available in task params,
+   **keep the original `{placeholder}` syntax** in the command. Do NOT replace
+   it with `<UNKNOWN>` or any other marker.
+
+**CRITICAL**: Never use `<UNKNOWN>`, `<MISSING>`, `<undefined>`, or similar
+markers in commands. The `<` and `>` characters break shell syntax. Always
+preserve the original `{placeholder}` format for unresolved values - this
+allows the system to detect and prompt for missing configuration.
+
+Example:
+- Command template: `process.py --output {settings.output}`
+- If `settings.output` is NOT in task params:
+  - WRONG: `process.py --output <UNKNOWN>`
+  - CORRECT: `process.py --output {settings.output}`
+
 ## Common Mistakes to Avoid
 
 **DO NOT:**
@@ -366,6 +403,8 @@ For complex multi-step operations:
   Available Skills**
 - Fail to substitute parameter placeholders in skill commands
 - **CRITICAL: Assume what commands to run when skill is missing**
+- **CRITICAL: Replace unknown placeholders with `<UNKNOWN>` - this breaks
+  shell syntax**
 
 **DO:**
 - Match commands precisely to task descriptions

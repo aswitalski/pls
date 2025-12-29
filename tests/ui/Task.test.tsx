@@ -279,7 +279,11 @@ describe('Task component', () => {
 
       await vi.waitFor(
         () => {
-          expect(onAbort).toHaveBeenCalledWith(0);
+          expect(onAbort).toHaveBeenCalledWith(0, {
+            stdout: '',
+            stderr: '',
+            error: '',
+          });
         },
         { timeout: 200 }
       );

@@ -6,6 +6,7 @@ import {
   ExecutionProgress,
   ExecutionResult,
   ExecutionStatus,
+  RealExecutor,
 } from '../../src/services/shell.js';
 import { ExecuteCommand } from '../../src/services/anthropic.js';
 
@@ -427,6 +428,142 @@ describe('Shell service', () => {
 
       const isCritical = cmd.critical !== false;
       expect(isCritical).toBe(false);
+    });
+  });
+
+  describe('RealExecutor', () => {
+    it('executes command and captures stdout', async () => {
+      const executor = new RealExecutor();
+      const cmd: ExecuteCommand = {
+        description: 'Echo test',
+        command: 'echo "hello world"',
+      };
+
+      const result = await executor.execute(cmd);
+
+      expect(result.result).toBe(ExecutionResult.Success);
+      expect(result.output.trim()).toBe('hello world');
+      expect(result.errors).toBe('');
+    });
+
+    it('captures stderr output', async () => {
+      const executor = new RealExecutor();
+      const cmd: ExecuteCommand = {
+        description: 'Write to stderr',
+        command: 'echo "error message" >&2',
+      };
+
+      const result = await executor.execute(cmd);
+
+      expect(result.result).toBe(ExecutionResult.Success);
+      expect(result.errors.trim()).toBe('error message');
+    });
+
+    it('returns error result for non-zero exit code', async () => {
+      const executor = new RealExecutor();
+      const cmd: ExecuteCommand = {
+        description: 'Failing command',
+        command: 'exit 1',
+      };
+
+      const result = await executor.execute(cmd);
+
+      expect(result.result).toBe(ExecutionResult.Error);
+      expect(result.error).toBe('Exit code: 1');
+    });
+
+    it('calls output callback with stdout data', async () => {
+      const chunks: string[] = [];
+      const executor = new RealExecutor((data, stream) => {
+        if (stream === 'stdout') chunks.push(data);
+      });
+
+      const cmd: ExecuteCommand = {
+        description: 'Echo test',
+        command: 'echo "callback test"',
+      };
+
+      await executor.execute(cmd);
+
+      expect(chunks.join('').trim()).toBe('callback test');
+    });
+
+    it('calls output callback with stderr data', async () => {
+      const chunks: string[] = [];
+      const executor = new RealExecutor((data, stream) => {
+        if (stream === 'stderr') chunks.push(data);
+      });
+
+      const cmd: ExecuteCommand = {
+        description: 'Stderr test',
+        command: 'echo "stderr test" >&2',
+      };
+
+      await executor.execute(cmd);
+
+      expect(chunks.join('').trim()).toBe('stderr test');
+    });
+
+    it('calls progress callback with running and success status', async () => {
+      const executor = new RealExecutor();
+      const statuses: ExecutionStatus[] = [];
+
+      const cmd: ExecuteCommand = {
+        description: 'Progress test',
+        command: 'echo "test"',
+      };
+
+      await executor.execute(cmd, (status) => statuses.push(status));
+
+      expect(statuses).toContain(ExecutionStatus.Running);
+      expect(statuses).toContain(ExecutionStatus.Success);
+    });
+
+    it('calls progress callback with failed status on error', async () => {
+      const executor = new RealExecutor();
+      const statuses: ExecutionStatus[] = [];
+
+      const cmd: ExecuteCommand = {
+        description: 'Failing command',
+        command: 'exit 42',
+      };
+
+      await executor.execute(cmd, (status) => statuses.push(status));
+
+      expect(statuses).toContain(ExecutionStatus.Running);
+      expect(statuses).toContain(ExecutionStatus.Failed);
+    });
+
+    it('captures multi-line output', async () => {
+      const executor = new RealExecutor();
+      const cmd: ExecuteCommand = {
+        description: 'Multi-line output',
+        command: 'echo "line1"; echo "line2"; echo "line3"',
+      };
+
+      const result = await executor.execute(cmd);
+
+      expect(result.result).toBe(ExecutionResult.Success);
+      expect(result.output.trim()).toBe('line1\nline2\nline3');
+    });
+
+    it('allows updating output callback via setOutputCallback', async () => {
+      const executor = new RealExecutor();
+      const chunks: string[] = [];
+
+      executor.setOutputCallback((data) => chunks.push(data));
+
+      const cmd: ExecuteCommand = {
+        description: 'Callback update test',
+        command: 'echo "updated"',
+      };
+
+      await executor.execute(cmd);
+
+      expect(chunks.join('').trim()).toBe('updated');
+
+      // Clear callback
+      executor.setOutputCallback(undefined);
     });
   });
 });

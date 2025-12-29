@@ -508,7 +508,7 @@ describe('Execute component', () => {
         ],
       });
 
-      const onError = vi.fn();
+      const onCompleted = vi.fn();
       const tasks = [
         { action: 'Build the project', type: TaskType.Execute },
         { action: 'Deploy to production', type: TaskType.Execute },
@@ -519,7 +519,7 @@ describe('Execute component', () => {
           tasks={tasks}
           service={service}
           lifecycleHandlers={createLifecycleHandlers()}
-          requestHandlers={createRequestHandlers({ onError })}
+          requestHandlers={createRequestHandlers({ onCompleted })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -527,7 +527,11 @@ describe('Execute component', () => {
 
       await vi.waitFor(
         () => {
-          expect(onError).toHaveBeenCalled();
+          // Execution should complete without completion message (critical failure)
+          const calls = vi.mocked(onCompleted).mock.calls;
+          const lastCall = calls[calls.length - 1];
+          expect(lastCall).toBeDefined();
+          expect(lastCall[0].completionMessage).toBeNull();
         },
         { timeout: 500 }
       );
@@ -637,7 +641,7 @@ describe('Execute component', () => {
         ],
       });
 
-      const onError = vi.fn();
+      const onCompleted = vi.fn();
       const tasks = [{ action: 'Install package', type: TaskType.Execute }];
 
       render(
@@ -645,7 +649,7 @@ describe('Execute component', () => {
           tasks={tasks}
           service={service}
           lifecycleHandlers={createLifecycleHandlers()}
-          requestHandlers={createRequestHandlers({ onError })}
+          requestHandlers={createRequestHandlers({ onCompleted })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -653,7 +657,12 @@ describe('Execute component', () => {
 
       await vi.waitFor(
         () => {
-          expect(onError).toHaveBeenCalledWith(errorMessage);
+          // Execution should complete with error in task output, no completion message (critical failure)
+          const calls = vi.mocked(onCompleted).mock.calls;
+          const lastCall = calls[calls.length - 1];
+          expect(lastCall).toBeDefined();
+          expect(lastCall[0].taskInfos[0].stderr).toBe(errorMessage);
+          expect(lastCall[0].completionMessage).toBeNull();
         },
         { timeout: 500 }
       );
@@ -1289,7 +1298,6 @@ describe('Execute component', () => {
       });
 
       const onCompleted = vi.fn();
-      const onError = vi.fn();
       const tasks = [
         { action: 'First task', type: TaskType.Execute },
         { action: 'Second task', type: TaskType.Execute },
@@ -1301,10 +1309,7 @@ describe('Execute component', () => {
           tasks={tasks}
           service={service}
           lifecycleHandlers={createLifecycleHandlers()}
-          requestHandlers={createRequestHandlers({
-            onCompleted,
-            onError,
-          })}
+          requestHandlers={createRequestHandlers({ onCompleted })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1312,18 +1317,19 @@ describe('Execute component', () => {
 
       await vi.waitFor(
         () => {
-          expect(onError).toHaveBeenCalled();
+          // Wait for execution to complete without completion message (critical failure)
+          const calls = vi.mocked(onCompleted).mock.calls;
+          const finalCall = calls[calls.length - 1];
+          expect(finalCall).toBeDefined();
+          expect(finalCall[0].completionMessage).toBeNull();
         },
         { timeout: 1000 }
       );
 
       // Check that completed = 2 (first task completed, second failed)
       const calls = vi.mocked(onCompleted).mock.calls;
-      const errorCall = calls.find(
-        (call) => call[0].error && call[0].error !== null
-      );
-      expect(errorCall).toBeDefined();
-      expect(errorCall![0].completed).toBe(2);
+      const finalCall = calls[calls.length - 1];
+      expect(finalCall[0].completed).toBe(2);
     });
 
     it('sets completed correctly on non-critical failure', async () => {
