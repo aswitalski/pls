@@ -174,24 +174,16 @@ export function formatErrorMessage(error: unknown): string {
 
 /**
  * Returns an execution error message with varied phrasing.
- * Randomly selects from variations to sound natural, like a concierge.
- * Format: "[Cannot execute phrase]. [Error details]."
+ * Error details are shown in the task output, so this is just a summary.
+ * Randomly selects from variations to sound natural.
  */
-export function getExecutionErrorMessage(error: string): string {
-  const prefixes = [
-    "I can't execute this",
-    "I'm unable to execute this",
-    "I can't proceed with this",
-    "I'm unable to proceed with this",
-    'This cannot be executed',
+export function getExecutionErrorMessage(_error: string): string {
+  const messages = [
+    'The execution failed.',
+    'Execution has failed.',
+    'The execution was not successful.',
+    'Execution did not succeed.',
+    'The execution encountered an error.',
   ];
-  const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-
-  // Capitalize first letter of error
-  const capitalizedError = error.charAt(0).toUpperCase() + error.slice(1);
-  const errorWithPeriod = capitalizedError.endsWith('.')
-    ? capitalizedError
-    : `${capitalizedError}.`;
-
-  return `${prefix}. ${errorWithPeriod}`;
+  return messages[Math.floor(Math.random() * messages.length)];
 }

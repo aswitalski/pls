@@ -206,8 +206,11 @@ export interface AnswerState extends BaseState {
 export interface TaskInfo {
   label: string;
   command: ExecuteCommand;
-  status?: ExecutionStatus;
-  elapsed?: number;
+  status: ExecutionStatus;
+  elapsed: number;
+  stdout?: string;
+  stderr?: string;
+  error?: string;
 }
 
 export interface ExecuteDefinitionProps {
@@ -225,9 +228,8 @@ export interface ExecuteState extends BaseState {
   error: string | null;
   message: string;
   summary: string;
-  taskInfos: TaskInfo[];
+  tasks: TaskInfo[];
   completed: number;
-  taskExecutionTimes: number[];
   completionMessage: string | null;
 }
 

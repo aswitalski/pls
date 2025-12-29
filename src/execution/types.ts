@@ -24,7 +24,7 @@ export type ExecuteAction =
       payload: {
         message: string;
         summary: string;
-        taskInfos: TaskInfo[];
+        tasks: TaskInfo[];
       };
     }
   | {
@@ -70,8 +70,7 @@ export interface TaskProcessingResult {
 }
 
 export interface TaskCompletionContext {
-  taskInfos: TaskInfo[];
+  tasks: TaskInfo[];
   message: string;
   summary: string;
-  taskExecutionTimes: number[];
 }

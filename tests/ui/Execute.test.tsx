@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ComponentStatus, ExecuteState } from '../../src/types/components.js';
 import { TaskType } from '../../src/types/types.js';
 
-import { ExecutionResult } from '../../src/services/shell.js';
+import { ExecutionResult, ExecutionStatus } from '../../src/services/shell.js';
 
 import { Execute, ExecuteView } from '../../src/ui/Execute.js';
 
@@ -125,18 +125,14 @@ describe('Execute component', () => {
   });
 
   it('returns null when done with no commands', () => {
-    const tasks = [{ action: 'Test', type: TaskType.Execute }];
-
     const { lastFrame } = render(
       <ExecuteView
-        tasks={tasks}
         state={{
           error: null,
           message: '',
           summary: '',
-          taskInfos: [],
+          tasks: [],
           completed: 0,
-          taskExecutionTimes: [],
           completionMessage: null,
         }}
         status={ComponentStatus.Done}
@@ -508,7 +504,7 @@ describe('Execute component', () => {
         ],
       });
 
-      const onError = vi.fn();
+      const onCompleted = vi.fn();
       const tasks = [
         { action: 'Build the project', type: TaskType.Execute },
         { action: 'Deploy to production', type: TaskType.Execute },
@@ -519,7 +515,7 @@ describe('Execute component', () => {
           tasks={tasks}
           service={service}
           lifecycleHandlers={createLifecycleHandlers()}
-          requestHandlers={createRequestHandlers({ onError })}
+          requestHandlers={createRequestHandlers({ onCompleted })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -527,7 +523,11 @@ describe('Execute component', () => {
 
       await vi.waitFor(
         () => {
-          expect(onError).toHaveBeenCalled();
+          // Execution should complete without completion message (critical failure)
+          const calls = vi.mocked(onCompleted).mock.calls;
+          const lastCall = calls[calls.length - 1];
+          expect(lastCall).toBeDefined();
+          expect(lastCall[0].completionMessage).toBeNull();
         },
         { timeout: 500 }
       );
@@ -637,7 +637,7 @@ describe('Execute component', () => {
         ],
       });
 
-      const onError = vi.fn();
+      const onCompleted = vi.fn();
       const tasks = [{ action: 'Install package', type: TaskType.Execute }];
 
       render(
@@ -645,7 +645,7 @@ describe('Execute component', () => {
           tasks={tasks}
           service={service}
           lifecycleHandlers={createLifecycleHandlers()}
-          requestHandlers={createRequestHandlers({ onError })}
+          requestHandlers={createRequestHandlers({ onCompleted })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -653,7 +653,12 @@ describe('Execute component', () => {
 
       await vi.waitFor(
         () => {
-          expect(onError).toHaveBeenCalledWith(errorMessage);
+          // Execution should complete with error in task output, no completion message (critical failure)
+          const calls = vi.mocked(onCompleted).mock.calls;
+          const lastCall = calls[calls.length - 1];
+          expect(lastCall).toBeDefined();
+          expect(lastCall[0].tasks[0].stderr).toBe(errorMessage);
+          expect(lastCall[0].completionMessage).toBeNull();
         },
         { timeout: 500 }
       );
@@ -1030,15 +1035,16 @@ describe('Execute component', () => {
     it('shows completion message with summary and time', async () => {
       const { lastFrame } = render(
         <ExecuteView
-          tasks={[{ action: 'Do something', type: TaskType.Execute }]}
           state={{
             error: null,
             message: 'Execute commands:',
             summary: 'All tasks completed successfully',
-            taskInfos: [
+            tasks: [
               {
                 label: 'Do something',
                 command: { description: 'First task', command: 'echo "first"' },
+                status: ExecutionStatus.Success,
+                elapsed: 0,
               },
               {
                 label: 'Do something',
@@ -1046,10 +1052,11 @@ describe('Execute component', () => {
                   description: 'Second task',
                   command: 'echo "second"',
                 },
+                status: ExecutionStatus.Success,
+                elapsed: 0,
               },
             ],
             completed: 2,
-            taskExecutionTimes: [0, 0],
             completionMessage: 'All tasks completed successfully in 0 seconds.',
           }}
           status={ComponentStatus.Done}
@@ -1065,19 +1072,19 @@ describe('Execute component', () => {
     it('uses fallback message when summary is empty', async () => {
       const { lastFrame } = render(
         <ExecuteView
-          tasks={[{ action: 'Do something', type: TaskType.Execute }]}
           state={{
             error: null,
             message: 'Execute commands:',
             summary: '',
-            taskInfos: [
+            tasks: [
               {
                 label: 'Do something',
                 command: { description: 'Task', command: 'echo "test"' },
+                status: ExecutionStatus.Success,
+                elapsed: 0,
               },
             ],
             completed: 1,
-            taskExecutionTimes: [0],
             completionMessage: 'Execution completed in 0 seconds.',
           }}
           status={ComponentStatus.Done}
@@ -1122,11 +1129,10 @@ describe('Execute component', () => {
         { timeout: 2000 }
       );
 
-      // Check that onCompleted was called with execution times
+      // Check that onCompleted was called with completion message
       const onCompletedMock = vi.mocked(requestHandlers.onCompleted);
       const onCompletedCalls = onCompletedMock.mock.calls;
       const finalCall = onCompletedCalls[onCompletedCalls.length - 1];
-      expect(finalCall[0]).toHaveProperty('taskExecutionTimes');
       expect(finalCall[0]).toHaveProperty('completionMessage');
     });
   });
@@ -1289,7 +1295,6 @@ describe('Execute component', () => {
       });
 
       const onCompleted = vi.fn();
-      const onError = vi.fn();
       const tasks = [
         { action: 'First task', type: TaskType.Execute },
         { action: 'Second task', type: TaskType.Execute },
@@ -1301,10 +1306,7 @@ describe('Execute component', () => {
           tasks={tasks}
           service={service}
           lifecycleHandlers={createLifecycleHandlers()}
-          requestHandlers={createRequestHandlers({
-            onCompleted,
-            onError,
-          })}
+          requestHandlers={createRequestHandlers({ onCompleted })}
           workflowHandlers={createWorkflowHandlers()}
           status={ComponentStatus.Active}
         />
@@ -1312,18 +1314,19 @@ describe('Execute component', () => {
 
       await vi.waitFor(
         () => {
-          expect(onError).toHaveBeenCalled();
+          // Wait for execution to complete without completion message (critical failure)
+          const calls = vi.mocked(onCompleted).mock.calls;
+          const finalCall = calls[calls.length - 1];
+          expect(finalCall).toBeDefined();
+          expect(finalCall[0].completionMessage).toBeNull();
         },
         { timeout: 1000 }
       );
 
       // Check that completed = 2 (first task completed, second failed)
       const calls = vi.mocked(onCompleted).mock.calls;
-      const errorCall = calls.find(
-        (call) => call[0].error && call[0].error !== null
-      );
-      expect(errorCall).toBeDefined();
-      expect(errorCall![0].completed).toBe(2);
+      const finalCall = calls[calls.length - 1];
+      expect(finalCall[0].completed).toBe(2);
     });
 
     it('sets completed correctly on non-critical failure', async () => {
@@ -1459,7 +1462,7 @@ describe('Execute component', () => {
 
       // Check that completed is set in the abort call
       const calls = vi.mocked(onCompleted).mock.calls;
-      const abortCall = calls.find((call) => call[0].taskInfos !== undefined);
+      const abortCall = calls.find((call) => call[0].tasks !== undefined);
       expect(abortCall).toBeDefined();
       expect(abortCall![0]).toHaveProperty('completed');
     });
@@ -1502,30 +1505,27 @@ describe('Execute component', () => {
     });
 
     it('restores completed from state when resuming', () => {
-      const tasks = [
-        { action: 'First task', type: TaskType.Execute },
-        { action: 'Second task', type: TaskType.Execute },
-      ];
-
       const { lastFrame } = render(
         <ExecuteView
-          tasks={tasks}
           state={{
             error: null,
             message: 'Running tasks.',
             summary: '',
             completed: 2,
-            taskInfos: [
+            tasks: [
               {
                 label: 'First task',
                 command: { description: 'First', command: 'first' },
+                status: ExecutionStatus.Success,
+                elapsed: 0,
               },
               {
                 label: 'Second task',
                 command: { description: 'Second', command: 'second' },
+                status: ExecutionStatus.Success,
+                elapsed: 0,
               },
             ],
-            taskExecutionTimes: [100, 150],
             completionMessage: 'Tasks completed in 250ms.',
           }}
           status={ComponentStatus.Done}
@@ -1587,9 +1587,8 @@ describe('Execute component', () => {
       expect(completionCall![0]).toMatchObject({
         message: expect.any(String),
         summary: expect.any(String),
-        taskInfos: expect.any(Array),
+        tasks: expect.any(Array),
         completed: expect.any(Number),
-        taskExecutionTimes: expect.any(Array),
         completionMessage: expect.any(String),
         error: null,
       });
@@ -1644,9 +1643,8 @@ describe('Execute component', () => {
       expect(abortCall[0]).toMatchObject({
         message: expect.any(String),
         summary: expect.any(String),
-        taskInfos: expect.any(Array),
+        tasks: expect.any(Array),
         completed: expect.any(Number),
-        taskExecutionTimes: expect.any(Array),
         completionMessage: null,
         error: null,
       });
@@ -1687,9 +1685,8 @@ describe('Execute component', () => {
       expect(errorCall![0]).toMatchObject({
         message: '',
         summary: '',
-        taskInfos: [],
+        tasks: [],
         completed: 0,
-        taskExecutionTimes: [],
         completionMessage: null,
         error: expect.any(String),
       });

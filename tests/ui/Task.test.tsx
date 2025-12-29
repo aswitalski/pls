@@ -42,6 +42,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={false}
+          isFinished={false}
           index={0}
         />
       );
@@ -56,6 +57,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={false}
+          isFinished={false}
           index={0}
           initialStatus={ExecutionStatus.Success}
           initialElapsed={1000}
@@ -73,6 +75,7 @@ describe('Task component', () => {
           label="Build project"
           command={mockCommand}
           isActive={false}
+          isFinished={false}
           index={0}
           initialStatus={ExecutionStatus.Success}
           initialElapsed={3500}
@@ -94,6 +97,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onComplete={onComplete}
         />
@@ -128,6 +132,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onComplete={onComplete}
         />
@@ -140,10 +145,10 @@ describe('Task component', () => {
         { timeout: 500 }
       );
 
-      const [index, output, elapsed] = onComplete.mock.calls[0];
+      const [index, elapsed, taskOutput] = onComplete.mock.calls[0];
       expect(index).toBe(0);
-      expect(output.result).toBe(ExecutionResult.Success);
       expect(elapsed).toBeGreaterThanOrEqual(0);
+      expect(taskOutput).toBeDefined();
     });
 
     it('calls onError with elapsed time on failure', async () => {
@@ -163,6 +168,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onError={onError}
         />
@@ -194,6 +200,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onError={onError}
         />
@@ -222,6 +229,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           initialStatus={ExecutionStatus.Cancelled}
         />
@@ -258,6 +266,7 @@ describe('Task component', () => {
           label="Long task"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onAbort={onAbort}
         />
@@ -272,6 +281,7 @@ describe('Task component', () => {
           label="Long task"
           command={mockCommand}
           isActive={false}
+          isFinished={false}
           index={0}
           onAbort={onAbort}
         />
@@ -279,7 +289,11 @@ describe('Task component', () => {
 
       await vi.waitFor(
         () => {
-          expect(onAbort).toHaveBeenCalledWith(0);
+          expect(onAbort).toHaveBeenCalledWith(0, {
+            stdout: '',
+            stderr: '',
+            error: '',
+          });
         },
         { timeout: 200 }
       );
@@ -304,6 +318,7 @@ describe('Task component', () => {
           label="Quick task"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onComplete={onComplete}
         />
@@ -316,7 +331,7 @@ describe('Task component', () => {
         { timeout: 500 }
       );
 
-      const [, , elapsed] = onComplete.mock.calls[0];
+      const [, elapsed] = onComplete.mock.calls[0];
       expect(elapsed).toBeGreaterThanOrEqual(0);
     });
   });
