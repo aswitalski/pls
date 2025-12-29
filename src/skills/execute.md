@@ -24,6 +24,12 @@ You will receive:
 - Tasks from user-defined skills include params.skill (skill name) and
   parameter values that were substituted into the action
 
+**CRITICAL - Command Count Rule**: You MUST generate EXACTLY one command
+per input task, no more, no less. The number of commands in your response
+MUST match the number of tasks you received. Do NOT split a single task
+into multiple commands or generate extra commands beyond what was
+scheduled.
+
 ## Skill-Based Command Generation
 
 **CRITICAL**: The "Available Skills" section in the prompt defines the ONLY
@@ -424,17 +430,29 @@ Example:
 
 Before returning commands:
 
-1. **CRITICAL: If tasks have params.skill, verify Available Skills
+1. **CRITICAL: Verify command count matches input task count** - you must
+   have exactly one command per input task
+2. **CRITICAL: If tasks have params.skill, verify Available Skills
    section exists**
-2. **CRITICAL: If tasks have params.skill, verify the skill exists in
+3. **CRITICAL: If tasks have params.skill, verify the skill exists in
    Available Skills section**
-3. **CRITICAL: If tasks have params.skill, verify the skill has both
+4. **CRITICAL: If tasks have params.skill, verify the skill has both
    Steps and Execution sections**
-4. **CRITICAL: If any validation fails, return error response with empty
+5. **CRITICAL: If any validation fails, return error response with empty
    commands array**
-5. Verify each command matches its task description
-6. Check that all task params are incorporated
-7. Ensure paths are properly quoted
-8. Confirm timeouts are reasonable for each operation
-9. Validate that critical flags are set appropriately
-10. Review for any safety concerns
+6. Verify each command matches its task description
+7. Check that all task params are incorporated
+8. Ensure paths are properly quoted
+9. Confirm timeouts are reasonable for each operation
+10. Validate that critical flags are set appropriately
+11. Review for any safety concerns
+
+## Confirmed Schedule
+
+CRITICAL: The user message contains the confirmed schedule that the user
+has reviewed and approved. You MUST generate exactly one command per task
+listed in the confirmed schedule. The number of commands in your response
+MUST equal the number of tasks below. DO NOT add extra commands, DO NOT
+skip tasks, and DO NOT split tasks into multiple commands.
+
+Your response MUST contain exactly N commands corresponding to these N tasks.

@@ -29,7 +29,7 @@ export async function processTasks(
   const userConfig = loadUserConfig();
 
   // Format tasks for the execute tool and resolve placeholders
-  const taskDescriptions = tasks
+  const taskList = tasks
     .map((task) => {
       const resolvedAction = replacePlaceholders(task.action, userConfig);
       const params = task.params
@@ -38,6 +38,9 @@ export async function processTasks(
       return `- ${resolvedAction}${params}`;
     })
     .join('\n');
+
+  // Build message with confirmed schedule header
+  const taskDescriptions = `Confirmed schedule (${tasks.length} tasks):\n${taskList}`;
 
   // Call execute tool to get commands
   const result = await service.processWithTool(taskDescriptions, 'execute');
