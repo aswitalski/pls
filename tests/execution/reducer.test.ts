@@ -10,13 +10,14 @@ import {
   InternalExecuteState,
 } from '../../src/execution/types.js';
 
-function createTaskInfo(label: string): TaskInfo {
+function createTaskInfo(label: string, elapsed?: number): TaskInfo {
   return {
     label,
     command: {
       description: label,
       command: `run ${label}`,
     },
+    elapsed,
   };
 }
 
@@ -37,7 +38,6 @@ describe('Execution reducer', () => {
       expect(initialState.message).toBe('');
       expect(initialState.completed).toBe(0);
       expect(initialState.hasProcessed).toBe(false);
-      expect(initialState.taskExecutionTimes).toEqual([]);
       expect(initialState.completionMessage).toBeNull();
       expect(initialState.summary).toBe('');
     });
@@ -171,10 +171,9 @@ describe('Execution reducer', () => {
       expect(result.taskInfos[0].elapsed).toBe(2500);
     });
 
-    it('appends elapsed to taskExecutionTimes array', () => {
+    it('stores elapsed time on task info', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task')],
-        taskExecutionTimes: [1000, 2000],
+        taskInfos: [createTaskInfo('Task', 1000)],
       });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskComplete,
@@ -183,7 +182,7 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskExecutionTimes).toEqual([1000, 2000, 3000]);
+      expect(result.taskInfos[0].elapsed).toBe(3000);
     });
 
     it('increments completed count', () => {
@@ -219,8 +218,7 @@ describe('Execution reducer', () => {
 
     it('generates completionMessage with total duration', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task')],
-        taskExecutionTimes: [2000],
+        taskInfos: [createTaskInfo('Task', 2000)],
       });
       const action: ExecuteAction = {
         type: ExecuteActionType.AllTasksComplete,
@@ -229,8 +227,8 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      // 2000 + 3000 = 5000ms = 5 seconds
-      expect(result.completionMessage).toBe('Build successful in 5 seconds.');
+      // elapsed is set to 3000, so total = 3000ms = 3 seconds
+      expect(result.completionMessage).toBe('Build successful in 3 seconds.');
     });
 
     it('increments completed count', () => {
@@ -321,10 +319,9 @@ describe('Execution reducer', () => {
       expect(result.completed).toBe(1);
     });
 
-    it('appends elapsed to times array', () => {
+    it('stores elapsed time on task', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task')],
-        taskExecutionTimes: [1000],
+        taskInfos: [createTaskInfo('Task', 1000)],
       });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskErrorContinue,
@@ -333,7 +330,7 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskExecutionTimes).toEqual([1000, 2000]);
+      expect(result.taskInfos[0].elapsed).toBe(2000);
     });
   });
 
@@ -354,8 +351,7 @@ describe('Execution reducer', () => {
 
     it('generates completionMessage', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task')],
-        taskExecutionTimes: [2000],
+        taskInfos: [createTaskInfo('Task', 2000)],
       });
       const action: ExecuteAction = {
         type: ExecuteActionType.LastTaskError,
@@ -364,7 +360,8 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.completionMessage).toBe('Lint check in 3 seconds.');
+      // elapsed is set to 1000 for this task, so total = 1000ms = 1 second
+      expect(result.completionMessage).toBe('Lint check in 1 second.');
     });
 
     it('increments completed', () => {

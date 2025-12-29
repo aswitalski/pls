@@ -136,7 +136,7 @@ export class RealExecutor implements Executor {
   execute(
     cmd: ExecuteCommand,
     onProgress?: (status: ExecutionStatus) => void,
-    _index: number = 0
+    _: number = 0
   ): Promise<CommandOutput> {
     return new Promise((resolve) => {
       onProgress?.(ExecutionStatus.Running);
@@ -168,10 +168,17 @@ export class RealExecutor implements Executor {
       }
 
       // Handle timeout if specified
+      const SIGKILL_GRACE_PERIOD = 3000;
       let timeoutId: NodeJS.Timeout | undefined;
+      let killTimeoutId: NodeJS.Timeout | undefined;
+
       if (cmd.timeout && cmd.timeout > 0) {
         timeoutId = setTimeout(() => {
           child.kill('SIGTERM');
+          // Escalate to SIGKILL if process doesn't terminate
+          killTimeoutId = setTimeout(() => {
+            child.kill('SIGKILL');
+          }, SIGKILL_GRACE_PERIOD);
         }, cmd.timeout);
       }
 
@@ -189,6 +196,7 @@ export class RealExecutor implements Executor {
 
       child.on('error', (error: Error) => {
         if (timeoutId) clearTimeout(timeoutId);
+        if (killTimeoutId) clearTimeout(killTimeoutId);
 
         const commandResult: CommandOutput = {
           description: cmd.description,
@@ -205,6 +213,7 @@ export class RealExecutor implements Executor {
 
       child.on('close', (code: number | null) => {
         if (timeoutId) clearTimeout(timeoutId);
+        if (killTimeoutId) clearTimeout(killTimeoutId);
 
         const success = code === 0;
         const commandResult: CommandOutput = {

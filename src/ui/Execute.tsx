@@ -6,7 +6,6 @@ import {
   ExecuteProps,
   ExecuteState,
 } from '../types/components.js';
-import { Task as TaskType } from '../types/types.js';
 
 import { getTextColor } from '../services/colors.js';
 import { useInput } from '../services/keyboard.js';
@@ -39,11 +38,27 @@ import { Task, TaskOutput } from './Task.js';
 const MINIMUM_PROCESSING_TIME = 400;
 
 /**
+ * Create an ExecuteState with defaults
+ */
+function createExecuteState(
+  overrides: Partial<ExecuteState> = {}
+): ExecuteState {
+  return {
+    message: '',
+    summary: '',
+    taskInfos: [],
+    completed: 0,
+    completionMessage: null,
+    error: null,
+    ...overrides,
+  };
+}
+
+/**
  * Execute view: Displays task execution progress
  */
 
 export interface ExecuteViewProps {
-  tasks: TaskType[];
   state: ExecuteState;
   status: ComponentStatus;
   onOutputChange?: (index: number, taskOutput: TaskOutput) => void;
@@ -171,7 +186,6 @@ export function Execute({
     message,
     completed,
     hasProcessed,
-    taskExecutionTimes,
     completionMessage,
     summary,
   } = localState;
@@ -219,26 +233,16 @@ export function Execute({
     });
 
     // Expose final state
-    const finalState: ExecuteState = {
+    const finalState = createExecuteState({
       message,
       summary,
       taskInfos: updatedTaskInfos,
       completed,
-      taskExecutionTimes,
-      completionMessage: null,
-      error: null,
-    };
+    });
     requestHandlers.onCompleted(finalState);
 
     requestHandlers.onAborted('execution');
-  }, [
-    message,
-    summary,
-    taskInfos,
-    completed,
-    taskExecutionTimes,
-    requestHandlers,
-  ]);
+  }, [message, summary, taskInfos, completed, requestHandlers]);
 
   useInput(
     (_, key) => {
@@ -282,16 +286,9 @@ export function Execute({
             );
 
             // Complete without error in state (message already in timeline)
-            const finalState: ExecuteState = {
-              message: result.message,
-              summary: '',
-              taskInfos: [],
-              completed: 0,
-              taskExecutionTimes: [],
-              completionMessage: null,
-              error: null,
-            };
-            requestHandlers.onCompleted(finalState);
+            requestHandlers.onCompleted(
+              createExecuteState({ message: result.message })
+            );
             lifecycleHandlers.completeActive();
             return;
           }
@@ -301,16 +298,9 @@ export function Execute({
             type: ExecuteActionType.ProcessingComplete,
             payload: { message: result.message },
           });
-          const finalState: ExecuteState = {
-            message: result.message,
-            summary: '',
-            taskInfos: [],
-            completed: 0,
-            taskExecutionTimes: [],
-            completionMessage: null,
-            error: null,
-          };
-          requestHandlers.onCompleted(finalState);
+          requestHandlers.onCompleted(
+            createExecuteState({ message: result.message })
+          );
           lifecycleHandlers.completeActive();
           return;
         }
@@ -331,16 +321,13 @@ export function Execute({
         });
 
         // Update state after AI processing
-        const finalState: ExecuteState = {
-          message: result.message,
-          summary: result.summary,
-          taskInfos: infos,
-          completed: 0,
-          taskExecutionTimes: [],
-          completionMessage: null,
-          error: null,
-        };
-        requestHandlers.onCompleted(finalState);
+        requestHandlers.onCompleted(
+          createExecuteState({
+            message: result.message,
+            summary: result.summary,
+            taskInfos: infos,
+          })
+        );
       } catch (err) {
         await ensureMinimumTime(startTime, MINIMUM_PROCESSING_TIME);
 
@@ -350,16 +337,9 @@ export function Execute({
             type: ExecuteActionType.ProcessingError,
             payload: { error: errorMessage },
           });
-          const finalState: ExecuteState = {
-            message: '',
-            summary: '',
-            taskInfos: [],
-            completed: 0,
-            taskExecutionTimes: [],
-            completionMessage: null,
-            error: errorMessage,
-          };
-          requestHandlers.onCompleted(finalState);
+          requestHandlers.onCompleted(
+            createExecuteState({ error: errorMessage })
+          );
           requestHandlers.onError(errorMessage);
         }
       }
@@ -386,7 +366,7 @@ export function Execute({
   const handleTaskComplete = useCallback(
     (
       index: number,
-      _output: CommandOutput,
+      _: CommandOutput,
       elapsed: number,
       taskOutput: TaskOutput
     ) => {
@@ -406,7 +386,6 @@ export function Execute({
         taskInfos: taskInfosWithOutput,
         message,
         summary,
-        taskExecutionTimes,
       });
 
       dispatch(result.action);
@@ -416,14 +395,7 @@ export function Execute({
         lifecycleHandlers.completeActive();
       }
     },
-    [
-      taskInfos,
-      message,
-      summary,
-      taskExecutionTimes,
-      requestHandlers,
-      lifecycleHandlers,
-    ]
+    [taskInfos, message, summary, requestHandlers, lifecycleHandlers]
   );
 
   const handleTaskError = useCallback(
@@ -444,7 +416,6 @@ export function Execute({
         taskInfos: taskInfosWithOutput,
         message,
         summary,
-        taskExecutionTimes,
       });
 
       dispatch(result.action);
@@ -466,7 +437,6 @@ export function Execute({
       taskInfos,
       message,
       summary,
-      taskExecutionTimes,
       requestHandlers,
       lifecycleHandlers,
       workflowHandlers,
@@ -492,36 +462,26 @@ export function Execute({
         taskInfosWithOutput,
         message,
         summary,
-        completed,
-        taskExecutionTimes
+        completed
       );
 
       requestHandlers.onCompleted(finalState);
     },
-    [
-      taskInfos,
-      message,
-      summary,
-      completed,
-      taskExecutionTimes,
-      requestHandlers,
-    ]
+    [taskInfos, message, summary, completed, requestHandlers]
   );
 
   // Controller always renders View with current state
-  const viewState: ExecuteState = {
+  const viewState = createExecuteState({
     error,
     taskInfos,
     message,
     summary,
     completed,
-    taskExecutionTimes,
     completionMessage,
-  };
+  });
 
   return (
     <ExecuteView
-      tasks={tasks}
       state={viewState}
       status={status}
       onOutputChange={handleOutputChange}

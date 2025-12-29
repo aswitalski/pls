@@ -230,7 +230,6 @@ export interface ExecuteState extends BaseState {
   summary: string;
   taskInfos: TaskInfo[];
   completed: number;
-  taskExecutionTimes: number[];
   completionMessage: string | null;
 }
 

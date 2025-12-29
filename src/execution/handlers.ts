@@ -22,6 +22,13 @@ export interface TaskErrorResult {
 }
 
 /**
+ * Calculate total elapsed time from task infos
+ */
+function getTotalElapsed(taskInfos: TaskInfo[]): number {
+  return taskInfos.reduce((sum, task) => sum + (task.elapsed ?? 0), 0);
+}
+
+/**
  * Handles task completion logic and returns the appropriate action and state.
  */
 export function handleTaskCompletion(
@@ -29,8 +36,7 @@ export function handleTaskCompletion(
   elapsed: number,
   context: TaskCompletionContext
 ): TaskCompletionResult {
-  const { taskInfos, message, summary, taskExecutionTimes } = context;
-  const updatedTimes = [...taskExecutionTimes, elapsed];
+  const { taskInfos, message, summary } = context;
   const updatedTaskInfos = taskInfos.map((task, i) =>
     i === index ? { ...task, status: ExecutionStatus.Success, elapsed } : task
   );
@@ -47,7 +53,6 @@ export function handleTaskCompletion(
         summary,
         taskInfos: updatedTaskInfos,
         completed: index + 1,
-        taskExecutionTimes: updatedTimes,
         completionMessage: null,
         error: null,
       },
@@ -57,7 +62,7 @@ export function handleTaskCompletion(
 
   // All tasks complete
   const summaryText = summary.trim() || 'Execution completed';
-  const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
+  const totalElapsed = getTotalElapsed(updatedTaskInfos);
   const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
 
   return {
@@ -70,7 +75,6 @@ export function handleTaskCompletion(
       summary,
       taskInfos: updatedTaskInfos,
       completed: index + 1,
-      taskExecutionTimes: updatedTimes,
       completionMessage: completion,
       error: null,
     },
@@ -87,7 +91,7 @@ export function handleTaskFailure(
   elapsed: number,
   context: TaskCompletionContext
 ): TaskErrorResult {
-  const { taskInfos, message, summary, taskExecutionTimes } = context;
+  const { taskInfos, message, summary } = context;
   const task = taskInfos[index];
   const isCritical = task.command.critical !== false; // Default to true
 
@@ -97,8 +101,6 @@ export function handleTaskFailure(
 
   if (isCritical) {
     // Critical failure - stop execution
-    const updatedTimes = [...taskExecutionTimes, elapsed];
-
     return {
       action: {
         type: ExecuteActionType.TaskErrorCritical,
@@ -109,7 +111,6 @@ export function handleTaskFailure(
         summary,
         taskInfos: updatedTaskInfos,
         completed: index + 1,
-        taskExecutionTimes: updatedTimes,
         completionMessage: null,
         error: null,
       },
@@ -118,8 +119,6 @@ export function handleTaskFailure(
   }
 
   // Non-critical failure - continue to next task
-  const updatedTimes = [...taskExecutionTimes, elapsed];
-
   if (index < taskInfos.length - 1) {
     return {
       action: {
@@ -131,7 +130,6 @@ export function handleTaskFailure(
         summary,
         taskInfos: updatedTaskInfos,
         completed: index + 1,
-        taskExecutionTimes: updatedTimes,
         completionMessage: null,
         error: null,
       },
@@ -142,7 +140,7 @@ export function handleTaskFailure(
   // Last task failed (non-critical), complete execution
   // Non-critical failures still show completion message with summary
   const summaryText = summary.trim() || 'Execution completed';
-  const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
+  const totalElapsed = getTotalElapsed(updatedTaskInfos);
   const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
 
   return {
@@ -155,7 +153,6 @@ export function handleTaskFailure(
       summary,
       taskInfos: updatedTaskInfos,
       completed: index + 1,
-      taskExecutionTimes: updatedTimes,
       completionMessage: completion,
       error: null,
     },
@@ -170,15 +167,13 @@ export function buildAbortedState(
   taskInfos: TaskInfo[],
   message: string,
   summary: string,
-  completed: number,
-  taskExecutionTimes: number[]
+  completed: number
 ): ExecuteState {
   return {
     message,
     summary,
     taskInfos,
     completed,
-    taskExecutionTimes,
     completionMessage: null,
     error: null,
   };

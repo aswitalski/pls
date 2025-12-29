@@ -13,7 +13,11 @@ import {
   TaskCompletionContext,
 } from '../../src/execution/types.js';
 
-function createTaskInfo(label: string, critical?: boolean): TaskInfo {
+function createTaskInfo(
+  label: string,
+  critical?: boolean,
+  elapsed?: number
+): TaskInfo {
   return {
     label,
     command: {
@@ -21,6 +25,7 @@ function createTaskInfo(label: string, critical?: boolean): TaskInfo {
       command: `run ${label}`,
       critical,
     },
+    elapsed,
   };
 }
 
@@ -32,7 +37,6 @@ function createContext(
     taskInfos,
     message: options.message ?? 'Test message',
     summary: options.summary ?? 'Test summary',
-    taskExecutionTimes: options.taskExecutionTimes ?? [],
   };
 }
 
@@ -75,15 +79,17 @@ describe('Task completion handling', () => {
       expect(result.finalState.taskInfos[1].status).toBeUndefined();
     });
 
-    it('accumulates execution times correctly', () => {
-      const taskInfos = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
-      const context = createContext(taskInfos, {
-        taskExecutionTimes: [1000],
-      });
+    it('stores elapsed time on task info', () => {
+      const taskInfos = [
+        createTaskInfo('Task 1', undefined, 1000),
+        createTaskInfo('Task 2'),
+      ];
+      const context = createContext(taskInfos);
 
       const result = handleTaskCompletion(1, 2000, context);
 
-      expect(result.finalState.taskExecutionTimes).toEqual([1000, 2000]);
+      expect(result.finalState.taskInfos[0].elapsed).toBe(1000);
+      expect(result.finalState.taskInfos[1].elapsed).toBe(2000);
     });
 
     it('generates completion message with formatted duration on last task', () => {
@@ -127,12 +133,11 @@ describe('Task completion handling', () => {
 
     it('calculates total elapsed from all task times', () => {
       const taskInfos = [
-        createTaskInfo('Task 1'),
-        createTaskInfo('Task 2'),
+        createTaskInfo('Task 1', undefined, 1000),
+        createTaskInfo('Task 2', undefined, 2000),
         createTaskInfo('Task 3'),
       ];
       const context = createContext(taskInfos, {
-        taskExecutionTimes: [1000, 2000],
         summary: 'Done',
       });
 
@@ -209,11 +214,10 @@ describe('Task completion handling', () => {
 
     it('generates completion message for last task even on failure', () => {
       const taskInfos = [
-        createTaskInfo('Task 1', false),
+        createTaskInfo('Task 1', false, 1000),
         createTaskInfo('Task 2', false),
       ];
       const context = createContext(taskInfos, {
-        taskExecutionTimes: [1000],
         summary: 'Tests completed',
       });
 
@@ -224,18 +228,16 @@ describe('Task completion handling', () => {
       );
     });
 
-    it('accumulates times for non-critical continue case', () => {
+    it('stores elapsed time on failed task', () => {
       const taskInfos = [
-        createTaskInfo('Task 1', false),
+        createTaskInfo('Task 1', false, 500),
         createTaskInfo('Task 2'),
       ];
-      const context = createContext(taskInfos, {
-        taskExecutionTimes: [500],
-      });
+      const context = createContext(taskInfos);
 
       const result = handleTaskFailure(0, 'Warning', 750, context);
 
-      expect(result.finalState.taskExecutionTimes).toEqual([500, 750]);
+      expect(result.finalState.taskInfos[0].elapsed).toBe(750);
     });
   });
 
@@ -243,13 +245,7 @@ describe('Task completion handling', () => {
     it('returns state with correct taskInfos array', () => {
       const taskInfos = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
 
-      const result = buildAbortedState(
-        taskInfos,
-        'Message',
-        'Summary',
-        1,
-        [1000]
-      );
+      const result = buildAbortedState(taskInfos, 'Message', 'Summary', 1);
 
       expect(result.taskInfos).toEqual(taskInfos);
     });
@@ -261,8 +257,7 @@ describe('Task completion handling', () => {
         taskInfos,
         'Build cancelled',
         'Partial build',
-        0,
-        []
+        0
       );
 
       expect(result.message).toBe('Build cancelled');
@@ -272,7 +267,7 @@ describe('Task completion handling', () => {
     it('sets completionMessage to null', () => {
       const taskInfos = [createTaskInfo('Task')];
 
-      const result = buildAbortedState(taskInfos, 'Msg', 'Sum', 0, []);
+      const result = buildAbortedState(taskInfos, 'Msg', 'Sum', 0);
 
       expect(result.completionMessage).toBeNull();
     });
@@ -280,24 +275,20 @@ describe('Task completion handling', () => {
     it('sets error to null', () => {
       const taskInfos = [createTaskInfo('Task')];
 
-      const result = buildAbortedState(taskInfos, 'Msg', 'Sum', 0, []);
+      const result = buildAbortedState(taskInfos, 'Msg', 'Sum', 0);
 
       expect(result.error).toBeNull();
     });
 
-    it('preserves completed count and execution times', () => {
-      const taskInfos = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+    it('preserves completed count', () => {
+      const taskInfos = [
+        createTaskInfo('Task 1', undefined, 1500),
+        createTaskInfo('Task 2', undefined, 2500),
+      ];
 
-      const result = buildAbortedState(
-        taskInfos,
-        'Msg',
-        'Sum',
-        1,
-        [1500, 2500]
-      );
+      const result = buildAbortedState(taskInfos, 'Msg', 'Sum', 1);
 
       expect(result.completed).toBe(1);
-      expect(result.taskExecutionTimes).toEqual([1500, 2500]);
     });
   });
 });

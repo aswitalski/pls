@@ -308,12 +308,8 @@ export const ViewComponent = memo(function ViewComponent({
     }
 
     case ComponentName.Execute: {
-      const {
-        props: { tasks },
-        state,
-        status,
-      } = def;
-      return <ExecuteView tasks={tasks} state={state} status={status} />;
+      const { state, status } = def;
+      return <ExecuteView state={state} status={status} />;
     }
 
     case ComponentName.Answer: {

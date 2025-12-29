@@ -487,7 +487,6 @@ export function createExecuteDefinition(
       summary: '',
       taskInfos: [],
       completed: 0,
-      taskExecutionTimes: [],
       completionMessage: null,
     },
     props: {

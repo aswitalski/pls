@@ -73,5 +73,4 @@ export interface TaskCompletionContext {
   taskInfos: TaskInfo[];
   message: string;
   summary: string;
-  taskExecutionTimes: number[];
 }

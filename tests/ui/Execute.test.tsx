@@ -125,18 +125,14 @@ describe('Execute component', () => {
   });
 
   it('returns null when done with no commands', () => {
-    const tasks = [{ action: 'Test', type: TaskType.Execute }];
-
     const { lastFrame } = render(
       <ExecuteView
-        tasks={tasks}
         state={{
           error: null,
           message: '',
           summary: '',
           taskInfos: [],
           completed: 0,
-          taskExecutionTimes: [],
           completionMessage: null,
         }}
         status={ComponentStatus.Done}
@@ -1039,7 +1035,6 @@ describe('Execute component', () => {
     it('shows completion message with summary and time', async () => {
       const { lastFrame } = render(
         <ExecuteView
-          tasks={[{ action: 'Do something', type: TaskType.Execute }]}
           state={{
             error: null,
             message: 'Execute commands:',
@@ -1058,7 +1053,6 @@ describe('Execute component', () => {
               },
             ],
             completed: 2,
-            taskExecutionTimes: [0, 0],
             completionMessage: 'All tasks completed successfully in 0 seconds.',
           }}
           status={ComponentStatus.Done}
@@ -1074,7 +1068,6 @@ describe('Execute component', () => {
     it('uses fallback message when summary is empty', async () => {
       const { lastFrame } = render(
         <ExecuteView
-          tasks={[{ action: 'Do something', type: TaskType.Execute }]}
           state={{
             error: null,
             message: 'Execute commands:',
@@ -1086,7 +1079,6 @@ describe('Execute component', () => {
               },
             ],
             completed: 1,
-            taskExecutionTimes: [0],
             completionMessage: 'Execution completed in 0 seconds.',
           }}
           status={ComponentStatus.Done}
@@ -1131,11 +1123,10 @@ describe('Execute component', () => {
         { timeout: 2000 }
       );
 
-      // Check that onCompleted was called with execution times
+      // Check that onCompleted was called with completion message
       const onCompletedMock = vi.mocked(requestHandlers.onCompleted);
       const onCompletedCalls = onCompletedMock.mock.calls;
       const finalCall = onCompletedCalls[onCompletedCalls.length - 1];
-      expect(finalCall[0]).toHaveProperty('taskExecutionTimes');
       expect(finalCall[0]).toHaveProperty('completionMessage');
     });
   });
@@ -1508,14 +1499,8 @@ describe('Execute component', () => {
     });
 
     it('restores completed from state when resuming', () => {
-      const tasks = [
-        { action: 'First task', type: TaskType.Execute },
-        { action: 'Second task', type: TaskType.Execute },
-      ];
-
       const { lastFrame } = render(
         <ExecuteView
-          tasks={tasks}
           state={{
             error: null,
             message: 'Running tasks.',
@@ -1531,7 +1516,6 @@ describe('Execute component', () => {
                 command: { description: 'Second', command: 'second' },
               },
             ],
-            taskExecutionTimes: [100, 150],
             completionMessage: 'Tasks completed in 250ms.',
           }}
           status={ComponentStatus.Done}
@@ -1595,7 +1579,6 @@ describe('Execute component', () => {
         summary: expect.any(String),
         taskInfos: expect.any(Array),
         completed: expect.any(Number),
-        taskExecutionTimes: expect.any(Array),
         completionMessage: expect.any(String),
         error: null,
       });
@@ -1652,7 +1635,6 @@ describe('Execute component', () => {
         summary: expect.any(String),
         taskInfos: expect.any(Array),
         completed: expect.any(Number),
-        taskExecutionTimes: expect.any(Array),
         completionMessage: null,
         error: null,
       });
@@ -1695,7 +1677,6 @@ describe('Execute component', () => {
         summary: '',
         taskInfos: [],
         completed: 0,
-        taskExecutionTimes: [],
         completionMessage: null,
         error: expect.any(String),
       });

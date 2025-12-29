@@ -1,3 +1,4 @@
+import { TaskInfo } from '../types/components.js';
 import { ExecutionStatus } from '../services/shell.js';
 import { formatDuration } from '../services/utils.js';
 
@@ -7,13 +8,19 @@ import {
   InternalExecuteState,
 } from './types.js';
 
+/**
+ * Calculate total elapsed time from task infos
+ */
+function getTotalElapsed(taskInfos: TaskInfo[]): number {
+  return taskInfos.reduce((sum, task) => sum + (task.elapsed ?? 0), 0);
+}
+
 export const initialState: InternalExecuteState = {
   error: null,
   taskInfos: [],
   message: '',
   completed: 0,
   hasProcessed: false,
-  taskExecutionTimes: [],
   completionMessage: null,
   summary: '',
 };
@@ -47,10 +54,6 @@ export function executeReducer(
       };
 
     case ExecuteActionType.TaskComplete: {
-      const updatedTimes = [
-        ...state.taskExecutionTimes,
-        action.payload.elapsed,
-      ];
       const updatedTaskInfos = state.taskInfos.map((task, i) =>
         i === action.payload.index
           ? {
@@ -63,16 +66,11 @@ export function executeReducer(
       return {
         ...state,
         taskInfos: updatedTaskInfos,
-        taskExecutionTimes: updatedTimes,
         completed: action.payload.index + 1,
       };
     }
 
     case ExecuteActionType.AllTasksComplete: {
-      const updatedTimes = [
-        ...state.taskExecutionTimes,
-        action.payload.elapsed,
-      ];
       const updatedTaskInfos = state.taskInfos.map((task, i) =>
         i === action.payload.index
           ? {
@@ -82,12 +80,11 @@ export function executeReducer(
             }
           : task
       );
-      const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
+      const totalElapsed = getTotalElapsed(updatedTaskInfos);
       const completion = `${action.payload.summaryText} in ${formatDuration(totalElapsed)}.`;
       return {
         ...state,
         taskInfos: updatedTaskInfos,
-        taskExecutionTimes: updatedTimes,
         completed: action.payload.index + 1,
         completionMessage: completion,
       };
@@ -107,10 +104,6 @@ export function executeReducer(
     }
 
     case ExecuteActionType.TaskErrorContinue: {
-      const updatedTimes = [
-        ...state.taskExecutionTimes,
-        action.payload.elapsed,
-      ];
       const updatedTaskInfos = state.taskInfos.map((task, i) =>
         i === action.payload.index
           ? {
@@ -123,16 +116,11 @@ export function executeReducer(
       return {
         ...state,
         taskInfos: updatedTaskInfos,
-        taskExecutionTimes: updatedTimes,
         completed: action.payload.index + 1,
       };
     }
 
     case ExecuteActionType.LastTaskError: {
-      const updatedTimes = [
-        ...state.taskExecutionTimes,
-        action.payload.elapsed,
-      ];
       const updatedTaskInfos = state.taskInfos.map((task, i) =>
         i === action.payload.index
           ? {
@@ -142,12 +130,11 @@ export function executeReducer(
             }
           : task
       );
-      const totalElapsed = updatedTimes.reduce((sum, time) => sum + time, 0);
+      const totalElapsed = getTotalElapsed(updatedTaskInfos);
       const completion = `${action.payload.summaryText} in ${formatDuration(totalElapsed)}.`;
       return {
         ...state,
         taskInfos: updatedTaskInfos,
-        taskExecutionTimes: updatedTimes,
         completed: action.payload.index + 1,
         completionMessage: completion,
       };
