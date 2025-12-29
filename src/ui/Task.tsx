@@ -3,7 +3,6 @@ import { Box } from 'ink';
 
 import { ExecuteCommand } from '../services/anthropic.js';
 import {
-  CommandOutput,
   ExecutionResult,
   ExecutionStatus,
   executeCommand,
@@ -29,12 +28,7 @@ export interface TaskProps {
   initialElapsed?: number;
   initialOutput?: TaskOutput;
   onOutputChange?: (index: number, taskOutput: TaskOutput) => void;
-  onComplete?: (
-    index: number,
-    output: CommandOutput,
-    elapsed: number,
-    taskOutput: TaskOutput
-  ) => void;
+  onComplete?: (index: number, elapsed: number, taskOutput: TaskOutput) => void;
   onAbort?: (index: number, taskOutput: TaskOutput) => void;
   onError?: (
     index: number,
@@ -166,7 +160,7 @@ export function Task({
             stderr: output.errors,
             error: '',
           };
-          onComplete?.(index, output, taskDuration, taskOutput);
+          onComplete?.(index, taskDuration, taskOutput);
         } else {
           const errorMsg = output.errors || output.error || 'Command failed';
           setError(errorMsg);

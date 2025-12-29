@@ -24,8 +24,8 @@ export interface TaskErrorResult {
 /**
  * Calculate total elapsed time from task infos
  */
-function getTotalElapsed(taskInfos: TaskInfo[]): number {
-  return taskInfos.reduce((sum, task) => sum + (task.elapsed ?? 0), 0);
+function getTotalElapsed(tasks: TaskInfo[]): number {
+  return tasks.reduce((sum, task) => sum + (task.elapsed ?? 0), 0);
 }
 
 /**
@@ -36,12 +36,12 @@ export function handleTaskCompletion(
   elapsed: number,
   context: TaskCompletionContext
 ): TaskCompletionResult {
-  const { taskInfos, message, summary } = context;
-  const updatedTaskInfos = taskInfos.map((task, i) =>
+  const { tasks, message, summary } = context;
+  const updatedTaskInfos = tasks.map((task, i) =>
     i === index ? { ...task, status: ExecutionStatus.Success, elapsed } : task
   );
 
-  if (index < taskInfos.length - 1) {
+  if (index < tasks.length - 1) {
     // More tasks to execute
     return {
       action: {
@@ -51,7 +51,7 @@ export function handleTaskCompletion(
       finalState: {
         message,
         summary,
-        taskInfos: updatedTaskInfos,
+        tasks: updatedTaskInfos,
         completed: index + 1,
         completionMessage: null,
         error: null,
@@ -73,7 +73,7 @@ export function handleTaskCompletion(
     finalState: {
       message,
       summary,
-      taskInfos: updatedTaskInfos,
+      tasks: updatedTaskInfos,
       completed: index + 1,
       completionMessage: completion,
       error: null,
@@ -91,11 +91,11 @@ export function handleTaskFailure(
   elapsed: number,
   context: TaskCompletionContext
 ): TaskErrorResult {
-  const { taskInfos, message, summary } = context;
-  const task = taskInfos[index];
+  const { tasks, message, summary } = context;
+  const task = tasks[index];
   const isCritical = task.command.critical !== false; // Default to true
 
-  const updatedTaskInfos = taskInfos.map((task, i) =>
+  const updatedTaskInfos = tasks.map((task, i) =>
     i === index ? { ...task, status: ExecutionStatus.Failed, elapsed } : task
   );
 
@@ -109,7 +109,7 @@ export function handleTaskFailure(
       finalState: {
         message,
         summary,
-        taskInfos: updatedTaskInfos,
+        tasks: updatedTaskInfos,
         completed: index + 1,
         completionMessage: null,
         error: null,
@@ -119,7 +119,7 @@ export function handleTaskFailure(
   }
 
   // Non-critical failure - continue to next task
-  if (index < taskInfos.length - 1) {
+  if (index < tasks.length - 1) {
     return {
       action: {
         type: ExecuteActionType.TaskErrorContinue,
@@ -128,7 +128,7 @@ export function handleTaskFailure(
       finalState: {
         message,
         summary,
-        taskInfos: updatedTaskInfos,
+        tasks: updatedTaskInfos,
         completed: index + 1,
         completionMessage: null,
         error: null,
@@ -151,7 +151,7 @@ export function handleTaskFailure(
     finalState: {
       message,
       summary,
-      taskInfos: updatedTaskInfos,
+      tasks: updatedTaskInfos,
       completed: index + 1,
       completionMessage: completion,
       error: null,
@@ -164,7 +164,7 @@ export function handleTaskFailure(
  * Builds final state for task abortion.
  */
 export function buildAbortedState(
-  taskInfos: TaskInfo[],
+  tasks: TaskInfo[],
   message: string,
   summary: string,
   completed: number
@@ -172,7 +172,7 @@ export function buildAbortedState(
   return {
     message,
     summary,
-    taskInfos,
+    tasks,
     completed,
     completionMessage: null,
     error: null,

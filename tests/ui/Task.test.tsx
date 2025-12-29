@@ -140,10 +140,10 @@ describe('Task component', () => {
         { timeout: 500 }
       );
 
-      const [index, output, elapsed] = onComplete.mock.calls[0];
+      const [index, elapsed, taskOutput] = onComplete.mock.calls[0];
       expect(index).toBe(0);
-      expect(output.result).toBe(ExecutionResult.Success);
       expect(elapsed).toBeGreaterThanOrEqual(0);
+      expect(taskOutput).toBeDefined();
     });
 
     it('calls onError with elapsed time on failure', async () => {
@@ -320,7 +320,7 @@ describe('Task component', () => {
         { timeout: 500 }
       );
 
-      const [, , elapsed] = onComplete.mock.calls[0];
+      const [, elapsed] = onComplete.mock.calls[0];
       expect(elapsed).toBeGreaterThanOrEqual(0);
     });
   });

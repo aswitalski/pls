@@ -30,11 +30,11 @@ function createTaskInfo(
 }
 
 function createContext(
-  taskInfos: TaskInfo[],
+  tasks: TaskInfo[],
   options: Partial<TaskCompletionContext> = {}
 ): TaskCompletionContext {
   return {
-    taskInfos,
+    tasks,
     message: options.message ?? 'Test message',
     summary: options.summary ?? 'Test summary',
   };
@@ -43,21 +43,19 @@ function createContext(
 describe('Task completion handling', () => {
   describe('handleTaskCompletion', () => {
     it('completes single task and marks shouldComplete true', () => {
-      const taskInfos = [createTaskInfo('Task 1')];
-      const context = createContext(taskInfos);
+      const tasks = [createTaskInfo('Task 1')];
+      const context = createContext(tasks);
 
       const result = handleTaskCompletion(0, 1000, context);
 
       expect(result.shouldComplete).toBe(true);
       expect(result.action.type).toBe(ExecuteActionType.AllTasksComplete);
-      expect(result.finalState.taskInfos[0].status).toBe(
-        ExecutionStatus.Success
-      );
+      expect(result.finalState.tasks[0].status).toBe(ExecutionStatus.Success);
     });
 
     it('completes intermediate task with more tasks remaining', () => {
-      const taskInfos = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
-      const context = createContext(taskInfos);
+      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+      const context = createContext(tasks);
 
       const result = handleTaskCompletion(0, 1500, context);
 
@@ -67,34 +65,32 @@ describe('Task completion handling', () => {
     });
 
     it('updates task status to Success with correct elapsed time', () => {
-      const taskInfos = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
-      const context = createContext(taskInfos);
+      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+      const context = createContext(tasks);
 
       const result = handleTaskCompletion(0, 2500, context);
 
-      expect(result.finalState.taskInfos[0].status).toBe(
-        ExecutionStatus.Success
-      );
-      expect(result.finalState.taskInfos[0].elapsed).toBe(2500);
-      expect(result.finalState.taskInfos[1].status).toBeUndefined();
+      expect(result.finalState.tasks[0].status).toBe(ExecutionStatus.Success);
+      expect(result.finalState.tasks[0].elapsed).toBe(2500);
+      expect(result.finalState.tasks[1].status).toBeUndefined();
     });
 
     it('stores elapsed time on task info', () => {
-      const taskInfos = [
+      const tasks = [
         createTaskInfo('Task 1', undefined, 1000),
         createTaskInfo('Task 2'),
       ];
-      const context = createContext(taskInfos);
+      const context = createContext(tasks);
 
       const result = handleTaskCompletion(1, 2000, context);
 
-      expect(result.finalState.taskInfos[0].elapsed).toBe(1000);
-      expect(result.finalState.taskInfos[1].elapsed).toBe(2000);
+      expect(result.finalState.tasks[0].elapsed).toBe(1000);
+      expect(result.finalState.tasks[1].elapsed).toBe(2000);
     });
 
     it('generates completion message with formatted duration on last task', () => {
-      const taskInfos = [createTaskInfo('Task 1')];
-      const context = createContext(taskInfos, {
+      const tasks = [createTaskInfo('Task 1')];
+      const context = createContext(tasks, {
         summary: 'Build completed',
       });
 
@@ -106,8 +102,8 @@ describe('Task completion handling', () => {
     });
 
     it('uses default summary text when summary is empty', () => {
-      const taskInfos = [createTaskInfo('Task 1')];
-      const context = createContext(taskInfos, {
+      const tasks = [createTaskInfo('Task 1')];
+      const context = createContext(tasks, {
         summary: '',
       });
 
@@ -119,8 +115,8 @@ describe('Task completion handling', () => {
     });
 
     it('uses default summary text when summary is whitespace only', () => {
-      const taskInfos = [createTaskInfo('Task 1')];
-      const context = createContext(taskInfos, {
+      const tasks = [createTaskInfo('Task 1')];
+      const context = createContext(tasks, {
         summary: '   ',
       });
 
@@ -132,12 +128,12 @@ describe('Task completion handling', () => {
     });
 
     it('calculates total elapsed from all task times', () => {
-      const taskInfos = [
+      const tasks = [
         createTaskInfo('Task 1', undefined, 1000),
         createTaskInfo('Task 2', undefined, 2000),
         createTaskInfo('Task 3'),
       ];
-      const context = createContext(taskInfos, {
+      const context = createContext(tasks, {
         summary: 'Done',
       });
 
@@ -150,8 +146,8 @@ describe('Task completion handling', () => {
 
   describe('handleTaskFailure', () => {
     it('stops execution on critical task failure', () => {
-      const taskInfos = [createTaskInfo('Task 1', true)];
-      const context = createContext(taskInfos);
+      const tasks = [createTaskInfo('Task 1', true)];
+      const context = createContext(tasks);
 
       const result = handleTaskFailure(0, 'Build failed', 1000, context);
 
@@ -162,11 +158,8 @@ describe('Task completion handling', () => {
     });
 
     it('continues execution on non-critical task failure', () => {
-      const taskInfos = [
-        createTaskInfo('Task 1', false),
-        createTaskInfo('Task 2'),
-      ];
-      const context = createContext(taskInfos);
+      const tasks = [createTaskInfo('Task 1', false), createTaskInfo('Task 2')];
+      const context = createContext(tasks);
 
       const result = handleTaskFailure(0, 'Warning: test failed', 500, context);
 
@@ -176,8 +169,8 @@ describe('Task completion handling', () => {
     });
 
     it('defaults to critical when critical field is undefined', () => {
-      const taskInfos = [createTaskInfo('Task 1')];
-      const context = createContext(taskInfos);
+      const tasks = [createTaskInfo('Task 1')];
+      const context = createContext(tasks);
 
       const result = handleTaskFailure(0, 'Error', 100, context);
 
@@ -186,20 +179,18 @@ describe('Task completion handling', () => {
     });
 
     it('marks task status as Failed with correct elapsed time', () => {
-      const taskInfos = [createTaskInfo('Task 1', true)];
-      const context = createContext(taskInfos);
+      const tasks = [createTaskInfo('Task 1', true)];
+      const context = createContext(tasks);
 
       const result = handleTaskFailure(0, 'Error', 1500, context);
 
-      expect(result.finalState.taskInfos[0].status).toBe(
-        ExecutionStatus.Failed
-      );
-      expect(result.finalState.taskInfos[0].elapsed).toBe(1500);
+      expect(result.finalState.tasks[0].status).toBe(ExecutionStatus.Failed);
+      expect(result.finalState.tasks[0].elapsed).toBe(1500);
     });
 
     it('handles last non-critical task failure and completes execution', () => {
-      const taskInfos = [createTaskInfo('Task 1', false)];
-      const context = createContext(taskInfos, {
+      const tasks = [createTaskInfo('Task 1', false)];
+      const context = createContext(tasks, {
         summary: 'Lint check',
       });
 
@@ -213,11 +204,11 @@ describe('Task completion handling', () => {
     });
 
     it('generates completion message for last task even on failure', () => {
-      const taskInfos = [
+      const tasks = [
         createTaskInfo('Task 1', false, 1000),
         createTaskInfo('Task 2', false),
       ];
-      const context = createContext(taskInfos, {
+      const context = createContext(tasks, {
         summary: 'Tests completed',
       });
 
@@ -229,32 +220,32 @@ describe('Task completion handling', () => {
     });
 
     it('stores elapsed time on failed task', () => {
-      const taskInfos = [
+      const tasks = [
         createTaskInfo('Task 1', false, 500),
         createTaskInfo('Task 2'),
       ];
-      const context = createContext(taskInfos);
+      const context = createContext(tasks);
 
       const result = handleTaskFailure(0, 'Warning', 750, context);
 
-      expect(result.finalState.taskInfos[0].elapsed).toBe(750);
+      expect(result.finalState.tasks[0].elapsed).toBe(750);
     });
   });
 
   describe('buildAbortedState', () => {
-    it('returns state with correct taskInfos array', () => {
-      const taskInfos = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+    it('returns state with correct tasks array', () => {
+      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
 
-      const result = buildAbortedState(taskInfos, 'Message', 'Summary', 1);
+      const result = buildAbortedState(tasks, 'Message', 'Summary', 1);
 
-      expect(result.taskInfos).toEqual(taskInfos);
+      expect(result.tasks).toEqual(tasks);
     });
 
     it('preserves message and summary', () => {
-      const taskInfos = [createTaskInfo('Task')];
+      const tasks = [createTaskInfo('Task')];
 
       const result = buildAbortedState(
-        taskInfos,
+        tasks,
         'Build cancelled',
         'Partial build',
         0
@@ -265,28 +256,28 @@ describe('Task completion handling', () => {
     });
 
     it('sets completionMessage to null', () => {
-      const taskInfos = [createTaskInfo('Task')];
+      const tasks = [createTaskInfo('Task')];
 
-      const result = buildAbortedState(taskInfos, 'Msg', 'Sum', 0);
+      const result = buildAbortedState(tasks, 'Msg', 'Sum', 0);
 
       expect(result.completionMessage).toBeNull();
     });
 
     it('sets error to null', () => {
-      const taskInfos = [createTaskInfo('Task')];
+      const tasks = [createTaskInfo('Task')];
 
-      const result = buildAbortedState(taskInfos, 'Msg', 'Sum', 0);
+      const result = buildAbortedState(tasks, 'Msg', 'Sum', 0);
 
       expect(result.error).toBeNull();
     });
 
     it('preserves completed count', () => {
-      const taskInfos = [
+      const tasks = [
         createTaskInfo('Task 1', undefined, 1500),
         createTaskInfo('Task 2', undefined, 2500),
       ];
 
-      const result = buildAbortedState(taskInfos, 'Msg', 'Sum', 1);
+      const result = buildAbortedState(tasks, 'Msg', 'Sum', 1);
 
       expect(result.completed).toBe(1);
     });

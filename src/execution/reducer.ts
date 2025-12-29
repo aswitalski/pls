@@ -11,13 +11,13 @@ import {
 /**
  * Calculate total elapsed time from task infos
  */
-function getTotalElapsed(taskInfos: TaskInfo[]): number {
-  return taskInfos.reduce((sum, task) => sum + (task.elapsed ?? 0), 0);
+function getTotalElapsed(tasks: TaskInfo[]): number {
+  return tasks.reduce((sum, task) => sum + (task.elapsed ?? 0), 0);
 }
 
 export const initialState: InternalExecuteState = {
   error: null,
-  taskInfos: [],
+  tasks: [],
   message: '',
   completed: 0,
   hasProcessed: false,
@@ -42,7 +42,7 @@ export function executeReducer(
         ...state,
         message: action.payload.message,
         summary: action.payload.summary,
-        taskInfos: action.payload.taskInfos,
+        tasks: action.payload.tasks,
         completed: 0,
       };
 
@@ -54,7 +54,7 @@ export function executeReducer(
       };
 
     case ExecuteActionType.TaskComplete: {
-      const updatedTaskInfos = state.taskInfos.map((task, i) =>
+      const updatedTaskInfos = state.tasks.map((task, i) =>
         i === action.payload.index
           ? {
               ...task,
@@ -65,13 +65,13 @@ export function executeReducer(
       );
       return {
         ...state,
-        taskInfos: updatedTaskInfos,
+        tasks: updatedTaskInfos,
         completed: action.payload.index + 1,
       };
     }
 
     case ExecuteActionType.AllTasksComplete: {
-      const updatedTaskInfos = state.taskInfos.map((task, i) =>
+      const updatedTaskInfos = state.tasks.map((task, i) =>
         i === action.payload.index
           ? {
               ...task,
@@ -84,27 +84,27 @@ export function executeReducer(
       const completion = `${action.payload.summaryText} in ${formatDuration(totalElapsed)}.`;
       return {
         ...state,
-        taskInfos: updatedTaskInfos,
+        tasks: updatedTaskInfos,
         completed: action.payload.index + 1,
         completionMessage: completion,
       };
     }
 
     case ExecuteActionType.TaskErrorCritical: {
-      const updatedTaskInfos = state.taskInfos.map((task, i) =>
+      const updatedTaskInfos = state.tasks.map((task, i) =>
         i === action.payload.index
           ? { ...task, status: ExecutionStatus.Failed, elapsed: 0 }
           : task
       );
       return {
         ...state,
-        taskInfos: updatedTaskInfos,
+        tasks: updatedTaskInfos,
         error: action.payload.error,
       };
     }
 
     case ExecuteActionType.TaskErrorContinue: {
-      const updatedTaskInfos = state.taskInfos.map((task, i) =>
+      const updatedTaskInfos = state.tasks.map((task, i) =>
         i === action.payload.index
           ? {
               ...task,
@@ -115,13 +115,13 @@ export function executeReducer(
       );
       return {
         ...state,
-        taskInfos: updatedTaskInfos,
+        tasks: updatedTaskInfos,
         completed: action.payload.index + 1,
       };
     }
 
     case ExecuteActionType.LastTaskError: {
-      const updatedTaskInfos = state.taskInfos.map((task, i) =>
+      const updatedTaskInfos = state.tasks.map((task, i) =>
         i === action.payload.index
           ? {
               ...task,
@@ -134,14 +134,14 @@ export function executeReducer(
       const completion = `${action.payload.summaryText} in ${formatDuration(totalElapsed)}.`;
       return {
         ...state,
-        taskInfos: updatedTaskInfos,
+        tasks: updatedTaskInfos,
         completed: action.payload.index + 1,
         completionMessage: completion,
       };
     }
 
     case ExecuteActionType.CancelExecution: {
-      const updatedTaskInfos = state.taskInfos.map((task, taskIndex) => {
+      const updatedTaskInfos = state.tasks.map((task, taskIndex) => {
         if (taskIndex < action.payload.completed) {
           return { ...task, status: ExecutionStatus.Success };
         } else if (taskIndex === action.payload.completed) {
@@ -152,7 +152,7 @@ export function executeReducer(
       });
       return {
         ...state,
-        taskInfos: updatedTaskInfos,
+        tasks: updatedTaskInfos,
       };
     }
 

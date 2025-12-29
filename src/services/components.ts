@@ -485,7 +485,7 @@ export function createExecuteDefinition(
       error: null,
       message: '',
       summary: '',
-      taskInfos: [],
+      tasks: [],
       completed: 0,
       completionMessage: null,
     },

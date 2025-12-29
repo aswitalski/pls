@@ -13,7 +13,7 @@ import {
   formatErrorMessage,
   getExecutionErrorMessage,
 } from '../services/messages.js';
-import { CommandOutput, ExecutionStatus } from '../services/shell.js';
+import { ExecutionStatus } from '../services/shell.js';
 import { ensureMinimumTime } from '../services/timing.js';
 
 import {
@@ -46,7 +46,7 @@ function createExecuteState(
   return {
     message: '',
     summary: '',
-    taskInfos: [],
+    tasks: [],
     completed: 0,
     completionMessage: null,
     error: null,
@@ -64,7 +64,6 @@ export interface ExecuteViewProps {
   onOutputChange?: (index: number, taskOutput: TaskOutput) => void;
   onTaskComplete?: (
     index: number,
-    output: CommandOutput,
     elapsed: number,
     taskOutput: TaskOutput
   ) => void;
@@ -86,21 +85,20 @@ export const ExecuteView = ({
   onTaskError,
 }: ExecuteViewProps) => {
   const isActive = status === ComponentStatus.Active;
-  const { error, taskInfos, message, completed, completionMessage } = state;
-  const hasProcessed = taskInfos.length > 0;
+  const { error, tasks, message, completed, completionMessage } = state;
+  const hasProcessed = tasks.length > 0;
 
   // Derive loading state from current conditions
-  const isLoading =
-    isActive && taskInfos.length === 0 && !error && !hasProcessed;
-  const isExecuting = completed < taskInfos.length;
+  const isLoading = isActive && tasks.length === 0 && !error && !hasProcessed;
+  const isExecuting = completed < tasks.length;
 
   // Return null only when loading completes with no commands
-  if (!isActive && taskInfos.length === 0 && !error) {
+  if (!isActive && tasks.length === 0 && !error) {
     return null;
   }
 
   // Show completed steps when not active
-  const showTasks = !isActive && taskInfos.length > 0;
+  const showTasks = !isActive && tasks.length > 0;
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
@@ -120,11 +118,8 @@ export const ExecuteView = ({
             </Box>
           )}
 
-          {taskInfos.map((taskInfo, index) => (
-            <Box
-              key={index}
-              marginBottom={index < taskInfos.length - 1 ? 1 : 0}
-            >
+          {tasks.map((taskInfo, index) => (
+            <Box key={index} marginBottom={index < tasks.length - 1 ? 1 : 0}>
               <Task
                 label={taskInfo.label}
                 command={taskInfo.command}
@@ -167,7 +162,7 @@ export const ExecuteView = ({
  */
 
 export function Execute({
-  tasks,
+  tasks: inputTasks,
   status,
   service,
   requestHandlers,
@@ -182,7 +177,7 @@ export function Execute({
 
   const {
     error,
-    taskInfos,
+    tasks,
     message,
     completed,
     hasProcessed,
@@ -191,10 +186,9 @@ export function Execute({
   } = localState;
 
   // Derive loading state from current conditions
-  const isLoading =
-    isActive && taskInfos.length === 0 && !error && !hasProcessed;
+  const isLoading = isActive && tasks.length === 0 && !error && !hasProcessed;
 
-  const isExecuting = completed < taskInfos.length;
+  const isExecuting = completed < tasks.length;
 
   // Handle output changes from Task - store in ref (no re-render)
   const handleOutputChange = useCallback(
@@ -212,7 +206,7 @@ export function Execute({
     });
 
     // Get updated task infos after cancel, merging output from ref
-    const updatedTaskInfos = taskInfos.map((task, taskIndex) => {
+    const updatedTaskInfos = tasks.map((task, taskIndex) => {
       const output = taskOutputRef.current.get(taskIndex);
       const baseTask = output
         ? {
@@ -236,13 +230,13 @@ export function Execute({
     const finalState = createExecuteState({
       message,
       summary,
-      taskInfos: updatedTaskInfos,
+      tasks: updatedTaskInfos,
       completed,
     });
     requestHandlers.onCompleted(finalState);
 
     requestHandlers.onAborted('execution');
-  }, [message, summary, taskInfos, completed, requestHandlers]);
+  }, [message, summary, tasks, completed, requestHandlers]);
 
   useInput(
     (_, key) => {
@@ -255,7 +249,7 @@ export function Execute({
 
   // Process tasks to get commands from AI
   useEffect(() => {
-    if (!isActive || taskInfos.length > 0 || hasProcessed) {
+    if (!isActive || tasks.length > 0 || hasProcessed) {
       return;
     }
 
@@ -265,7 +259,7 @@ export function Execute({
       const startTime = Date.now();
 
       try {
-        const result = await processTasks(tasks, svc);
+        const result = await processTasks(inputTasks, svc);
 
         await ensureMinimumTime(startTime, MINIMUM_PROCESSING_TIME);
 
@@ -307,7 +301,7 @@ export function Execute({
 
         // Create task infos from commands
         const infos = result.commands.map((cmd, index) => ({
-          label: tasks[index]?.action,
+          label: inputTasks[index]?.action,
           command: cmd,
         }));
 
@@ -316,7 +310,7 @@ export function Execute({
           payload: {
             message: result.message,
             summary: result.summary,
-            taskInfos: infos,
+            tasks: infos,
           },
         });
 
@@ -325,7 +319,7 @@ export function Execute({
           createExecuteState({
             message: result.message,
             summary: result.summary,
-            taskInfos: infos,
+            tasks: infos,
           })
         );
       } catch (err) {
@@ -351,27 +345,22 @@ export function Execute({
       mounted = false;
     };
   }, [
-    tasks,
+    inputTasks,
     isActive,
     service,
     requestHandlers,
     lifecycleHandlers,
     workflowHandlers,
 
-    taskInfos.length,
+    tasks.length,
     hasProcessed,
   ]);
 
   // Handle task completion - move to next task
   const handleTaskComplete = useCallback(
-    (
-      index: number,
-      _: CommandOutput,
-      elapsed: number,
-      taskOutput: TaskOutput
-    ) => {
-      // Update taskInfos with output before calling handler
-      const taskInfosWithOutput = taskInfos.map((task, i) =>
+    (index: number, elapsed: number, taskOutput: TaskOutput) => {
+      // Update tasks with output before calling handler
+      const tasksWithOutput = tasks.map((task, i) =>
         i === index
           ? {
               ...task,
@@ -383,7 +372,7 @@ export function Execute({
       );
 
       const result = handleTaskCompletion(index, elapsed, {
-        taskInfos: taskInfosWithOutput,
+        tasks: tasksWithOutput,
         message,
         summary,
       });
@@ -395,13 +384,13 @@ export function Execute({
         lifecycleHandlers.completeActive();
       }
     },
-    [taskInfos, message, summary, requestHandlers, lifecycleHandlers]
+    [tasks, message, summary, requestHandlers, lifecycleHandlers]
   );
 
   const handleTaskError = useCallback(
     (index: number, error: string, elapsed: number, taskOutput: TaskOutput) => {
-      // Update taskInfos with output before calling handler
-      const taskInfosWithOutput = taskInfos.map((task, i) =>
+      // Update tasks with output before calling handler
+      const tasksWithOutput = tasks.map((task, i) =>
         i === index
           ? {
               ...task,
@@ -413,7 +402,7 @@ export function Execute({
       );
 
       const result = handleTaskFailure(index, error, elapsed, {
-        taskInfos: taskInfosWithOutput,
+        tasks: tasksWithOutput,
         message,
         summary,
       });
@@ -434,7 +423,7 @@ export function Execute({
       }
     },
     [
-      taskInfos,
+      tasks,
       message,
       summary,
       requestHandlers,
@@ -446,8 +435,8 @@ export function Execute({
   const handleTaskAbort = useCallback(
     (index: number, taskOutput: TaskOutput) => {
       // Task was aborted - execution already stopped by Escape handler
-      // Update taskInfos with output before building state
-      const taskInfosWithOutput = taskInfos.map((task, i) =>
+      // Update tasks with output before building state
+      const tasksWithOutput = tasks.map((task, i) =>
         i === index
           ? {
               ...task,
@@ -459,7 +448,7 @@ export function Execute({
       );
 
       const finalState = buildAbortedState(
-        taskInfosWithOutput,
+        tasksWithOutput,
         message,
         summary,
         completed
@@ -467,13 +456,13 @@ export function Execute({
 
       requestHandlers.onCompleted(finalState);
     },
-    [taskInfos, message, summary, completed, requestHandlers]
+    [tasks, message, summary, completed, requestHandlers]
   );
 
   // Controller always renders View with current state
   const viewState = createExecuteState({
     error,
-    taskInfos,
+    tasks,
     message,
     summary,
     completed,

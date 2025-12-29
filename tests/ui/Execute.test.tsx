@@ -131,7 +131,7 @@ describe('Execute component', () => {
           error: null,
           message: '',
           summary: '',
-          taskInfos: [],
+          tasks: [],
           completed: 0,
           completionMessage: null,
         }}
@@ -657,7 +657,7 @@ describe('Execute component', () => {
           const calls = vi.mocked(onCompleted).mock.calls;
           const lastCall = calls[calls.length - 1];
           expect(lastCall).toBeDefined();
-          expect(lastCall[0].taskInfos[0].stderr).toBe(errorMessage);
+          expect(lastCall[0].tasks[0].stderr).toBe(errorMessage);
           expect(lastCall[0].completionMessage).toBeNull();
         },
         { timeout: 500 }
@@ -1039,7 +1039,7 @@ describe('Execute component', () => {
             error: null,
             message: 'Execute commands:',
             summary: 'All tasks completed successfully',
-            taskInfos: [
+            tasks: [
               {
                 label: 'Do something',
                 command: { description: 'First task', command: 'echo "first"' },
@@ -1072,7 +1072,7 @@ describe('Execute component', () => {
             error: null,
             message: 'Execute commands:',
             summary: '',
-            taskInfos: [
+            tasks: [
               {
                 label: 'Do something',
                 command: { description: 'Task', command: 'echo "test"' },
@@ -1456,7 +1456,7 @@ describe('Execute component', () => {
 
       // Check that completed is set in the abort call
       const calls = vi.mocked(onCompleted).mock.calls;
-      const abortCall = calls.find((call) => call[0].taskInfos !== undefined);
+      const abortCall = calls.find((call) => call[0].tasks !== undefined);
       expect(abortCall).toBeDefined();
       expect(abortCall![0]).toHaveProperty('completed');
     });
@@ -1506,7 +1506,7 @@ describe('Execute component', () => {
             message: 'Running tasks.',
             summary: '',
             completed: 2,
-            taskInfos: [
+            tasks: [
               {
                 label: 'First task',
                 command: { description: 'First', command: 'first' },
@@ -1577,7 +1577,7 @@ describe('Execute component', () => {
       expect(completionCall![0]).toMatchObject({
         message: expect.any(String),
         summary: expect.any(String),
-        taskInfos: expect.any(Array),
+        tasks: expect.any(Array),
         completed: expect.any(Number),
         completionMessage: expect.any(String),
         error: null,
@@ -1633,7 +1633,7 @@ describe('Execute component', () => {
       expect(abortCall[0]).toMatchObject({
         message: expect.any(String),
         summary: expect.any(String),
-        taskInfos: expect.any(Array),
+        tasks: expect.any(Array),
         completed: expect.any(Number),
         completionMessage: null,
         error: null,
@@ -1675,7 +1675,7 @@ describe('Execute component', () => {
       expect(errorCall![0]).toMatchObject({
         message: '',
         summary: '',
-        taskInfos: [],
+        tasks: [],
         completed: 0,
         completionMessage: null,
         error: expect.any(String),

@@ -34,7 +34,7 @@ describe('Execution reducer', () => {
   describe('Initial state', () => {
     it('has correct default values', () => {
       expect(initialState.error).toBeNull();
-      expect(initialState.taskInfos).toEqual([]);
+      expect(initialState.tasks).toEqual([]);
       expect(initialState.message).toBe('');
       expect(initialState.completed).toBe(0);
       expect(initialState.hasProcessed).toBe(false);
@@ -68,7 +68,7 @@ describe('Execution reducer', () => {
 
     it('preserves other state properties', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task')],
+        tasks: [createTaskInfo('Task')],
         completed: 1,
       });
       const action: ExecuteAction = {
@@ -78,20 +78,20 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos).toEqual(state.taskInfos);
+      expect(result.tasks).toEqual(state.tasks);
       expect(result.completed).toBe(1);
     });
   });
 
   describe('CommandsReady action', () => {
-    it('sets message, summary, and taskInfos', () => {
-      const taskInfos = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+    it('sets message, summary, and tasks', () => {
+      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
       const action: ExecuteAction = {
         type: ExecuteActionType.CommandsReady,
         payload: {
           message: 'Commands ready',
           summary: 'Build and deploy',
-          taskInfos,
+          tasks,
         },
       };
 
@@ -99,7 +99,7 @@ describe('Execution reducer', () => {
 
       expect(result.message).toBe('Commands ready');
       expect(result.summary).toBe('Build and deploy');
-      expect(result.taskInfos).toEqual(taskInfos);
+      expect(result.tasks).toEqual(tasks);
     });
 
     it('resets completed to 0', () => {
@@ -109,7 +109,7 @@ describe('Execution reducer', () => {
         payload: {
           message: 'Ready',
           summary: '',
-          taskInfos: [],
+          tasks: [],
         },
       };
 
@@ -145,8 +145,8 @@ describe('Execution reducer', () => {
 
   describe('TaskComplete action', () => {
     it('updates specific task status to Success', () => {
-      const taskInfos = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
-      const state = createBaseState({ taskInfos });
+      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+      const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskComplete,
         payload: { index: 0, elapsed: 1000 },
@@ -154,13 +154,13 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[0].status).toBe(ExecutionStatus.Success);
-      expect(result.taskInfos[1].status).toBeUndefined();
+      expect(result.tasks[0].status).toBe(ExecutionStatus.Success);
+      expect(result.tasks[1].status).toBeUndefined();
     });
 
     it('updates task elapsed time', () => {
-      const taskInfos = [createTaskInfo('Task 1')];
-      const state = createBaseState({ taskInfos });
+      const tasks = [createTaskInfo('Task 1')];
+      const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskComplete,
         payload: { index: 0, elapsed: 2500 },
@@ -168,12 +168,12 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[0].elapsed).toBe(2500);
+      expect(result.tasks[0].elapsed).toBe(2500);
     });
 
     it('stores elapsed time on task info', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task', 1000)],
+        tasks: [createTaskInfo('Task', 1000)],
       });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskComplete,
@@ -182,12 +182,12 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[0].elapsed).toBe(3000);
+      expect(result.tasks[0].elapsed).toBe(3000);
     });
 
     it('increments completed count', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task 1'), createTaskInfo('Task 2')],
+        tasks: [createTaskInfo('Task 1'), createTaskInfo('Task 2')],
         completed: 0,
       });
       const action: ExecuteAction = {
@@ -203,8 +203,8 @@ describe('Execution reducer', () => {
 
   describe('AllTasksComplete action', () => {
     it('updates last task status to Success', () => {
-      const taskInfos = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
-      const state = createBaseState({ taskInfos });
+      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+      const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.AllTasksComplete,
         payload: { index: 1, elapsed: 2000, summaryText: 'Done' },
@@ -212,13 +212,13 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[1].status).toBe(ExecutionStatus.Success);
-      expect(result.taskInfos[1].elapsed).toBe(2000);
+      expect(result.tasks[1].status).toBe(ExecutionStatus.Success);
+      expect(result.tasks[1].elapsed).toBe(2000);
     });
 
     it('generates completionMessage with total duration', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task', 2000)],
+        tasks: [createTaskInfo('Task', 2000)],
       });
       const action: ExecuteAction = {
         type: ExecuteActionType.AllTasksComplete,
@@ -233,7 +233,7 @@ describe('Execution reducer', () => {
 
     it('increments completed count', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task')],
+        tasks: [createTaskInfo('Task')],
         completed: 0,
       });
       const action: ExecuteAction = {
@@ -249,8 +249,8 @@ describe('Execution reducer', () => {
 
   describe('TaskErrorCritical action', () => {
     it('marks task as Failed', () => {
-      const taskInfos = [createTaskInfo('Task')];
-      const state = createBaseState({ taskInfos });
+      const tasks = [createTaskInfo('Task')];
+      const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskErrorCritical,
         payload: { index: 0, error: 'Critical error' },
@@ -258,12 +258,12 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[0].status).toBe(ExecutionStatus.Failed);
+      expect(result.tasks[0].status).toBe(ExecutionStatus.Failed);
     });
 
     it('sets elapsed to 0', () => {
-      const taskInfos = [createTaskInfo('Task')];
-      const state = createBaseState({ taskInfos });
+      const tasks = [createTaskInfo('Task')];
+      const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskErrorCritical,
         payload: { index: 0, error: 'Error' },
@@ -271,12 +271,12 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[0].elapsed).toBe(0);
+      expect(result.tasks[0].elapsed).toBe(0);
     });
 
     it('sets error in state', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task')],
+        tasks: [createTaskInfo('Task')],
       });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskErrorCritical,
@@ -291,8 +291,8 @@ describe('Execution reducer', () => {
 
   describe('TaskErrorContinue action', () => {
     it('marks task as Failed with elapsed time', () => {
-      const taskInfos = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
-      const state = createBaseState({ taskInfos });
+      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+      const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskErrorContinue,
         payload: { index: 0, elapsed: 1500 },
@@ -300,13 +300,13 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[0].status).toBe(ExecutionStatus.Failed);
-      expect(result.taskInfos[0].elapsed).toBe(1500);
+      expect(result.tasks[0].status).toBe(ExecutionStatus.Failed);
+      expect(result.tasks[0].elapsed).toBe(1500);
     });
 
     it('increments completed count', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task 1'), createTaskInfo('Task 2')],
+        tasks: [createTaskInfo('Task 1'), createTaskInfo('Task 2')],
         completed: 0,
       });
       const action: ExecuteAction = {
@@ -321,7 +321,7 @@ describe('Execution reducer', () => {
 
     it('stores elapsed time on task', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task', 1000)],
+        tasks: [createTaskInfo('Task', 1000)],
       });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskErrorContinue,
@@ -330,14 +330,14 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[0].elapsed).toBe(2000);
+      expect(result.tasks[0].elapsed).toBe(2000);
     });
   });
 
   describe('LastTaskError action', () => {
     it('marks task as Failed', () => {
-      const taskInfos = [createTaskInfo('Task')];
-      const state = createBaseState({ taskInfos });
+      const tasks = [createTaskInfo('Task')];
+      const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.LastTaskError,
         payload: { index: 0, elapsed: 1000, summaryText: 'Finished' },
@@ -345,13 +345,13 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[0].status).toBe(ExecutionStatus.Failed);
-      expect(result.taskInfos[0].elapsed).toBe(1000);
+      expect(result.tasks[0].status).toBe(ExecutionStatus.Failed);
+      expect(result.tasks[0].elapsed).toBe(1000);
     });
 
     it('generates completionMessage', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task', 2000)],
+        tasks: [createTaskInfo('Task', 2000)],
       });
       const action: ExecuteAction = {
         type: ExecuteActionType.LastTaskError,
@@ -366,7 +366,7 @@ describe('Execution reducer', () => {
 
     it('increments completed', () => {
       const state = createBaseState({
-        taskInfos: [createTaskInfo('Task')],
+        tasks: [createTaskInfo('Task')],
         completed: 0,
       });
       const action: ExecuteAction = {
@@ -382,12 +382,12 @@ describe('Execution reducer', () => {
 
   describe('CancelExecution action', () => {
     it('marks completed tasks as Success', () => {
-      const taskInfos = [
+      const tasks = [
         createTaskInfo('Task 1'),
         createTaskInfo('Task 2'),
         createTaskInfo('Task 3'),
       ];
-      const state = createBaseState({ taskInfos });
+      const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.CancelExecution,
         payload: { completed: 1 },
@@ -395,16 +395,16 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[0].status).toBe(ExecutionStatus.Success);
+      expect(result.tasks[0].status).toBe(ExecutionStatus.Success);
     });
 
     it('marks current task as Aborted', () => {
-      const taskInfos = [
+      const tasks = [
         createTaskInfo('Task 1'),
         createTaskInfo('Task 2'),
         createTaskInfo('Task 3'),
       ];
-      const state = createBaseState({ taskInfos });
+      const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.CancelExecution,
         payload: { completed: 1 },
@@ -412,17 +412,17 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[1].status).toBe(ExecutionStatus.Aborted);
+      expect(result.tasks[1].status).toBe(ExecutionStatus.Aborted);
     });
 
     it('marks remaining tasks as Cancelled', () => {
-      const taskInfos = [
+      const tasks = [
         createTaskInfo('Task 1'),
         createTaskInfo('Task 2'),
         createTaskInfo('Task 3'),
         createTaskInfo('Task 4'),
       ];
-      const state = createBaseState({ taskInfos });
+      const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.CancelExecution,
         payload: { completed: 1 },
@@ -430,15 +430,15 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[0].status).toBe(ExecutionStatus.Success);
-      expect(result.taskInfos[1].status).toBe(ExecutionStatus.Aborted);
-      expect(result.taskInfos[2].status).toBe(ExecutionStatus.Cancelled);
-      expect(result.taskInfos[3].status).toBe(ExecutionStatus.Cancelled);
+      expect(result.tasks[0].status).toBe(ExecutionStatus.Success);
+      expect(result.tasks[1].status).toBe(ExecutionStatus.Aborted);
+      expect(result.tasks[2].status).toBe(ExecutionStatus.Cancelled);
+      expect(result.tasks[3].status).toBe(ExecutionStatus.Cancelled);
     });
 
     it('handles cancellation at first task', () => {
-      const taskInfos = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
-      const state = createBaseState({ taskInfos });
+      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+      const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.CancelExecution,
         payload: { completed: 0 },
@@ -446,8 +446,8 @@ describe('Execution reducer', () => {
 
       const result = executeReducer(state, action);
 
-      expect(result.taskInfos[0].status).toBe(ExecutionStatus.Aborted);
-      expect(result.taskInfos[1].status).toBe(ExecutionStatus.Cancelled);
+      expect(result.tasks[0].status).toBe(ExecutionStatus.Aborted);
+      expect(result.tasks[1].status).toBe(ExecutionStatus.Cancelled);
     });
   });
 

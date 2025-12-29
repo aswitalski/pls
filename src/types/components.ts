@@ -228,7 +228,7 @@ export interface ExecuteState extends BaseState {
   error: string | null;
   message: string;
   summary: string;
-  taskInfos: TaskInfo[];
+  tasks: TaskInfo[];
   completed: number;
   completionMessage: string | null;
 }
