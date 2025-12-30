@@ -6,6 +6,7 @@ export enum ExecuteActionType {
   ProcessingComplete = 'PROCESSING_COMPLETE',
   CommandsReady = 'COMMANDS_READY',
   ProcessingError = 'PROCESSING_ERROR',
+  TaskStarted = 'TASK_STARTED',
   TaskComplete = 'TASK_COMPLETE',
   AllTasksComplete = 'ALL_TASKS_COMPLETE',
   TaskErrorCritical = 'TASK_ERROR_CRITICAL',
@@ -32,6 +33,10 @@ export type ExecuteAction =
       payload: { error: string };
     }
   | {
+      type: ExecuteActionType.TaskStarted;
+      payload: { index: number };
+    }
+  | {
       type: ExecuteActionType.TaskComplete;
       payload: { index: number; elapsed: number };
     }
@@ -53,7 +58,6 @@ export type ExecuteAction =
     }
   | {
       type: ExecuteActionType.CancelExecution;
-      payload: { completed: number };
     };
 
 // Internal state for reducer - extends ExecuteState with hasProcessed

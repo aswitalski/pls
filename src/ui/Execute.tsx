@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Box, Text } from 'ink';
 
 import {
@@ -18,13 +18,14 @@ import { ExecutionStatus } from '../services/shell.js';
 import { ensureMinimumTime } from '../services/timing.js';
 
 import {
-  buildAbortedState,
   handleTaskCompletion,
   handleTaskFailure,
 } from '../execution/handlers.js';
 import { processTasks } from '../execution/processing.js';
 import { executeReducer, initialState } from '../execution/reducer.js';
+import { executeTask, TaskOutput } from '../execution/runner.js';
 import { ExecuteActionType } from '../execution/types.js';
+import { getCurrentTaskIndex } from '../execution/utils.js';
 import {
   createFeedback,
   createMessage,
@@ -32,11 +33,54 @@ import {
 } from '../services/components.js';
 import { FeedbackType } from '../types/types.js';
 
-import { Message } from './Message.js';
 import { Spinner } from './Spinner.js';
-import { Task, TaskOutput } from './Task.js';
+import { TaskView } from './Task.js';
 
 const MINIMUM_PROCESSING_TIME = 400;
+const ELAPSED_UPDATE_INTERVAL = 1000;
+
+/**
+ * Check if a task is finished (success, failed, or aborted)
+ */
+function isTaskFinished(task: TaskInfo): boolean {
+  return (
+    task.status === ExecutionStatus.Success ||
+    task.status === ExecutionStatus.Failed ||
+    task.status === ExecutionStatus.Aborted
+  );
+}
+
+/**
+ * Map ExecuteState to view props for rendering in timeline
+ */
+export function mapStateToViewProps(
+  state: ExecuteState,
+  isActive: boolean
+): ExecuteViewProps {
+  const taskViewData: TaskViewData[] = state.tasks.map((task) => {
+    return {
+      label: task.label,
+      command: task.command,
+      status: task.status,
+      elapsed: task.elapsed,
+      stdout: task.stdout ?? '',
+      stderr: task.stderr ?? '',
+      isActive: false, // In timeline, no task is active
+      isFinished: isTaskFinished(task),
+    };
+  });
+
+  return {
+    isLoading: false,
+    isExecuting: false,
+    isActive,
+    error: state.error,
+    message: state.message,
+    tasks: taskViewData,
+    completionMessage: state.completionMessage,
+    showTasks: state.tasks.length > 0,
+  };
+}
 
 /**
  * Create an ExecuteState with defaults
@@ -48,7 +92,6 @@ function createExecuteState(
     message: '',
     summary: '',
     tasks: [],
-    completed: 0,
     completionMessage: null,
     error: null,
     ...overrides,
@@ -56,52 +99,50 @@ function createExecuteState(
 }
 
 /**
- * Execute view: Displays task execution progress
+ * Data for rendering a single task in the view
  */
-
-export interface ExecuteViewProps {
-  state: ExecuteState;
-  status: ComponentStatus;
-  workdir?: string;
-  onOutputChange?: (index: number, taskOutput: TaskOutput) => void;
-  onTaskComplete?: (
-    index: number,
-    elapsed: number,
-    taskOutput: TaskOutput
-  ) => void;
-  onTaskAbort?: (index: number, taskOutput: TaskOutput) => void;
-  onTaskError?: (
-    index: number,
-    error: string,
-    elapsed: number,
-    taskOutput: TaskOutput
-  ) => void;
+export interface TaskViewData {
+  label: string;
+  command: TaskInfo['command'];
+  status: ExecutionStatus;
+  elapsed?: number;
+  stdout: string;
+  stderr: string;
+  isActive: boolean;
+  isFinished: boolean;
 }
 
+/**
+ * Props for ExecuteView - all display-related data
+ */
+export interface ExecuteViewProps {
+  isLoading: boolean;
+  isExecuting: boolean;
+  isActive: boolean;
+  error: string | null;
+  message: string;
+  tasks: TaskViewData[];
+  completionMessage: string | null;
+  showTasks: boolean;
+}
+
+/**
+ * Execute view: Pure display component for task execution progress
+ */
 export const ExecuteView = ({
-  state,
-  status,
-  workdir,
-  onOutputChange,
-  onTaskComplete,
-  onTaskAbort,
-  onTaskError,
+  isLoading,
+  isExecuting,
+  isActive,
+  error,
+  message,
+  tasks,
+  completionMessage,
+  showTasks,
 }: ExecuteViewProps) => {
-  const isActive = status === ComponentStatus.Active;
-  const { error, tasks, message, completed, completionMessage } = state;
-  const hasProcessed = tasks.length > 0;
-
-  // Derive loading state from current conditions
-  const isLoading = isActive && tasks.length === 0 && !error && !hasProcessed;
-  const isExecuting = completed < tasks.length;
-
   // Return null only when loading completes with no commands
   if (!isActive && tasks.length === 0 && !error) {
     return null;
   }
-
-  // Show completed steps when not active
-  const showTasks = !isActive && tasks.length > 0;
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
@@ -121,40 +162,19 @@ export const ExecuteView = ({
             </Box>
           )}
 
-          {tasks.map((taskInfo, index) => {
-            // Merge workdir into active task's command
-            const taskCommand =
-              isActive && index === completed && workdir
-                ? { ...taskInfo.command, workdir }
-                : taskInfo.command;
-
-            return (
-              <Box key={index} marginBottom={index < tasks.length - 1 ? 1 : 0}>
-                <Task
-                  label={taskInfo.label}
-                  command={taskCommand}
-                  isActive={isActive && index === completed}
-                  isFinished={index < completed}
-                  index={index}
-                  initialStatus={taskInfo.status}
-                  initialElapsed={taskInfo.elapsed}
-                  initialOutput={
-                    taskInfo.stdout || taskInfo.stderr || taskInfo.error
-                      ? {
-                          stdout: taskInfo.stdout ?? '',
-                          stderr: taskInfo.stderr ?? '',
-                          error: taskInfo.error ?? '',
-                        }
-                      : undefined
-                  }
-                  onOutputChange={onOutputChange}
-                  onComplete={onTaskComplete}
-                  onAbort={onTaskAbort}
-                  onError={onTaskError}
-                />
-              </Box>
-            );
-          })}
+          {tasks.map((task, index) => (
+            <Box key={index} marginBottom={index < tasks.length - 1 ? 1 : 0}>
+              <TaskView
+                label={task.label}
+                command={task.command}
+                status={task.status}
+                elapsed={task.elapsed}
+                stdout={task.stdout}
+                stderr={task.stderr}
+                isFinished={task.isFinished}
+              />
+            </Box>
+          ))}
         </Box>
       )}
 
@@ -164,15 +184,18 @@ export const ExecuteView = ({
         </Box>
       )}
 
-      {error && <Message text={error} status={status} />}
+      {error && (
+        <Box marginLeft={1}>
+          <Text>{error}</Text>
+        </Box>
+      )}
     </Box>
   );
 };
 
 /**
- * Execute controller: Runs tasks sequentially
+ * Execute controller: Runs tasks sequentially and manages all execution state
  */
-
 export function Execute({
   tasks: inputTasks,
   status,
@@ -184,78 +207,79 @@ export function Execute({
   const isActive = status === ComponentStatus.Active;
   const [localState, dispatch] = useReducer(executeReducer, initialState);
 
-  // Ref to store current output for each task (avoids re-renders)
-  const taskOutputRef = useRef<Map<number, TaskOutput>>(new Map());
+  // Live output state for currently executing task
+  const [liveOutput, setLiveOutput] = useState<TaskOutput>({
+    stdout: '',
+    stderr: '',
+    error: '',
+  });
+  const [liveElapsed, setLiveElapsed] = useState(0);
+  const [taskStartTime, setTaskStartTime] = useState<number | null>(null);
 
   // Track working directory across commands (persists cd changes)
   const workdirRef = useRef<string | undefined>(undefined);
 
-  const {
-    error,
-    tasks,
-    message,
-    completed,
-    hasProcessed,
-    completionMessage,
-    summary,
-  } = localState;
+  // Ref to track if current task execution is cancelled
+  const cancelledRef = useRef(false);
 
-  // Derive loading state from current conditions
+  const { error, tasks, message, hasProcessed, completionMessage, summary } =
+    localState;
+
+  // Derive current task index from tasks
+  const currentTaskIndex = getCurrentTaskIndex(tasks);
+
+  // Derive states
   const isLoading = isActive && tasks.length === 0 && !error && !hasProcessed;
+  const isExecuting = isActive && currentTaskIndex < tasks.length;
+  const showTasks = !isActive && tasks.length > 0;
 
-  const isExecuting = completed < tasks.length;
+  // Update elapsed time while task is running
+  useEffect(() => {
+    if (!taskStartTime || !isExecuting) return;
 
-  // Handle output changes from Task - store in ref (no re-render)
-  const handleOutputChange = useCallback(
-    (index: number, taskOutput: TaskOutput) => {
-      taskOutputRef.current.set(index, taskOutput);
-    },
-    []
-  );
+    const interval = setInterval(() => {
+      setLiveElapsed(Date.now() - taskStartTime);
+    }, ELAPSED_UPDATE_INTERVAL);
 
-  // Handle cancel with useCallback to ensure we capture latest state
+    return () => {
+      clearInterval(interval);
+    };
+  }, [taskStartTime, isExecuting]);
+
+  // Handle cancel
   const handleCancel = useCallback(() => {
-    dispatch({
-      type: ExecuteActionType.CancelExecution,
-      payload: { completed },
-    });
+    cancelledRef.current = true;
 
-    // Get updated task infos after cancel, merging output from ref
-    const updatedTaskInfos = tasks.map((task, taskIndex) => {
-      const output = taskOutputRef.current.get(taskIndex);
-      const baseTask = output
-        ? {
-            ...task,
-            stdout: output.stdout,
-            stderr: output.stderr,
-            error: output.error,
-          }
-        : task;
+    dispatch({ type: ExecuteActionType.CancelExecution });
 
-      if (taskIndex < completed) {
-        return { ...baseTask, status: ExecutionStatus.Success };
-      } else if (taskIndex === completed) {
-        return { ...baseTask, status: ExecutionStatus.Aborted };
-      } else {
-        return { ...baseTask, status: ExecutionStatus.Cancelled };
+    // Build updated task infos with current output for the running task
+    const updatedTaskInfos = tasks.map((task) => {
+      if (task.status === ExecutionStatus.Running) {
+        return {
+          ...task,
+          status: ExecutionStatus.Aborted,
+          stdout: liveOutput.stdout,
+          stderr: liveOutput.stderr,
+          error: liveOutput.error,
+        };
+      } else if (task.status === ExecutionStatus.Pending) {
+        return { ...task, status: ExecutionStatus.Cancelled };
       }
+      return task;
     });
 
-    // Expose final state
     const finalState = createExecuteState({
       message,
       summary,
       tasks: updatedTaskInfos,
-      completed,
     });
     requestHandlers.onCompleted(finalState);
-
     requestHandlers.onAborted('execution');
-  }, [message, summary, tasks, completed, requestHandlers]);
+  }, [message, summary, tasks, liveOutput, requestHandlers]);
 
   useInput(
     (_, key) => {
-      if (key.escape && (isLoading || isExecuting) && isActive) {
+      if (key.escape && (isLoading || isExecuting)) {
         handleCancel();
       }
     },
@@ -286,15 +310,11 @@ export function Execute({
         }
 
         if (result.commands.length === 0) {
-          // Check if this is an error response (has error field)
           if (result.error) {
-            // Add error message to timeline
             const errorMessage = getExecutionErrorMessage(result.error);
             workflowHandlers.addToTimeline(
               markAsDone(createMessage(errorMessage))
             );
-
-            // Complete without error in state (message already in timeline)
             requestHandlers.onCompleted(
               createExecuteState({ message: result.message })
             );
@@ -302,7 +322,6 @@ export function Execute({
             return;
           }
 
-          // No commands and no error - just complete
           dispatch({
             type: ExecuteActionType.ProcessingComplete,
             payload: { message: result.message },
@@ -315,7 +334,7 @@ export function Execute({
         }
 
         // Create task infos from commands
-        const tasks = result.commands.map(
+        const taskInfos = result.commands.map(
           (cmd, index) =>
             ({
               label: inputTasks[index]?.action ?? cmd.description,
@@ -330,16 +349,15 @@ export function Execute({
           payload: {
             message: result.message,
             summary: result.summary,
-            tasks,
+            tasks: taskInfos,
           },
         });
 
-        // Update state after AI processing
         requestHandlers.onCompleted(
           createExecuteState({
             message: result.message,
             summary: result.summary,
-            tasks,
+            tasks: taskInfos,
           })
         );
       } catch (err) {
@@ -371,143 +389,178 @@ export function Execute({
     requestHandlers,
     lifecycleHandlers,
     workflowHandlers,
-
     tasks.length,
     hasProcessed,
   ]);
 
-  // Handle task completion - move to next task
-  const handleTaskComplete = useCallback(
-    (index: number, elapsed: number, taskOutput: TaskOutput) => {
-      // Track working directory for subsequent commands
-      if (taskOutput.workdir) {
-        workdirRef.current = taskOutput.workdir;
-      }
+  // Execute current task
+  useEffect(() => {
+    if (
+      !isActive ||
+      tasks.length === 0 ||
+      currentTaskIndex >= tasks.length ||
+      error
+    ) {
+      return;
+    }
 
-      // Update tasks with output before calling handler
-      const tasksWithOutput = tasks.map((task, i) =>
-        i === index
-          ? {
-              ...task,
-              stdout: taskOutput.stdout,
-              stderr: taskOutput.stderr,
-              error: taskOutput.error,
-            }
-          : task
-      );
+    const currentTask = tasks[currentTaskIndex];
+    if (currentTask.status !== ExecutionStatus.Pending) {
+      return;
+    }
 
-      const result = handleTaskCompletion(index, elapsed, {
-        tasks: tasksWithOutput,
-        message,
-        summary,
-      });
+    cancelledRef.current = false;
 
-      dispatch(result.action);
-      requestHandlers.onCompleted(result.finalState);
+    // Mark task as started (running)
+    dispatch({
+      type: ExecuteActionType.TaskStarted,
+      payload: { index: currentTaskIndex },
+    });
 
-      if (result.shouldComplete) {
-        lifecycleHandlers.completeActive();
-      }
-    },
-    [tasks, message, summary, requestHandlers, lifecycleHandlers]
-  );
+    // Reset live state for new task
+    setLiveOutput({ stdout: '', stderr: '', error: '' });
+    setLiveElapsed(0);
+    setTaskStartTime(Date.now());
 
-  const handleTaskError = useCallback(
-    (index: number, error: string, elapsed: number, taskOutput: TaskOutput) => {
-      // Track working directory for subsequent commands (even on error)
-      if (taskOutput.workdir) {
-        workdirRef.current = taskOutput.workdir;
-      }
+    // Merge workdir into command
+    const command = workdirRef.current
+      ? { ...currentTask.command, workdir: workdirRef.current }
+      : currentTask.command;
 
-      // Update tasks with output before calling handler
-      const tasksWithOutput = tasks.map((task, i) =>
-        i === index
-          ? {
-              ...task,
-              stdout: taskOutput.stdout,
-              stderr: taskOutput.stderr,
-              error: taskOutput.error,
-            }
-          : task
-      );
+    void executeTask(command, currentTaskIndex, {
+      onOutputChange: (output) => {
+        if (!cancelledRef.current) {
+          setLiveOutput(output);
+        }
+      },
+      onComplete: (elapsed, output) => {
+        if (cancelledRef.current) return;
 
-      const result = handleTaskFailure(index, error, elapsed, {
-        tasks: tasksWithOutput,
-        message,
-        summary,
-      });
+        setTaskStartTime(null);
 
-      dispatch(result.action);
-      requestHandlers.onCompleted(result.finalState);
+        // Track working directory
+        if (output.workdir) {
+          workdirRef.current = output.workdir;
+        }
 
-      // Add error feedback to queue for critical failures
-      if (result.action.type === ExecuteActionType.TaskErrorCritical) {
-        const errorMessage = getExecutionErrorMessage(error);
-        workflowHandlers.addToQueue(
-          createFeedback(FeedbackType.Failed, errorMessage)
+        const tasksWithOutput = tasks.map((task, i) =>
+          i === currentTaskIndex
+            ? {
+                ...task,
+                stdout: output.stdout,
+                stderr: output.stderr,
+                error: output.error,
+              }
+            : task
         );
-      }
 
-      if (result.shouldComplete) {
-        lifecycleHandlers.completeActive();
-      }
-    },
-    [
-      tasks,
-      message,
-      summary,
-      requestHandlers,
-      lifecycleHandlers,
-      workflowHandlers,
-    ]
-  );
+        const result = handleTaskCompletion(currentTaskIndex, elapsed, {
+          tasks: tasksWithOutput,
+          message,
+          summary,
+        });
 
-  const handleTaskAbort = useCallback(
-    (index: number, taskOutput: TaskOutput) => {
-      // Task was aborted - execution already stopped by Escape handler
-      // Update tasks with output before building state
-      const tasksWithOutput = tasks.map((task, i) =>
-        i === index
-          ? {
-              ...task,
-              stdout: taskOutput.stdout,
-              stderr: taskOutput.stderr,
-              error: taskOutput.error,
-            }
-          : task
-      );
+        dispatch(result.action);
+        requestHandlers.onCompleted(result.finalState);
 
-      const finalState = buildAbortedState(
-        tasksWithOutput,
-        message,
-        summary,
-        completed
-      );
+        if (result.shouldComplete) {
+          lifecycleHandlers.completeActive();
+        }
+      },
+      onError: (errorMsg, elapsed, output) => {
+        if (cancelledRef.current) return;
 
-      requestHandlers.onCompleted(finalState);
-    },
-    [tasks, message, summary, completed, requestHandlers]
-  );
+        setTaskStartTime(null);
 
-  // Controller always renders View with current state
-  const viewState = createExecuteState({
-    error,
+        // Track working directory
+        if (output.workdir) {
+          workdirRef.current = output.workdir;
+        }
+
+        const tasksWithOutput = tasks.map((task, i) =>
+          i === currentTaskIndex
+            ? {
+                ...task,
+                stdout: output.stdout,
+                stderr: output.stderr,
+                error: output.error,
+              }
+            : task
+        );
+
+        const result = handleTaskFailure(currentTaskIndex, errorMsg, elapsed, {
+          tasks: tasksWithOutput,
+          message,
+          summary,
+        });
+
+        dispatch(result.action);
+        requestHandlers.onCompleted(result.finalState);
+
+        if (result.action.type === ExecuteActionType.TaskErrorCritical) {
+          const errorMessage = getExecutionErrorMessage(errorMsg);
+          workflowHandlers.addToQueue(
+            createFeedback(FeedbackType.Failed, errorMessage)
+          );
+        }
+
+        if (result.shouldComplete) {
+          lifecycleHandlers.completeActive();
+        }
+      },
+    });
+  }, [
+    isActive,
     tasks,
+    currentTaskIndex,
     message,
     summary,
-    completed,
-    completionMessage,
+    error,
+    requestHandlers,
+    lifecycleHandlers,
+    workflowHandlers,
+  ]);
+
+  // Build view data for each task
+  const taskViewData: TaskViewData[] = tasks.map((task) => {
+    const isTaskActive = isActive && task.status === ExecutionStatus.Running;
+    const finished = isTaskFinished(task);
+
+    // Use live output for active task, stored output for finished tasks
+    const stdout = isTaskActive ? liveOutput.stdout : (task.stdout ?? '');
+    const stderr = isTaskActive ? liveOutput.stderr : (task.stderr ?? '');
+
+    // Use live elapsed for active running task
+    const elapsed = isTaskActive ? liveElapsed : task.elapsed;
+
+    // Merge workdir for active task
+    const command =
+      isTaskActive && workdirRef.current
+        ? { ...task.command, workdir: workdirRef.current }
+        : task.command;
+
+    return {
+      label: task.label,
+      command,
+      status: task.status,
+      elapsed,
+      stdout,
+      stderr,
+      isActive: isTaskActive,
+      isFinished: finished,
+    };
   });
 
   return (
     <ExecuteView
-      state={viewState}
-      status={status}
-      workdir={workdirRef.current}
-      onOutputChange={handleOutputChange}
-      onTaskComplete={handleTaskComplete}
-      onTaskAbort={handleTaskAbort}
-      onTaskError={handleTaskError}
+      isLoading={isLoading}
+      isExecuting={isExecuting}
+      isActive={isActive}
+      error={error}
+      message={message}
+      tasks={taskViewData}
+      completionMessage={completionMessage}
+      showTasks={showTasks}
     />
   );
 }

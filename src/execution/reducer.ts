@@ -12,7 +12,6 @@ export const initialState: InternalExecuteState = {
   error: null,
   tasks: [],
   message: '',
-  completed: 0,
   hasProcessed: false,
   completionMessage: null,
   summary: '',
@@ -36,7 +35,6 @@ export function executeReducer(
         message: action.payload.message,
         summary: action.payload.summary,
         tasks: action.payload.tasks,
-        completed: 0,
       };
 
     case ExecuteActionType.ProcessingError:
@@ -45,6 +43,18 @@ export function executeReducer(
         error: action.payload.error,
         hasProcessed: true,
       };
+
+    case ExecuteActionType.TaskStarted: {
+      const updatedTasks = state.tasks.map((task, i) =>
+        i === action.payload.index
+          ? { ...task, status: ExecutionStatus.Running }
+          : task
+      );
+      return {
+        ...state,
+        tasks: updatedTasks,
+      };
+    }
 
     case ExecuteActionType.TaskComplete: {
       const updatedTaskInfos = state.tasks.map((task, i) =>
@@ -59,7 +69,6 @@ export function executeReducer(
       return {
         ...state,
         tasks: updatedTaskInfos,
-        completed: action.payload.index + 1,
       };
     }
 
@@ -78,7 +87,6 @@ export function executeReducer(
       return {
         ...state,
         tasks: updatedTaskInfos,
-        completed: action.payload.index + 1,
         completionMessage: completion,
       };
     }
@@ -109,7 +117,6 @@ export function executeReducer(
       return {
         ...state,
         tasks: updatedTaskInfos,
-        completed: action.payload.index + 1,
       };
     }
 
@@ -128,20 +135,19 @@ export function executeReducer(
       return {
         ...state,
         tasks: updatedTaskInfos,
-        completed: action.payload.index + 1,
         completionMessage: completion,
       };
     }
 
     case ExecuteActionType.CancelExecution: {
-      const updatedTaskInfos = state.tasks.map((task, taskIndex) => {
-        if (taskIndex < action.payload.completed) {
-          return { ...task, status: ExecutionStatus.Success };
-        } else if (taskIndex === action.payload.completed) {
+      // Mark running task as aborted, pending tasks as cancelled
+      const updatedTaskInfos = state.tasks.map((task) => {
+        if (task.status === ExecutionStatus.Running) {
           return { ...task, status: ExecutionStatus.Aborted };
-        } else {
+        } else if (task.status === ExecutionStatus.Pending) {
           return { ...task, status: ExecutionStatus.Cancelled };
         }
+        return task;
       });
       return {
         ...state,

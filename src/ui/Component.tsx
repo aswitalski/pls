@@ -2,6 +2,7 @@ import { memo, ReactElement } from 'react';
 
 import {
   ComponentDefinition,
+  ComponentStatus,
   ManagedComponentDefinition,
 } from '../types/components.js';
 import { ComponentName } from '../types/types.js';
@@ -19,7 +20,7 @@ import { Command, CommandView } from './Command.js';
 import { Config, ConfigView } from './Config.js';
 import { Confirm, ConfirmView } from './Confirm.js';
 import { Debug } from './Debug.js';
-import { Execute, ExecuteView } from './Execute.js';
+import { Execute, ExecuteView, mapStateToViewProps } from './Execute.js';
 import { Feedback } from './Feedback.js';
 import { Introspect, IntrospectView } from './Introspect.js';
 import { Message } from './Message.js';
@@ -309,7 +310,9 @@ export const ViewComponent = memo(function ViewComponent({
 
     case ComponentName.Execute: {
       const { state, status } = def;
-      return <ExecuteView state={state} status={status} />;
+      const isActive = status === ComponentStatus.Active;
+      const viewProps = mapStateToViewProps(state, isActive);
+      return <ExecuteView {...viewProps} />;
     }
 
     case ComponentName.Answer: {

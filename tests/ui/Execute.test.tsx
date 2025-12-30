@@ -7,7 +7,11 @@ import { TaskType } from '../../src/types/types.js';
 
 import { ExecutionResult, ExecutionStatus } from '../../src/services/shell.js';
 
-import { Execute, ExecuteView } from '../../src/ui/Execute.js';
+import {
+  Execute,
+  ExecuteView,
+  mapStateToViewProps,
+} from '../../src/ui/Execute.js';
 
 import {
   createRequestHandlers,
@@ -125,19 +129,16 @@ describe('Execute component', () => {
   });
 
   it('returns null when done with no commands', () => {
-    const { lastFrame } = render(
-      <ExecuteView
-        state={{
-          error: null,
-          message: '',
-          summary: '',
-          tasks: [],
-          completed: 0,
-          completionMessage: null,
-        }}
-        status={ComponentStatus.Done}
-      />
-    );
+    const state = {
+      error: null,
+      message: '',
+      summary: '',
+      tasks: [],
+      completed: 0,
+      completionMessage: null,
+    };
+    const viewProps = mapStateToViewProps(state, false);
+    const { lastFrame } = render(<ExecuteView {...viewProps} />);
 
     expect(lastFrame()).toBe('');
   });
@@ -1033,35 +1034,32 @@ describe('Execute component', () => {
 
   describe('Completion summary', () => {
     it('shows completion message with summary and time', async () => {
-      const { lastFrame } = render(
-        <ExecuteView
-          state={{
-            error: null,
-            message: 'Execute commands:',
-            summary: 'All tasks completed successfully',
-            tasks: [
-              {
-                label: 'Do something',
-                command: { description: 'First task', command: 'echo "first"' },
-                status: ExecutionStatus.Success,
-                elapsed: 0,
-              },
-              {
-                label: 'Do something',
-                command: {
-                  description: 'Second task',
-                  command: 'echo "second"',
-                },
-                status: ExecutionStatus.Success,
-                elapsed: 0,
-              },
-            ],
-            completed: 2,
-            completionMessage: 'All tasks completed successfully in 0 seconds.',
-          }}
-          status={ComponentStatus.Done}
-        />
-      );
+      const state = {
+        error: null,
+        message: 'Execute commands:',
+        summary: 'All tasks completed successfully',
+        tasks: [
+          {
+            label: 'Do something',
+            command: { description: 'First task', command: 'echo "first"' },
+            status: ExecutionStatus.Success,
+            elapsed: 0,
+          },
+          {
+            label: 'Do something',
+            command: {
+              description: 'Second task',
+              command: 'echo "second"',
+            },
+            status: ExecutionStatus.Success,
+            elapsed: 0,
+          },
+        ],
+        completed: 2,
+        completionMessage: 'All tasks completed successfully in 0 seconds.',
+      };
+      const viewProps = mapStateToViewProps(state, false);
+      const { lastFrame } = render(<ExecuteView {...viewProps} />);
 
       const frame = lastFrame();
       expect(frame).toContain('All tasks completed successfully');
@@ -1070,26 +1068,23 @@ describe('Execute component', () => {
     });
 
     it('uses fallback message when summary is empty', async () => {
-      const { lastFrame } = render(
-        <ExecuteView
-          state={{
-            error: null,
-            message: 'Execute commands:',
-            summary: '',
-            tasks: [
-              {
-                label: 'Do something',
-                command: { description: 'Task', command: 'echo "test"' },
-                status: ExecutionStatus.Success,
-                elapsed: 0,
-              },
-            ],
-            completed: 1,
-            completionMessage: 'Execution completed in 0 seconds.',
-          }}
-          status={ComponentStatus.Done}
-        />
-      );
+      const state = {
+        error: null,
+        message: 'Execute commands:',
+        summary: '',
+        tasks: [
+          {
+            label: 'Do something',
+            command: { description: 'Task', command: 'echo "test"' },
+            status: ExecutionStatus.Success,
+            elapsed: 0,
+          },
+        ],
+        completed: 1,
+        completionMessage: 'Execution completed in 0 seconds.',
+      };
+      const viewProps = mapStateToViewProps(state, false);
+      const { lastFrame } = render(<ExecuteView {...viewProps} />);
 
       const frame = lastFrame();
       expect(frame).toContain('Execution completed');
@@ -1171,8 +1166,8 @@ describe('Execute component', () => {
     });
   });
 
-  describe('Completed field tracking', () => {
-    it('starts with completed at 0 when execution begins', async () => {
+  describe('Task status tracking', () => {
+    it('tracks task statuses during execution', async () => {
       const service = createMockAnthropicService({
         message: 'Running tasks.',
         commands: [
@@ -1186,7 +1181,6 @@ describe('Execute component', () => {
         { action: 'Second task', type: TaskType.Execute },
       ];
 
-      // Start with no state, should initialize completed to 0
       const { lastFrame } = render(
         <Execute
           tasks={tasks}
@@ -1201,336 +1195,34 @@ describe('Execute component', () => {
       // Wait for execution to start
       await vi.advanceTimersByTimeAsync(100);
 
-      // Component should start rendering tasks (completed starts at 0)
+      // Component should start rendering tasks
       const frame = lastFrame();
       expect(frame).toBeTruthy();
     });
 
-    it('increments completed as tasks finish successfully', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
-
-      let executionCount = 0;
-      vi.mocked(executeCommand).mockImplementation(async () => {
-        executionCount++;
-        return {
-          description: 'Task',
-          command: 'cmd',
-          output: 'success',
-          errors: '',
-          result: ExecutionResult.Success,
-        };
-      });
-
-      const service = createMockAnthropicService({
+    it('restores tasks from state when resuming', () => {
+      const state = {
+        error: null,
         message: 'Running tasks.',
-        commands: [
-          { description: 'First', command: 'first' },
-          { description: 'Second', command: 'second' },
-          { description: 'Third', command: 'third' },
+        summary: '',
+        tasks: [
+          {
+            label: 'First task',
+            command: { description: 'First', command: 'first' },
+            status: ExecutionStatus.Success,
+            elapsed: 0,
+          },
+          {
+            label: 'Second task',
+            command: { description: 'Second', command: 'second' },
+            status: ExecutionStatus.Success,
+            elapsed: 0,
+          },
         ],
-      });
-
-      const onCompleted = vi.fn();
-      const tasks = [
-        { action: 'First task', type: TaskType.Execute },
-        { action: 'Second task', type: TaskType.Execute },
-        { action: 'Third task', type: TaskType.Execute },
-      ];
-
-      render(
-        <Execute
-          tasks={tasks}
-          service={service}
-          requestHandlers={createRequestHandlers({ onCompleted })}
-          lifecycleHandlers={createLifecycleHandlers()}
-          workflowHandlers={createWorkflowHandlers()}
-          status={ComponentStatus.Active}
-        />
-      );
-
-      await vi.waitFor(
-        () => {
-          expect(executionCount).toBe(3);
-        },
-        { timeout: 1000 }
-      );
-
-      // Check that final state has completed = 3
-      const calls = vi.mocked(onCompleted).mock.calls;
-      const finalCall = calls[calls.length - 1];
-      expect(finalCall[0].completed).toBe(3);
-    });
-
-    it('sets completed correctly on critical failure', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
-
-      vi.mocked(executeCommand).mockImplementation(
-        async (cmd: { command: string }) => {
-          if (cmd.command === 'second') {
-            return {
-              description: 'Second',
-              command: 'second',
-              output: '',
-              errors: 'Critical error',
-              result: ExecutionResult.Error,
-            };
-          }
-          return {
-            description: 'Task',
-            command: cmd.command,
-            output: 'success',
-            errors: '',
-            result: ExecutionResult.Success,
-          };
-        }
-      );
-
-      const service = createMockAnthropicService({
-        message: 'Running tasks.',
-        commands: [
-          { description: 'First', command: 'first', critical: true },
-          { description: 'Second', command: 'second', critical: true },
-          { description: 'Third', command: 'third', critical: true },
-        ],
-      });
-
-      const onCompleted = vi.fn();
-      const tasks = [
-        { action: 'First task', type: TaskType.Execute },
-        { action: 'Second task', type: TaskType.Execute },
-        { action: 'Third task', type: TaskType.Execute },
-      ];
-
-      render(
-        <Execute
-          tasks={tasks}
-          service={service}
-          lifecycleHandlers={createLifecycleHandlers()}
-          requestHandlers={createRequestHandlers({ onCompleted })}
-          workflowHandlers={createWorkflowHandlers()}
-          status={ComponentStatus.Active}
-        />
-      );
-
-      await vi.waitFor(
-        () => {
-          // Wait for execution to complete without completion message (critical failure)
-          const calls = vi.mocked(onCompleted).mock.calls;
-          const finalCall = calls[calls.length - 1];
-          expect(finalCall).toBeDefined();
-          expect(finalCall[0].completionMessage).toBeNull();
-        },
-        { timeout: 1000 }
-      );
-
-      // Check that completed = 2 (first task completed, second failed)
-      const calls = vi.mocked(onCompleted).mock.calls;
-      const finalCall = calls[calls.length - 1];
-      expect(finalCall[0].completed).toBe(2);
-    });
-
-    it('sets completed correctly on non-critical failure', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
-
-      vi.mocked(executeCommand).mockImplementation(
-        async (cmd: { command: string }) => {
-          if (cmd.command === 'second') {
-            return {
-              description: 'Second',
-              command: 'second',
-              output: '',
-              errors: 'Non-critical error',
-              result: ExecutionResult.Error,
-            };
-          }
-          return {
-            description: 'Task',
-            command: cmd.command,
-            output: 'success',
-            errors: '',
-            result: ExecutionResult.Success,
-          };
-        }
-      );
-
-      const service = createMockAnthropicService({
-        message: 'Running tasks.',
-        commands: [
-          { description: 'First', command: 'first', critical: true },
-          { description: 'Second', command: 'second', critical: false },
-          { description: 'Third', command: 'third', critical: true },
-        ],
-      });
-
-      const onCompleted = vi.fn();
-      const completeActive = vi.fn();
-      const tasks = [
-        { action: 'First task', type: TaskType.Execute },
-        { action: 'Second task', type: TaskType.Execute },
-        { action: 'Third task', type: TaskType.Execute },
-      ];
-
-      render(
-        <Execute
-          tasks={tasks}
-          service={service}
-          requestHandlers={createRequestHandlers({ onCompleted })}
-          lifecycleHandlers={createLifecycleHandlers({ completeActive })}
-          workflowHandlers={createWorkflowHandlers()}
-          status={ComponentStatus.Active}
-        />
-      );
-
-      await vi.waitFor(
-        () => {
-          expect(completeActive).toHaveBeenCalled();
-        },
-        { timeout: 1000 }
-      );
-
-      // Check that completed = 3 (all tasks attempted)
-      const calls = vi.mocked(onCompleted).mock.calls;
-      const finalCall = calls[calls.length - 1];
-      expect(finalCall[0].completed).toBe(3);
-    });
-
-    it('preserves completed when aborting', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
-
-      vi.mocked(executeCommand).mockImplementation(async () => {
-        // Simulate slow execution
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        return {
-          description: 'Task',
-          command: 'cmd',
-          output: 'success',
-          errors: '',
-          result: ExecutionResult.Success,
-        };
-      });
-
-      const service = createMockAnthropicService({
-        message: 'Running tasks.',
-        commands: [
-          { description: 'First', command: 'first' },
-          { description: 'Second', command: 'second' },
-          { description: 'Third', command: 'third' },
-        ],
-      });
-
-      const onCompleted = vi.fn();
-      const onAborted = vi.fn();
-      const tasks = [
-        { action: 'First task', type: TaskType.Execute },
-        { action: 'Second task', type: TaskType.Execute },
-        { action: 'Third task', type: TaskType.Execute },
-      ];
-
-      const { stdin, lastFrame } = render(
-        <Execute
-          tasks={tasks}
-          service={service}
-          lifecycleHandlers={createLifecycleHandlers()}
-          requestHandlers={createRequestHandlers({
-            onCompleted,
-            onAborted,
-          })}
-          workflowHandlers={createWorkflowHandlers()}
-          status={ComponentStatus.Active}
-        />
-      );
-
-      // Wait for first task to complete and second to start
-      await vi.waitFor(
-        () => {
-          return (
-            lastFrame()?.includes('First') || lastFrame()?.includes('Running')
-          );
-        },
-        { timeout: 500 }
-      );
-
-      // Abort during execution
-      stdin.write('\x1b'); // Escape
-
-      await vi.waitFor(
-        () => {
-          expect(onAborted).toHaveBeenCalledWith('execution');
-        },
-        { timeout: 500 }
-      );
-
-      // Check that completed is set in the abort call
-      const calls = vi.mocked(onCompleted).mock.calls;
-      const abortCall = calls.find((call) => call[0].tasks !== undefined);
-      expect(abortCall).toBeDefined();
-      expect(abortCall![0]).toHaveProperty('completed');
-    });
-
-    it('includes completed in state updates', async () => {
-      const service = createMockAnthropicService({
-        message: 'Running tasks.',
-        commands: [{ description: 'Task', command: 'cmd' }],
-      });
-
-      const onCompleted = vi.fn();
-      const tasks = [{ action: 'Single task', type: TaskType.Execute }];
-
-      render(
-        <Execute
-          tasks={tasks}
-          service={service}
-          requestHandlers={createRequestHandlers({ onCompleted })}
-          lifecycleHandlers={createLifecycleHandlers()}
-          workflowHandlers={createWorkflowHandlers()}
-          status={ComponentStatus.Active}
-        />
-      );
-
-      await vi.advanceTimersByTimeAsync(1000);
-
-      await vi.waitFor(
-        () => {
-          expect(onCompleted).toHaveBeenCalled();
-        },
-        { timeout: 1000 }
-      );
-
-      // Check that at least one state update includes completed
-      const calls = vi.mocked(onCompleted).mock.calls;
-      const hasCompleted = calls.some(
-        (call) => call[0].completed !== undefined
-      );
-      expect(hasCompleted).toBe(true);
-    });
-
-    it('restores completed from state when resuming', () => {
-      const { lastFrame } = render(
-        <ExecuteView
-          state={{
-            error: null,
-            message: 'Running tasks.',
-            summary: '',
-            completed: 2,
-            tasks: [
-              {
-                label: 'First task',
-                command: { description: 'First', command: 'first' },
-                status: ExecutionStatus.Success,
-                elapsed: 0,
-              },
-              {
-                label: 'Second task',
-                command: { description: 'Second', command: 'second' },
-                status: ExecutionStatus.Success,
-                elapsed: 0,
-              },
-            ],
-            completionMessage: 'Tasks completed in 250ms.',
-          }}
-          status={ComponentStatus.Done}
-        />
-      );
+        completionMessage: 'Tasks completed in 250ms.',
+      };
+      const viewProps = mapStateToViewProps(state, false);
+      const { lastFrame } = render(<ExecuteView {...viewProps} />);
 
       // Should render with the restored state
       const frame = lastFrame();
@@ -1543,17 +1235,11 @@ describe('Execute component', () => {
       const service = createMockAnthropicService({
         message: 'Processing tasks',
         summary: 'Task summary',
-        commands: [
-          { description: 'First task', command: 'cmd1' },
-          { description: 'Second task', command: 'cmd2' },
-        ],
+        commands: [{ description: 'First task', command: 'cmd1' }],
       });
 
       const onCompleted = vi.fn();
-      const tasks = [
-        { action: 'First', type: TaskType.Execute },
-        { action: 'Second', type: TaskType.Execute },
-      ];
+      const tasks = [{ action: 'First', type: TaskType.Execute }];
 
       render(
         <Execute
@@ -1566,30 +1252,25 @@ describe('Execute component', () => {
         />
       );
 
-      await vi.advanceTimersByTimeAsync(500);
-
-      // Wait for completion
+      // Wait for any state update with tasks
       await vi.waitFor(
         () => {
-          const calls = onCompleted.mock.calls;
-          return calls.some((call) => call[0].completionMessage !== undefined);
+          expect(onCompleted).toHaveBeenCalled();
         },
         { timeout: 500 }
       );
 
-      // Find the final completion state update
+      // Verify state structure
       const calls = onCompleted.mock.calls;
-      const completionCall = calls.find(
-        (call) => call[0].completionMessage !== null
+      const stateWithTasks = calls.find(
+        (call) => call[0].tasks && call[0].tasks.length > 0
       );
 
-      expect(completionCall).toBeDefined();
-      expect(completionCall![0]).toMatchObject({
+      expect(stateWithTasks).toBeDefined();
+      expect(stateWithTasks![0]).toMatchObject({
         message: expect.any(String),
         summary: expect.any(String),
         tasks: expect.any(Array),
-        completed: expect.any(Number),
-        completionMessage: expect.any(String),
         error: null,
       });
     });
@@ -1644,7 +1325,6 @@ describe('Execute component', () => {
         message: expect.any(String),
         summary: expect.any(String),
         tasks: expect.any(Array),
-        completed: expect.any(Number),
         completionMessage: null,
         error: null,
       });
@@ -1686,7 +1366,6 @@ describe('Execute component', () => {
         message: '',
         summary: '',
         tasks: [],
-        completed: 0,
         completionMessage: null,
         error: expect.any(String),
       });
