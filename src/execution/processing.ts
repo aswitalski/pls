@@ -29,7 +29,7 @@ export async function processTasks(
   const userConfig = loadUserConfig();
 
   // Format tasks for the execute tool and resolve placeholders
-  const taskDescriptions = tasks
+  const taskList = tasks
     .map((task) => {
       const resolvedAction = replacePlaceholders(task.action, userConfig);
       const params = task.params
@@ -38,6 +38,13 @@ export async function processTasks(
       return `- ${resolvedAction}${params}`;
     })
     .join('\n');
+
+  // Build message with CRITICAL header showing confirmed schedule
+  const taskDescriptions =
+    `CRITICAL: The user has confirmed the following schedule with exactly ` +
+    `${tasks.length} task(s). You MUST generate exactly ${tasks.length} ` +
+    `command(s), one per task.\n\n` +
+    `Confirmed schedule:\n${taskList}`;
 
   // Call execute tool to get commands
   const result = await service.processWithTool(taskDescriptions, 'execute');
