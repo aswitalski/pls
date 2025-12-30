@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ComponentStatus, ExecuteState } from '../../src/types/components.js';
 import { TaskType } from '../../src/types/types.js';
 
-import { ExecutionResult } from '../../src/services/shell.js';
+import { ExecutionResult, ExecutionStatus } from '../../src/services/shell.js';
 
 import { Execute, ExecuteView } from '../../src/ui/Execute.js';
 
@@ -1043,6 +1043,8 @@ describe('Execute component', () => {
               {
                 label: 'Do something',
                 command: { description: 'First task', command: 'echo "first"' },
+                status: ExecutionStatus.Success,
+                elapsed: 0,
               },
               {
                 label: 'Do something',
@@ -1050,6 +1052,8 @@ describe('Execute component', () => {
                   description: 'Second task',
                   command: 'echo "second"',
                 },
+                status: ExecutionStatus.Success,
+                elapsed: 0,
               },
             ],
             completed: 2,
@@ -1076,6 +1080,8 @@ describe('Execute component', () => {
               {
                 label: 'Do something',
                 command: { description: 'Task', command: 'echo "test"' },
+                status: ExecutionStatus.Success,
+                elapsed: 0,
               },
             ],
             completed: 1,
@@ -1510,10 +1516,14 @@ describe('Execute component', () => {
               {
                 label: 'First task',
                 command: { description: 'First', command: 'first' },
+                status: ExecutionStatus.Success,
+                elapsed: 0,
               },
               {
                 label: 'Second task',
                 command: { description: 'Second', command: 'second' },
+                status: ExecutionStatus.Success,
+                elapsed: 0,
               },
             ],
             completionMessage: 'Tasks completed in 250ms.',

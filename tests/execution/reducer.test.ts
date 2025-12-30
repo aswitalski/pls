@@ -10,13 +10,18 @@ import {
   InternalExecuteState,
 } from '../../src/execution/types.js';
 
-function createTaskInfo(label: string, elapsed?: number): TaskInfo {
+function createTaskInfo(
+  label: string,
+  elapsed: number = 0,
+  status: ExecutionStatus = ExecutionStatus.Pending
+): TaskInfo {
   return {
     label,
     command: {
       description: label,
       command: `run ${label}`,
     },
+    status,
     elapsed,
   };
 }
@@ -155,7 +160,7 @@ describe('Execution reducer', () => {
       const result = executeReducer(state, action);
 
       expect(result.tasks[0].status).toBe(ExecutionStatus.Success);
-      expect(result.tasks[1].status).toBeUndefined();
+      expect(result.tasks[1].status).toBe(ExecutionStatus.Pending);
     });
 
     it('updates task elapsed time', () => {

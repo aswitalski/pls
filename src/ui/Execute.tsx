@@ -5,6 +5,7 @@ import {
   ComponentStatus,
   ExecuteProps,
   ExecuteState,
+  TaskInfo,
 } from '../types/components.js';
 
 import { getTextColor } from '../services/colors.js';
@@ -300,17 +301,22 @@ export function Execute({
         }
 
         // Create task infos from commands
-        const infos = result.commands.map((cmd, index) => ({
-          label: inputTasks[index]?.action,
-          command: cmd,
-        }));
+        const tasks = result.commands.map(
+          (cmd, index) =>
+            ({
+              label: inputTasks[index]?.action ?? cmd.description,
+              command: cmd,
+              status: ExecutionStatus.Pending,
+              elapsed: 0,
+            }) as TaskInfo
+        );
 
         dispatch({
           type: ExecuteActionType.CommandsReady,
           payload: {
             message: result.message,
             summary: result.summary,
-            tasks: infos,
+            tasks,
           },
         });
 
@@ -319,7 +325,7 @@ export function Execute({
           createExecuteState({
             message: result.message,
             summary: result.summary,
-            tasks: infos,
+            tasks,
           })
         );
       } catch (err) {

@@ -12,7 +12,7 @@ import {
  * Calculate total elapsed time from task infos
  */
 function getTotalElapsed(tasks: TaskInfo[]): number {
-  return tasks.reduce((sum, task) => sum + (task.elapsed ?? 0), 0);
+  return tasks.reduce((sum, task) => sum + task.elapsed, 0);
 }
 
 export const initialState: InternalExecuteState = {

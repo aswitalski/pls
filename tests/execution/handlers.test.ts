@@ -16,7 +16,7 @@ import {
 function createTaskInfo(
   label: string,
   critical?: boolean,
-  elapsed?: number
+  elapsed: number = 0
 ): TaskInfo {
   return {
     label,
@@ -25,6 +25,7 @@ function createTaskInfo(
       command: `run ${label}`,
       critical,
     },
+    status: ExecutionStatus.Pending,
     elapsed,
   };
 }
@@ -72,7 +73,7 @@ describe('Task completion handling', () => {
 
       expect(result.finalState.tasks[0].status).toBe(ExecutionStatus.Success);
       expect(result.finalState.tasks[0].elapsed).toBe(2500);
-      expect(result.finalState.tasks[1].status).toBeUndefined();
+      expect(result.finalState.tasks[1].status).toBe(ExecutionStatus.Pending);
     });
 
     it('stores elapsed time on task info', () => {

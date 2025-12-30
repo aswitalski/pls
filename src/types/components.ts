@@ -206,8 +206,8 @@ export interface AnswerState extends BaseState {
 export interface TaskInfo {
   label: string;
   command: ExecuteCommand;
-  status?: ExecutionStatus;
-  elapsed?: number;
+  status: ExecutionStatus;
+  elapsed: number;
   stdout?: string;
   stderr?: string;
   error?: string;
