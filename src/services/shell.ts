@@ -207,10 +207,43 @@ export class RealExecutor implements Executor {
         }, cmd.timeout);
       }
 
+      // Track emitted length to avoid duplicate output to callback
+      let emittedLength = 0;
+
       child.stdout.on('data', (data: Buffer) => {
         const text = data.toString();
         stdout.push(text);
-        this.outputCallback?.(text, 'stdout');
+
+        if (this.outputCallback) {
+          const accumulated = stdout.join('');
+          const markerIndex = accumulated.indexOf(PWD_MARKER);
+
+          if (markerIndex !== -1) {
+            // Marker found - emit everything before it (trimmed)
+            const cleanLength = accumulated
+              .slice(0, markerIndex)
+              .trimEnd().length;
+            if (cleanLength > emittedLength) {
+              const newContent = accumulated.slice(emittedLength, cleanLength);
+              this.outputCallback(newContent, 'stdout');
+              emittedLength = cleanLength;
+            }
+          } else {
+            // No marker yet - emit all but buffer for potential partial marker
+            const bufferSize = PWD_MARKER.length + 5;
+            const safeLength = Math.max(
+              emittedLength,
+              accumulated.length - bufferSize
+            );
+            if (safeLength > emittedLength) {
+              this.outputCallback(
+                accumulated.slice(emittedLength, safeLength),
+                'stdout'
+              );
+              emittedLength = safeLength;
+            }
+          }
+        }
       });
 
       child.stderr.on('data', (data: Buffer) => {

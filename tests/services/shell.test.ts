@@ -565,5 +565,132 @@ describe('Shell service', () => {
       // Clear callback
       executor.setOutputCallback(undefined);
     });
+
+    describe('PWD marker filtering', () => {
+      it('does not include marker in final output', async () => {
+        const executor = new RealExecutor();
+        const cmd: ExecuteCommand = {
+          description: 'Marker test',
+          command: 'echo "hello"',
+        };
+
+        const result = await executor.execute(cmd);
+
+        expect(result.output).not.toContain('__PWD_MARKER');
+        expect(result.output.trim()).toBe('hello');
+      });
+
+      it('does not include marker in output callback', async () => {
+        const chunks: string[] = [];
+        const executor = new RealExecutor((data, stream) => {
+          if (stream === 'stdout') chunks.push(data);
+        });
+
+        const cmd: ExecuteCommand = {
+          description: 'Callback marker test',
+          command: 'echo "visible output"',
+        };
+
+        await executor.execute(cmd);
+
+        const combined = chunks.join('');
+        expect(combined).not.toContain('__PWD_MARKER');
+        expect(combined).toContain('visible output');
+      });
+
+      it('extracts workdir from pwd after marker', async () => {
+        const executor = new RealExecutor();
+        const cmd: ExecuteCommand = {
+          description: 'Workdir test',
+          command: 'echo "test"',
+        };
+
+        const result = await executor.execute(cmd);
+
+        expect(result.workdir).toBeDefined();
+        expect(result.workdir).toMatch(/^\//); // Absolute path
+      });
+
+      it('extracts workdir after cd command', async () => {
+        const executor = new RealExecutor();
+        const cmd: ExecuteCommand = {
+          description: 'CD test',
+          command: 'cd /tmp',
+        };
+
+        const result = await executor.execute(cmd);
+
+        // macOS resolves /tmp to /private/tmp
+        expect(result.workdir).toMatch(/\/tmp$/);
+      });
+
+      it('filters marker from multi-line output', async () => {
+        const chunks: string[] = [];
+        const executor = new RealExecutor((data, stream) => {
+          if (stream === 'stdout') chunks.push(data);
+        });
+
+        const cmd: ExecuteCommand = {
+          description: 'Multi-line marker test',
+          command: 'echo "line1"; echo "line2"; echo "line3"',
+        };
+
+        const result = await executor.execute(cmd);
+
+        const combined = chunks.join('');
+        expect(combined).not.toContain('__PWD_MARKER');
+        expect(result.output.trim()).toBe('line1\nline2\nline3');
+      });
+
+      it('preserves command output when extracting workdir', async () => {
+        const executor = new RealExecutor();
+        const cmd: ExecuteCommand = {
+          description: 'Output preservation test',
+          command: 'echo "keep this"; echo "and this"',
+        };
+
+        const result = await executor.execute(cmd);
+
+        expect(result.output).toContain('keep this');
+        expect(result.output).toContain('and this');
+        expect(result.workdir).toBeDefined();
+      });
+
+      it('handles empty command output with workdir', async () => {
+        const executor = new RealExecutor();
+        const cmd: ExecuteCommand = {
+          description: 'Empty output test',
+          command: 'cd /tmp',
+        };
+
+        const result = await executor.execute(cmd);
+
+        expect(result.output).toBe('');
+        // macOS resolves /tmp to /private/tmp
+        expect(result.workdir).toMatch(/\/tmp$/);
+      });
+
+      it('uses workdir for subsequent command execution', async () => {
+        const executor = new RealExecutor();
+
+        // First command changes directory
+        const cmd1: ExecuteCommand = {
+          description: 'Change to tmp',
+          command: 'cd /tmp',
+        };
+        const result1 = await executor.execute(cmd1);
+
+        // Second command uses the workdir from first
+        const cmd2: ExecuteCommand = {
+          description: 'Run in tmp',
+          command: 'pwd',
+          workdir: result1.workdir,
+        };
+        const result2 = await executor.execute(cmd2);
+
+        // macOS resolves /tmp to /private/tmp
+        expect(result2.output.trim()).toMatch(/\/tmp$/);
+      });
+    });
   });
 });
