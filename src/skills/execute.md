@@ -446,3 +446,13 @@ Before returning commands:
 9. Confirm timeouts are reasonable for each operation
 10. Validate that critical flags are set appropriately
 11. Review for any safety concerns
+
+## Confirmed Schedule
+
+CRITICAL: The user message contains the confirmed schedule that the user has
+reviewed and approved. You MUST generate exactly one command per task listed
+in the confirmed schedule. The number of commands in your response MUST equal
+the number of tasks below. Do NOT add extra commands, do NOT skip tasks, and
+do NOT split tasks into multiple commands.
+
+Your response MUST contain exactly N commands corresponding to these N tasks.

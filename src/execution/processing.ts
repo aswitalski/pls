@@ -39,12 +39,8 @@ export async function processTasks(
     })
     .join('\n');
 
-  // Build message with CRITICAL header showing confirmed schedule
-  const taskDescriptions =
-    `CRITICAL: The user has confirmed the following schedule with exactly ` +
-    `${tasks.length} task(s). You MUST generate exactly ${tasks.length} ` +
-    `command(s), one per task.\n\n` +
-    `Confirmed schedule:\n${taskList}`;
+  // Build message with confirmed schedule header
+  const taskDescriptions = `Confirmed schedule (${tasks.length} tasks):\n${taskList}`;
 
   // Call execute tool to get commands
   const result = await service.processWithTool(taskDescriptions, 'execute');
