@@ -13,6 +13,7 @@ export interface OutputProps {
   stdout: string;
   stderr: string;
   status: ExecutionStatus;
+  isFinished?: boolean;
 }
 
 /**
@@ -27,7 +28,7 @@ function getLastLines(text: string, maxLines: number = MAX_LINES): string[] {
   return lines.slice(-maxLines);
 }
 
-export function Output({ stdout, stderr, status }: OutputProps) {
+export function Output({ stdout, stderr, status, isFinished }: OutputProps) {
   const hasStdout = stdout.trim().length > 0;
   const hasStderr = stderr.trim().length > 0;
 
@@ -45,11 +46,12 @@ export function Output({ stdout, stderr, status }: OutputProps) {
   const shouldWrap = totalLines <= SHORT_OUTPUT_THRESHOLD;
   const wrapMode = shouldWrap ? 'wrap' : 'truncate-end';
 
-  // Show stderr in yellow only if execution failed, otherwise gray
-  const stdoutColor =
-    status === ExecutionStatus.Success ? Palette.DarkGray : Palette.Gray;
+  // Use darker colors when task is finished
+  const baseColor = isFinished ? Palette.DarkGray : Palette.Gray;
+  const stdoutColor = baseColor;
+  // Show stderr in yellow only if execution failed, otherwise use base color
   const stderrColor =
-    status === ExecutionStatus.Failed ? Palette.Yellow : Palette.Gray;
+    status === ExecutionStatus.Failed ? Palette.Yellow : baseColor;
 
   return (
     <Box marginTop={1} marginLeft={5} flexDirection="column" width={MAX_WIDTH}>

@@ -23,6 +23,7 @@ export interface TaskProps {
   label: string;
   command: ExecuteCommand;
   isActive: boolean;
+  isFinished: boolean;
   index: number;
   initialStatus?: ExecutionStatus;
   initialElapsed?: number;
@@ -42,6 +43,7 @@ export function Task({
   label,
   command,
   isActive,
+  isFinished,
   index,
   initialStatus,
   initialElapsed,
@@ -231,6 +233,7 @@ export function Task({
         key={`${stdout.length}-${stderr.length}`}
         stdout={stdout}
         stderr={stderr}
+        isFinished={isFinished}
         status={status}
       />
     </Box>

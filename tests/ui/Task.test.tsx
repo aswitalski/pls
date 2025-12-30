@@ -42,6 +42,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={false}
+          isFinished={false}
           index={0}
         />
       );
@@ -56,6 +57,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={false}
+          isFinished={false}
           index={0}
           initialStatus={ExecutionStatus.Success}
           initialElapsed={1000}
@@ -73,6 +75,7 @@ describe('Task component', () => {
           label="Build project"
           command={mockCommand}
           isActive={false}
+          isFinished={false}
           index={0}
           initialStatus={ExecutionStatus.Success}
           initialElapsed={3500}
@@ -94,6 +97,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onComplete={onComplete}
         />
@@ -128,6 +132,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onComplete={onComplete}
         />
@@ -163,6 +168,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onError={onError}
         />
@@ -194,6 +200,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onError={onError}
         />
@@ -222,6 +229,7 @@ describe('Task component', () => {
           label="Run test suite"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           initialStatus={ExecutionStatus.Cancelled}
         />
@@ -258,6 +266,7 @@ describe('Task component', () => {
           label="Long task"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onAbort={onAbort}
         />
@@ -272,6 +281,7 @@ describe('Task component', () => {
           label="Long task"
           command={mockCommand}
           isActive={false}
+          isFinished={false}
           index={0}
           onAbort={onAbort}
         />
@@ -308,6 +318,7 @@ describe('Task component', () => {
           label="Quick task"
           command={mockCommand}
           isActive={true}
+          isFinished={false}
           index={0}
           onComplete={onComplete}
         />

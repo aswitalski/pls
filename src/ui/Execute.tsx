@@ -125,6 +125,7 @@ export const ExecuteView = ({
                 label={taskInfo.label}
                 command={taskInfo.command}
                 isActive={isActive && index === completed}
+                isFinished={index < completed}
                 index={index}
                 initialStatus={taskInfo.status}
                 initialElapsed={taskInfo.elapsed}
