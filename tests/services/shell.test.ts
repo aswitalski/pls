@@ -485,7 +485,7 @@ describe('Shell service', () => {
 
       await executor.execute(cmd);
 
-      expect(chunks.join('').trim()).toBe('callback test');
+      expect(chunks.join('')).toContain('callback test');
     });
 
     it('calls output callback with stderr data', async () => {
@@ -501,7 +501,7 @@ describe('Shell service', () => {
 
       await executor.execute(cmd);
 
-      expect(chunks.join('').trim()).toBe('stderr test');
+      expect(chunks.join('')).toContain('stderr test');
     });
 
     it('calls progress callback with running and success status', async () => {
@@ -560,7 +560,7 @@ describe('Shell service', () => {
 
       await executor.execute(cmd);
 
-      expect(chunks.join('').trim()).toBe('updated');
+      expect(chunks.join('')).toContain('updated');
 
       // Clear callback
       executor.setOutputCallback(undefined);

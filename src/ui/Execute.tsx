@@ -62,6 +62,7 @@ function createExecuteState(
 export interface ExecuteViewProps {
   state: ExecuteState;
   status: ComponentStatus;
+  workdir?: string;
   onOutputChange?: (index: number, taskOutput: TaskOutput) => void;
   onTaskComplete?: (
     index: number,
@@ -80,6 +81,7 @@ export interface ExecuteViewProps {
 export const ExecuteView = ({
   state,
   status,
+  workdir,
   onOutputChange,
   onTaskComplete,
   onTaskAbort,
@@ -119,32 +121,40 @@ export const ExecuteView = ({
             </Box>
           )}
 
-          {tasks.map((taskInfo, index) => (
-            <Box key={index} marginBottom={index < tasks.length - 1 ? 1 : 0}>
-              <Task
-                label={taskInfo.label}
-                command={taskInfo.command}
-                isActive={isActive && index === completed}
-                isFinished={index < completed}
-                index={index}
-                initialStatus={taskInfo.status}
-                initialElapsed={taskInfo.elapsed}
-                initialOutput={
-                  taskInfo.stdout || taskInfo.stderr || taskInfo.error
-                    ? {
-                        stdout: taskInfo.stdout ?? '',
-                        stderr: taskInfo.stderr ?? '',
-                        error: taskInfo.error ?? '',
-                      }
-                    : undefined
-                }
-                onOutputChange={onOutputChange}
-                onComplete={onTaskComplete}
-                onAbort={onTaskAbort}
-                onError={onTaskError}
-              />
-            </Box>
-          ))}
+          {tasks.map((taskInfo, index) => {
+            // Merge workdir into active task's command
+            const taskCommand =
+              isActive && index === completed && workdir
+                ? { ...taskInfo.command, workdir }
+                : taskInfo.command;
+
+            return (
+              <Box key={index} marginBottom={index < tasks.length - 1 ? 1 : 0}>
+                <Task
+                  label={taskInfo.label}
+                  command={taskCommand}
+                  isActive={isActive && index === completed}
+                  isFinished={index < completed}
+                  index={index}
+                  initialStatus={taskInfo.status}
+                  initialElapsed={taskInfo.elapsed}
+                  initialOutput={
+                    taskInfo.stdout || taskInfo.stderr || taskInfo.error
+                      ? {
+                          stdout: taskInfo.stdout ?? '',
+                          stderr: taskInfo.stderr ?? '',
+                          error: taskInfo.error ?? '',
+                        }
+                      : undefined
+                  }
+                  onOutputChange={onOutputChange}
+                  onComplete={onTaskComplete}
+                  onAbort={onTaskAbort}
+                  onError={onTaskError}
+                />
+              </Box>
+            );
+          })}
         </Box>
       )}
 
@@ -176,6 +186,9 @@ export function Execute({
 
   // Ref to store current output for each task (avoids re-renders)
   const taskOutputRef = useRef<Map<number, TaskOutput>>(new Map());
+
+  // Track working directory across commands (persists cd changes)
+  const workdirRef = useRef<string | undefined>(undefined);
 
   const {
     error,
@@ -366,6 +379,11 @@ export function Execute({
   // Handle task completion - move to next task
   const handleTaskComplete = useCallback(
     (index: number, elapsed: number, taskOutput: TaskOutput) => {
+      // Track working directory for subsequent commands
+      if (taskOutput.workdir) {
+        workdirRef.current = taskOutput.workdir;
+      }
+
       // Update tasks with output before calling handler
       const tasksWithOutput = tasks.map((task, i) =>
         i === index
@@ -396,6 +414,11 @@ export function Execute({
 
   const handleTaskError = useCallback(
     (index: number, error: string, elapsed: number, taskOutput: TaskOutput) => {
+      // Track working directory for subsequent commands (even on error)
+      if (taskOutput.workdir) {
+        workdirRef.current = taskOutput.workdir;
+      }
+
       // Update tasks with output before calling handler
       const tasksWithOutput = tasks.map((task, i) =>
         i === index
@@ -480,6 +503,7 @@ export function Execute({
     <ExecuteView
       state={viewState}
       status={status}
+      workdir={workdirRef.current}
       onOutputChange={handleOutputChange}
       onTaskComplete={handleTaskComplete}
       onTaskAbort={handleTaskAbort}

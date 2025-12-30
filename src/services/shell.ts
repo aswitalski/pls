@@ -24,6 +24,7 @@ export interface CommandOutput {
   errors: string;
   result: ExecutionResult;
   error?: string;
+  workdir?: string;
 }
 
 export interface ExecutionProgress {
@@ -116,6 +117,27 @@ export type OutputCallback = (
   stream: 'stdout' | 'stderr'
 ) => void;
 
+// Marker for extracting pwd from command output
+const PWD_MARKER = '__PWD_MARKER_7x9k2m__';
+
+/**
+ * Parse stdout to extract workdir and clean output.
+ * Returns the cleaned output and the extracted workdir.
+ */
+function parseWorkdir(rawOutput: string): { output: string; workdir?: string } {
+  const markerIndex = rawOutput.lastIndexOf(PWD_MARKER);
+  if (markerIndex === -1) {
+    return { output: rawOutput };
+  }
+
+  const output = rawOutput.slice(0, markerIndex).trimEnd();
+  const pwdPart = rawOutput.slice(markerIndex + PWD_MARKER.length).trim();
+  const lines = pwdPart.split('\n').filter((l) => l.trim());
+  const workdir = lines[0];
+
+  return { output, workdir };
+}
+
 /**
  * Real executor that spawns shell processes and captures output.
  */
@@ -144,10 +166,13 @@ export class RealExecutor implements Executor {
       const stdout: string[] = [];
       const stderr: string[] = [];
 
+      // Wrap command to capture final working directory
+      const wrappedCommand = `${cmd.command}; __exit=$?; echo ""; echo "${PWD_MARKER}"; pwd; exit $__exit`;
+
       // Wrap spawn in try/catch to handle synchronous errors
       let child;
       try {
-        child = spawn(cmd.command, {
+        child = spawn(wrappedCommand, {
           shell: true,
           cwd: cmd.workdir || process.cwd(),
         });
@@ -216,13 +241,15 @@ export class RealExecutor implements Executor {
         if (killTimeoutId) clearTimeout(killTimeoutId);
 
         const success = code === 0;
+        const { output, workdir } = parseWorkdir(stdout.join(''));
         const commandResult: CommandOutput = {
           description: cmd.description,
           command: cmd.command,
-          output: stdout.join(''),
+          output,
           errors: stderr.join(''),
           result: success ? ExecutionResult.Success : ExecutionResult.Error,
           error: success ? undefined : `Exit code: ${code}`,
+          workdir,
         };
 
         onProgress?.(

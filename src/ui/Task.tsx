@@ -17,6 +17,7 @@ export interface TaskOutput {
   stdout: string;
   stderr: string;
   error: string;
+  workdir?: string;
 }
 
 export interface TaskProps {
@@ -161,6 +162,7 @@ export function Task({
             stdout: output.output,
             stderr: output.errors,
             error: '',
+            workdir: output.workdir,
           };
           onComplete?.(index, taskDuration, taskOutput);
         } else {
@@ -170,6 +172,7 @@ export function Task({
             stdout: output.output,
             stderr: output.errors,
             error: errorMsg,
+            workdir: output.workdir,
           };
           onError?.(index, errorMsg, taskDuration, taskOutput);
         }
