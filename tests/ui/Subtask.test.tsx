@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 
 import { ExecutionStatus } from '../../src/services/shell.js';
 
-import { Subtask } from '../../src/ui/Subtask.js';
+import { SubtaskView } from '../../src/ui/Subtask.js';
 
-describe('Subtask component', () => {
+describe('SubtaskView component', () => {
   const mockCommand = {
     description: 'Run tests',
     command: 'npm test',
@@ -15,11 +15,10 @@ describe('Subtask component', () => {
   describe('Status rendering', () => {
     it('renders pending status with dash icon', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Run test suite"
           command={mockCommand}
           status={ExecutionStatus.Pending}
-          isActive={false}
         />
       );
 
@@ -31,12 +30,11 @@ describe('Subtask component', () => {
 
     it('renders running status with bullet icon', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Run test suite"
           command={mockCommand}
           status={ExecutionStatus.Running}
-          isActive={true}
-          startTime={Date.now()}
+          elapsed={0}
         />
       );
 
@@ -47,11 +45,10 @@ describe('Subtask component', () => {
 
     it('renders success status with checkmark icon', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Run test suite"
           command={mockCommand}
           status={ExecutionStatus.Success}
-          isActive={false}
           elapsed={1500}
         />
       );
@@ -63,11 +60,10 @@ describe('Subtask component', () => {
 
     it('renders failed status with cross icon', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Run test suite"
           command={mockCommand}
           status={ExecutionStatus.Failed}
-          isActive={false}
           elapsed={2000}
         />
       );
@@ -79,11 +75,10 @@ describe('Subtask component', () => {
 
     it('renders aborted status with circle-slash icon', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Run test suite"
           command={mockCommand}
           status={ExecutionStatus.Aborted}
-          isActive={false}
           elapsed={500}
         />
       );
@@ -96,11 +91,10 @@ describe('Subtask component', () => {
 
     it('renders cancelled status with circle-slash icon', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Run test suite"
           command={mockCommand}
           status={ExecutionStatus.Cancelled}
-          isActive={false}
         />
       );
 
@@ -114,11 +108,10 @@ describe('Subtask component', () => {
   describe('Elapsed time display', () => {
     it('shows elapsed time for finished tasks', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Build project"
           command={mockCommand}
           status={ExecutionStatus.Success}
-          isActive={false}
           elapsed={2500}
         />
       );
@@ -128,15 +121,11 @@ describe('Subtask component', () => {
     });
 
     it('shows elapsed time for running tasks', () => {
-      const startTime = Date.now() - 3000;
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Build project"
           command={mockCommand}
           status={ExecutionStatus.Running}
-          isActive={true}
-          startTime={startTime}
-          endTime={undefined}
           elapsed={3000}
         />
       );
@@ -147,46 +136,25 @@ describe('Subtask component', () => {
 
     it('does not show elapsed time for pending tasks', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Build project"
           command={mockCommand}
           status={ExecutionStatus.Pending}
-          isActive={false}
         />
       );
 
       const frame = lastFrame();
       expect(frame).not.toContain('second');
     });
-
-    it('calculates elapsed from start and end time', () => {
-      const startTime = Date.now() - 5000;
-      const endTime = Date.now();
-
-      const { lastFrame } = render(
-        <Subtask
-          label="Build project"
-          command={mockCommand}
-          status={ExecutionStatus.Success}
-          isActive={false}
-          startTime={startTime}
-          endTime={endTime}
-        />
-      );
-
-      const frame = lastFrame();
-      expect(frame).toContain('5 seconds');
-    });
   });
 
   describe('Label and command display', () => {
     it('uses label if provided', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Custom label"
           command={mockCommand}
           status={ExecutionStatus.Pending}
-          isActive={false}
         />
       );
 
@@ -197,11 +165,10 @@ describe('Subtask component', () => {
 
     it('falls back to command description if no label', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label=""
           command={mockCommand}
           status={ExecutionStatus.Pending}
-          isActive={false}
         />
       );
 
@@ -211,11 +178,10 @@ describe('Subtask component', () => {
 
     it('always shows command string', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Custom label"
           command={mockCommand}
           status={ExecutionStatus.Pending}
-          isActive={false}
         />
       );
 
@@ -227,11 +193,10 @@ describe('Subtask component', () => {
   describe('Strikethrough formatting', () => {
     it('applies strikethrough to cancelled task label', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Build project"
           command={mockCommand}
           status={ExecutionStatus.Cancelled}
-          isActive={false}
         />
       );
 
@@ -242,11 +207,10 @@ describe('Subtask component', () => {
 
     it('applies strikethrough to aborted task label', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Build project"
           command={mockCommand}
           status={ExecutionStatus.Aborted}
-          isActive={false}
         />
       );
 
@@ -256,11 +220,10 @@ describe('Subtask component', () => {
 
     it('does not apply strikethrough to other statuses', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Build project"
           command={mockCommand}
           status={ExecutionStatus.Success}
-          isActive={false}
         />
       );
 
@@ -272,11 +235,10 @@ describe('Subtask component', () => {
   describe('Layout structure', () => {
     it('renders command with proper indentation', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Build project"
           command={mockCommand}
           status={ExecutionStatus.Pending}
-          isActive={false}
         />
       );
 
@@ -287,11 +249,10 @@ describe('Subtask component', () => {
 
     it('shows spinner for running tasks', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Build project"
           command={mockCommand}
           status={ExecutionStatus.Running}
-          isActive={true}
         />
       );
 
@@ -302,11 +263,10 @@ describe('Subtask component', () => {
 
     it('does not show spinner for completed tasks', () => {
       const { lastFrame } = render(
-        <Subtask
+        <SubtaskView
           label="Build project"
           command={mockCommand}
           status={ExecutionStatus.Success}
-          isActive={false}
         />
       );
 

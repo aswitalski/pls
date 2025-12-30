@@ -62,7 +62,6 @@ describe('Task completion handling', () => {
 
       expect(result.shouldComplete).toBe(false);
       expect(result.action.type).toBe(ExecuteActionType.TaskComplete);
-      expect(result.finalState.completed).toBe(1);
     });
 
     it('updates task status to Success with correct elapsed time', () => {
@@ -237,7 +236,7 @@ describe('Task completion handling', () => {
     it('returns state with correct tasks array', () => {
       const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
 
-      const result = buildAbortedState(tasks, 'Message', 'Summary', 1);
+      const result = buildAbortedState(tasks, 'Message', 'Summary');
 
       expect(result.tasks).toEqual(tasks);
     });
@@ -248,8 +247,7 @@ describe('Task completion handling', () => {
       const result = buildAbortedState(
         tasks,
         'Build cancelled',
-        'Partial build',
-        0
+        'Partial build'
       );
 
       expect(result.message).toBe('Build cancelled');
@@ -259,7 +257,7 @@ describe('Task completion handling', () => {
     it('sets completionMessage to null', () => {
       const tasks = [createTaskInfo('Task')];
 
-      const result = buildAbortedState(tasks, 'Msg', 'Sum', 0);
+      const result = buildAbortedState(tasks, 'Msg', 'Sum');
 
       expect(result.completionMessage).toBeNull();
     });
@@ -267,20 +265,9 @@ describe('Task completion handling', () => {
     it('sets error to null', () => {
       const tasks = [createTaskInfo('Task')];
 
-      const result = buildAbortedState(tasks, 'Msg', 'Sum', 0);
+      const result = buildAbortedState(tasks, 'Msg', 'Sum');
 
       expect(result.error).toBeNull();
-    });
-
-    it('preserves completed count', () => {
-      const tasks = [
-        createTaskInfo('Task 1', undefined, 1500),
-        createTaskInfo('Task 2', undefined, 2500),
-      ];
-
-      const result = buildAbortedState(tasks, 'Msg', 'Sum', 1);
-
-      expect(result.completed).toBe(1);
     });
   });
 });

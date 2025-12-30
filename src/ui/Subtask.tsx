@@ -7,25 +7,23 @@ import { formatDuration } from '../services/utils.js';
 
 import { Spinner } from './Spinner.js';
 
-export interface SubtaskProps {
+export interface SubtaskViewProps {
   label: string;
   command: ExecuteCommand;
   status: ExecutionStatus;
-  isActive: boolean;
-  startTime?: number;
-  endTime?: number;
   elapsed?: number;
 }
 
-export function Subtask({
+/**
+ * Pure display component for a single subtask.
+ * Shows label, command, status icon, and elapsed time.
+ */
+export function SubtaskView({
   label,
   command,
   status,
-  isActive: _isActive,
-  startTime,
-  endTime,
   elapsed,
-}: SubtaskProps) {
+}: SubtaskViewProps) {
   const colors = getStatusColors(status);
   const isCancelled = status === ExecutionStatus.Cancelled;
   const isAborted = status === ExecutionStatus.Aborted;
@@ -34,9 +32,6 @@ export function Subtask({
     status === ExecutionStatus.Success ||
     status === ExecutionStatus.Failed ||
     status === ExecutionStatus.Aborted;
-
-  const elapsedTime =
-    elapsed ?? (startTime && endTime ? endTime - startTime : undefined);
 
   // Apply strikethrough for cancelled and aborted tasks
   const formatText = (text: string) =>
@@ -52,10 +47,8 @@ export function Subtask({
             : label || command.description}
         </Text>
         {(isFinished || status === ExecutionStatus.Running) &&
-          elapsedTime !== undefined && (
-            <Text color={Palette.DarkGray}>
-              ({formatDuration(elapsedTime)})
-            </Text>
+          elapsed !== undefined && (
+            <Text color={Palette.DarkGray}>({formatDuration(elapsed)})</Text>
           )}
       </Box>
       <Box paddingLeft={5} flexDirection="row">

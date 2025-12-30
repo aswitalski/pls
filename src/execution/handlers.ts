@@ -46,7 +46,6 @@ export function handleTaskCompletion(
         message,
         summary,
         tasks: updatedTaskInfos,
-        completed: index + 1,
         completionMessage: null,
         error: null,
       },
@@ -68,7 +67,6 @@ export function handleTaskCompletion(
       message,
       summary,
       tasks: updatedTaskInfos,
-      completed: index + 1,
       completionMessage: completion,
       error: null,
     },
@@ -104,7 +102,6 @@ export function handleTaskFailure(
         message,
         summary,
         tasks: updatedTaskInfos,
-        completed: index + 1,
         completionMessage: null,
         error: null,
       },
@@ -123,7 +120,6 @@ export function handleTaskFailure(
         message,
         summary,
         tasks: updatedTaskInfos,
-        completed: index + 1,
         completionMessage: null,
         error: null,
       },
@@ -146,7 +142,6 @@ export function handleTaskFailure(
       message,
       summary,
       tasks: updatedTaskInfos,
-      completed: index + 1,
       completionMessage: completion,
       error: null,
     },
@@ -160,14 +155,12 @@ export function handleTaskFailure(
 export function buildAbortedState(
   tasks: TaskInfo[],
   message: string,
-  summary: string,
-  completed: number
+  summary: string
 ): ExecuteState {
   return {
     message,
     summary,
     tasks,
-    completed,
     completionMessage: null,
     error: null,
   };
