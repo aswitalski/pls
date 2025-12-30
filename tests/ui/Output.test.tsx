@@ -1,6 +1,8 @@
 import { render } from 'ink-testing-library';
 import { describe, expect, it } from 'vitest';
 
+import { ExecutionStatus } from '../../src/services/shell.js';
+
 import { Output } from '../../src/ui/Output.js';
 
 describe('Output component', () => {
@@ -8,7 +10,7 @@ describe('Output component', () => {
     it('filters out empty lines from stdout', () => {
       const stdout = 'Line 1\n\nLine 2\n\n\nLine 3';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr="" failed={false} />
+        <Output stdout={stdout} stderr="" status={ExecutionStatus.Success} />
       );
 
       expect(lastFrame()).toContain('Line 1');
@@ -25,7 +27,7 @@ describe('Output component', () => {
     it('filters out empty lines from stderr', () => {
       const stderr = 'Error 1\n\nError 2\n\n\nError 3';
       const { lastFrame } = render(
-        <Output stdout="" stderr={stderr} failed={true} />
+        <Output stdout="" stderr={stderr} status={ExecutionStatus.Failed} />
       );
 
       expect(lastFrame()).toContain('Error 1');
@@ -41,7 +43,7 @@ describe('Output component', () => {
     it('filters out whitespace-only lines', () => {
       const stdout = 'Line 1\n   \nLine 2\n\t\nLine 3';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr="" failed={false} />
+        <Output stdout={stdout} stderr="" status={ExecutionStatus.Success} />
       );
 
       const lines =
@@ -54,7 +56,7 @@ describe('Output component', () => {
     it('handles different line endings', () => {
       const stdout = 'Line 1\r\nLine 2\r\nLine 3';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr="" failed={false} />
+        <Output stdout={stdout} stderr="" status={ExecutionStatus.Success} />
       );
 
       expect(lastFrame()).toContain('Line 1');
@@ -64,19 +66,19 @@ describe('Output component', () => {
   });
 
   describe('Color coding', () => {
-    it('shows stderr in yellow when failed is true', () => {
+    it('shows stderr in yellow when status is Failed', () => {
       const stderr = 'Error message';
       const { lastFrame } = render(
-        <Output stdout="" stderr={stderr} failed={true} />
+        <Output stdout="" stderr={stderr} status={ExecutionStatus.Failed} />
       );
 
       expect(lastFrame()).toContain('Error message');
     });
 
-    it('shows stderr in gray when failed is false', () => {
+    it('shows stderr in gray when status is Success', () => {
       const stderr = 'Warning message';
       const { lastFrame } = render(
-        <Output stdout="" stderr={stderr} failed={false} />
+        <Output stdout="" stderr={stderr} status={ExecutionStatus.Success} />
       );
 
       expect(lastFrame()).toContain('Warning message');
@@ -85,7 +87,7 @@ describe('Output component', () => {
     it('always shows stdout in gray', () => {
       const stdout = 'Standard output';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr="" failed={false} />
+        <Output stdout={stdout} stderr="" status={ExecutionStatus.Success} />
       );
 
       expect(lastFrame()).toContain('Standard output');
@@ -97,7 +99,11 @@ describe('Output component', () => {
       const stdout = 'Output line 1\nOutput line 2';
       const stderr = 'Error line 1\nError line 2';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr={stderr} failed={true} />
+        <Output
+          stdout={stdout}
+          stderr={stderr}
+          status={ExecutionStatus.Failed}
+        />
       );
 
       expect(lastFrame()).toContain('Output line 1');
@@ -110,7 +116,11 @@ describe('Output component', () => {
       const stdout = 'Output line 1\nOutput line 2';
       const stderr = 'Error 1\nError 2\nError 3';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr={stderr} failed={true} />
+        <Output
+          stdout={stdout}
+          stderr={stderr}
+          status={ExecutionStatus.Failed}
+        />
       );
 
       expect(lastFrame()).not.toContain('Output line 1');
@@ -123,7 +133,7 @@ describe('Output component', () => {
     it('shows stdout when there is no stderr', () => {
       const stdout = 'Output line 1\nOutput line 2\nOutput line 3';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr="" failed={false} />
+        <Output stdout={stdout} stderr="" status={ExecutionStatus.Success} />
       );
 
       expect(lastFrame()).toContain('Output line 1');
@@ -135,7 +145,11 @@ describe('Output component', () => {
       const stdout = 'Output line 1\nOutput line 2';
       const stderr = 'Single error';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr={stderr} failed={true} />
+        <Output
+          stdout={stdout}
+          stderr={stderr}
+          status={ExecutionStatus.Failed}
+        />
       );
 
       expect(lastFrame()).toContain('Output line 1');
@@ -147,7 +161,7 @@ describe('Output component', () => {
   describe('Empty output handling', () => {
     it('returns null when both stdout and stderr are empty', () => {
       const { lastFrame } = render(
-        <Output stdout="" stderr="" failed={false} />
+        <Output stdout="" stderr="" status={ExecutionStatus.Success} />
       );
 
       expect(lastFrame()).toBe('');
@@ -155,7 +169,11 @@ describe('Output component', () => {
 
     it('shows output when only stdout has content', () => {
       const { lastFrame } = render(
-        <Output stdout="Some output" stderr="" failed={false} />
+        <Output
+          stdout="Some output"
+          stderr=""
+          status={ExecutionStatus.Success}
+        />
       );
 
       expect(lastFrame()).toContain('Some output');
@@ -163,7 +181,7 @@ describe('Output component', () => {
 
     it('shows output when only stderr has content', () => {
       const { lastFrame } = render(
-        <Output stdout="" stderr="Some error" failed={true} />
+        <Output stdout="" stderr="Some error" status={ExecutionStatus.Failed} />
       );
 
       expect(lastFrame()).toContain('Some error');
@@ -175,7 +193,7 @@ describe('Output component', () => {
       const lines = Array.from({ length: 8 }, (_, i) => `Line ${i + 1}`);
       const stdout = lines.join('\n');
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr="" failed={false} />
+        <Output stdout={stdout} stderr="" status={ExecutionStatus.Success} />
       );
 
       lines.forEach((line) => {
@@ -187,7 +205,7 @@ describe('Output component', () => {
       const lines = Array.from({ length: 12 }, (_, i) => `Output ${i + 1}`);
       const stdout = lines.join('\n');
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr="" failed={false} />
+        <Output stdout={stdout} stderr="" status={ExecutionStatus.Success} />
       );
 
       const frame = lastFrame() || '';
@@ -211,7 +229,7 @@ describe('Output component', () => {
       const lines = Array.from({ length: 10 }, (_, i) => `Failure ${i + 1}`);
       const stderr = lines.join('\n');
       const { lastFrame } = render(
-        <Output stdout="" stderr={stderr} failed={true} />
+        <Output stdout="" stderr={stderr} status={ExecutionStatus.Failed} />
       );
 
       const frame = lastFrame() || '';
@@ -234,7 +252,7 @@ describe('Output component', () => {
     it('uses wrap mode for 4 lines or fewer', () => {
       const stdout = 'Line 1\nLine 2\nLine 3\nLine 4';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr="" failed={false} />
+        <Output stdout={stdout} stderr="" status={ExecutionStatus.Success} />
       );
 
       // All lines should be present (wrap mode preserves content)
@@ -248,7 +266,7 @@ describe('Output component', () => {
       const lines = Array.from({ length: 6 }, (_, i) => `Line ${i + 1}`);
       const stdout = lines.join('\n');
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr="" failed={false} />
+        <Output stdout={stdout} stderr="" status={ExecutionStatus.Success} />
       );
 
       // All 6 lines should still be present (within 8 line limit)
@@ -263,7 +281,11 @@ describe('Output component', () => {
       const stdout = 'Output message';
       const stderr = 'Error message';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr={stderr} failed={true} />
+        <Output
+          stdout={stdout}
+          stderr={stderr}
+          status={ExecutionStatus.Failed}
+        />
       );
 
       expect(lastFrame()).toContain('Output message');
@@ -284,7 +306,11 @@ describe('Output component', () => {
         '\n'
       );
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr={stderr} failed={true} />
+        <Output
+          stdout={stdout}
+          stderr={stderr}
+          status={ExecutionStatus.Failed}
+        />
       );
 
       // With 5 lines each (10 total) and stderr > 2 lines,
@@ -299,7 +325,7 @@ describe('Output component', () => {
     it('preserves indentation in output', () => {
       const stdout = '  import pkg_resources\n    nested line';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr="" failed={false} />
+        <Output stdout={stdout} stderr="" status={ExecutionStatus.Success} />
       );
 
       expect(lastFrame()).toContain('import pkg_resources');
@@ -309,7 +335,7 @@ describe('Output component', () => {
     it('handles very long single line', () => {
       const longLine = 'A'.repeat(200);
       const { lastFrame } = render(
-        <Output stdout={longLine} stderr="" failed={false} />
+        <Output stdout={longLine} stderr="" status={ExecutionStatus.Success} />
       );
 
       expect(lastFrame()).toContain('A');
@@ -319,7 +345,11 @@ describe('Output component', () => {
       const stdout = 'Line 1\n\n\nLine 2';
       const stderr = 'Error 1\n\nError 2';
       const { lastFrame } = render(
-        <Output stdout={stdout} stderr={stderr} failed={true} />
+        <Output
+          stdout={stdout}
+          stderr={stderr}
+          status={ExecutionStatus.Failed}
+        />
       );
 
       expect(lastFrame()).toContain('Line 1');

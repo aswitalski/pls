@@ -231,7 +231,7 @@ export function Task({
         key={`${stdout.length}-${stderr.length}`}
         stdout={stdout}
         stderr={stderr}
-        failed={status === ExecutionStatus.Failed}
+        status={status}
       />
     </Box>
   );
