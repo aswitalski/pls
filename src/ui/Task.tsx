@@ -38,6 +38,7 @@ export function TaskView({
         elapsed={elapsed}
       />
       <Output
+        key={`${stdout.length}-${stderr.length}`}
         stdout={stdout}
         stderr={stderr}
         isFinished={isFinished}
