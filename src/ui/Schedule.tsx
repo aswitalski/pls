@@ -135,6 +135,9 @@ export const ScheduleView = ({
   const { highlightedIndex, currentDefineGroupIndex, completedSelections } =
     state;
 
+  // Use compact mode when all tasks are Config type
+  const isCompact = tasks.every((task) => task.type === TaskType.Config);
+
   // Find all Define tasks
   const defineTaskIndices = tasks
     .map((t, idx) => (t.type === TaskType.Define ? idx : -1))
@@ -203,6 +206,7 @@ export const ScheduleView = ({
           }
           highlightedParentIndex={currentDefineTaskIndex}
           showType={debug !== DebugLevel.None}
+          compact={isCompact}
         />
       </Box>
     </Box>

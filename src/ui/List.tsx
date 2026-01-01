@@ -26,6 +26,7 @@ interface ListProps {
   highlightedIndex?: number | null;
   highlightedParentIndex?: number | null;
   showType?: boolean;
+  compact?: boolean;
 }
 
 export const List: FC<ListProps> = ({
@@ -34,9 +35,10 @@ export const List: FC<ListProps> = ({
   highlightedIndex = null,
   highlightedParentIndex = null,
   showType = false,
+  compact = false,
 }) => {
   const marginLeft = level > 0 ? 2 : 0;
-  const gap = level === 0 ? 1 : 0;
+  const gap = level === 0 && !compact ? 1 : 0;
 
   return (
     <Box flexDirection="column" marginLeft={marginLeft} gap={gap}>
