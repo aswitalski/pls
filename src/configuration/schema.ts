@@ -10,8 +10,8 @@ import {
   SUPPORTED_MODELS,
 } from './types.js';
 
-import { flattenConfig } from '../services/config-utils.js';
-import { getConfigLabel } from '../services/config-labels.js';
+import { flattenConfig } from './transformation.js';
+import { getConfigLabel } from './labels.js';
 import { defaultFileSystem, FileSystem } from '../services/filesystem.js';
 import { getConfigPath, loadConfig } from './io.js';
 

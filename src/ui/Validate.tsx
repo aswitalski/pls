@@ -14,7 +14,7 @@ import { createConfigStepsFromSchema } from '../configuration/steps.js';
 import { unflattenConfig } from '../configuration/transformation.js';
 import { Colors, getTextColor } from '../services/colors.js';
 import { createConfig, createMessage } from '../services/components.js';
-import { saveConfigLabels } from '../services/config-labels.js';
+import { saveConfigLabels } from '../configuration/labels.js';
 import { useInput } from '../services/keyboard.js';
 import {
   formatErrorMessage,

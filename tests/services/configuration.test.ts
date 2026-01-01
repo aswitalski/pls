@@ -22,7 +22,7 @@ import {
 } from '../../src/configuration/schema.js';
 import { createConfigStepsFromSchema } from '../../src/configuration/steps.js';
 
-import { saveConfigLabels } from '../../src/services/config-labels.js';
+import { saveConfigLabels } from '../../src/configuration/labels.js';
 import { MemoryFileSystem } from '../../src/services/filesystem.js';
 
 import { StepType } from '../../src/ui/Config.js';

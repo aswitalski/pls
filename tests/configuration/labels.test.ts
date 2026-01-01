@@ -6,7 +6,7 @@ import {
   getConfigLabel,
   loadConfigLabels,
   saveConfigLabels,
-} from '../../src/services/config-labels.js';
+} from '../../src/configuration/labels.js';
 import { MemoryFileSystem } from '../../src/services/filesystem.js';
 
 describe('Config labels', () => {

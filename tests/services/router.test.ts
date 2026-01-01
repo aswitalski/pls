@@ -12,7 +12,7 @@ import {
   getOperationName,
   routeTasksWithConfirm,
 } from '../../src/services/router.js';
-import { saveConfigLabels } from '../../src/services/config-labels.js';
+import { saveConfigLabels } from '../../src/configuration/labels.js';
 
 import {
   createRequestHandlers,
@@ -21,7 +21,7 @@ import {
 } from '../test-utils.js';
 
 // Mock saveConfigLabels to avoid file system operations in tests
-vi.mock('../../src/services/config-labels.js', () => ({
+vi.mock('../../src/configuration/labels.js', () => ({
   saveConfigLabels: vi.fn(),
   saveConfigLabel: vi.fn(),
   loadConfigLabels: vi.fn().mockReturnValue({}),

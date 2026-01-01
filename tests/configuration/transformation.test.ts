@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { flattenConfig } from '../../src/services/config-utils.js';
+import { flattenConfig } from '../../src/configuration/transformation.js';
 
 describe('flattenConfig', () => {
   it('flattens nested object to dot notation', () => {

@@ -3,7 +3,7 @@ import { parse as parseYaml } from 'yaml';
 import { Config, ConfigDefinition, ConfigDefinitionType } from './types.js';
 import { getConfigPath, loadConfig } from './io.js';
 import { getConfigSchema } from './schema.js';
-import { getConfigLabel } from '../services/config-labels.js';
+import { getConfigLabel } from './labels.js';
 import { defaultFileSystem, FileSystem } from '../services/filesystem.js';
 
 import { ConfigStep, StepType } from '../ui/Config.js';

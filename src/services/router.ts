@@ -12,7 +12,7 @@ import { getConfigSchema } from '../configuration/schema.js';
 import { createConfigStepsFromSchema } from '../configuration/steps.js';
 import { unflattenConfig } from '../configuration/transformation.js';
 import { LLMService } from './anthropic.js';
-import { saveConfigLabels } from './config-labels.js';
+import { saveConfigLabels } from '../configuration/labels.js';
 import {
   createAnswer,
   createConfig,

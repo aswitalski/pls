@@ -1,7 +1,7 @@
 import { homedir } from 'os';
 import { join } from 'path';
 
-import { defaultFileSystem, FileSystem } from './filesystem.js';
+import { defaultFileSystem, FileSystem } from '../services/filesystem.js';
 
 /**
  * Get the path to the config labels cache file
