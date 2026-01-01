@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ExecutionStatus } from '../../src/services/shell.js';
 
-import { Output } from '../../src/ui/Output.js';
+import { Output } from '../../src/components/views/Output.js';
 
 describe('Output component', () => {
   describe('Empty line filtering', () => {

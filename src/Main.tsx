@@ -1,31 +1,31 @@
 import { useEffect, useState } from 'react';
 
-import { AnthropicConfig, DebugLevel } from '../configuration/types.js';
-import { ComponentDefinition } from '../types/components.js';
-import { App, FeedbackType } from '../types/types.js';
+import { AnthropicConfig, DebugLevel } from './configuration/types.js';
+import { ComponentDefinition } from './types/components.js';
+import { App, FeedbackType } from './types/types.js';
 
 import {
   loadConfig,
   loadDebugSetting,
   saveConfig,
   saveDebugSetting,
-} from '../configuration/io.js';
-import { getConfigurationRequiredMessage } from '../configuration/messages.js';
-import { getMissingConfigKeys } from '../configuration/schema.js';
-import { createConfigStepsFromSchema } from '../configuration/steps.js';
-import { unflattenConfig } from '../configuration/transformation.js';
-import { LLMService, createAnthropicService } from '../services/anthropic.js';
+} from './configuration/io.js';
+import { getConfigurationRequiredMessage } from './configuration/messages.js';
+import { getMissingConfigKeys } from './configuration/schema.js';
+import { createConfigStepsFromSchema } from './configuration/steps.js';
+import { unflattenConfig } from './configuration/transformation.js';
+import { LLMService, createAnthropicService } from './services/anthropic.js';
 import {
   createCommand,
   createConfig,
   createFeedback,
   createMessage,
   createWelcome,
-} from '../services/components.js';
-import { registerGlobalShortcut } from '../services/keyboard.js';
-import { initializeLogger, setDebugLevel } from '../services/logger.js';
+} from './services/components.js';
+import { registerGlobalShortcut } from './services/keyboard.js';
+import { initializeLogger, setDebugLevel } from './services/logger.js';
 
-import { Workflow } from './Workflow.js';
+import { Workflow } from './components/Workflow.js';
 
 interface MainProps {
   app: App;

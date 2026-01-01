@@ -1,67 +1,24 @@
-import { ReactNode, useEffect, useState } from 'react';
-import { Box, Text } from 'ink';
+import { useEffect, useState } from 'react';
 
 import {
   Capability,
   ComponentStatus,
   IntrospectProps,
   IntrospectState,
-} from '../types/components.js';
-import { Origin } from '../types/types.js';
+} from '../../types/components.js';
+import { Origin } from '../../types/types.js';
 
-import { Colors, getTextColor } from '../services/colors.js';
-import { createReport } from '../services/components.js';
-import { DebugLevel } from '../configuration/types.js';
-import { useInput } from '../services/keyboard.js';
-import { formatErrorMessage } from '../services/messages.js';
-import { ensureMinimumTime } from '../services/timing.js';
+import { createReport } from '../../services/components.js';
+import { DebugLevel } from '../../configuration/types.js';
+import { useInput } from '../../services/keyboard.js';
+import { formatErrorMessage } from '../../services/messages.js';
+import { ensureMinimumTime } from '../../services/timing.js';
 
-import { Spinner } from './Spinner.js';
+import { IntrospectView } from '../views/Introspect.js';
+
+export { IntrospectView, IntrospectViewProps } from '../views/Introspect.js';
 
 const MIN_PROCESSING_TIME = 1000;
-
-/**
- * Introspect view: Displays capabilities list
- */
-
-export interface IntrospectViewProps {
-  state: IntrospectState;
-  status: ComponentStatus;
-  children?: ReactNode;
-}
-
-export const IntrospectView = ({
-  state,
-  status,
-  children,
-}: IntrospectViewProps) => {
-  const isActive = status === ComponentStatus.Active;
-  const { error } = state;
-
-  // Don't render wrapper when done and nothing to show
-  if (!isActive && !error && !children) {
-    return null;
-  }
-
-  return (
-    <Box alignSelf="flex-start" flexDirection="column">
-      {isActive && (
-        <Box marginLeft={1}>
-          <Text color={getTextColor(isActive)}>Listing capabilities. </Text>
-          <Spinner />
-        </Box>
-      )}
-
-      {error && (
-        <Box marginTop={1} marginLeft={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
-        </Box>
-      )}
-
-      {children}
-    </Box>
-  );
-};
 
 /**
  * Introspect controller: Lists capabilities via LLM
@@ -81,7 +38,6 @@ export function Introspect({
 
   const [error, setError] = useState<string | null>(null);
   const [capabilities, setCapabilities] = useState<Capability[] | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
   useInput(
     (input, key) => {
@@ -133,7 +89,6 @@ export function Introspect({
               : result.capabilities;
 
           setCapabilities(capabilities);
-          setMessage(message);
 
           const finalState: IntrospectState = {
             error: null,
@@ -182,13 +137,14 @@ export function Introspect({
     workflowHandlers,
   ]);
 
-  const state: IntrospectState = {
-    error,
-    capabilities: capabilities || [],
-    message,
-  };
+  const hasCapabilities = capabilities !== null && capabilities.length > 0;
+
   return (
-    <IntrospectView state={state} status={status}>
+    <IntrospectView
+      status={status}
+      hasCapabilities={hasCapabilities}
+      error={error}
+    >
       {children}
     </IntrospectView>
   );

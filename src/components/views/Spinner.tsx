@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Text } from 'ink';
 
-import { Palette } from '../services/colors.js';
+import { Palette } from '../../services/colors.js';
 
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 const INTERVAL = 80;

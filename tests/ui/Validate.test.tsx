@@ -6,7 +6,7 @@ import { ComponentStatus, ValidateState } from '../../src/types/components.js';
 import { ConfigRequirement } from '../../src/types/skills.js';
 import { Task, TaskType } from '../../src/types/types.js';
 
-import { Validate } from '../../src/ui/Validate.js';
+import { Validate } from '../../src/components/controllers/Validate.js';
 
 import {
   createLifecycleHandlers,

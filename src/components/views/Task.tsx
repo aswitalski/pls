@@ -1,8 +1,8 @@
 import { Box } from 'ink';
 
-import { ExecuteCommand } from '../services/anthropic.js';
-import { ExecutionStatus } from '../services/shell.js';
-import { TaskOutput } from '../types/components.js';
+import { ExecuteCommand } from '../../services/anthropic.js';
+import { ExecutionStatus } from '../../services/shell.js';
+import { TaskOutput } from '../../types/components.js';
 
 import { Output } from './Output.js';
 import { SubtaskView } from './Subtask.js';

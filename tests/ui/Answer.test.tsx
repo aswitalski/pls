@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AnswerState, ComponentStatus } from '../../src/types/components.js';
 
-import { Answer, AnswerView } from '../../src/ui/Answer.js';
+import { Answer, AnswerView } from '../../src/components/controllers/Answer.js';
 
 import {
   createRequestHandlers,
@@ -50,12 +50,10 @@ describe('Answer component', () => {
   it('displays question and answer when done', () => {
     const { lastFrame } = render(
       <AnswerView
-        question="What is the price of Samsung The Frame 55 inch?"
-        state={{
-          answer: 'The 55 inch Samsung The Frame costs around $1,500.',
-          error: null,
-        }}
         status={ComponentStatus.Done}
+        question="What is the price of Samsung The Frame 55 inch?"
+        lines={['The 55 inch Samsung The Frame costs around $1,500.']}
+        error={null}
       />
     );
 

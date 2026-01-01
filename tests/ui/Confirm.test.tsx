@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ComponentStatus } from '../../src/types/components.js';
 
-import { Confirm } from '../../src/ui/Confirm.js';
+import { Confirm } from '../../src/components/controllers/Confirm.js';
 
 import { Keys, createRequestHandlers } from '../test-utils.js';
 

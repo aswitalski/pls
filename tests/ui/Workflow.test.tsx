@@ -14,7 +14,7 @@ import {
 
 import { DebugLevel } from '../../src/configuration/types.js';
 
-import { Workflow } from '../../src/ui/Workflow.js';
+import { Workflow } from '../../src/components/Workflow.js';
 
 // Mock exitApp to prevent process.exit
 vi.mock('../../src/services/process.js', () => ({

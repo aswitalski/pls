@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Box, Text } from 'ink';
 
-import { Colors } from '../services/colors.js';
+import { Colors } from '../../services/colors.js';
 
 interface UserQueryProps {
   children: ReactNode;

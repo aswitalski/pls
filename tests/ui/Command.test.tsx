@@ -4,7 +4,10 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Command, CommandView } from '../../src/ui/Command.js';
+import {
+  Command,
+  CommandView,
+} from '../../src/components/controllers/Command.js';
 import {
   Keys,
   createRequestHandlers,

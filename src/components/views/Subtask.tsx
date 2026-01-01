@@ -1,9 +1,13 @@
 import { Box, Text } from 'ink';
 
-import { ExecuteCommand } from '../services/anthropic.js';
-import { getStatusColors, Palette, STATUS_ICONS } from '../services/colors.js';
-import { ExecutionStatus } from '../services/shell.js';
-import { formatDuration } from '../services/utils.js';
+import { ExecuteCommand } from '../../services/anthropic.js';
+import {
+  getStatusColors,
+  Palette,
+  STATUS_ICONS,
+} from '../../services/colors.js';
+import { ExecutionStatus } from '../../services/shell.js';
+import { formatDuration } from '../../services/utils.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -25,15 +29,16 @@ export function SubtaskView({
   elapsed,
 }: SubtaskViewProps) {
   const colors = getStatusColors(status);
+
   const isCancelled = status === ExecutionStatus.Cancelled;
   const isAborted = status === ExecutionStatus.Aborted;
-  const shouldStrikethrough = isCancelled || isAborted;
   const isFinished =
     status === ExecutionStatus.Success ||
     status === ExecutionStatus.Failed ||
     status === ExecutionStatus.Aborted;
 
   // Apply strikethrough for cancelled and aborted tasks
+  const shouldStrikethrough = isCancelled || isAborted;
   const formatText = (text: string) =>
     shouldStrikethrough ? text.split('').join('\u0336') + '\u0336' : text;
 

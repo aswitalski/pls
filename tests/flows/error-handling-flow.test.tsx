@@ -9,7 +9,7 @@ import { loadConfig } from '../../src/configuration/io.js';
 import { getMissingConfigKeys } from '../../src/configuration/schema.js';
 import { exitApp } from '../../src/services/process.js';
 
-import { Main } from '../../src/ui/Main.js';
+import { Main } from '../../src/Main.js';
 
 import { Keys } from '../test-utils.js';
 

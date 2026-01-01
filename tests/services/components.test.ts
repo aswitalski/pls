@@ -14,7 +14,10 @@ import {
   ConfirmState,
 } from '../../src/types/components.js';
 import { App, ComponentName, TaskType } from '../../src/types/types.js';
-import { ConfigStep, StepType } from '../../src/ui/Config.js';
+import {
+  ConfigStep,
+  StepType,
+} from '../../src/components/controllers/Config.js';
 
 import { createMockAnthropicService } from '../test-utils.js';
 import { DebugLevel } from '../../src/configuration/types.js';

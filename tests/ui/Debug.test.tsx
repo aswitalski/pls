@@ -6,7 +6,7 @@ import { ComponentStatus } from '../../src/types/components.js';
 
 import { Palette } from '../../src/services/colors.js';
 
-import { Debug } from '../../src/ui/Debug.js';
+import { Debug } from '../../src/components/views/Debug.js';
 
 describe('Debug component', () => {
   describe('Rendering', () => {

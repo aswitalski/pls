@@ -1,12 +1,12 @@
 import { Box, Text } from 'ink';
 
-import { TaskType } from '../types/types.js';
+import { TaskType } from '../../types/types.js';
 
-import { getTaskColors, getTaskTypeLabel } from '../services/colors.js';
-import { DebugLevel } from '../configuration/types.js';
+import { getTaskColors, getTaskTypeLabel } from '../../services/colors.js';
+import { DebugLevel } from '../../configuration/types.js';
 
 import { Separator } from './Separator.js';
-import { ComponentStatus } from '../types/components.js';
+import { ComponentStatus } from '../../types/components.js';
 
 interface LabelProps {
   description: string;

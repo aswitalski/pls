@@ -7,7 +7,7 @@ import { render } from 'ink';
 
 import { DebugLevel } from './configuration/types.js';
 
-import { Main } from './ui/Main.js';
+import { Main } from './Main.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

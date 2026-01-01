@@ -11,7 +11,7 @@ import {
   Execute,
   ExecuteView,
   mapStateToViewProps,
-} from '../../src/ui/Execute.js';
+} from '../../src/components/controllers/Execute.js';
 
 import {
   createRequestHandlers,

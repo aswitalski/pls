@@ -1,9 +1,9 @@
 import { Box, Text } from 'ink';
 
-import { ComponentStatus, FeedbackProps } from '../types/components.js';
-import { FeedbackType } from '../types/types.js';
+import { ComponentStatus, FeedbackProps } from '../../types/components.js';
+import { FeedbackType } from '../../types/types.js';
 
-import { getFeedbackColor } from '../services/colors.js';
+import { getFeedbackColor } from '../../services/colors.js';
 
 function getSymbol(type: FeedbackType): string {
   return {

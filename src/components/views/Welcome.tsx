@@ -1,10 +1,10 @@
 import { ReactNode } from 'react';
 import { Box, Text } from 'ink';
 
-import { WelcomeProps } from '../types/components.js';
-import { App } from '../types/types.js';
+import { WelcomeProps } from '../../types/components.js';
+import { App } from '../../types/types.js';
 
-import { Palette } from '../services/colors.js';
+import { Palette } from '../../services/colors.js';
 
 import { Panel } from './Panel.js';
 

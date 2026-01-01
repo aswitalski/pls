@@ -1,7 +1,7 @@
 import { FC } from 'react';
 import { Box, Text } from 'ink';
 
-import { Palette } from '../services/colors.js';
+import { Palette } from '../../services/colors.js';
 
 import { Separator } from './Separator.js';
 

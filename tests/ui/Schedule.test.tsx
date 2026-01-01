@@ -7,7 +7,10 @@ import { ScheduledTask, Task, TaskType } from '../../src/types/types.js';
 
 import { DebugLevel } from '../../src/configuration/types.js';
 
-import { Schedule, taskToListItem } from '../../src/ui/Schedule.js';
+import {
+  Schedule,
+  taskToListItem,
+} from '../../src/components/controllers/Schedule.js';
 import { Palette } from '../../src/services/colors.js';
 
 import {

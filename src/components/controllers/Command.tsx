@@ -1,59 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Box, Text } from 'ink';
 
 import {
   CommandProps,
   CommandState,
   ComponentStatus,
-} from '../types/components.js';
-import { Task, TaskType } from '../types/types.js';
+} from '../../types/components.js';
+import { Task, TaskType } from '../../types/types.js';
 
-import { Colors } from '../services/colors.js';
-import { createSchedule } from '../services/components.js';
-import { useInput } from '../services/keyboard.js';
-import { formatErrorMessage } from '../services/messages.js';
-import { handleRefinement } from '../services/refinement.js';
-import { routeTasksWithConfirm } from '../services/router.js';
-import { ensureMinimumTime } from '../services/timing.js';
+import { createSchedule } from '../../services/components.js';
+import { useInput } from '../../services/keyboard.js';
+import { formatErrorMessage } from '../../services/messages.js';
+import { handleRefinement } from '../../services/refinement.js';
+import { routeTasksWithConfirm } from '../../services/router.js';
+import { ensureMinimumTime } from '../../services/timing.js';
 
-import { Spinner } from './Spinner.js';
-import { UserQuery } from './UserQuery.js';
+import { CommandView } from '../views/Command.js';
+
+export { CommandView, CommandViewProps } from '../views/Command.js';
 
 const MIN_PROCESSING_TIME = 400; // purely for visual effect
-
-/**
- * Command view: Displays command with spinner
- */
-export interface CommandViewProps {
-  command: string;
-  state: CommandState;
-  status: ComponentStatus;
-}
-
-export const CommandView = ({ command, state, status }: CommandViewProps) => {
-  const isActive = status === ComponentStatus.Active;
-  const { error } = state;
-
-  return (
-    <Box alignSelf="flex-start" flexDirection="column">
-      {!isActive ? (
-        <UserQuery>&gt; pls {command}</UserQuery>
-      ) : (
-        <Box marginLeft={1}>
-          <Text color={Colors.Text.Active}>&gt; pls {command}</Text>
-          <Text> </Text>
-          <Spinner />
-        </Box>
-      )}
-
-      {error && (
-        <Box marginTop={1} marginLeft={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
-        </Box>
-      )}
-    </Box>
-  );
-};
 
 /**
  * Command controller: Processes and routes command

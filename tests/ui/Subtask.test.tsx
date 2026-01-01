@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ExecutionStatus } from '../../src/services/shell.js';
 
-import { SubtaskView } from '../../src/ui/Subtask.js';
+import { SubtaskView } from '../../src/components/views/Subtask.js';
 
 describe('SubtaskView component', () => {
   const mockCommand = {

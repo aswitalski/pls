@@ -6,7 +6,7 @@ import { getConfigSchema } from './schema.js';
 import { getConfigLabel } from './labels.js';
 import { defaultFileSystem, FileSystem } from '../services/filesystem.js';
 
-import { ConfigStep, StepType } from '../ui/Config.js';
+import { ConfigStep, StepType } from '../components/controllers/Config.js';
 
 export function createConfigSteps(): ConfigStep[] {
   // Use schema-based config step generation for required Anthropic settings

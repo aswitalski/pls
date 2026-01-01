@@ -1,67 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Box, Text } from 'ink';
 
 import {
   AnswerProps,
   AnswerState,
   ComponentStatus,
-} from '../types/components.js';
+} from '../../types/components.js';
 
-import { Colors, getTextColor } from '../services/colors.js';
-import { useInput } from '../services/keyboard.js';
-import { formatErrorMessage } from '../services/messages.js';
-import { withMinimumTime } from '../services/timing.js';
+import { useInput } from '../../services/keyboard.js';
+import { formatErrorMessage } from '../../services/messages.js';
+import { withMinimumTime } from '../../services/timing.js';
 
-import { Spinner } from './Spinner.js';
+import { AnswerView } from '../views/Answer.js';
+
+export { AnswerView, AnswerViewProps } from '../views/Answer.js';
 
 const MINIMUM_PROCESSING_TIME = 400;
-
-/**
- * Answer view: Displays question and answer
- */
-export interface AnswerViewProps {
-  question: string;
-  state: AnswerState;
-  status: ComponentStatus;
-}
-
-export const AnswerView = ({ question, state, status }: AnswerViewProps) => {
-  const isActive = status === ComponentStatus.Active;
-  const { error, answer } = state;
-  const lines = answer ? answer.split('\n') : [];
-
-  return (
-    <Box alignSelf="flex-start" flexDirection="column">
-      {isActive && !answer && !error && (
-        <Box marginLeft={1}>
-          <Text color={getTextColor(isActive)}>Finding answer. </Text>
-          <Spinner />
-        </Box>
-      )}
-
-      {answer && (
-        <>
-          <Box marginLeft={1} marginBottom={1}>
-            <Text color={getTextColor(isActive)}>{question}</Text>
-          </Box>
-          <Box flexDirection="column" paddingLeft={3}>
-            {lines.map((line, index) => (
-              <Text color={getTextColor(isActive)} key={index}>
-                {line}
-              </Text>
-            ))}
-          </Box>
-        </>
-      )}
-
-      {error && (
-        <Box marginTop={1} marginLeft={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
-        </Box>
-      )}
-    </Box>
-  );
-};
 
 /**
  * Answer controller: Fetches answer from LLM
@@ -156,6 +109,14 @@ export function Answer({
     workflowHandlers,
   ]);
 
-  const state: AnswerState = { error, answer };
-  return <AnswerView question={question} state={state} status={status} />;
+  const lines = answer ? answer.split('\n') : null;
+
+  return (
+    <AnswerView
+      status={status}
+      question={question}
+      lines={lines}
+      error={error}
+    />
+  );
 }

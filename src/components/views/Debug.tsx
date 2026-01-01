@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import { DebugProps } from '../types/components.js';
+import { DebugProps } from '../../types/components.js';
 
 const CONTENT_WIDTH = 80;
 const HORIZONTAL_PADDING = 2;

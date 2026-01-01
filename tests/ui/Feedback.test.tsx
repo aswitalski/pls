@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ComponentStatus } from '../../src/types/components.js';
 import { FeedbackType } from '../../src/types/types.js';
 
-import { Feedback } from '../../src/ui/Feedback.js';
+import { Feedback } from '../../src/components/views/Feedback.js';
 
 describe('Feedback component', () => {
   describe('Success feedback', () => {

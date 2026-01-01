@@ -16,8 +16,8 @@ import { DebugLevel } from '../../src/configuration/types.js';
 import {
   SimpleComponent,
   ControllerComponent,
-} from '../../src/ui/Component.js';
-import { StepType } from '../../src/ui/Config.js';
+} from '../../src/components/Component.js';
+import { StepType } from '../../src/components/controllers/Config.js';
 
 import {
   createLifecycleHandlers,

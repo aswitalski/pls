@@ -1,73 +1,30 @@
 import { useEffect, useState } from 'react';
-import { Box, Text } from 'ink';
 
 import {
   ComponentStatus,
   ValidateProps,
   ValidateState,
-} from '../types/components.js';
-import { ConfigRequirement } from '../types/skills.js';
-import { TaskType } from '../types/types.js';
+} from '../../types/components.js';
+import { ConfigRequirement } from '../../types/skills.js';
+import { TaskType } from '../../types/types.js';
 
-import { saveConfig } from '../configuration/io.js';
-import { createConfigStepsFromSchema } from '../configuration/steps.js';
-import { unflattenConfig } from '../configuration/transformation.js';
-import { Colors, getTextColor } from '../services/colors.js';
-import { createConfig, createMessage } from '../services/components.js';
-import { saveConfigLabels } from '../configuration/labels.js';
-import { useInput } from '../services/keyboard.js';
+import { saveConfig } from '../../configuration/io.js';
+import { createConfigStepsFromSchema } from '../../configuration/steps.js';
+import { unflattenConfig } from '../../configuration/transformation.js';
+import { createConfig, createMessage } from '../../services/components.js';
+import { saveConfigLabels } from '../../configuration/labels.js';
+import { useInput } from '../../services/keyboard.js';
 import {
   formatErrorMessage,
   getUnresolvedPlaceholdersMessage,
-} from '../services/messages.js';
-import { ensureMinimumTime } from '../services/timing.js';
-import { Spinner } from './Spinner.js';
+} from '../../services/messages.js';
+import { ensureMinimumTime } from '../../services/timing.js';
+
+import { ValidateView } from '../views/Validate.js';
+
+export { ValidateView, ValidateViewProps } from '../views/Validate.js';
 
 const MIN_PROCESSING_TIME = 1000;
-
-/**
- * Validate view: Displays validation and config prompt
- */
-
-export interface ValidateViewProps {
-  state: ValidateState;
-  status: ComponentStatus;
-}
-
-export const ValidateView = ({ state, status }: ValidateViewProps) => {
-  const isActive = status === ComponentStatus.Active;
-  const { error, completionMessage } = state;
-
-  // Don't render when not active and nothing to show
-  if (!isActive && !completionMessage && !error) {
-    return null;
-  }
-
-  return (
-    <Box alignSelf="flex-start" flexDirection="column">
-      {isActive && !completionMessage && !error && (
-        <Box marginLeft={1}>
-          <Text color={getTextColor(isActive)}>
-            Validating configuration requirements.{' '}
-          </Text>
-          <Spinner />
-        </Box>
-      )}
-
-      {completionMessage && (
-        <Box marginLeft={1}>
-          <Text color={getTextColor(isActive)}>{completionMessage}</Text>
-        </Box>
-      )}
-
-      {error && (
-        <Box marginTop={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
-        </Box>
-      )}
-    </Box>
-  );
-};
 
 /**
  * Validate controller: Validates missing config
@@ -91,9 +48,6 @@ export function Validate({
   const [completionMessage, setCompletionMessage] = useState<string | null>(
     null
   );
-  const [configRequirements, setConfigRequirements] = useState<
-    ConfigRequirement[]
-  >([]);
 
   useInput(
     (_, key) => {
@@ -158,7 +112,6 @@ export function Validate({
           );
 
           setCompletionMessage(message);
-          setConfigRequirements(withDescriptions);
 
           // Add validation message to timeline before Config component
           workflowHandlers.addToTimeline(createMessage({ text: message }));
@@ -257,13 +210,13 @@ export function Validate({
     workflowHandlers,
   ]);
 
-  const state: ValidateState = {
-    error,
-    completionMessage,
-    configRequirements,
-    validated: error === null && completionMessage !== null,
-  };
-  return <ValidateView state={state} status={status} />;
+  return (
+    <ValidateView
+      status={status}
+      completionMessage={completionMessage}
+      error={error}
+    />
+  );
 }
 
 /**

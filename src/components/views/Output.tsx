@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import { Palette } from '../services/colors.js';
-import { ExecutionStatus } from '../services/shell.js';
+import { Palette } from '../../services/colors.js';
+import { ExecutionStatus } from '../../services/shell.js';
 
 const MAX_LINES = 8;
 const MAX_WIDTH = 75;

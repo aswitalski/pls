@@ -11,7 +11,7 @@ import {
   ConfigView,
   ConfigStep,
   StepType,
-} from '../../src/ui/Config.js';
+} from '../../src/components/controllers/Config.js';
 
 import {
   Keys,

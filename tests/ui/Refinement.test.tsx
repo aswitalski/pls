@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ComponentStatus } from '../../src/types/components.js';
 
-import { Refinement } from '../../src/ui/Refinement.js';
+import { Refinement } from '../../src/components/controllers/Refinement.js';
 
 import { Keys, createRequestHandlers } from '../test-utils.js';
 

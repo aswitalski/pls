@@ -15,20 +15,24 @@ import {
 
 import { DebugLevel } from '../configuration/types.js';
 
-import { Answer, AnswerView } from './Answer.js';
-import { Command, CommandView } from './Command.js';
-import { Config, ConfigView } from './Config.js';
-import { Confirm, ConfirmView } from './Confirm.js';
-import { Debug } from './Debug.js';
-import { Execute, ExecuteView, mapStateToViewProps } from './Execute.js';
-import { Feedback } from './Feedback.js';
-import { Introspect, IntrospectView } from './Introspect.js';
-import { Message } from './Message.js';
-import { Refinement, RefinementView } from './Refinement.js';
-import { Report } from './Report.js';
-import { Schedule, ScheduleView } from './Schedule.js';
-import { Validate, ValidateView } from './Validate.js';
-import { Welcome } from './Welcome.js';
+import { Answer, AnswerView } from './controllers/Answer.js';
+import { Command, CommandView } from './controllers/Command.js';
+import { Config, ConfigView } from './controllers/Config.js';
+import { Confirm, ConfirmView } from './controllers/Confirm.js';
+import { Debug } from './views/Debug.js';
+import {
+  Execute,
+  ExecuteView,
+  mapStateToViewProps,
+} from './controllers/Execute.js';
+import { Feedback } from './views/Feedback.js';
+import { Introspect, IntrospectView } from './controllers/Introspect.js';
+import { Message } from './views/Message.js';
+import { Refinement, RefinementView } from './controllers/Refinement.js';
+import { Report } from './views/Report.js';
+import { Schedule, ScheduleView } from './controllers/Schedule.js';
+import { Validate, ValidateView } from './controllers/Validate.js';
+import { Welcome } from './views/Welcome.js';
 
 interface SimpleComponentProps {
   def: ComponentDefinition;
@@ -280,7 +284,13 @@ export const ViewComponent = memo(function ViewComponent({
         state,
         status,
       } = def;
-      return <ConfirmView message={message} state={state} status={status} />;
+      return (
+        <ConfirmView
+          status={status}
+          message={message}
+          selectedIndex={state.selectedIndex}
+        />
+      );
     }
 
     case ComponentName.Config: {
@@ -300,10 +310,12 @@ export const ViewComponent = memo(function ViewComponent({
       } = def;
       return (
         <ScheduleView
+          status={status}
           message={message}
           tasks={tasks}
-          state={state}
-          status={status}
+          highlightedIndex={state.highlightedIndex}
+          currentDefineGroupIndex={state.currentDefineGroupIndex}
+          completedSelections={state.completedSelections}
         />
       );
     }
@@ -321,7 +333,15 @@ export const ViewComponent = memo(function ViewComponent({
         state,
         status,
       } = def;
-      return <AnswerView question={question} state={state} status={status} />;
+      const lines = state.answer ? state.answer.split('\n') : null;
+      return (
+        <AnswerView
+          status={status}
+          question={question}
+          lines={lines}
+          error={state.error}
+        />
+      );
     }
 
     case ComponentName.Command: {
@@ -339,14 +359,26 @@ export const ViewComponent = memo(function ViewComponent({
         state,
         status,
       } = def;
+      const hasCapabilities = state.capabilities.length > 0;
       return (
-        <IntrospectView state={state} status={status} children={children} />
+        <IntrospectView
+          status={status}
+          hasCapabilities={hasCapabilities}
+          error={state.error}
+          children={children}
+        />
       );
     }
 
     case ComponentName.Validate: {
       const { state, status } = def;
-      return <ValidateView state={state} status={status} />;
+      return (
+        <ValidateView
+          status={status}
+          completionMessage={state.completionMessage}
+          error={state.error}
+        />
+      );
     }
 
     case ComponentName.Refinement: {
