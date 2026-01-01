@@ -389,7 +389,10 @@ export function Config<
         } else {
           // Fallback: complete with abort feedback directly
           lifecycleHandlers.completeActive(
-            createFeedback(FeedbackType.Aborted, 'Configuration cancelled.')
+            createFeedback({
+              type: FeedbackType.Aborted,
+              message: 'Configuration cancelled.',
+            })
           );
         }
         return;
@@ -470,17 +473,17 @@ export function Config<
 
         // Success - complete with success feedback
         lifecycleHandlers.completeActive(
-          createFeedback(
-            FeedbackType.Succeeded,
-            'Configuration saved successfully.'
-          )
+          createFeedback({
+            type: FeedbackType.Succeeded,
+            message: 'Configuration saved successfully.',
+          })
         );
       } catch (error) {
         // Failure - complete with error feedback
         const errorMessage =
           error instanceof Error ? error.message : 'Configuration failed';
         lifecycleHandlers.completeActive(
-          createFeedback(FeedbackType.Failed, errorMessage)
+          createFeedback({ type: FeedbackType.Failed, message: errorMessage })
         );
       }
 

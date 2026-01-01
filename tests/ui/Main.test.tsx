@@ -294,8 +294,8 @@ describe('Main component queue-based architecture', () => {
       // Use dependency injection instead of module mocking
       const mockServiceFactory = () => mockService as any;
 
-      // Spy on createConfirmDefinition to verify it's called
-      const confirmSpy = vi.spyOn(componentsModule, 'createConfirmDefinition');
+      // Spy on createConfirm to verify it's called
+      const confirmSpy = vi.spyOn(componentsModule, 'createConfirm');
 
       render(
         <Main
@@ -308,7 +308,7 @@ describe('Main component queue-based architecture', () => {
       // Wait for async processing (Command -> Plan -> Confirm workflow)
       await new Promise((resolve) => setTimeout(resolve, WorkflowWait));
 
-      // Verify createConfirmDefinition was called
+      // Verify createConfirm was called
       expect(confirmSpy).toHaveBeenCalled();
 
       // Cleanup

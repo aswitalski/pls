@@ -7,9 +7,10 @@ import {
   IntrospectProps,
   IntrospectState,
 } from '../types/components.js';
+import { Origin } from '../types/types.js';
 
 import { Colors, getTextColor } from '../services/colors.js';
-import { createReportDefinition } from '../services/components.js';
+import { createReport } from '../services/components.js';
 import { DebugLevel } from '../configuration/types.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
@@ -120,33 +121,29 @@ export function Introspect({
             workflowHandlers.addToTimeline(...result.debug);
           }
 
-          // Capabilities come directly from result - no parsing needed
-          let caps = result.capabilities;
+          // Destructure message from result
+          const { message } = result;
 
-          // Filter out internal capabilities when not in debug mode
-          if (debug === DebugLevel.None) {
-            caps = caps.filter(
-              (cap) =>
-                cap.name.toUpperCase() !== 'SCHEDULE' &&
-                cap.name.toUpperCase() !== 'VALIDATE' &&
-                cap.name.toUpperCase() !== 'REPORT'
-            );
-          }
+          // Filter out meta workflow capabilities when not in debug mode
+          const capabilities =
+            debug === DebugLevel.None
+              ? result.capabilities.filter(
+                  (cap) => cap.origin !== Origin.Indirect
+                )
+              : result.capabilities;
 
-          setCapabilities(caps);
-          setMessage(result.message);
+          setCapabilities(capabilities);
+          setMessage(message);
 
           const finalState: IntrospectState = {
             error: null,
-            capabilities: caps,
-            message: result.message,
+            capabilities,
+            message,
           };
           requestHandlers.onCompleted(finalState);
 
           // Add Report component to queue
-          workflowHandlers.addToQueue(
-            createReportDefinition(result.message, caps)
-          );
+          workflowHandlers.addToQueue(createReport({ message, capabilities }));
 
           // Signal completion
           lifecycleHandlers.completeActive();

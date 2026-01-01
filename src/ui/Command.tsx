@@ -9,7 +9,7 @@ import {
 import { Task, TaskType } from '../types/types.js';
 
 import { Colors } from '../services/colors.js';
-import { createScheduleDefinition } from '../services/components.js';
+import { createSchedule } from '../services/components.js';
 import { useInput } from '../services/keyboard.js';
 import { formatErrorMessage } from '../services/messages.js';
 import { handleRefinement } from '../services/refinement.js';
@@ -145,10 +145,10 @@ export function Command({
           );
 
           // Create Schedule definition
-          const scheduleDefinition = createScheduleDefinition(
-            result.message,
-            result.tasks,
-            hasDefineTask
+          const scheduleDefinition = createSchedule({
+            message: result.message,
+            tasks: result.tasks,
+            onSelectionConfirmed: hasDefineTask
               ? async (selectedTasks: Task[]) => {
                   // Refinement flow for DEFINE tasks
                   await handleRefinement(
@@ -160,8 +160,8 @@ export function Command({
                     requestHandlers
                   );
                 }
-              : undefined
-          );
+              : undefined,
+          });
 
           if (hasDefineTask) {
             // DEFINE tasks: Move Command to timeline, add Schedule to queue

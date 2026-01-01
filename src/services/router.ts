@@ -9,22 +9,24 @@ import { FeedbackType, ScheduledTask, Task, TaskType } from '../types/types.js';
 
 import { saveConfig } from '../configuration/io.js';
 import { getConfigSchema } from '../configuration/schema.js';
+import { createConfigStepsFromSchema } from '../configuration/steps.js';
 import { unflattenConfig } from '../configuration/transformation.js';
 import { LLMService } from './anthropic.js';
 import { saveConfigLabels } from './config-labels.js';
 import {
-  createAnswerDefinition,
-  createConfigDefinitionWithKeys,
-  createConfirmDefinition,
-  createExecuteDefinition,
+  createAnswer,
+  createConfig,
+  createConfirm,
+  createExecute,
   createFeedback,
-  createIntrospectDefinition,
+  createIntrospect,
   createMessage,
-  createScheduleDefinition,
-  createValidateDefinition,
+  createSchedule,
+  createValidate,
 } from './components.js';
 import {
   getCancellationMessage,
+  getConfirmationMessage,
   getMixedTaskTypesError,
   getUnknownRequestMessage,
 } from './messages.js';
@@ -82,7 +84,7 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
 
   // Check if no valid tasks remain after filtering
   if (validTasks.length === 0) {
-    const msg = createMessage(getUnknownRequestMessage());
+    const msg = createMessage({ text: getUnknownRequestMessage() });
     workflowHandlers.addToQueue(msg);
     return;
   }
@@ -100,36 +102,37 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
   if (hasDefineTask) {
     // Has DEFINE tasks - add Schedule to queue for user selection
     // Refinement flow will call this function again with refined tasks
-    const scheduleDefinition = createScheduleDefinition(message, validTasks);
+    const scheduleDefinition = createSchedule({ message, tasks: validTasks });
     workflowHandlers.addToQueue(scheduleDefinition);
   } else {
     // No DEFINE tasks - Schedule auto-completes and adds Confirm to queue
     // When Schedule activates, Command moves to timeline
     // When Schedule completes, it moves to pending
     // When Confirm activates, Schedule stays pending (visible for context)
-    const scheduleDefinition = createScheduleDefinition(
+    const scheduleDefinition = createSchedule({
       message,
-      validTasks,
-      () => {
+      tasks: validTasks,
+      onSelectionConfirmed: () => {
         // Schedule completed - add Confirm to queue
-        const confirmDefinition = createConfirmDefinition(
-          () => {
+        const confirmDefinition = createConfirm({
+          message: getConfirmationMessage(),
+          onConfirmed: () => {
             // User confirmed - complete both Confirm and Schedule, then route
             lifecycleHandlers.completeActiveAndPending();
             executeTasksAfterConfirm(validTasks, context);
           },
-          () => {
+          onCancelled: () => {
             // User cancelled - complete both Confirm and Schedule, then show cancellation
             lifecycleHandlers.completeActiveAndPending();
             const message = getCancellationMessage(operation);
             workflowHandlers.addToQueue(
-              createFeedback(FeedbackType.Aborted, message)
+              createFeedback({ type: FeedbackType.Aborted, message })
             );
-          }
-        );
+          },
+        });
         workflowHandlers.addToQueue(confirmDefinition);
-      }
-    );
+      },
+    });
 
     workflowHandlers.addToQueue(scheduleDefinition);
   }
@@ -213,27 +216,30 @@ function executeTasksAfterConfirm(
         });
 
         workflowHandlers.addToQueue(
-          createFeedback(FeedbackType.Failed, errorMessages.join('\n\n'))
+          createFeedback({
+            type: FeedbackType.Failed,
+            message: errorMessages.join('\n\n'),
+          })
         );
         return;
       } else if (validation.missingConfig.length > 0) {
         // Missing config detected - create ONE Validate component for ALL missing config
         workflowHandlers.addToQueue(
-          createValidateDefinition(
-            validation.missingConfig,
+          createValidate({
+            missingConfig: validation.missingConfig,
             userRequest,
             service,
-            (error: string) => {
+            onError: (error: string) => {
               requestHandlers.onError(error);
             },
-            () => {
+            onValidationComplete: () => {
               // After config is complete, resume task routing
               routeTasksAfterConfig(scheduledTasks, context);
             },
-            (operation: string) => {
+            onAborted: (operation: string) => {
               requestHandlers.onAborted(operation);
-            }
-          )
+            },
+          })
         );
         return;
       }
@@ -315,7 +321,7 @@ function routeTasksAfterConfig(
 function routeAnswerTasks(tasks: Task[], context: RoutingContext): void {
   for (const task of tasks) {
     context.workflowHandlers.addToQueue(
-      createAnswerDefinition(task.action, context.service)
+      createAnswer({ question: task.action, service: context.service })
     );
   }
 }
@@ -325,7 +331,7 @@ function routeAnswerTasks(tasks: Task[], context: RoutingContext): void {
  */
 function routeIntrospectTasks(tasks: Task[], context: RoutingContext): void {
   context.workflowHandlers.addToQueue(
-    createIntrospectDefinition(tasks, context.service)
+    createIntrospect({ tasks, service: context.service })
   );
 }
 
@@ -352,9 +358,9 @@ function routeConfigTasks(tasks: Task[], context: RoutingContext): void {
   }
 
   context.workflowHandlers.addToQueue(
-    createConfigDefinitionWithKeys(
-      configKeys,
-      (config: Record<string, string>) => {
+    createConfig({
+      steps: createConfigStepsFromSchema(configKeys),
+      onFinished: (config: Record<string, string>) => {
         // Save config - Config component will handle completion and feedback
         try {
           // Convert flat dotted keys to nested structure grouped by section
@@ -374,10 +380,10 @@ function routeConfigTasks(tasks: Task[], context: RoutingContext): void {
           throw new Error(errorMessage);
         }
       },
-      (operation: string) => {
+      onAborted: (operation: string) => {
         context.requestHandlers.onAborted(operation);
-      }
-    )
+      },
+    })
   );
 }
 
@@ -386,7 +392,7 @@ function routeConfigTasks(tasks: Task[], context: RoutingContext): void {
  */
 function routeExecuteTasks(tasks: Task[], context: RoutingContext): void {
   context.workflowHandlers.addToQueue(
-    createExecuteDefinition(tasks, context.service)
+    createExecute({ tasks, service: context.service })
   );
 }
 

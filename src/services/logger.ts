@@ -1,7 +1,7 @@
 import { DebugLevel } from '../configuration/types.js';
 import { ComponentDefinition } from '../types/components.js';
 
-import { createDebugDefinition } from './components.js';
+import { createDebug } from './components.js';
 import { loadDebugSetting } from '../configuration/io.js';
 import { Palette } from './colors.js';
 
@@ -87,7 +87,7 @@ export function logPrompt(
   const bytes = Buffer.byteLength(instructions, 'utf-8');
   const title = `SYSTEM PROMPT (${String(lines)} lines, ${String(bytes)} bytes)`;
 
-  return createDebugDefinition(title, content, Palette.Gray);
+  return createDebug({ title, content, color: Palette.Gray });
 }
 
 /**
@@ -112,5 +112,5 @@ export function logResponse(
 
   const title = `LLM RESPONSE (${String(durationMs)} ms)`;
 
-  return createDebugDefinition(title, content, Palette.AshGray);
+  return createDebug({ title, content, color: Palette.AshGray });
 }

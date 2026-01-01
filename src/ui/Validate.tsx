@@ -10,12 +10,10 @@ import { ConfigRequirement } from '../types/skills.js';
 import { TaskType } from '../types/types.js';
 
 import { saveConfig } from '../configuration/io.js';
+import { createConfigStepsFromSchema } from '../configuration/steps.js';
 import { unflattenConfig } from '../configuration/transformation.js';
 import { Colors, getTextColor } from '../services/colors.js';
-import {
-  createConfigDefinitionWithKeys,
-  createMessage,
-} from '../services/components.js';
+import { createConfig, createMessage } from '../services/components.js';
 import { saveConfigLabels } from '../services/config-labels.js';
 import { useInput } from '../services/keyboard.js';
 import {
@@ -163,13 +161,13 @@ export function Validate({
           setConfigRequirements(withDescriptions);
 
           // Add validation message to timeline before Config component
-          workflowHandlers.addToTimeline(createMessage(message));
+          workflowHandlers.addToTimeline(createMessage({ text: message }));
 
           // Create Config component and add to queue
           const keys = withDescriptions.map((req) => req.path);
-          const configDef = createConfigDefinitionWithKeys(
-            keys,
-            (config: Record<string, string>) => {
+          const configDef = createConfig({
+            steps: createConfigStepsFromSchema(keys),
+            onFinished: (config: Record<string, string>) => {
               // Convert flat dotted keys to nested structure grouped by section
               const configBySection = unflattenConfig(config);
 
@@ -192,10 +190,10 @@ export function Validate({
               // After config is saved, invoke callback to add Execute component to queue
               onValidationComplete(withDescriptions);
             },
-            (operation: string) => {
+            onAborted: (operation: string) => {
               onAborted(operation);
-            }
-          );
+            },
+          });
 
           // Override descriptions with LLM-generated ones
           if ('props' in configDef && 'steps' in configDef.props) {

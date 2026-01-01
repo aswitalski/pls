@@ -1,525 +1,280 @@
 import { randomUUID } from 'node:crypto';
-import { parse as parseYaml } from 'yaml';
 
 import {
-  Config,
-  ConfigDefinition,
-  ConfigDefinitionType,
-} from '../configuration/types.js';
-import { ConfigRequirement } from '../types/skills.js';
-import {
   AnswerDefinitionProps,
+  AnswerState,
+  BaseState,
   Capability,
   CommandDefinitionProps,
+  CommandState,
   ComponentDefinition,
   ComponentStatus,
   ConfigDefinitionProps,
+  ConfigState,
   ConfirmDefinitionProps,
+  ConfirmState,
   ExecuteDefinitionProps,
+  ExecuteState,
   IntrospectDefinitionProps,
+  IntrospectState,
   RefinementDefinitionProps,
   ScheduleDefinitionProps,
+  ScheduleState,
   ValidateDefinitionProps,
+  ValidateState,
 } from '../types/components.js';
-import { App, ComponentName, FeedbackType, Task } from '../types/types.js';
-
-import { getConfigPath, loadConfig } from '../configuration/io.js';
-import { getConfigSchema } from '../configuration/schema.js';
-import { LLMService } from './anthropic.js';
-import { getConfigLabel } from './config-labels.js';
-import { defaultFileSystem, FileSystem } from './filesystem.js';
-import { getConfirmationMessage } from './messages.js';
-
-import { ConfigStep, StepType } from '../ui/Config.js';
-
-export function createWelcomeDefinition(app: App): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Welcome,
-    props: { app },
-    status: ComponentStatus.Awaiting,
-  };
-}
-
-export function createConfigSteps(): ConfigStep[] {
-  // Use schema-based config step generation for required Anthropic settings
-  return createConfigStepsFromSchema(['anthropic.key', 'anthropic.model']);
-}
+import { App, ComponentName, FeedbackType } from '../types/types.js';
 
 /**
- * Get current config value for a dotted key path
+ * Shared component creation utility
  */
-function getConfigValue(
-  config: Config | Record<string, unknown> | null,
-  key: string
-): unknown {
-  if (!config) return undefined;
-
-  const parts = key.split('.');
-  let value: unknown = config;
-
-  for (const part of parts) {
-    if (value && typeof value === 'object' && part in value) {
-      value = (value as Record<string, unknown>)[part];
-    } else {
-      return undefined;
-    }
-  }
-
-  return value;
-}
+const createComponent = (
+  name: ComponentName,
+  props: unknown,
+  state: BaseState | undefined,
+  status = ComponentStatus.Awaiting
+): ComponentDefinition =>
+  ({
+    id: randomUUID(),
+    name,
+    props,
+    ...(state !== undefined ? { state } : {}),
+    status,
+  }) as ComponentDefinition;
 
 /**
- * Get validation function for a config definition
+ * Create a simple component without state
  */
-function getValidator(
-  definition: ConfigDefinition
-): (value: string) => boolean {
-  switch (definition.type) {
-    case ConfigDefinitionType.RegExp:
-      return (value: string) => definition.pattern.test(value);
-    case ConfigDefinitionType.String:
-      return () => true; // Strings are always valid
-    case ConfigDefinitionType.Enum:
-      return (value: string) => definition.values.includes(value);
-    case ConfigDefinitionType.Number:
-      return (value: string) => !isNaN(Number(value));
-    case ConfigDefinitionType.Boolean:
-      return (value: string) => value === 'true' || value === 'false';
-  }
-}
+const createSimpleComponent = (
+  name: ComponentName,
+  props: unknown,
+  status?: ComponentStatus
+): ComponentDefinition => createComponent(name, props, undefined, status);
 
 /**
- * Create config steps from schema for specified keys
+ * Create a managed component with state
  */
-export function createConfigStepsFromSchema(
-  keys: string[],
-  fs: FileSystem = defaultFileSystem
-): ConfigStep[] {
-  const schema = getConfigSchema();
-  let currentConfig: Config | null = null;
-  let rawConfig: Record<string, unknown> | null = null;
-
-  // Load validated config (may fail if config has validation errors)
-  try {
-    currentConfig = loadConfig(fs);
-  } catch {
-    // Config doesn't exist or has validation errors, use defaults
-  }
-
-  // Load raw config separately (for discovered keys not in schema)
-  try {
-    const configFile = getConfigPath();
-    if (fs.exists(configFile)) {
-      const content = fs.readFile(configFile, 'utf-8');
-      rawConfig = parseYaml(content) as Record<string, unknown>;
-    }
-  } catch {
-    // Config file doesn't exist or can't be parsed
-  }
-
-  return keys.map((key) => {
-    // Check if key is in schema (system config)
-    if (!(key in schema)) {
-      // Key is not in schema - it's from a skill or discovered config
-      // Create a simple text step with cached label or full path as description
-      const keyParts = key.split('.');
-      const shortKey = keyParts[keyParts.length - 1];
-
-      // Load current value if it exists (use rawConfig since discovered keys aren't in validated config)
-      const currentValue = getConfigValue(rawConfig, key);
-      const value =
-        currentValue !== undefined && typeof currentValue === 'string'
-          ? currentValue
-          : null;
-
-      // Use cached label if available, fallback to key path
-      const cachedLabel = getConfigLabel(key, fs);
-
-      return {
-        description: cachedLabel ?? key,
-        key: shortKey,
-        path: key,
-        type: StepType.Text,
-        value,
-        validate: () => true, // Accept any string for now
-      };
-    }
-    const definition = schema[key];
-
-    const currentValue = getConfigValue(currentConfig, key);
-    const keyParts = key.split('.');
-    const shortKey = keyParts[keyParts.length - 1];
-
-    // Map definition to ConfigStep based on type
-    switch (definition.type) {
-      case ConfigDefinitionType.RegExp:
-      case ConfigDefinitionType.String: {
-        const value =
-          currentValue !== undefined && typeof currentValue === 'string'
-            ? currentValue
-            : definition.type === ConfigDefinitionType.String
-              ? (definition.default ?? '')
-              : null;
-
-        return {
-          description: definition.description,
-          key: shortKey,
-          path: key,
-          type: StepType.Text,
-          value,
-          validate: getValidator(definition),
-        };
-      }
-
-      case ConfigDefinitionType.Number: {
-        const value =
-          currentValue !== undefined && typeof currentValue === 'number'
-            ? String(currentValue)
-            : definition.default !== undefined
-              ? String(definition.default)
-              : '0';
-
-        return {
-          description: definition.description,
-          key: shortKey,
-          path: key,
-          type: StepType.Text,
-          value,
-          validate: getValidator(definition),
-        };
-      }
-
-      case ConfigDefinitionType.Enum: {
-        const currentStr =
-          currentValue !== undefined && typeof currentValue === 'string'
-            ? currentValue
-            : definition.default;
-
-        const defaultIndex = currentStr
-          ? definition.values.indexOf(currentStr)
-          : 0;
-
-        return {
-          description: definition.description,
-          key: shortKey,
-          path: key,
-          type: StepType.Selection,
-          options: definition.values.map((value) => ({
-            label: value,
-            value,
-          })),
-          defaultIndex: Math.max(0, defaultIndex),
-          validate: getValidator(definition),
-        };
-      }
-
-      case ConfigDefinitionType.Boolean: {
-        const currentBool =
-          currentValue !== undefined && typeof currentValue === 'boolean'
-            ? currentValue
-            : undefined;
-
-        return {
-          description: definition.description,
-          key: shortKey,
-          path: key,
-          type: StepType.Selection,
-          options: [
-            { label: 'yes', value: 'true' },
-            { label: 'no', value: 'false' },
-          ],
-          defaultIndex: currentBool !== undefined ? (currentBool ? 0 : 1) : 0,
-          validate: getValidator(definition),
-        };
-      }
-    }
-  });
-}
-
-export function createConfigDefinition(
-  onFinished: (config: Record<string, string>) => void,
-  onAborted: (operation: string) => void
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Config,
-    status: ComponentStatus.Awaiting,
-    state: {
-      values: {},
-      completedStep: 0,
-      selectedIndex: 0,
-    },
-    props: {
-      steps: createConfigSteps(),
-      onFinished,
-      onAborted,
-    } satisfies ConfigDefinitionProps,
-  };
-}
+const createManagedComponent = (
+  name: ComponentName,
+  props: unknown,
+  state: BaseState,
+  status?: ComponentStatus
+): ComponentDefinition => createComponent(name, props, state, status);
 
 /**
- * Create config definition with specific keys
+ * Initial state constants for managed components
  */
-export function createConfigDefinitionWithKeys(
-  keys: string[],
-  onFinished: (config: Record<string, string>) => void,
-  onAborted: (operation: string) => void
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Config,
-    status: ComponentStatus.Awaiting,
-    state: {
-      values: {},
-      completedStep: 0,
-      selectedIndex: 0,
-    },
-    props: {
-      steps: createConfigStepsFromSchema(keys),
-      onFinished,
-      onAborted,
-    } satisfies ConfigDefinitionProps,
-  };
-}
+const InitialConfigState: ConfigState = {
+  values: {},
+  completedStep: 0,
+  selectedIndex: 0,
+};
 
-export function createCommandDefinition(
-  command: string,
-  service: LLMService
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Command,
-    status: ComponentStatus.Awaiting,
-    state: {
-      error: null,
-      message: null,
-      tasks: [],
-    },
-    props: {
-      command,
-      service,
-    } satisfies CommandDefinitionProps,
-  };
-}
+const InitialCommandState: CommandState = {
+  error: null,
+  message: null,
+  tasks: [],
+};
 
-export function createScheduleDefinition(
-  message: string,
-  tasks: Task[],
-  onSelectionConfirmed?: (tasks: Task[]) => void | Promise<void>
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Schedule,
-    status: ComponentStatus.Awaiting,
-    state: {
-      highlightedIndex: null,
-      currentDefineGroupIndex: 0,
-      completedSelections: [],
-    },
-    props: {
-      message,
-      tasks,
-      onSelectionConfirmed,
-    } satisfies ScheduleDefinitionProps,
-  };
-}
+const InitialScheduleState: ScheduleState = {
+  highlightedIndex: null,
+  currentDefineGroupIndex: 0,
+  completedSelections: [],
+};
 
-export function createFeedback(
-  type: FeedbackType,
-  ...messages: string[]
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Feedback,
-    props: {
-      type,
-      message: messages.join('\n\n'),
-    },
-    status: ComponentStatus.Awaiting,
-  };
-}
+const InitialRefinementState: BaseState = {};
 
-export function createMessage(text: string): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Message,
-    props: {
-      text,
-    },
-    status: ComponentStatus.Awaiting,
-  };
-}
+const InitialConfirmState: ConfirmState = {
+  confirmed: false,
+  selectedIndex: 0,
+};
 
-export function createDebugDefinition(
-  title: string,
-  content: string,
-  color: string
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Debug,
-    props: {
-      title,
-      content,
-      color,
-    },
-    status: ComponentStatus.Awaiting,
-  };
-}
+const InitialIntrospectState: IntrospectState = {
+  error: null,
+  capabilities: [],
+  message: null,
+};
 
-export function createRefinement(
-  text: string,
-  onAborted: (operation: string) => void
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Refinement,
-    status: ComponentStatus.Awaiting,
-    state: {},
-    props: {
-      text,
-      onAborted,
-    } satisfies RefinementDefinitionProps,
-  };
-}
+const InitialAnswerState: AnswerState = {
+  error: null,
+  answer: null,
+};
 
-export function createConfirmDefinition(
-  onConfirmed: () => void,
-  onCancelled: () => void
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Confirm,
-    status: ComponentStatus.Awaiting,
-    state: {
-      confirmed: false,
-      selectedIndex: 0,
-    },
-    props: {
-      message: getConfirmationMessage(),
-      onConfirmed,
-      onCancelled,
-    } satisfies ConfirmDefinitionProps,
-  };
-}
+const InitialExecuteState: ExecuteState = {
+  error: null,
+  message: '',
+  summary: '',
+  tasks: [],
+  completionMessage: null,
+};
 
-export function createIntrospectDefinition(
-  tasks: Task[],
-  service: LLMService
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Introspect,
-    status: ComponentStatus.Awaiting,
-    state: {
-      error: null,
-      capabilities: [],
-      message: null,
-    },
-    props: {
-      tasks,
-      service,
-    } satisfies IntrospectDefinitionProps,
-  };
-}
-
-export function createReportDefinition(
-  message: string,
-  capabilities: Capability[]
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Report,
-    props: {
-      message,
-      capabilities,
-    },
-    status: ComponentStatus.Awaiting,
-  };
-}
-
-export function createAnswerDefinition(
-  question: string,
-  service: LLMService
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Answer,
-    status: ComponentStatus.Awaiting,
-    state: {
-      error: null,
-      answer: null,
-    },
-    props: {
-      question,
-      service,
-    } satisfies AnswerDefinitionProps,
-  };
-}
-
-export function isSimple(component: ComponentDefinition): boolean {
-  return !('state' in component);
-}
+const InitialValidateState: ValidateState = {
+  error: null,
+  completionMessage: null,
+  configRequirements: [],
+  validated: false,
+};
 
 /**
- * Mark a component as done. Returns the component to be added to timeline.
- * Components use handlers.updateState to save their state before completion,
- * so this function sets the status to Done and returns the updated component.
+ * Create a welcome component that displays application information
  */
-export function markAsDone(
-  component: ComponentDefinition
-): ComponentDefinition {
-  return { ...component, status: ComponentStatus.Done };
-}
+export const createWelcome = (props: { app: App }, status?: ComponentStatus) =>
+  createSimpleComponent(ComponentName.Welcome, props, status);
 
-export function createExecuteDefinition(
-  tasks: Task[],
-  service: LLMService
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Execute,
-    status: ComponentStatus.Awaiting,
-    state: {
-      error: null,
-      message: '',
-      summary: '',
-      tasks: [],
-      completionMessage: null,
-    },
-    props: {
-      tasks,
-      service,
-    } satisfies ExecuteDefinitionProps,
-  };
-}
+/**
+ * Create a feedback component that displays status messages
+ */
+export const createFeedback = (
+  props: { type: FeedbackType; message: string },
+  status?: ComponentStatus
+) => createSimpleComponent(ComponentName.Feedback, props, status);
 
-export function createValidateDefinition(
-  missingConfig: ConfigRequirement[],
-  userRequest: string,
-  service: LLMService,
-  onError: (error: string) => void,
-  onValidationComplete: (configWithDescriptions: ConfigRequirement[]) => void,
-  onAborted: (operation: string) => void
-): ComponentDefinition {
-  return {
-    id: randomUUID(),
-    name: ComponentName.Validate,
-    status: ComponentStatus.Awaiting,
-    state: {
-      error: null,
-      completionMessage: null,
-      configRequirements: [],
-      validated: false,
-    },
-    props: {
-      missingConfig,
-      userRequest,
-      service,
-      onError,
-      onValidationComplete,
-      onAborted,
-    } satisfies ValidateDefinitionProps,
-  };
-}
+/**
+ * Create a message component that displays informational text
+ */
+export const createMessage = (
+  props: { text: string },
+  status?: ComponentStatus
+) => createSimpleComponent(ComponentName.Message, props, status);
+
+/**
+ * Create a debug component that displays diagnostic information
+ */
+export const createDebug = (
+  props: { title: string; content: string; color: string },
+  status?: ComponentStatus
+) => createSimpleComponent(ComponentName.Debug, props, status);
+
+/**
+ * Create a report component that displays capability listings
+ */
+export const createReport = (
+  props: { message: string; capabilities: Capability[] },
+  status?: ComponentStatus
+) => createSimpleComponent(ComponentName.Report, props, status);
+
+/**
+ * Create a configuration component for multi-step user input
+ */
+export const createConfig = (
+  props: ConfigDefinitionProps,
+  status?: ComponentStatus
+) =>
+  createManagedComponent(
+    ComponentName.Config,
+    props,
+    InitialConfigState,
+    status
+  );
+
+/**
+ * Create a command component that processes user requests via LLM
+ */
+export const createCommand = (
+  props: CommandDefinitionProps,
+  status?: ComponentStatus
+) =>
+  createManagedComponent(
+    ComponentName.Command,
+    props,
+    InitialCommandState,
+    status
+  );
+
+/**
+ * Create a schedule component that displays and manages task execution plans
+ */
+export const createSchedule = (
+  props: ScheduleDefinitionProps,
+  status?: ComponentStatus
+) =>
+  createManagedComponent(
+    ComponentName.Schedule,
+    props,
+    InitialScheduleState,
+    status
+  );
+
+/**
+ * Create a refinement component for interactive task selection
+ */
+export const createRefinement = (
+  props: RefinementDefinitionProps,
+  status?: ComponentStatus
+) =>
+  createManagedComponent(
+    ComponentName.Refinement,
+    props,
+    InitialRefinementState,
+    status
+  );
+
+/**
+ * Create a confirmation component that prompts user for yes/no decisions
+ */
+export const createConfirm = (
+  props: ConfirmDefinitionProps,
+  status?: ComponentStatus
+) =>
+  createManagedComponent(
+    ComponentName.Confirm,
+    props,
+    InitialConfirmState,
+    status
+  );
+
+/**
+ * Create an introspect component that lists available capabilities
+ */
+export const createIntrospect = (
+  props: IntrospectDefinitionProps,
+  status?: ComponentStatus
+) =>
+  createManagedComponent(
+    ComponentName.Introspect,
+    props,
+    InitialIntrospectState,
+    status
+  );
+
+/**
+ * Create an answer component that responds to information requests via LLM
+ */
+export const createAnswer = (
+  props: AnswerDefinitionProps,
+  status?: ComponentStatus
+) =>
+  createManagedComponent(
+    ComponentName.Answer,
+    props,
+    InitialAnswerState,
+    status
+  );
+
+/**
+ * Create an execute component that runs shell commands and processes operations
+ */
+export const createExecute = (
+  props: ExecuteDefinitionProps,
+  status?: ComponentStatus
+) =>
+  createManagedComponent(
+    ComponentName.Execute,
+    props,
+    InitialExecuteState,
+    status
+  );
+
+/**
+ * Create a validate component that checks and collects missing configuration
+ */
+export const createValidate = (
+  props: ValidateDefinitionProps,
+  status?: ComponentStatus
+) =>
+  createManagedComponent(
+    ComponentName.Validate,
+    props,
+    InitialValidateState,
+    status
+  );

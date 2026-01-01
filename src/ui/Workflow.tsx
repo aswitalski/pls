@@ -10,11 +10,7 @@ import {
 import { LifecycleHandlers, WorkflowHandlers } from '../types/handlers.js';
 import { ComponentName, FeedbackType } from '../types/types.js';
 
-import {
-  createFeedback,
-  isSimple,
-  markAsDone,
-} from '../services/components.js';
+import { createFeedback } from '../services/components.js';
 import { DebugLevel } from '../configuration/types.js';
 import { getWarnings } from '../services/logger.js';
 import { getCancellationMessage } from '../services/messages.js';
@@ -25,6 +21,15 @@ import {
   ControllerComponent,
   TimelineComponent,
 } from './Component.js';
+
+/**
+ * Mark a component as done. Returns the component to be added to timeline.
+ * Components use handlers.updateState to save their state before completion,
+ * so this function sets the status to Done and returns the updated component.
+ */
+function markAsDone(component: ComponentDefinition): ComponentDefinition {
+  return { ...component, status: ComponentStatus.Done };
+}
 
 interface WorkflowProps {
   initialQueue: ComponentDefinition[];
@@ -72,14 +77,14 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
         // Add feedback to queue
         setQueue((queue) => [
           ...queue,
-          createFeedback(FeedbackType.Failed, error),
+          createFeedback({ type: FeedbackType.Failed, message: error }),
         ]);
       },
       onAborted: (operation: string) => {
         moveActiveToTimeline();
         // Clear queue and add only feedback to prevent subsequent components from executing
         const message = getCancellationMessage(operation);
-        setQueue([createFeedback(FeedbackType.Aborted, message)]);
+        setQueue([createFeedback({ type: FeedbackType.Aborted, message })]);
       },
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
       onCompleted: <T extends BaseState>(finalState: T) => {
@@ -198,7 +203,10 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
     const warningMessages = getWarnings();
     if (warningMessages.length > 0) {
       const warningComponents = warningMessages.map((msg) =>
-        markAsDone(createFeedback(FeedbackType.Warning, msg))
+        createFeedback(
+          { type: FeedbackType.Warning, message: msg },
+          ComponentStatus.Done
+        )
       );
       setTimeline((prev) => [...prev, ...warningComponents]);
     }
@@ -286,3 +294,13 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
     </Box>
   );
 };
+
+/**
+ * Check if a component is stateless (simple).
+ * Stateless components are display-only and complete immediately without
+ * tracking internal state. Stateful components manage user interaction
+ * and maintain state across their lifecycle.
+ */
+export function isSimple(component: ComponentDefinition): boolean {
+  return !('state' in component);
+}

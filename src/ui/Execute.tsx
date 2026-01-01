@@ -26,11 +26,7 @@ import { executeReducer, initialState } from '../execution/reducer.js';
 import { executeTask, TaskOutput } from '../execution/runner.js';
 import { ExecuteActionType } from '../execution/types.js';
 import { getCurrentTaskIndex } from '../execution/utils.js';
-import {
-  createFeedback,
-  createMessage,
-  markAsDone,
-} from '../services/components.js';
+import { createFeedback, createMessage } from '../services/components.js';
 import { FeedbackType } from '../types/types.js';
 
 import { Spinner } from './Spinner.js';
@@ -314,7 +310,7 @@ export function Execute({
           if (result.error) {
             const errorMessage = getExecutionErrorMessage(result.error);
             workflowHandlers.addToTimeline(
-              markAsDone(createMessage(errorMessage))
+              createMessage({ text: errorMessage }, ComponentStatus.Done)
             );
             requestHandlers.onCompleted(
               createExecuteState({ message: result.message })
@@ -501,7 +497,7 @@ export function Execute({
         if (result.action.type === ExecuteActionType.TaskErrorCritical) {
           const errorMessage = getExecutionErrorMessage(errorMsg);
           workflowHandlers.addToQueue(
-            createFeedback(FeedbackType.Failed, errorMessage)
+            createFeedback({ type: FeedbackType.Failed, message: errorMessage })
           );
         }
 

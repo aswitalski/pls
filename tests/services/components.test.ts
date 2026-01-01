@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   createRefinement,
-  createScheduleDefinition,
+  createSchedule,
 } from '../../src/services/components.js';
 import {
   CommandDefinitionProps,
@@ -384,7 +384,7 @@ describe('Component Types', () => {
   describe('Refinement component definition', () => {
     it('creates valid stateful refinement definition', () => {
       const onAborted = vi.fn();
-      const def = createRefinement('Processing request', onAborted);
+      const def = createRefinement({ text: 'Processing request', onAborted });
 
       expect(def.name).toBe(ComponentName.Refinement);
       if (def.name === ComponentName.Refinement) {
@@ -405,7 +405,7 @@ describe('Component Types', () => {
         },
       ];
 
-      const def = createScheduleDefinition('Select an option.', tasks);
+      const def = createSchedule({ message: 'Select an option.', tasks });
 
       expect(def.name).toBe(ComponentName.Schedule);
       if (def.name === ComponentName.Schedule) {
@@ -425,7 +425,11 @@ describe('Component Types', () => {
       ];
       const callback = vi.fn();
 
-      const def = createScheduleDefinition('Building.', tasks, callback);
+      const def = createSchedule({
+        message: 'Building.',
+        tasks,
+        onSelectionConfirmed: callback,
+      });
 
       expect(def.name).toBe(ComponentName.Schedule);
       if (def.name === ComponentName.Schedule) {
@@ -439,7 +443,7 @@ describe('Component Types', () => {
     it('initializes state with correct default values', () => {
       const tasks = [{ action: 'Task 1', type: TaskType.Execute, config: [] }];
 
-      const def = createScheduleDefinition('Processing.', tasks);
+      const def = createSchedule({ message: 'Processing.', tasks });
 
       if (def.name === ComponentName.Schedule) {
         expect(def.state.highlightedIndex).toBeNull();

@@ -24,12 +24,12 @@ export async function handleRefinement<TState extends BaseState = BaseState>(
   requestHandlers: RequestHandlers<TState>
 ): Promise<void> {
   // Create and add refinement component to queue
-  const refinementDef = createRefinement(
-    getRefiningMessage(),
-    (operation: string) => {
+  const refinementDef = createRefinement({
+    text: getRefiningMessage(),
+    onAborted: (operation: string) => {
       requestHandlers.onAborted(operation);
-    }
-  );
+    },
+  });
 
   workflowHandlers.addToQueue(refinementDef);
 

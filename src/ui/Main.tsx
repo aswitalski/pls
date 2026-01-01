@@ -12,14 +12,15 @@ import {
 } from '../configuration/io.js';
 import { getConfigurationRequiredMessage } from '../configuration/messages.js';
 import { getMissingConfigKeys } from '../configuration/schema.js';
+import { createConfigStepsFromSchema } from '../configuration/steps.js';
 import { unflattenConfig } from '../configuration/transformation.js';
 import { LLMService, createAnthropicService } from '../services/anthropic.js';
 import {
-  createCommandDefinition,
-  createConfigDefinitionWithKeys,
+  createCommand,
+  createConfig,
   createFeedback,
   createMessage,
-  createWelcomeDefinition,
+  createWelcome,
 } from '../services/components.js';
 import { registerGlobalShortcut } from '../services/keyboard.js';
 import { initializeLogger, setDebugLevel } from '../services/logger.js';
@@ -93,7 +94,9 @@ export const Main = ({
           error instanceof Error
             ? error.message
             : 'Failed to initialize service';
-        setInitialQueue([createFeedback(FeedbackType.Failed, errorMessage)]);
+        setInitialQueue([
+          createFeedback({ type: FeedbackType.Failed, message: errorMessage }),
+        ]);
       }
     }
     // If config is missing, service will be created after config completes
@@ -140,20 +143,20 @@ export const Main = ({
       };
 
       setInitialQueue([
-        createWelcomeDefinition(app),
-        createMessage(getConfigurationRequiredMessage()),
-        createConfigDefinitionWithKeys(
-          missingKeys,
-          handleConfigFinished,
-          handleConfigAborted
-        ),
+        createWelcome({ app }),
+        createMessage({ text: getConfigurationRequiredMessage() }),
+        createConfig({
+          steps: createConfigStepsFromSchema(missingKeys),
+          onFinished: handleConfigFinished,
+          onAborted: handleConfigAborted,
+        }),
       ]);
     } else if (service && command) {
       // Valid service exists and command provided - execute command
-      setInitialQueue([createCommandDefinition(command, service)]);
+      setInitialQueue([createCommand({ command, service })]);
     } else if (service && !command) {
       // Valid service exists, no command - show welcome
-      setInitialQueue([createWelcomeDefinition(app)]);
+      setInitialQueue([createWelcome({ app })]);
     }
     // Wait for service to be initialized before setting queue
   }, [app, command, service, initialQueue]);
