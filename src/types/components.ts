@@ -203,13 +203,18 @@ export interface AnswerState extends BaseState {
   answer: string | null;
 }
 
-export interface TaskInfo {
+export interface TaskOutput {
+  stdout: string;
+  stderr: string;
+}
+
+export interface TaskData {
   label: string;
   command: ExecuteCommand;
   status: ExecutionStatus;
   elapsed: number;
-  stdout?: string;
-  stderr?: string;
+  output: TaskOutput | null;
+  startTime?: number;
   error?: string;
 }
 
@@ -228,7 +233,7 @@ export interface ExecuteState extends BaseState {
   error: string | null;
   message: string;
   summary: string;
-  tasks: TaskInfo[];
+  tasks: TaskData[];
   completionMessage: string | null;
 }
 

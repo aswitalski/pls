@@ -71,9 +71,8 @@ describe('Shell service', () => {
         output,
       });
 
-      // Stop if critical command failed
-      const isCritical = cmd.critical !== false;
-      if (output.result !== ExecutionResult.Success && isCritical) {
+      // Stop on failure
+      if (output.result !== ExecutionResult.Success) {
         break;
       }
     }
@@ -356,11 +355,11 @@ describe('Shell service', () => {
     });
   });
 
-  describe('Critical command handling', () => {
-    it('stops execution when critical command fails', async () => {
+  describe('Command failure handling', () => {
+    it('stops execution when command fails', async () => {
       const commands: ExecuteCommand[] = [
         { description: 'Step 1', command: 'echo 1' },
-        { description: 'Step 2', command: 'echo 2' }, // critical by default
+        { description: 'Step 2', command: 'echo 2' },
         { description: 'Step 3', command: 'echo 3' },
       ];
 
@@ -380,54 +379,6 @@ describe('Shell service', () => {
       expect(results).toHaveLength(2);
       expect(results[0].result).toBe(ExecutionResult.Success);
       expect(results[1].result).toBe(ExecutionResult.Error);
-    });
-
-    it('continues execution when non-critical command fails', async () => {
-      const commands: ExecuteCommand[] = [
-        { description: 'Step 1', command: 'echo 1' },
-        { description: 'Step 2', command: 'echo 2', critical: false },
-        { description: 'Step 3', command: 'echo 3' },
-      ];
-
-      // Mock Step 2 to fail
-      testExecutor.mock('echo 2', {
-        result: ExecutionResult.Error,
-        errors: 'Command failed',
-      });
-
-      const promise = executeCommands(commands);
-      await vi.advanceTimersByTimeAsync(200);
-      const results = await promise;
-
-      testExecutor.clearMocks();
-
-      // Should have all 3 results (continued after non-critical Step 2 failed)
-      expect(results).toHaveLength(3);
-      expect(results[0].result).toBe(ExecutionResult.Success);
-      expect(results[1].result).toBe(ExecutionResult.Error);
-      expect(results[2].result).toBe(ExecutionResult.Success);
-    });
-
-    it('defaults critical to true when not specified', () => {
-      const cmd: ExecuteCommand = {
-        description: 'Test',
-        command: 'echo test',
-      };
-
-      // critical should default to true (stop on failure)
-      const isCritical = cmd.critical !== false;
-      expect(isCritical).toBe(true);
-    });
-
-    it('respects explicit critical false', () => {
-      const cmd: ExecuteCommand = {
-        description: 'Test',
-        command: 'echo test',
-        critical: false,
-      };
-
-      const isCritical = cmd.critical !== false;
-      expect(isCritical).toBe(false);
     });
   });
 

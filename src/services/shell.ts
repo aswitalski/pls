@@ -392,9 +392,8 @@ export async function executeCommands(
       output,
     });
 
-    // Stop if critical command failed
-    const isCritical = cmd.critical !== false;
-    if (output.result !== ExecutionResult.Success && isCritical) {
+    // Stop on failure
+    if (output.result !== ExecutionResult.Success) {
       break;
     }
   }

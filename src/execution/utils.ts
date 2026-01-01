@@ -1,18 +1,18 @@
-import { TaskInfo } from '../types/components.js';
+import { TaskData } from '../types/components.js';
 
 import { ExecutionStatus } from '../services/shell.js';
 
 /**
- * Calculate total elapsed time from task infos
+ * Calculate total elapsed time from task data
  */
-export function getTotalElapsed(tasks: TaskInfo[]): number {
+export function getTotalElapsed(tasks: TaskData[]): number {
   return tasks.reduce((sum, task) => sum + task.elapsed, 0);
 }
 
 /**
  * Calculate the number of finished tasks (success, failed, or aborted)
  */
-export function getCompletedCount(tasks: TaskInfo[]): number {
+export function getCompletedCount(tasks: TaskData[]): number {
   return tasks.filter(
     (task) =>
       task.status === ExecutionStatus.Success ||
@@ -25,7 +25,7 @@ export function getCompletedCount(tasks: TaskInfo[]): number {
  * Get the index of the current task to execute.
  * Returns the index of the first Running or Pending task, or tasks.length if all done.
  */
-export function getCurrentTaskIndex(tasks: TaskInfo[]): number {
+export function getCurrentTaskIndex(tasks: TaskData[]): number {
   const runningIndex = tasks.findIndex(
     (t) => t.status === ExecutionStatus.Running
   );

@@ -12,6 +12,7 @@ import { Main } from '../../src/ui/Main.js';
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({
+  ELAPSED_UPDATE_INTERVAL: 250,
   ensureMinimumTime: vi.fn().mockResolvedValue(undefined),
   withMinimumTime: vi
     .fn()

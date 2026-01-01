@@ -47,7 +47,27 @@ export function executeReducer(
     case ExecuteActionType.TaskStarted: {
       const updatedTasks = state.tasks.map((task, i) =>
         i === action.payload.index
-          ? { ...task, status: ExecutionStatus.Running }
+          ? {
+              ...task,
+              status: ExecutionStatus.Running,
+              startTime: action.payload.startTime,
+            }
+          : task
+      );
+      return {
+        ...state,
+        tasks: updatedTasks,
+      };
+    }
+
+    case ExecuteActionType.TaskProgress: {
+      const updatedTasks = state.tasks.map((task, i) =>
+        i === action.payload.index
+          ? {
+              ...task,
+              elapsed: action.payload.elapsed,
+              output: action.payload.output,
+            }
           : task
       );
       return {
@@ -57,7 +77,7 @@ export function executeReducer(
     }
 
     case ExecuteActionType.TaskComplete: {
-      const updatedTaskInfos = state.tasks.map((task, i) =>
+      const updatedTasks = state.tasks.map((task, i) =>
         i === action.payload.index
           ? {
               ...task,
@@ -68,12 +88,12 @@ export function executeReducer(
       );
       return {
         ...state,
-        tasks: updatedTaskInfos,
+        tasks: updatedTasks,
       };
     }
 
-    case ExecuteActionType.AllTasksComplete: {
-      const updatedTaskInfos = state.tasks.map((task, i) =>
+    case ExecuteActionType.ExecutionComplete: {
+      const updatedTasks = state.tasks.map((task, i) =>
         i === action.payload.index
           ? {
               ...task,
@@ -82,66 +102,31 @@ export function executeReducer(
             }
           : task
       );
-      const totalElapsed = getTotalElapsed(updatedTaskInfos);
+      const totalElapsed = getTotalElapsed(updatedTasks);
       const completion = `${action.payload.summaryText} in ${formatDuration(totalElapsed)}.`;
       return {
         ...state,
-        tasks: updatedTaskInfos,
+        tasks: updatedTasks,
         completionMessage: completion,
       };
     }
 
-    case ExecuteActionType.TaskErrorCritical: {
-      const updatedTaskInfos = state.tasks.map((task, i) =>
+    case ExecuteActionType.TaskError: {
+      const updatedTasks = state.tasks.map((task, i) =>
         i === action.payload.index
           ? { ...task, status: ExecutionStatus.Failed, elapsed: 0 }
           : task
       );
       return {
         ...state,
-        tasks: updatedTaskInfos,
+        tasks: updatedTasks,
         error: action.payload.error,
-      };
-    }
-
-    case ExecuteActionType.TaskErrorContinue: {
-      const updatedTaskInfos = state.tasks.map((task, i) =>
-        i === action.payload.index
-          ? {
-              ...task,
-              status: ExecutionStatus.Failed,
-              elapsed: action.payload.elapsed,
-            }
-          : task
-      );
-      return {
-        ...state,
-        tasks: updatedTaskInfos,
-      };
-    }
-
-    case ExecuteActionType.LastTaskError: {
-      const updatedTaskInfos = state.tasks.map((task, i) =>
-        i === action.payload.index
-          ? {
-              ...task,
-              status: ExecutionStatus.Failed,
-              elapsed: action.payload.elapsed,
-            }
-          : task
-      );
-      const totalElapsed = getTotalElapsed(updatedTaskInfos);
-      const completion = `${action.payload.summaryText} in ${formatDuration(totalElapsed)}.`;
-      return {
-        ...state,
-        tasks: updatedTaskInfos,
-        completionMessage: completion,
       };
     }
 
     case ExecuteActionType.CancelExecution: {
       // Mark running task as aborted, pending tasks as cancelled
-      const updatedTaskInfos = state.tasks.map((task) => {
+      const updatedTasks = state.tasks.map((task) => {
         if (task.status === ExecutionStatus.Running) {
           return { ...task, status: ExecutionStatus.Aborted };
         } else if (task.status === ExecutionStatus.Pending) {
@@ -151,7 +136,7 @@ export function executeReducer(
       });
       return {
         ...state,
-        tasks: updatedTaskInfos,
+        tasks: updatedTasks,
       };
     }
 

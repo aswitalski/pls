@@ -23,6 +23,7 @@ import {
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({
+  ELAPSED_UPDATE_INTERVAL: 250,
   ensureMinimumTime: vi.fn().mockResolvedValue(undefined),
   withMinimumTime: vi
     .fn()
@@ -495,12 +496,10 @@ describe('Execute component', () => {
           {
             description: 'Build project',
             command: 'build-project',
-            critical: true,
           },
           {
             description: 'Deploy to production',
             command: 'deploy-prod',
-            critical: true,
           },
         ],
       });
@@ -538,82 +537,6 @@ describe('Execute component', () => {
       expect(calls.some((call) => call[0].command === 'deploy-prod')).toBe(
         false
       );
-    });
-
-    it('continues execution when non-critical command fails', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
-
-      let callCount = 0;
-      vi.mocked(executeCommand).mockImplementation(
-        async (cmd: { command: string }) => {
-          callCount++;
-          if (cmd.command === 'lint-code') {
-            return {
-              description: 'Lint code',
-              command: 'lint-code',
-              output: '',
-              errors: 'Linting warnings found',
-              result: ExecutionResult.Error,
-            };
-          }
-          return {
-            description: 'Command',
-            command: cmd.command,
-            output: 'success',
-            errors: '',
-            result: ExecutionResult.Success,
-          };
-        }
-      );
-
-      const service = createMockAnthropicService({
-        message: 'Running checks and build.',
-        commands: [
-          {
-            description: 'Lint code',
-            command: 'lint-code',
-            critical: false,
-          },
-          {
-            description: 'Run tests',
-            command: 'test-suite',
-            critical: true,
-          },
-          {
-            description: 'Build project',
-            command: 'build-project',
-            critical: true,
-          },
-        ],
-      });
-
-      const completeActive = vi.fn();
-      const tasks = [
-        { action: 'Lint code', type: TaskType.Execute },
-        { action: 'Run tests', type: TaskType.Execute },
-        { action: 'Build project', type: TaskType.Execute },
-      ];
-
-      render(
-        <Execute
-          tasks={tasks}
-          service={service}
-          requestHandlers={createRequestHandlers<ExecuteState>()}
-          lifecycleHandlers={createLifecycleHandlers({ completeActive })}
-          workflowHandlers={createWorkflowHandlers()}
-          status={ComponentStatus.Active}
-        />
-      );
-
-      await vi.waitFor(
-        () => {
-          expect(completeActive).toHaveBeenCalled();
-        },
-        { timeout: 500 }
-      );
-
-      // All three commands should have been executed despite lint failure
-      expect(callCount).toBe(3);
     });
 
     it('shows appropriate error message for failed command', async () => {
@@ -658,7 +581,7 @@ describe('Execute component', () => {
           const calls = vi.mocked(onCompleted).mock.calls;
           const lastCall = calls[calls.length - 1];
           expect(lastCall).toBeDefined();
-          expect(lastCall[0].tasks[0].stderr).toBe(errorMessage);
+          expect(lastCall[0].tasks[0].output?.stderr).toBe(errorMessage);
           expect(lastCall[0].completionMessage).toBeNull();
         },
         { timeout: 500 }
@@ -1044,6 +967,7 @@ describe('Execute component', () => {
             command: { description: 'First task', command: 'echo "first"' },
             status: ExecutionStatus.Success,
             elapsed: 0,
+            output: null,
           },
           {
             label: 'Do something',
@@ -1053,9 +977,9 @@ describe('Execute component', () => {
             },
             status: ExecutionStatus.Success,
             elapsed: 0,
+            output: null,
           },
         ],
-        completed: 2,
         completionMessage: 'All tasks completed successfully in 0 seconds.',
       };
       const viewProps = mapStateToViewProps(state, false);
@@ -1078,9 +1002,9 @@ describe('Execute component', () => {
             command: { description: 'Task', command: 'echo "test"' },
             status: ExecutionStatus.Success,
             elapsed: 0,
+            output: null,
           },
         ],
-        completed: 1,
         completionMessage: 'Execution completed in 0 seconds.',
       };
       const viewProps = mapStateToViewProps(state, false);
@@ -1211,12 +1135,14 @@ describe('Execute component', () => {
             command: { description: 'First', command: 'first' },
             status: ExecutionStatus.Success,
             elapsed: 0,
+            output: null,
           },
           {
             label: 'Second task',
             command: { description: 'Second', command: 'second' },
             status: ExecutionStatus.Success,
             elapsed: 0,
+            output: null,
           },
         ],
         completionMessage: 'Tasks completed in 250ms.',

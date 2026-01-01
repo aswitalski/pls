@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { TaskInfo } from '../../src/types/components.js';
+import { TaskData } from '../../src/types/components.js';
 import { ExecutionStatus } from '../../src/services/shell.js';
 
 import { executeReducer, initialState } from '../../src/execution/reducer.js';
@@ -10,11 +10,11 @@ import {
   InternalExecuteState,
 } from '../../src/execution/types.js';
 
-function createTaskInfo(
+function createTaskData(
   label: string,
   elapsed: number = 0,
   status: ExecutionStatus = ExecutionStatus.Pending
-): TaskInfo {
+): TaskData {
   return {
     label,
     command: {
@@ -23,6 +23,7 @@ function createTaskInfo(
     },
     status,
     elapsed,
+    output: null,
   };
 }
 
@@ -72,7 +73,7 @@ describe('Execution reducer', () => {
 
     it('preserves other state properties', () => {
       const state = createBaseState({
-        tasks: [createTaskInfo('Task')],
+        tasks: [createTaskData('Task')],
       });
       const action: ExecuteAction = {
         type: ExecuteActionType.ProcessingComplete,
@@ -87,7 +88,7 @@ describe('Execution reducer', () => {
 
   describe('CommandsReady action', () => {
     it('sets message, summary, and tasks', () => {
-      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+      const tasks = [createTaskData('Task 1'), createTaskData('Task 2')];
       const action: ExecuteAction = {
         type: ExecuteActionType.CommandsReady,
         payload: {
@@ -131,7 +132,7 @@ describe('Execution reducer', () => {
 
   describe('TaskComplete action', () => {
     it('updates specific task status to Success', () => {
-      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+      const tasks = [createTaskData('Task 1'), createTaskData('Task 2')];
       const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskComplete,
@@ -145,7 +146,7 @@ describe('Execution reducer', () => {
     });
 
     it('updates task elapsed time', () => {
-      const tasks = [createTaskInfo('Task 1')];
+      const tasks = [createTaskData('Task 1')];
       const state = createBaseState({ tasks });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskComplete,
@@ -159,7 +160,7 @@ describe('Execution reducer', () => {
 
     it('stores elapsed time on task info', () => {
       const state = createBaseState({
-        tasks: [createTaskInfo('Task', 1000)],
+        tasks: [createTaskData('Task', 1000)],
       });
       const action: ExecuteAction = {
         type: ExecuteActionType.TaskComplete,
@@ -172,12 +173,12 @@ describe('Execution reducer', () => {
     });
   });
 
-  describe('AllTasksComplete action', () => {
+  describe('ExecutionComplete action', () => {
     it('updates last task status to Success', () => {
-      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
+      const tasks = [createTaskData('Task 1'), createTaskData('Task 2')];
       const state = createBaseState({ tasks });
       const action: ExecuteAction = {
-        type: ExecuteActionType.AllTasksComplete,
+        type: ExecuteActionType.ExecutionComplete,
         payload: { index: 1, elapsed: 2000, summaryText: 'Done' },
       };
 
@@ -189,10 +190,10 @@ describe('Execution reducer', () => {
 
     it('generates completionMessage with total duration', () => {
       const state = createBaseState({
-        tasks: [createTaskInfo('Task', 2000)],
+        tasks: [createTaskData('Task', 2000)],
       });
       const action: ExecuteAction = {
-        type: ExecuteActionType.AllTasksComplete,
+        type: ExecuteActionType.ExecutionComplete,
         payload: { index: 0, elapsed: 3000, summaryText: 'Build successful' },
       };
 
@@ -203,13 +204,13 @@ describe('Execution reducer', () => {
     });
   });
 
-  describe('TaskErrorCritical action', () => {
+  describe('TaskError action', () => {
     it('marks task as Failed', () => {
-      const tasks = [createTaskInfo('Task')];
+      const tasks = [createTaskData('Task')];
       const state = createBaseState({ tasks });
       const action: ExecuteAction = {
-        type: ExecuteActionType.TaskErrorCritical,
-        payload: { index: 0, error: 'Critical error' },
+        type: ExecuteActionType.TaskError,
+        payload: { index: 0, error: 'Task error' },
       };
 
       const result = executeReducer(state, action);
@@ -218,10 +219,10 @@ describe('Execution reducer', () => {
     });
 
     it('sets elapsed to 0', () => {
-      const tasks = [createTaskInfo('Task')];
+      const tasks = [createTaskData('Task')];
       const state = createBaseState({ tasks });
       const action: ExecuteAction = {
-        type: ExecuteActionType.TaskErrorCritical,
+        type: ExecuteActionType.TaskError,
         payload: { index: 0, error: 'Error' },
       };
 
@@ -232,10 +233,10 @@ describe('Execution reducer', () => {
 
     it('sets error in state', () => {
       const state = createBaseState({
-        tasks: [createTaskInfo('Task')],
+        tasks: [createTaskData('Task')],
       });
       const action: ExecuteAction = {
-        type: ExecuteActionType.TaskErrorCritical,
+        type: ExecuteActionType.TaskError,
         payload: { index: 0, error: 'Build failed: missing dependency' },
       };
 
@@ -245,73 +246,12 @@ describe('Execution reducer', () => {
     });
   });
 
-  describe('TaskErrorContinue action', () => {
-    it('marks task as Failed with elapsed time', () => {
-      const tasks = [createTaskInfo('Task 1'), createTaskInfo('Task 2')];
-      const state = createBaseState({ tasks });
-      const action: ExecuteAction = {
-        type: ExecuteActionType.TaskErrorContinue,
-        payload: { index: 0, elapsed: 1500 },
-      };
-
-      const result = executeReducer(state, action);
-
-      expect(result.tasks[0].status).toBe(ExecutionStatus.Failed);
-      expect(result.tasks[0].elapsed).toBe(1500);
-    });
-
-    it('stores elapsed time on task', () => {
-      const state = createBaseState({
-        tasks: [createTaskInfo('Task', 1000)],
-      });
-      const action: ExecuteAction = {
-        type: ExecuteActionType.TaskErrorContinue,
-        payload: { index: 0, elapsed: 2000 },
-      };
-
-      const result = executeReducer(state, action);
-
-      expect(result.tasks[0].elapsed).toBe(2000);
-    });
-  });
-
-  describe('LastTaskError action', () => {
-    it('marks task as Failed', () => {
-      const tasks = [createTaskInfo('Task')];
-      const state = createBaseState({ tasks });
-      const action: ExecuteAction = {
-        type: ExecuteActionType.LastTaskError,
-        payload: { index: 0, elapsed: 1000, summaryText: 'Finished' },
-      };
-
-      const result = executeReducer(state, action);
-
-      expect(result.tasks[0].status).toBe(ExecutionStatus.Failed);
-      expect(result.tasks[0].elapsed).toBe(1000);
-    });
-
-    it('generates completionMessage', () => {
-      const state = createBaseState({
-        tasks: [createTaskInfo('Task', 2000)],
-      });
-      const action: ExecuteAction = {
-        type: ExecuteActionType.LastTaskError,
-        payload: { index: 0, elapsed: 1000, summaryText: 'Lint check' },
-      };
-
-      const result = executeReducer(state, action);
-
-      // elapsed is set to 1000 for this task, so total = 1000ms = 1 second
-      expect(result.completionMessage).toBe('Lint check in 1 second.');
-    });
-  });
-
   describe('CancelExecution action', () => {
     it('preserves completed tasks as Success', () => {
       const tasks = [
-        createTaskInfo('Task 1', 1000, ExecutionStatus.Success),
-        createTaskInfo('Task 2', 0, ExecutionStatus.Running),
-        createTaskInfo('Task 3'),
+        createTaskData('Task 1', 1000, ExecutionStatus.Success),
+        createTaskData('Task 2', 0, ExecutionStatus.Running),
+        createTaskData('Task 3'),
       ];
       const state = createBaseState({ tasks });
       const action: ExecuteAction = {
@@ -325,9 +265,9 @@ describe('Execution reducer', () => {
 
     it('marks running task as Aborted', () => {
       const tasks = [
-        createTaskInfo('Task 1', 1000, ExecutionStatus.Success),
-        createTaskInfo('Task 2', 0, ExecutionStatus.Running),
-        createTaskInfo('Task 3'),
+        createTaskData('Task 1', 1000, ExecutionStatus.Success),
+        createTaskData('Task 2', 0, ExecutionStatus.Running),
+        createTaskData('Task 3'),
       ];
       const state = createBaseState({ tasks });
       const action: ExecuteAction = {
@@ -341,10 +281,10 @@ describe('Execution reducer', () => {
 
     it('marks pending tasks as Cancelled', () => {
       const tasks = [
-        createTaskInfo('Task 1', 1000, ExecutionStatus.Success),
-        createTaskInfo('Task 2', 0, ExecutionStatus.Running),
-        createTaskInfo('Task 3'),
-        createTaskInfo('Task 4'),
+        createTaskData('Task 1', 1000, ExecutionStatus.Success),
+        createTaskData('Task 2', 0, ExecutionStatus.Running),
+        createTaskData('Task 3'),
+        createTaskData('Task 4'),
       ];
       const state = createBaseState({ tasks });
       const action: ExecuteAction = {
@@ -361,8 +301,8 @@ describe('Execution reducer', () => {
 
     it('handles cancellation at first task', () => {
       const tasks = [
-        createTaskInfo('Task 1', 0, ExecutionStatus.Running),
-        createTaskInfo('Task 2'),
+        createTaskData('Task 1', 0, ExecutionStatus.Running),
+        createTaskData('Task 2'),
       ];
       const state = createBaseState({ tasks });
       const action: ExecuteAction = {

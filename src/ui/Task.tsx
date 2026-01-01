@@ -2,6 +2,7 @@ import { Box } from 'ink';
 
 import { ExecuteCommand } from '../services/anthropic.js';
 import { ExecutionStatus } from '../services/shell.js';
+import { TaskOutput } from '../types/components.js';
 
 import { Output } from './Output.js';
 import { SubtaskView } from './Subtask.js';
@@ -11,8 +12,7 @@ export interface TaskViewProps {
   command: ExecuteCommand;
   status: ExecutionStatus;
   elapsed?: number;
-  stdout: string;
-  stderr: string;
+  output: TaskOutput | null;
   isFinished: boolean;
 }
 
@@ -25,10 +25,12 @@ export function TaskView({
   command,
   status,
   elapsed,
-  stdout,
-  stderr,
+  output,
   isFinished,
 }: TaskViewProps) {
+  const stdout = output?.stdout ?? '';
+  const stderr = output?.stderr ?? '';
+
   return (
     <Box flexDirection="column">
       <SubtaskView

@@ -180,7 +180,6 @@ Return a structured response with commands to execute:
 - **workdir**: Optional working directory for the command (defaults to
   current)
 - **timeout**: Optional timeout in milliseconds (defaults to 30000)
-- **critical**: Whether failure should stop execution (defaults to true)
 
 ## Command Generation Guidelines
 
@@ -364,14 +363,12 @@ commands:
 
 For complex multi-step operations:
 
-1. **Sequential dependencies**: Mark early commands as critical so failure
-   stops the chain
+1. **Sequential dependencies**: Commands execute in order; any failure stops
+   the chain
 2. **Long-running processes**: Set appropriate timeouts (build processes
    may need 10+ minutes)
 3. **Working directories**: Use workdir to ensure commands run in the
    right location
-4. **Error handling**: For non-critical cleanup steps, set critical:
-   false
 
 ## Handling Config Placeholders
 
@@ -444,8 +441,7 @@ Before returning commands:
 7. Check that all task params are incorporated
 8. Ensure paths are properly quoted
 9. Confirm timeouts are reasonable for each operation
-10. Validate that critical flags are set appropriately
-11. Review for any safety concerns
+10. Review for any safety concerns
 
 ## Confirmed Schedule
 

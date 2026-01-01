@@ -1,4 +1,4 @@
-import { ExecuteState, TaskInfo } from '../types/components.js';
+import { ExecuteState, TaskData, TaskOutput } from '../types/components.js';
 import { ExecuteCommand } from '../services/anthropic.js';
 import { ComponentDefinition } from '../types/components.js';
 
@@ -7,11 +7,10 @@ export enum ExecuteActionType {
   CommandsReady = 'COMMANDS_READY',
   ProcessingError = 'PROCESSING_ERROR',
   TaskStarted = 'TASK_STARTED',
+  TaskProgress = 'TASK_PROGRESS',
   TaskComplete = 'TASK_COMPLETE',
-  AllTasksComplete = 'ALL_TASKS_COMPLETE',
-  TaskErrorCritical = 'TASK_ERROR_CRITICAL',
-  TaskErrorContinue = 'TASK_ERROR_CONTINUE',
-  LastTaskError = 'LAST_TASK_ERROR',
+  ExecutionComplete = 'EXECUTION_COMPLETE',
+  TaskError = 'TASK_ERROR',
   CancelExecution = 'CANCEL_EXECUTION',
 }
 
@@ -25,7 +24,7 @@ export type ExecuteAction =
       payload: {
         message: string;
         summary: string;
-        tasks: TaskInfo[];
+        tasks: TaskData[];
       };
     }
   | {
@@ -34,27 +33,23 @@ export type ExecuteAction =
     }
   | {
       type: ExecuteActionType.TaskStarted;
-      payload: { index: number };
+      payload: { index: number; startTime: number };
+    }
+  | {
+      type: ExecuteActionType.TaskProgress;
+      payload: { index: number; elapsed: number; output: TaskOutput };
     }
   | {
       type: ExecuteActionType.TaskComplete;
       payload: { index: number; elapsed: number };
     }
   | {
-      type: ExecuteActionType.AllTasksComplete;
+      type: ExecuteActionType.ExecutionComplete;
       payload: { index: number; elapsed: number; summaryText: string };
     }
   | {
-      type: ExecuteActionType.TaskErrorCritical;
+      type: ExecuteActionType.TaskError;
       payload: { index: number; error: string };
-    }
-  | {
-      type: ExecuteActionType.TaskErrorContinue;
-      payload: { index: number; elapsed: number };
-    }
-  | {
-      type: ExecuteActionType.LastTaskError;
-      payload: { index: number; elapsed: number; summaryText: string };
     }
   | {
       type: ExecuteActionType.CancelExecution;
@@ -74,7 +69,7 @@ export interface TaskProcessingResult {
 }
 
 export interface TaskCompletionContext {
-  tasks: TaskInfo[];
+  tasks: TaskData[];
   message: string;
   summary: string;
 }

@@ -63,7 +63,6 @@ export const ExecuteCommandSchema = z.object({
   command: z.string().min(1),
   workdir: z.string().optional(),
   timeout: z.number().int().positive().optional(),
-  critical: z.boolean().optional(),
 });
 
 /**

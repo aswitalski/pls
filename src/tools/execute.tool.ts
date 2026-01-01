@@ -43,11 +43,6 @@ export const executeTool: Tool = {
               description:
                 'Optional timeout in milliseconds. Defaults to 30000 (30 seconds).',
             },
-            critical: {
-              type: 'boolean',
-              description:
-                'Whether failure should stop execution of subsequent commands. Defaults to true.',
-            },
           },
           required: ['description', 'command'],
         },

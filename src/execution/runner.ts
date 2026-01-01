@@ -11,7 +11,7 @@ import { calculateElapsed } from '../services/utils.js';
 /**
  * Output collected during task execution
  */
-export interface TaskOutput {
+export interface ExecutionOutput {
   stdout: string;
   stderr: string;
   error: string;
@@ -22,10 +22,9 @@ export interface TaskOutput {
  * Callbacks for task execution events
  */
 export interface TaskExecutionCallbacks {
-  onStart?: () => void;
-  onOutputChange?: (output: TaskOutput) => void;
-  onComplete?: (elapsed: number, output: TaskOutput) => void;
-  onError?: (error: string, elapsed: number, output: TaskOutput) => void;
+  onUpdate: (output: ExecutionOutput) => void;
+  onComplete: (elapsed: number, output: ExecutionOutput) => void;
+  onError: (error: string, output: ExecutionOutput) => void;
 }
 
 /**
@@ -34,7 +33,7 @@ export interface TaskExecutionCallbacks {
 export interface TaskExecutionResult {
   status: ExecutionStatus;
   elapsed: number;
-  output: TaskOutput;
+  output: ExecutionOutput;
 }
 
 /**
@@ -53,7 +52,7 @@ export async function executeTask(
   let workdir: string | undefined;
 
   // Helper to create current output snapshot
-  const createOutput = (): TaskOutput => ({
+  const createOutput = (): ExecutionOutput => ({
     stdout,
     stderr,
     error,
@@ -67,10 +66,8 @@ export async function executeTask(
     } else {
       stderr += data;
     }
-    callbacks.onOutputChange?.(createOutput());
+    callbacks.onUpdate(createOutput());
   });
-
-  callbacks.onStart?.();
 
   try {
     const result: CommandOutput = await executeCommand(
@@ -91,7 +88,7 @@ export async function executeTask(
 
     if (result.result === ExecutionResult.Success) {
       const output = createOutput();
-      callbacks.onComplete?.(elapsed, output);
+      callbacks.onComplete(elapsed, output);
       return {
         status: ExecutionStatus.Success,
         elapsed,
@@ -101,7 +98,7 @@ export async function executeTask(
       const errorMsg = result.errors || result.error || 'Command failed';
       error = errorMsg;
       const output = createOutput();
-      callbacks.onError?.(errorMsg, elapsed, output);
+      callbacks.onError(errorMsg, output);
       return {
         status: ExecutionStatus.Failed,
         elapsed,
@@ -116,7 +113,7 @@ export async function executeTask(
     const errorMsg = err instanceof Error ? err.message : 'Unknown error';
     error = errorMsg;
     const output = createOutput();
-    callbacks.onError?.(errorMsg, elapsed, output);
+    callbacks.onError(errorMsg, output);
     return {
       status: ExecutionStatus.Failed,
       elapsed,
@@ -126,8 +123,8 @@ export async function executeTask(
 }
 
 /**
- * Create an empty task output
+ * Create an empty execution output
  */
-export function createEmptyOutput(): TaskOutput {
+export function createEmptyOutput(): ExecutionOutput {
   return { stdout: '', stderr: '', error: '' };
 }

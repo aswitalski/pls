@@ -1,4 +1,4 @@
-import { ExecuteState, TaskInfo } from '../types/components.js';
+import { ExecuteState, TaskData } from '../types/components.js';
 
 import { ExecutionStatus } from '../services/shell.js';
 import { formatDuration } from '../services/utils.js';
@@ -19,7 +19,6 @@ export interface TaskCompletionResult {
 export interface TaskErrorResult {
   action: ExecuteAction;
   finalState: ExecuteState;
-  shouldComplete: boolean;
 }
 
 /**
@@ -31,7 +30,7 @@ export function handleTaskCompletion(
   context: TaskCompletionContext
 ): TaskCompletionResult {
   const { tasks, message, summary } = context;
-  const updatedTaskInfos = tasks.map((task, i) =>
+  const updatedTasks = tasks.map((task, i) =>
     i === index ? { ...task, status: ExecutionStatus.Success, elapsed } : task
   );
 
@@ -45,7 +44,7 @@ export function handleTaskCompletion(
       finalState: {
         message,
         summary,
-        tasks: updatedTaskInfos,
+        tasks: updatedTasks,
         completionMessage: null,
         error: null,
       },
@@ -55,18 +54,18 @@ export function handleTaskCompletion(
 
   // All tasks complete
   const summaryText = summary.trim() || 'Execution completed';
-  const totalElapsed = getTotalElapsed(updatedTaskInfos);
+  const totalElapsed = getTotalElapsed(updatedTasks);
   const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
 
   return {
     action: {
-      type: ExecuteActionType.AllTasksComplete,
+      type: ExecuteActionType.ExecutionComplete,
       payload: { index, elapsed, summaryText },
     },
     finalState: {
       message,
       summary,
-      tasks: updatedTaskInfos,
+      tasks: updatedTasks,
       completionMessage: completion,
       error: null,
     },
@@ -80,72 +79,26 @@ export function handleTaskCompletion(
 export function handleTaskFailure(
   index: number,
   error: string,
-  elapsed: number,
   context: TaskCompletionContext
 ): TaskErrorResult {
   const { tasks, message, summary } = context;
-  const task = tasks[index];
-  const isCritical = task.command.critical !== false; // Default to true
 
-  const updatedTaskInfos = tasks.map((task, i) =>
-    i === index ? { ...task, status: ExecutionStatus.Failed, elapsed } : task
+  const updatedTasks = tasks.map((task, i) =>
+    i === index ? { ...task, status: ExecutionStatus.Failed, elapsed: 0 } : task
   );
-
-  if (isCritical) {
-    // Critical failure - stop execution
-    return {
-      action: {
-        type: ExecuteActionType.TaskErrorCritical,
-        payload: { index, error },
-      },
-      finalState: {
-        message,
-        summary,
-        tasks: updatedTaskInfos,
-        completionMessage: null,
-        error: null,
-      },
-      shouldComplete: true,
-    };
-  }
-
-  // Non-critical failure - continue to next task
-  if (index < tasks.length - 1) {
-    return {
-      action: {
-        type: ExecuteActionType.TaskErrorContinue,
-        payload: { index, elapsed },
-      },
-      finalState: {
-        message,
-        summary,
-        tasks: updatedTaskInfos,
-        completionMessage: null,
-        error: null,
-      },
-      shouldComplete: false,
-    };
-  }
-
-  // Last task failed (non-critical), complete execution
-  // Non-critical failures still show completion message with summary
-  const summaryText = summary.trim() || 'Execution completed';
-  const totalElapsed = getTotalElapsed(updatedTaskInfos);
-  const completion = `${summaryText} in ${formatDuration(totalElapsed)}.`;
 
   return {
     action: {
-      type: ExecuteActionType.LastTaskError,
-      payload: { index, elapsed, summaryText },
+      type: ExecuteActionType.TaskError,
+      payload: { index, error },
     },
     finalState: {
       message,
       summary,
-      tasks: updatedTaskInfos,
-      completionMessage: completion,
+      tasks: updatedTasks,
+      completionMessage: null,
       error: null,
     },
-    shouldComplete: true,
   };
 }
 
@@ -153,7 +106,7 @@ export function handleTaskFailure(
  * Builds final state for task abortion.
  */
 export function buildAbortedState(
-  tasks: TaskInfo[],
+  tasks: TaskData[],
   message: string,
   summary: string
 ): ExecuteState {

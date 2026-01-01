@@ -2,6 +2,8 @@
  * Timing utilities for UI components
  */
 
+export const ELAPSED_UPDATE_INTERVAL = 250;
+
 /**
  * Waits for at least the minimum processing time.
  * Ensures async operations don't complete too quickly for good UX.

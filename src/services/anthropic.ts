@@ -22,7 +22,6 @@ export interface ExecuteCommand {
   command: string;
   workdir?: string;
   timeout?: number;
-  critical?: boolean;
 }
 
 export interface CommandResult {
