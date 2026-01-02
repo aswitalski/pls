@@ -8,6 +8,17 @@ import {
 } from '../services/shell.js';
 import { calculateElapsed } from '../services/utils.js';
 
+// Maximum number of output lines to keep in memory
+const MAX_OUTPUT_LINES = 128;
+
+/**
+ * Limit output to last MAX_OUTPUT_LINES lines to prevent memory exhaustion
+ */
+function limitLines(output: string): string {
+  const lines = output.split('\n');
+  return lines.slice(-MAX_OUTPUT_LINES).join('\n');
+}
+
 /**
  * Output collected during task execution
  */
@@ -59,14 +70,35 @@ export async function executeTask(
     workdir,
   });
 
+  // Throttle updates to avoid excessive re-renders (100ms minimum interval)
+  let lastUpdateTime = 0;
+  let pendingTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  const throttledUpdate = () => {
+    const now = Date.now();
+    if (now - lastUpdateTime >= 100) {
+      lastUpdateTime = now;
+      callbacks.onUpdate(createOutput());
+    } else if (!pendingTimeout) {
+      pendingTimeout = setTimeout(
+        () => {
+          pendingTimeout = undefined;
+          lastUpdateTime = Date.now();
+          callbacks.onUpdate(createOutput());
+        },
+        100 - (now - lastUpdateTime)
+      );
+    }
+  };
+
   // Set up output streaming callback
   setOutputCallback((data, stream) => {
     if (stream === 'stdout') {
-      stdout += data;
+      stdout = limitLines(stdout + data);
     } else {
-      stderr += data;
+      stderr = limitLines(stderr + data);
     }
-    callbacks.onUpdate(createOutput());
+    throttledUpdate();
   });
 
   try {
@@ -76,8 +108,9 @@ export async function executeTask(
       index
     );
 
-    // Clear callback
+    // Clear callback and pending timeout
     setOutputCallback(undefined);
+    clearTimeout(pendingTimeout);
 
     const elapsed = calculateElapsed(startTime);
 
@@ -88,37 +121,29 @@ export async function executeTask(
 
     if (result.result === ExecutionResult.Success) {
       const output = createOutput();
+      callbacks.onUpdate(output);
       callbacks.onComplete(elapsed, output);
-      return {
-        status: ExecutionStatus.Success,
-        elapsed,
-        output,
-      };
+      return { status: ExecutionStatus.Success, elapsed, output };
     } else {
       const errorMsg = result.errors || result.error || 'Command failed';
       error = errorMsg;
       const output = createOutput();
+      callbacks.onUpdate(output);
       callbacks.onError(errorMsg, output);
-      return {
-        status: ExecutionStatus.Failed,
-        elapsed,
-        output,
-      };
+      return { status: ExecutionStatus.Failed, elapsed, output };
     }
   } catch (err) {
-    // Clear callback
+    // Clear callback and pending timeout
     setOutputCallback(undefined);
+    clearTimeout(pendingTimeout);
 
     const elapsed = calculateElapsed(startTime);
     const errorMsg = err instanceof Error ? err.message : 'Unknown error';
     error = errorMsg;
     const output = createOutput();
+    callbacks.onUpdate(output);
     callbacks.onError(errorMsg, output);
-    return {
-      status: ExecutionStatus.Failed,
-      elapsed,
-      output,
-    };
+    return { status: ExecutionStatus.Failed, elapsed, output };
   }
 }
 
