@@ -8,6 +8,17 @@ import {
 } from '../services/shell.js';
 import { calculateElapsed } from '../services/utils.js';
 
+// Maximum number of output lines to keep in memory
+const MAX_OUTPUT_LINES = 128;
+
+/**
+ * Limit output to last MAX_OUTPUT_LINES lines to prevent memory exhaustion
+ */
+function limitLines(output: string): string {
+  const lines = output.split('\n');
+  return lines.slice(-MAX_OUTPUT_LINES).join('\n');
+}
+
 /**
  * Output collected during task execution
  */
@@ -62,9 +73,9 @@ export async function executeTask(
   // Set up output streaming callback
   setOutputCallback((data, stream) => {
     if (stream === 'stdout') {
-      stdout += data;
+      stdout = limitLines(stdout + data);
     } else {
-      stderr += data;
+      stderr = limitLines(stderr + data);
     }
     callbacks.onUpdate(createOutput());
   });

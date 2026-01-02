@@ -119,6 +119,15 @@ export type OutputCallback = (
 
 // Marker for extracting pwd from command output
 const PWD_MARKER = '__PWD_MARKER_7x9k2m__';
+const MAX_OUTPUT_LINES = 128;
+
+/**
+ * Limit output to last MAX_OUTPUT_LINES lines.
+ */
+function limitLines(output: string): string {
+  const lines = output.split('\n');
+  return lines.slice(-MAX_OUTPUT_LINES).join('\n');
+}
 
 /**
  * Parse stdout to extract workdir and clean output.
@@ -157,6 +166,14 @@ class OutputStreamer {
    */
   pushStdout(data: string): void {
     this.chunks.push(data);
+
+    // Collapse when we have too many chunks to prevent memory growth
+    if (this.chunks.length > 16) {
+      const accumulated = this.chunks.join('');
+      this.chunks = [limitLines(accumulated)];
+      this.emittedLength = 0;
+    }
+
     if (!this.callback) return;
 
     const accumulated = this.chunks.join('');
@@ -192,7 +209,7 @@ class OutputStreamer {
    * Get the accumulated raw output.
    */
   getAccumulated(): string {
-    return this.chunks.join('');
+    return limitLines(this.chunks.join(''));
   }
 }
 
@@ -274,6 +291,15 @@ export class RealExecutor implements Executor {
       child.stderr.on('data', (data: Buffer) => {
         const text = data.toString();
         stderr.push(text);
+
+        // Collapse when we have too many chunks to prevent memory growth
+        if (stderr.length > 16) {
+          const accumulated = stderr.join('');
+          const limited = limitLines(accumulated);
+          stderr.length = 0;
+          stderr.push(limited);
+        }
+
         this.outputCallback?.(text, 'stderr');
       });
 
@@ -285,7 +311,7 @@ export class RealExecutor implements Executor {
           description: cmd.description,
           command: cmd.command,
           output: stdoutStreamer.getAccumulated(),
-          errors: error.message,
+          errors: limitLines(stderr.join('')) || error.message,
           result: ExecutionResult.Error,
           error: error.message,
         };
@@ -302,11 +328,12 @@ export class RealExecutor implements Executor {
         const { output, workdir } = parseWorkdir(
           stdoutStreamer.getAccumulated()
         );
+
         const commandResult: CommandOutput = {
           description: cmd.description,
           command: cmd.command,
           output,
-          errors: stderr.join(''),
+          errors: limitLines(stderr.join('')),
           result: success ? ExecutionResult.Success : ExecutionResult.Error,
           error: success ? undefined : `Exit code: ${code}`,
           workdir,

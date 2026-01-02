@@ -643,5 +643,86 @@ describe('Shell service', () => {
         expect(result2.output.trim()).toMatch(/\/tmp$/);
       });
     });
+
+    describe('Output line limiting', () => {
+      it('returns all output when under 128 lines', async () => {
+        const executor = new RealExecutor();
+        const cmd: ExecuteCommand = {
+          description: 'Small output',
+          command: 'for i in {1..100}; do echo "line $i"; done',
+        };
+
+        const result = await executor.execute(cmd);
+
+        const lines = result.output.trim().split('\n');
+        expect(lines.length).toBe(100);
+        expect(lines[0]).toBe('line 1');
+        expect(lines[99]).toBe('line 100');
+      });
+
+      it('limits stdout to last 128 lines when exceeded', async () => {
+        const executor = new RealExecutor();
+        const cmd: ExecuteCommand = {
+          description: 'Large output',
+          command: 'for i in {1..2000}; do echo "line $i"; done',
+        };
+
+        const result = await executor.execute(cmd);
+
+        const lines = result.output.trim().split('\n');
+        expect(lines.length).toBeLessThanOrEqual(128);
+        expect(lines.length).toBeGreaterThan(100);
+        // Should have lines from the end
+        expect(lines[lines.length - 1]).toBe('line 2000');
+      });
+
+      it('limits stderr to last 128 lines when exceeded', async () => {
+        const executor = new RealExecutor();
+        const cmd: ExecuteCommand = {
+          description: 'Large stderr output',
+          command: 'for i in {1..2000}; do echo "error $i" >&2; done',
+        };
+
+        const result = await executor.execute(cmd);
+
+        const lines = result.errors.trim().split('\n');
+        expect(lines.length).toBeLessThanOrEqual(128);
+        expect(lines.length).toBeGreaterThan(100);
+        // Should have lines from the end
+        expect(lines[lines.length - 1]).toBe('error 2000');
+      });
+
+      it('limits stderr on error with large output', async () => {
+        const executor = new RealExecutor();
+        const cmd: ExecuteCommand = {
+          description: 'Large stderr with error',
+          command: 'for i in {1..2000}; do echo "error $i" >&2; done; exit 1',
+        };
+
+        const result = await executor.execute(cmd);
+
+        expect(result.result).toBe(ExecutionResult.Error);
+        const lines = result.errors.trim().split('\n');
+        expect(lines.length).toBeLessThanOrEqual(128);
+        expect(lines.length).toBeGreaterThan(100);
+        // Should have lines from the end
+        expect(lines[lines.length - 1]).toBe('error 2000');
+      });
+
+      it('preserves output under limit without modification', async () => {
+        const executor = new RealExecutor();
+        const cmd: ExecuteCommand = {
+          description: 'Under limit',
+          command: 'for i in {1..100}; do echo "line $i"; done',
+        };
+
+        const result = await executor.execute(cmd);
+
+        const lines = result.output.trim().split('\n');
+        expect(lines.length).toBe(100);
+        expect(lines[0]).toBe('line 1');
+        expect(lines[99]).toBe('line 100');
+      });
+    });
   });
 });
