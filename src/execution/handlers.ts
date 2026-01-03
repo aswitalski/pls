@@ -83,9 +83,14 @@ export function handleTaskFailure(
 ): TaskErrorResult {
   const { tasks, message, summary } = context;
 
-  const updatedTasks = tasks.map((task, i) =>
-    i === index ? { ...task, status: ExecutionStatus.Failed, elapsed: 0 } : task
-  );
+  const updatedTasks = tasks.map((task, i) => {
+    if (i === index) {
+      return { ...task, status: ExecutionStatus.Failed, elapsed: 0 };
+    } else if (i > index && task.status === ExecutionStatus.Pending) {
+      return { ...task, status: ExecutionStatus.Cancelled };
+    }
+    return task;
+  });
 
   return {
     action: {

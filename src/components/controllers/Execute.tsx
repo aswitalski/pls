@@ -28,8 +28,7 @@ import { executeReducer, initialState } from '../../execution/reducer.js';
 import { executeTask } from '../../execution/runner.js';
 import { ExecuteActionType } from '../../execution/types.js';
 import { getCurrentTaskIndex } from '../../execution/utils.js';
-import { createFeedback, createMessage } from '../../services/components.js';
-import { FeedbackType } from '../../types/types.js';
+import { createMessage } from '../../services/components.js';
 
 import { ExecuteView } from '../views/Execute.js';
 
@@ -369,11 +368,7 @@ export function Execute({
         requestHandlers.onCompleted(result.finalState);
 
         const errorMessage = getExecutionErrorMessage(errorMsg);
-        workflowHandlers.addToQueue(
-          createFeedback({ type: FeedbackType.Failed, message: errorMessage })
-        );
-
-        lifecycleHandlers.completeActive();
+        requestHandlers.onError(errorMessage);
       },
     });
   }, [
