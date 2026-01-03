@@ -52,8 +52,6 @@ vi.mock('../../src/services/process.js', async () => {
   };
 });
 
-const ShortWait = 50;
-
 describe('Configuration flow', () => {
   const mockApp: App = {
     name: 'test-app',
@@ -75,19 +73,23 @@ describe('Configuration flow', () => {
   it('shows welcome screen and exits when no config and no command', async () => {
     const { lastFrame } = render(<Main app={mockApp} command={null} />);
 
-    await new Promise((resolve) => setTimeout(resolve, ShortWait));
-
-    const output = lastFrame();
-    expect(output).toContain('Test');
-    expect(exitApp).toHaveBeenCalledWith(0);
+    await vi.waitFor(
+      () => {
+        expect(lastFrame()).toContain('Test');
+        expect(exitApp).toHaveBeenCalledWith(0);
+      },
+      { timeout: 500 }
+    );
   });
 
   it('shows welcome and config flow for first-time users', async () => {
     const { lastFrame } = render(<Main app={mockApp} command={null} />);
 
-    await new Promise((resolve) => setTimeout(resolve, ShortWait));
-
-    const output = lastFrame();
-    expect(output).toContain('Test');
+    await vi.waitFor(
+      () => {
+        expect(lastFrame()).toContain('Test');
+      },
+      { timeout: 500 }
+    );
   });
 });

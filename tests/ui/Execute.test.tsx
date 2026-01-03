@@ -475,16 +475,16 @@ describe('Execute component', () => {
             return {
               description: 'Build project',
               command: 'build-project',
-              output: '',
-              errors: 'Build failed: compilation error',
+              output: [],
+              errors: ['Build failed: compilation error'],
               result: ExecutionResult.Error,
             };
           }
           return {
             description: 'Test',
             command: cmd.command,
-            output: '',
-            errors: '',
+            output: [],
+            errors: [],
             result: ExecutionResult.Success,
           };
         }
@@ -546,8 +546,8 @@ describe('Execute component', () => {
       vi.mocked(executeCommand).mockResolvedValue({
         description: 'Install package',
         command: 'install-pkg',
-        output: '',
-        errors: errorMessage,
+        output: [],
+        errors: [errorMessage],
         result: ExecutionResult.Error,
       });
 
@@ -581,7 +581,7 @@ describe('Execute component', () => {
           const calls = vi.mocked(onCompleted).mock.calls;
           const lastCall = calls[calls.length - 1];
           expect(lastCall).toBeDefined();
-          expect(lastCall[0].tasks[0].output?.stderr).toBe(errorMessage);
+          expect(lastCall[0].tasks[0].output?.stderr).toEqual([errorMessage]);
           expect(lastCall[0].completionMessage).toBeNull();
         },
         { timeout: 500 }
@@ -600,8 +600,8 @@ describe('Execute component', () => {
           return {
             description: 'Command',
             command: cmd.command,
-            output: 'done',
-            errors: '',
+            output: ['done'],
+            errors: [],
             result: ExecutionResult.Success,
           };
         }
@@ -658,8 +658,8 @@ describe('Execute component', () => {
         return {
           description: `Task ${current}`,
           command: `cmd-${current}`,
-          output: `output-${current}`,
-          errors: '',
+          output: [`output-${current}`],
+          errors: [],
           result: ExecutionResult.Success,
         };
       });
@@ -836,8 +836,8 @@ describe('Execute component', () => {
           return {
             description: 'Command',
             command: cmd.command,
-            output: '',
-            errors: '',
+            output: [],
+            errors: [],
             result: ExecutionResult.Success,
           };
         }
@@ -901,8 +901,8 @@ describe('Execute component', () => {
         return {
           description: 'Long task',
           command: 'sleep',
-          output: '',
-          errors: '',
+          output: [],
+          errors: [],
           result: ExecutionResult.Success,
         };
       });

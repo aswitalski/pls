@@ -204,8 +204,8 @@ export interface AnswerState extends BaseState {
 }
 
 export interface TaskOutput {
-  stdout: string;
-  stderr: string;
+  stdout: string[];
+  stderr: string[];
 }
 
 export interface TaskData {

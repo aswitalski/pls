@@ -75,7 +75,7 @@ export function Execute({
   const workdirRef = useRef<string | undefined>(undefined);
 
   // Ref to collect live output during execution (dispatched every second)
-  const outputRef = useRef<TaskOutput>({ stdout: '', stderr: '' });
+  const outputRef = useRef<TaskOutput>({ stdout: [], stderr: [] });
 
   // Ref to track if current task execution is cancelled
   const cancelledRef = useRef(false);
@@ -292,7 +292,7 @@ export function Execute({
     });
 
     // Reset output ref for new task
-    outputRef.current = { stdout: '', stderr: '' };
+    outputRef.current = { stdout: [], stderr: [] };
 
     // Merge workdir into command
     const command = workdirRef.current
