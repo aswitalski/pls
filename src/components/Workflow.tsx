@@ -74,9 +74,8 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
     () => ({
       onError: (error: string) => {
         moveActiveToTimeline();
-        // Add feedback to queue
-        setQueue((queue) => [
-          ...queue,
+        // Clear queue and add only feedback to prevent subsequent components from executing
+        setQueue([
           createFeedback({ type: FeedbackType.Failed, message: error }),
         ]);
       },

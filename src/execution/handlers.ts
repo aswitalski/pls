@@ -75,6 +75,7 @@ export function handleTaskCompletion(
 
 /**
  * Handles task error logic and returns the appropriate action and state.
+ * Marks the failed task as Failed and remaining pending tasks as Cancelled.
  */
 export function handleTaskFailure(
   index: number,
@@ -83,9 +84,15 @@ export function handleTaskFailure(
 ): TaskErrorResult {
   const { tasks, message, summary } = context;
 
-  const updatedTasks = tasks.map((task, i) =>
-    i === index ? { ...task, status: ExecutionStatus.Failed, elapsed: 0 } : task
-  );
+  // Mark failed task as Failed, remaining pending tasks as Cancelled
+  const updatedTasks = tasks.map((task, i) => {
+    if (i === index) {
+      return { ...task, status: ExecutionStatus.Failed, elapsed: 0 };
+    } else if (task.status === ExecutionStatus.Pending) {
+      return { ...task, status: ExecutionStatus.Cancelled };
+    }
+    return task;
+  });
 
   return {
     action: {

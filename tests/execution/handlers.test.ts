@@ -202,6 +202,36 @@ describe('Task completion handling', () => {
       expect(result.finalState.completionMessage).toBeNull();
       expect(result.finalState.error).toBeNull();
     });
+
+    it('cancels remaining pending tasks when a task fails', () => {
+      const tasks = [
+        createTaskData('Task 1'),
+        createTaskData('Task 2'),
+        createTaskData('Task 3'),
+      ];
+      const context = createContext(tasks);
+
+      const result = handleTaskFailure(0, 'Build failed', context);
+
+      expect(result.finalState.tasks[0].status).toBe(ExecutionStatus.Failed);
+      expect(result.finalState.tasks[1].status).toBe(ExecutionStatus.Cancelled);
+      expect(result.finalState.tasks[2].status).toBe(ExecutionStatus.Cancelled);
+    });
+
+    it('preserves completed tasks when a later task fails', () => {
+      const tasks = [
+        { ...createTaskData('Task 1'), status: ExecutionStatus.Success },
+        createTaskData('Task 2'),
+        createTaskData('Task 3'),
+      ];
+      const context = createContext(tasks);
+
+      const result = handleTaskFailure(1, 'Test failed', context);
+
+      expect(result.finalState.tasks[0].status).toBe(ExecutionStatus.Success);
+      expect(result.finalState.tasks[1].status).toBe(ExecutionStatus.Failed);
+      expect(result.finalState.tasks[2].status).toBe(ExecutionStatus.Cancelled);
+    });
   });
 
   describe('buildAbortedState', () => {

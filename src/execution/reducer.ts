@@ -112,11 +112,15 @@ export function executeReducer(
     }
 
     case ExecuteActionType.TaskError: {
-      const updatedTasks = state.tasks.map((task, i) =>
-        i === action.payload.index
-          ? { ...task, status: ExecutionStatus.Failed, elapsed: 0 }
-          : task
-      );
+      // Mark failed task as Failed, remaining pending tasks as Cancelled
+      const updatedTasks = state.tasks.map((task, i) => {
+        if (i === action.payload.index) {
+          return { ...task, status: ExecutionStatus.Failed, elapsed: 0 };
+        } else if (task.status === ExecutionStatus.Pending) {
+          return { ...task, status: ExecutionStatus.Cancelled };
+        }
+        return task;
+      });
       return {
         ...state,
         tasks: updatedTasks,
