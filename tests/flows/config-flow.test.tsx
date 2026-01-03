@@ -63,14 +63,15 @@ describe('Configuration flow', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(exitApp).mockImplementation(() => {});
+  });
+
+  it('shows welcome and exits when config is complete and no command', async () => {
     vi.mocked(getMissingConfigKeys).mockReturnValue([]);
     vi.mocked(loadConfig).mockReturnValue({
       anthropic: { key: 'test-key', model: 'test-model' },
     });
-    vi.mocked(exitApp).mockImplementation(() => {});
-  });
 
-  it('shows welcome screen and exits when no config and no command', async () => {
     const { lastFrame } = render(<Main app={mockApp} command={null} />);
 
     await vi.waitFor(
@@ -82,14 +83,24 @@ describe('Configuration flow', () => {
     );
   });
 
-  it('shows welcome and config flow for first-time users', async () => {
+  it('shows config wizard when keys are missing', async () => {
+    vi.mocked(getMissingConfigKeys).mockReturnValue([
+      'anthropic.key',
+      'anthropic.model',
+    ]);
+
     const { lastFrame } = render(<Main app={mockApp} command={null} />);
 
     await vi.waitFor(
       () => {
-        expect(lastFrame()).toContain('Test');
+        const output = lastFrame();
+        expect(output).toContain('Test'); // Welcome shown
+        expect(output).toContain('Anthropic API key'); // Config wizard prompting
       },
       { timeout: 500 }
     );
+
+    // Should NOT exit - waiting for config input
+    expect(exitApp).not.toHaveBeenCalled();
   });
 });
