@@ -234,10 +234,7 @@ class OutputStreamer {
       const clean = combined.slice(0, markerIndex).trimEnd();
       if (clean) {
         this.output.push(clean);
-        this.callback?.(
-          clean.slice(this.pending.length - data.length),
-          'stdout'
-        );
+        this.callback?.(clean, 'stdout');
       }
       // Check if workdir is in the same chunk
       const afterMarker = combined
@@ -252,7 +249,7 @@ class OutputStreamer {
       if (combined.length > bufferSize) {
         const safe = combined.slice(0, -bufferSize);
         this.output.push(safe);
-        this.callback?.(safe.slice(Math.max(0, this.pending.length)), 'stdout');
+        this.callback?.(safe, 'stdout');
         this.pending = combined.slice(-bufferSize);
       } else {
         this.pending = combined;
