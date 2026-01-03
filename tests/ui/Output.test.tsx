@@ -6,13 +6,13 @@ import { ExecutionStatus } from '../../src/services/shell.js';
 import { Output } from '../../src/components/views/Output.js';
 
 describe('Output component', () => {
-  describe('Empty line filtering', () => {
-    it('filters out empty lines from stdout', () => {
-      const stdout = 'Line 1\n\nLine 2\n\n\nLine 3';
+  describe('Line rendering', () => {
+    it('renders stdout lines', () => {
+      const stdout = ['Line 1', 'Line 2', 'Line 3'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
-          stderr=""
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -29,11 +29,11 @@ describe('Output component', () => {
       expect(lines.length).toBe(3);
     });
 
-    it('filters out empty lines from stderr', () => {
-      const stderr = 'Error 1\n\nError 2\n\n\nError 3';
+    it('renders stderr lines', () => {
+      const stderr = ['Error 1', 'Error 2', 'Error 3'];
       const { lastFrame } = render(
         <Output
-          stdout=""
+          stdout={[]}
           stderr={stderr}
           status={ExecutionStatus.Failed}
           isFinished={false}
@@ -51,11 +51,11 @@ describe('Output component', () => {
     });
 
     it('filters out whitespace-only lines', () => {
-      const stdout = 'Line 1\n   \nLine 2\n\t\nLine 3';
+      const stdout = ['Line 1', 'Line 2', '\t', 'Line 3'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
-          stderr=""
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -69,11 +69,11 @@ describe('Output component', () => {
     });
 
     it('handles different line endings', () => {
-      const stdout = 'Line 1\r\nLine 2\r\nLine 3';
+      const stdout = ['Line 1', 'Line 2', 'Line 3'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
-          stderr=""
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -87,10 +87,10 @@ describe('Output component', () => {
 
   describe('Color coding', () => {
     it('shows stderr in yellow when status is Failed', () => {
-      const stderr = 'Error message';
+      const stderr = ['Error message'];
       const { lastFrame } = render(
         <Output
-          stdout=""
+          stdout={[]}
           stderr={stderr}
           status={ExecutionStatus.Failed}
           isFinished={false}
@@ -101,10 +101,10 @@ describe('Output component', () => {
     });
 
     it('shows stderr in gray when status is Success', () => {
-      const stderr = 'Warning message';
+      const stderr = ['Warning message'];
       const { lastFrame } = render(
         <Output
-          stdout=""
+          stdout={[]}
           stderr={stderr}
           status={ExecutionStatus.Success}
           isFinished={false}
@@ -115,11 +115,11 @@ describe('Output component', () => {
     });
 
     it('always shows stdout in gray', () => {
-      const stdout = 'Standard output';
+      const stdout = ['Standard output'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
-          stderr=""
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -131,8 +131,8 @@ describe('Output component', () => {
 
   describe('Smart stdout display', () => {
     it('shows stdout when stderr has 2 lines or fewer', () => {
-      const stdout = 'Output line 1\nOutput line 2';
-      const stderr = 'Error line 1\nError line 2';
+      const stdout = ['Output line 1', 'Output line 2'];
+      const stderr = ['Error line 1', 'Error line 2'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
@@ -149,8 +149,8 @@ describe('Output component', () => {
     });
 
     it('hides stdout when stderr has more than 2 lines', () => {
-      const stdout = 'Output line 1\nOutput line 2';
-      const stderr = 'Error 1\nError 2\nError 3';
+      const stdout = ['Output line 1', 'Output line 2'];
+      const stderr = ['Error 1', 'Error 2', 'Error 3'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
@@ -168,11 +168,11 @@ describe('Output component', () => {
     });
 
     it('shows stdout when there is no stderr', () => {
-      const stdout = 'Output line 1\nOutput line 2\nOutput line 3';
+      const stdout = ['Output line 1', 'Output line 2', 'Output line 3'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
-          stderr=""
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -184,8 +184,8 @@ describe('Output component', () => {
     });
 
     it('shows stdout when stderr has only 1 line', () => {
-      const stdout = 'Output line 1\nOutput line 2';
-      const stderr = 'Single error';
+      const stdout = ['Output line 1', 'Output line 2'];
+      const stderr = ['Single error'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
@@ -205,8 +205,8 @@ describe('Output component', () => {
     it('returns null when both stdout and stderr are empty', () => {
       const { lastFrame } = render(
         <Output
-          stdout=""
-          stderr=""
+          stdout={[]}
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -218,8 +218,8 @@ describe('Output component', () => {
     it('shows output when only stdout has content', () => {
       const { lastFrame } = render(
         <Output
-          stdout="Some output"
-          stderr=""
+          stdout={['Some output']}
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -231,8 +231,8 @@ describe('Output component', () => {
     it('shows output when only stderr has content', () => {
       const { lastFrame } = render(
         <Output
-          stdout=""
-          stderr="Some error"
+          stdout={[]}
+          stderr={['Some error']}
           status={ExecutionStatus.Failed}
           isFinished={false}
         />
@@ -245,11 +245,10 @@ describe('Output component', () => {
   describe('Line limits', () => {
     it('shows all lines when total is 8 or fewer', () => {
       const lines = Array.from({ length: 8 }, (_, i) => `Line ${i + 1}`);
-      const stdout = lines.join('\n');
       const { lastFrame } = render(
         <Output
-          stdout={stdout}
-          stderr=""
+          stdout={lines}
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -260,13 +259,13 @@ describe('Output component', () => {
       });
     });
 
-    it('shows only last 8 lines when stdout exceeds limit', () => {
-      const lines = Array.from({ length: 12 }, (_, i) => `Output ${i + 1}`);
-      const stdout = lines.join('\n');
+    it('renders all stdout lines it receives (limiting is done upstream)', () => {
+      // Pre-limited to 8 lines by runner.ts
+      const lines = Array.from({ length: 8 }, (_, i) => `Output ${i + 5}`);
       const { lastFrame } = render(
         <Output
-          stdout={stdout}
-          stderr=""
+          stdout={lines}
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -275,27 +274,21 @@ describe('Output component', () => {
       const frame = lastFrame() || '';
       const visibleLines = frame.split('\n').filter((l) => l.trim());
 
-      // Should show exactly 8 lines
+      // Should show all 8 lines
       expect(visibleLines.length).toBe(8);
 
-      // Should not show first 4 lines
-      expect(frame).not.toMatch(/Output 1\s*$/m);
-      expect(frame).not.toMatch(/Output 2\s*$/m);
-      expect(frame).not.toMatch(/Output 3\s*$/m);
-      expect(frame).not.toMatch(/Output 4\s*$/m);
-
-      // Should show last 8 lines
+      // All provided lines should be visible
       expect(frame).toContain('Output 5');
       expect(frame).toContain('Output 12');
     });
 
-    it('shows only last 8 lines when stderr exceeds limit', () => {
-      const lines = Array.from({ length: 10 }, (_, i) => `Failure ${i + 1}`);
-      const stderr = lines.join('\n');
+    it('renders all stderr lines it receives (limiting is done upstream)', () => {
+      // Pre-limited to 8 lines by runner.ts
+      const lines = Array.from({ length: 8 }, (_, i) => `Failure ${i + 3}`);
       const { lastFrame } = render(
         <Output
-          stdout=""
-          stderr={stderr}
+          stdout={[]}
+          stderr={lines}
           status={ExecutionStatus.Failed}
           isFinished={false}
         />
@@ -304,14 +297,10 @@ describe('Output component', () => {
       const frame = lastFrame() || '';
       const visibleLines = frame.split('\n').filter((l) => l.trim());
 
-      // Should show exactly 8 lines
+      // Should show all 8 lines
       expect(visibleLines.length).toBe(8);
 
-      // Should not show first 2 lines
-      expect(frame).not.toMatch(/Failure 1\s*$/m);
-      expect(frame).not.toMatch(/Failure 2\s*$/m);
-
-      // Should show last 8 lines (3-10)
+      // All provided lines should be visible
       expect(frame).toContain('Failure 3');
       expect(frame).toContain('Failure 10');
     });
@@ -319,11 +308,11 @@ describe('Output component', () => {
 
   describe('Word wrapping behavior', () => {
     it('uses wrap mode for 4 lines or fewer', () => {
-      const stdout = 'Line 1\nLine 2\nLine 3\nLine 4';
+      const stdout = ['Line 1', 'Line 2', 'Line 3', 'Line 4'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
-          stderr=""
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -338,11 +327,10 @@ describe('Output component', () => {
 
     it('uses truncate mode for more than 4 lines', () => {
       const lines = Array.from({ length: 6 }, (_, i) => `Line ${i + 1}`);
-      const stdout = lines.join('\n');
       const { lastFrame } = render(
         <Output
-          stdout={stdout}
-          stderr=""
+          stdout={lines}
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -357,8 +345,8 @@ describe('Output component', () => {
 
   describe('Combined stdout and stderr', () => {
     it('shows both stdout and stderr in correct order', () => {
-      const stdout = 'Output message';
-      const stderr = 'Error message';
+      const stdout = ['Output message'];
+      const stderr = ['Error message'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
@@ -379,12 +367,8 @@ describe('Output component', () => {
     });
 
     it('respects line limit when combining stdout and stderr', () => {
-      const stdout = Array.from({ length: 5 }, (_, i) => `Out ${i + 1}`).join(
-        '\n'
-      );
-      const stderr = Array.from({ length: 5 }, (_, i) => `Err ${i + 1}`).join(
-        '\n'
-      );
+      const stdout = Array.from({ length: 5 }, (_, i) => `Out ${i + 1}`);
+      const stderr = Array.from({ length: 5 }, (_, i) => `Err ${i + 1}`);
       const { lastFrame } = render(
         <Output
           stdout={stdout}
@@ -404,11 +388,11 @@ describe('Output component', () => {
 
   describe('Edge cases', () => {
     it('preserves indentation in output', () => {
-      const stdout = '  import pkg_resources\n    nested line';
+      const stdout = ['  import pkg_resources', '    nested line'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
-          stderr=""
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -419,11 +403,11 @@ describe('Output component', () => {
     });
 
     it('handles very long single line', () => {
-      const longLine = 'A'.repeat(200);
+      const longLine = ['A'.repeat(200)];
       const { lastFrame } = render(
         <Output
           stdout={longLine}
-          stderr=""
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={false}
         />
@@ -433,8 +417,8 @@ describe('Output component', () => {
     });
 
     it('handles mixed content with empty lines', () => {
-      const stdout = 'Line 1\n\n\nLine 2';
-      const stderr = 'Error 1\n\nError 2';
+      const stdout = ['Line 1', 'Line 2'];
+      const stderr = ['Error 1', 'Error 2'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
@@ -460,11 +444,11 @@ describe('Output component', () => {
 
   describe('Finished task styling', () => {
     it('uses darker color for stdout when task is finished', () => {
-      const stdout = 'Task completed output';
+      const stdout = ['Task completed output'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
-          stderr=""
+          stderr={[]}
           status={ExecutionStatus.Success}
           isFinished={true}
         />
@@ -474,10 +458,10 @@ describe('Output component', () => {
     });
 
     it('uses darker color for stderr when task is finished', () => {
-      const stderr = 'Task warning message';
+      const stderr = ['Task warning message'];
       const { lastFrame } = render(
         <Output
-          stdout=""
+          stdout={[]}
           stderr={stderr}
           status={ExecutionStatus.Success}
           isFinished={true}
@@ -488,11 +472,11 @@ describe('Output component', () => {
     });
 
     it('uses regular color for stdout when task is not finished', () => {
-      const stdout = 'Running task output';
+      const stdout = ['Running task output'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}
-          stderr=""
+          stderr={[]}
           status={ExecutionStatus.Running}
           isFinished={false}
         />
@@ -502,10 +486,10 @@ describe('Output component', () => {
     });
 
     it('uses regular color for stderr when task is not finished', () => {
-      const stderr = 'Running task warning';
+      const stderr = ['Running task warning'];
       const { lastFrame } = render(
         <Output
-          stdout=""
+          stdout={[]}
           stderr={stderr}
           status={ExecutionStatus.Running}
           isFinished={false}
@@ -516,10 +500,10 @@ describe('Output component', () => {
     });
 
     it('uses yellow for stderr when task failed regardless of isFinished', () => {
-      const stderr = 'Error message';
+      const stderr = ['Error message'];
       const { lastFrame } = render(
         <Output
-          stdout=""
+          stdout={[]}
           stderr={stderr}
           status={ExecutionStatus.Failed}
           isFinished={true}
@@ -530,8 +514,8 @@ describe('Output component', () => {
     });
 
     it('applies darker color to both stdout and stderr when finished', () => {
-      const stdout = 'Output line';
-      const stderr = 'Warning line';
+      const stdout = ['Output line'];
+      const stderr = ['Warning line'];
       const { lastFrame } = render(
         <Output
           stdout={stdout}

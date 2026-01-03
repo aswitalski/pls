@@ -94,8 +94,8 @@ describe('Shell service', () => {
       expect(result).toEqual({
         description: 'Create directory',
         command: 'mkdir test',
-        output: '',
-        errors: '',
+        output: [],
+        errors: [],
         result: ExecutionResult.Success,
       });
     });
@@ -228,8 +228,8 @@ describe('Shell service', () => {
     it('uses mocked response when available', async () => {
       const executor = new DummyExecutor(() => 10);
       executor.mock('npm install', {
-        output: 'added 100 packages',
-        errors: '',
+        output: ['added 100 packages'],
+        errors: [],
         result: ExecutionResult.Success,
       });
 
@@ -242,15 +242,15 @@ describe('Shell service', () => {
       vi.advanceTimersByTime(50);
       const result = await promise;
 
-      expect(result.output).toBe('added 100 packages');
+      expect(result.output).toEqual(['added 100 packages']);
       expect(result.result).toBe(ExecutionResult.Success);
     });
 
     it('returns error result when mocked as failed', async () => {
       const executor = new DummyExecutor(() => 10);
       executor.mock('npm test', {
-        output: '',
-        errors: 'Test failed',
+        output: [],
+        errors: ['Test failed'],
         result: ExecutionResult.Error,
         error: 'Tests did not pass',
       });
@@ -266,7 +266,7 @@ describe('Shell service', () => {
 
       expect(result.result).toBe(ExecutionResult.Error);
       expect(result.error).toBe('Tests did not pass');
-      expect(result.errors).toBe('Test failed');
+      expect(result.errors).toEqual(['Test failed']);
     });
 
     it('calls progress callback with failed status for error result', async () => {
@@ -292,7 +292,7 @@ describe('Shell service', () => {
     it('clears mocked responses', async () => {
       const executor = new DummyExecutor(() => 10);
       executor.mock('echo test', {
-        output: 'mocked output',
+        output: ['mocked output'],
       });
 
       executor.clearMocks();
@@ -307,7 +307,7 @@ describe('Shell service', () => {
       const result = await promise;
 
       // Should return default empty output after clearing mocks
-      expect(result.output).toBe('');
+      expect(result.output).toEqual([]);
     });
 
     it('uses custom delay generator', async () => {
@@ -366,7 +366,7 @@ describe('Shell service', () => {
       // Mock Step 2 to fail
       testExecutor.mock('echo 2', {
         result: ExecutionResult.Error,
-        errors: 'Command failed',
+        errors: ['Command failed'],
       });
 
       const promise = executeCommands(commands);
@@ -393,8 +393,8 @@ describe('Shell service', () => {
       const result = await executor.execute(cmd);
 
       expect(result.result).toBe(ExecutionResult.Success);
-      expect(result.output.trim()).toBe('hello world');
-      expect(result.errors).toBe('');
+      expect(result.output).toEqual(['hello world']);
+      expect(result.errors).toEqual([]);
     });
 
     it('captures stderr output', async () => {
@@ -407,7 +407,7 @@ describe('Shell service', () => {
       const result = await executor.execute(cmd);
 
       expect(result.result).toBe(ExecutionResult.Success);
-      expect(result.errors.trim()).toBe('error message');
+      expect(result.errors).toEqual(['error message']);
     });
 
     it('returns error result for non-zero exit code', async () => {
@@ -495,7 +495,7 @@ describe('Shell service', () => {
       const result = await executor.execute(cmd);
 
       expect(result.result).toBe(ExecutionResult.Success);
-      expect(result.output.trim()).toBe('line1\nline2\nline3');
+      expect(result.output).toEqual(['line1', 'line2', 'line3']);
     });
 
     it('allows updating output callback via setOutputCallback', async () => {
@@ -527,8 +527,8 @@ describe('Shell service', () => {
 
         const result = await executor.execute(cmd);
 
-        expect(result.output).not.toContain('__PWD_MARKER');
-        expect(result.output.trim()).toBe('hello');
+        expect(result.output.join('')).not.toContain('__PWD_MARKER');
+        expect(result.output).toEqual(['hello']);
       });
 
       it('does not include marker in output callback', async () => {
@@ -590,7 +590,7 @@ describe('Shell service', () => {
 
         const combined = chunks.join('');
         expect(combined).not.toContain('__PWD_MARKER');
-        expect(result.output.trim()).toBe('line1\nline2\nline3');
+        expect(result.output).toEqual(['line1', 'line2', 'line3']);
       });
 
       it('preserves command output when extracting workdir', async () => {
@@ -602,8 +602,8 @@ describe('Shell service', () => {
 
         const result = await executor.execute(cmd);
 
-        expect(result.output).toContain('keep this');
-        expect(result.output).toContain('and this');
+        expect(result.output.join('\n')).toContain('keep this');
+        expect(result.output.join('\n')).toContain('and this');
         expect(result.workdir).toBeDefined();
       });
 
@@ -616,7 +616,7 @@ describe('Shell service', () => {
 
         const result = await executor.execute(cmd);
 
-        expect(result.output).toBe('');
+        expect(result.output).toEqual([]);
         // macOS resolves /tmp to /private/tmp
         expect(result.workdir).toMatch(/\/tmp$/);
       });
@@ -640,7 +640,7 @@ describe('Shell service', () => {
         const result2 = await executor.execute(cmd2);
 
         // macOS resolves /tmp to /private/tmp
-        expect(result2.output.trim()).toMatch(/\/tmp$/);
+        expect(result2.output.join('')).toMatch(/\/tmp$/);
       });
     });
 
@@ -654,10 +654,9 @@ describe('Shell service', () => {
 
         const result = await executor.execute(cmd);
 
-        const lines = result.output.trim().split('\n');
-        expect(lines.length).toBe(100);
-        expect(lines[0]).toBe('line 1');
-        expect(lines[99]).toBe('line 100');
+        expect(result.output.length).toBe(100);
+        expect(result.output[0]).toBe('line 1');
+        expect(result.output[99]).toBe('line 100');
       });
 
       it('limits stdout to last 128 lines when exceeded', async () => {
@@ -669,11 +668,10 @@ describe('Shell service', () => {
 
         const result = await executor.execute(cmd);
 
-        const lines = result.output.trim().split('\n');
-        expect(lines.length).toBeLessThanOrEqual(128);
-        expect(lines.length).toBeGreaterThan(100);
+        expect(result.output.length).toBeLessThanOrEqual(128);
+        expect(result.output.length).toBeGreaterThan(100);
         // Should have lines from the end
-        expect(lines[lines.length - 1]).toBe('line 2000');
+        expect(result.output[result.output.length - 1]).toBe('line 2000');
       });
 
       it('limits stderr to last 128 lines when exceeded', async () => {
@@ -685,11 +683,10 @@ describe('Shell service', () => {
 
         const result = await executor.execute(cmd);
 
-        const lines = result.errors.trim().split('\n');
-        expect(lines.length).toBeLessThanOrEqual(128);
-        expect(lines.length).toBeGreaterThan(100);
+        expect(result.errors.length).toBeLessThanOrEqual(128);
+        expect(result.errors.length).toBeGreaterThan(100);
         // Should have lines from the end
-        expect(lines[lines.length - 1]).toBe('error 2000');
+        expect(result.errors[result.errors.length - 1]).toBe('error 2000');
       });
 
       it('limits stderr on error with large output', async () => {
@@ -702,11 +699,10 @@ describe('Shell service', () => {
         const result = await executor.execute(cmd);
 
         expect(result.result).toBe(ExecutionResult.Error);
-        const lines = result.errors.trim().split('\n');
-        expect(lines.length).toBeLessThanOrEqual(128);
-        expect(lines.length).toBeGreaterThan(100);
+        expect(result.errors.length).toBeLessThanOrEqual(128);
+        expect(result.errors.length).toBeGreaterThan(100);
         // Should have lines from the end
-        expect(lines[lines.length - 1]).toBe('error 2000');
+        expect(result.errors[result.errors.length - 1]).toBe('error 2000');
       });
 
       it('preserves output under limit without modification', async () => {
@@ -718,10 +714,9 @@ describe('Shell service', () => {
 
         const result = await executor.execute(cmd);
 
-        const lines = result.output.trim().split('\n');
-        expect(lines.length).toBe(100);
-        expect(lines[0]).toBe('line 1');
-        expect(lines[99]).toBe('line 100');
+        expect(result.output.length).toBe(100);
+        expect(result.output[0]).toBe('line 1');
+        expect(result.output[99]).toBe('line 100');
       });
     });
   });

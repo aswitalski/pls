@@ -28,8 +28,8 @@ export function TaskView({
   output,
   isFinished,
 }: TaskViewProps) {
-  const stdout = output?.stdout ?? '';
-  const stderr = output?.stderr ?? '';
+  const stdout = output?.stdout ?? [];
+  const stderr = output?.stderr ?? [];
 
   return (
     <Box flexDirection="column">

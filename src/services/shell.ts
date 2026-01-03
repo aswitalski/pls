@@ -20,8 +20,8 @@ export enum ExecutionResult {
 export interface CommandOutput {
   description: string;
   command: string;
-  output: string;
-  errors: string;
+  output: string[];
+  errors: string[];
   result: ExecutionResult;
   error?: string;
   workdir?: string;
@@ -92,8 +92,8 @@ export class DummyExecutor implements Executor {
         const commandResult: CommandOutput = {
           description: cmd.description,
           command: cmd.command,
-          output: mocked?.output ?? '',
-          errors: mocked?.errors ?? '',
+          output: mocked?.output ?? [],
+          errors: mocked?.errors ?? [],
           result: mocked?.result ?? ExecutionResult.Success,
           error: mocked?.error,
         };
@@ -122,38 +122,88 @@ const PWD_MARKER = '__PWD_MARKER_7x9k2m__';
 const MAX_OUTPUT_LINES = 128;
 
 /**
- * Limit output to last MAX_OUTPUT_LINES lines.
+ * Lazy line buffer that defers processing until read.
+ * Accumulates chunks with O(1) push, processes only when getLines() called.
+ * Caches result until invalidated by new data.
+ * Compacts at 1MB to bound memory for high-volume output.
  */
-function limitLines(output: string): string {
-  const lines = output.split('\n');
-  return lines.slice(-MAX_OUTPUT_LINES).join('\n');
-}
+class LazyLineBuffer {
+  private chunks: string[] = [];
+  private totalBytes = 0;
+  private cachedLines: string[] | null = null;
+  private readonly maxLines: number;
 
-/**
- * Parse stdout to extract workdir and clean output.
- * Returns the cleaned output and the extracted workdir.
- */
-function parseWorkdir(rawOutput: string): { output: string; workdir?: string } {
-  const markerIndex = rawOutput.lastIndexOf(PWD_MARKER);
-  if (markerIndex === -1) {
-    return { output: rawOutput };
+  constructor(maxLines = MAX_OUTPUT_LINES) {
+    this.maxLines = maxLines;
   }
 
-  const output = rawOutput.slice(0, markerIndex).trimEnd();
-  const pwdPart = rawOutput.slice(markerIndex + PWD_MARKER.length).trim();
-  const lines = pwdPart.split('\n').filter((l) => l.trim());
-  const workdir = lines[0];
+  /**
+   * Add new data. O(1) array push, no string processing.
+   */
+  push(data: string): void {
+    this.chunks.push(data);
+    this.totalBytes += data.length;
+    this.cachedLines = null;
 
-  return { output, workdir };
+    // Safety valve - compact if memory gets extreme
+    if (this.totalBytes > 1024 * 1024) {
+      this.compact();
+    }
+  }
+
+  /**
+   * Process and trim to maxLines. Called on memory threshold or before read.
+   */
+  private compact(): void {
+    if (this.chunks.length === 0) return;
+
+    const combined = this.chunks.join('');
+    const lines = combined.split('\n');
+    const incomplete = lines[lines.length - 1];
+    const complete = lines.slice(0, -1);
+
+    if (complete.length > this.maxLines) {
+      const kept = complete.slice(-this.maxLines);
+      this.chunks = incomplete
+        ? [kept.join('\n') + '\n' + incomplete]
+        : [kept.join('\n')];
+    } else {
+      this.chunks = [combined];
+    }
+    this.totalBytes = this.chunks[0].length;
+    this.cachedLines = null;
+  }
+
+  /**
+   * Get all lines as a new array instance.
+   * Processes chunks on first call, returns cached result on subsequent calls.
+   */
+  getLines(): string[] {
+    if (this.cachedLines) return [...this.cachedLines];
+    if (this.chunks.length === 0) return [];
+
+    const combined = this.chunks.join('');
+    const lines = combined.split('\n');
+
+    // Include incomplete last line if non-empty
+    const result = lines[lines.length - 1] ? lines : lines.slice(0, -1);
+
+    this.cachedLines =
+      result.length > this.maxLines ? result.slice(-this.maxLines) : result;
+    return [...this.cachedLines];
+  }
 }
 
 /**
  * Manages streaming output while filtering out the PWD marker.
- * Buffers output to avoid emitting partial markers to the callback.
+ * Uses line-based storage for memory efficiency. The marker and
+ * workdir are filtered during streaming, never stored in output.
  */
 class OutputStreamer {
-  private chunks: string[] = [];
-  private emittedLength = 0;
+  private output = new LazyLineBuffer();
+  private pending = '';
+  private workdir?: string;
+  private markerFound = false;
   private callback?: OutputCallback;
 
   constructor(callback?: OutputCallback) {
@@ -161,55 +211,61 @@ class OutputStreamer {
   }
 
   /**
-   * Add new stdout data and emit safe content to callback.
-   * Buffers data to avoid emitting partial PWD markers.
+   * Add new stdout data. Filters out the PWD marker and extracts
+   * workdir during streaming. Only clean output is stored.
    */
   pushStdout(data: string): void {
-    this.chunks.push(data);
-
-    // Collapse when we have too many chunks to prevent memory growth
-    if (this.chunks.length > 16) {
-      const accumulated = this.chunks.join('');
-      this.chunks = [limitLines(accumulated)];
-      this.emittedLength = 0;
+    // Once marker found, capture workdir and ignore rest
+    if (this.markerFound) {
+      if (!this.workdir) {
+        const line = data.trim().split('\n')[0];
+        if (line) this.workdir = line;
+      }
+      return;
     }
 
-    if (!this.callback) return;
-
-    const accumulated = this.chunks.join('');
-    const markerIndex = accumulated.indexOf(PWD_MARKER);
+    // Accumulate with pending data
+    const combined = this.pending + data;
+    const markerIndex = combined.indexOf(PWD_MARKER);
 
     if (markerIndex !== -1) {
-      // Marker found - emit everything before it (trimmed)
-      this.emitUpTo(accumulated.slice(0, markerIndex).trimEnd().length);
+      // Marker found - store and emit only the part before it
+      this.markerFound = true;
+      const clean = combined.slice(0, markerIndex).trimEnd();
+      if (clean) {
+        this.output.push(clean);
+        this.callback?.(clean, 'stdout');
+      }
+      // Check if workdir is in the same chunk
+      const afterMarker = combined
+        .slice(markerIndex + PWD_MARKER.length)
+        .trim();
+      const line = afterMarker.split('\n')[0];
+      if (line) this.workdir = line;
+      this.pending = '';
     } else {
-      // No marker yet - emit all but buffer for potential partial marker
+      // No marker - store/emit safe portion, keep tail as pending
       const bufferSize = PWD_MARKER.length + 5;
-      const safeLength = Math.max(
-        this.emittedLength,
-        accumulated.length - bufferSize
-      );
-      this.emitUpTo(safeLength);
+      if (combined.length > bufferSize) {
+        const safe = combined.slice(0, -bufferSize);
+        this.output.push(safe);
+        this.callback?.(safe, 'stdout');
+        this.pending = combined.slice(-bufferSize);
+      } else {
+        this.pending = combined;
+      }
     }
   }
 
   /**
-   * Emit content up to the specified length if there's new content.
+   * Get the final result with cleaned output and workdir.
    */
-  private emitUpTo(length: number): void {
-    if (length > this.emittedLength && this.callback) {
-      const accumulated = this.chunks.join('');
-      const newContent = accumulated.slice(this.emittedLength, length);
-      this.callback(newContent, 'stdout');
-      this.emittedLength = length;
+  getResult(): { output: string[]; workdir?: string } {
+    // Flush any remaining pending content (if marker never appeared)
+    if (!this.markerFound && this.pending) {
+      this.output.push(this.pending);
     }
-  }
-
-  /**
-   * Get the accumulated raw output.
-   */
-  getAccumulated(): string {
-    return limitLines(this.chunks.join(''));
+    return { output: this.output.getLines(), workdir: this.workdir };
   }
 }
 
@@ -238,7 +294,7 @@ export class RealExecutor implements Executor {
     return new Promise((resolve) => {
       onProgress?.(ExecutionStatus.Running);
 
-      const stderr: string[] = [];
+      const stderr = new LazyLineBuffer();
 
       // Wrap command to capture final working directory
       const wrappedCommand = `${cmd.command}; __exit=$?; echo ""; echo "${PWD_MARKER}"; pwd; exit $__exit`;
@@ -256,8 +312,8 @@ export class RealExecutor implements Executor {
         const commandResult: CommandOutput = {
           description: cmd.description,
           command: cmd.command,
-          output: '',
-          errors: errorMessage,
+          output: [],
+          errors: [errorMessage],
           result: ExecutionResult.Error,
           error: errorMessage,
         };
@@ -291,15 +347,6 @@ export class RealExecutor implements Executor {
       child.stderr.on('data', (data: Buffer) => {
         const text = data.toString();
         stderr.push(text);
-
-        // Collapse when we have too many chunks to prevent memory growth
-        if (stderr.length > 16) {
-          const accumulated = stderr.join('');
-          const limited = limitLines(accumulated);
-          stderr.length = 0;
-          stderr.push(limited);
-        }
-
         this.outputCallback?.(text, 'stderr');
       });
 
@@ -307,11 +354,13 @@ export class RealExecutor implements Executor {
         if (timeoutId) clearTimeout(timeoutId);
         if (killTimeoutId) clearTimeout(killTimeoutId);
 
+        const { output } = stdoutStreamer.getResult();
+        const stderrLines = stderr.getLines();
         const commandResult: CommandOutput = {
           description: cmd.description,
           command: cmd.command,
-          output: stdoutStreamer.getAccumulated(),
-          errors: limitLines(stderr.join('')) || error.message,
+          output,
+          errors: stderrLines.length > 0 ? stderrLines : [error.message],
           result: ExecutionResult.Error,
           error: error.message,
         };
@@ -325,15 +374,13 @@ export class RealExecutor implements Executor {
         if (killTimeoutId) clearTimeout(killTimeoutId);
 
         const success = code === 0;
-        const { output, workdir } = parseWorkdir(
-          stdoutStreamer.getAccumulated()
-        );
+        const { output, workdir } = stdoutStreamer.getResult();
 
         const commandResult: CommandOutput = {
           description: cmd.description,
           command: cmd.command,
           output,
-          errors: limitLines(stderr.join('')),
+          errors: stderr.getLines(),
           result: success ? ExecutionResult.Success : ExecutionResult.Error,
           error: success ? undefined : `Exit code: ${code}`,
           workdir,
