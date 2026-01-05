@@ -204,4 +204,92 @@ describe('Answer component', () => {
       { timeout: 500 }
     );
   });
+
+  describe('upcoming tasks display', () => {
+    it('shows upcoming tasks when active', () => {
+      const { lastFrame } = render(
+        <AnswerView
+          status={ComponentStatus.Active}
+          question="What is TypeScript?"
+          lines={null}
+          error={null}
+          upcoming={['Question 2', 'Question 3']}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toContain('Next:');
+      expect(output).toContain('Question 2');
+      expect(output).toContain('Question 3');
+    });
+
+    it('shows current and upcoming tasks as cancelled when aborted', () => {
+      const { lastFrame } = render(
+        <AnswerView
+          status={ComponentStatus.Done}
+          question="What is TypeScript?"
+          lines={null}
+          error={null}
+          upcoming={['Question 2', 'Question 3']}
+          cancelled={true}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toContain('Cancelled:');
+      expect(output).toContain('What is TypeScript?');
+      expect(output).toContain('Question 2');
+      expect(output).toContain('Question 3');
+    });
+
+    it('shows current and upcoming tasks as skipped when error occurs', () => {
+      const { lastFrame } = render(
+        <AnswerView
+          status={ComponentStatus.Done}
+          question="What is TypeScript?"
+          lines={null}
+          error="Network error"
+          upcoming={['Question 2', 'Question 3']}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toContain('Skipped:');
+      expect(output).toContain('What is TypeScript?');
+      expect(output).toContain('Question 2');
+      expect(output).toContain('Question 3');
+    });
+
+    it('does not show upcoming section when active and empty', () => {
+      const { lastFrame } = render(
+        <AnswerView
+          status={ComponentStatus.Active}
+          question="What is TypeScript?"
+          lines={null}
+          error={null}
+          upcoming={[]}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).not.toContain('Next:');
+    });
+
+    it('shows current question as cancelled even with no upcoming', () => {
+      const { lastFrame } = render(
+        <AnswerView
+          status={ComponentStatus.Done}
+          question="What is TypeScript?"
+          lines={null}
+          error={null}
+          upcoming={[]}
+          cancelled={true}
+        />
+      );
+
+      const output = lastFrame();
+      expect(output).toContain('Cancelled:');
+      expect(output).toContain('What is TypeScript?');
+    });
+  });
 });

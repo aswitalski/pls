@@ -200,13 +200,14 @@ export const ControllerComponent = memo(function ControllerComponent({
 
     case ComponentName.Answer: {
       const {
-        props: { question, service },
+        props: { question, service, upcoming },
         status,
       } = def;
       return (
         <Answer
           question={question}
           service={service}
+          upcoming={upcoming}
           requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
           workflowHandlers={workflowHandlers}
@@ -245,13 +246,14 @@ export const ControllerComponent = memo(function ControllerComponent({
 
     case ComponentName.Execute: {
       const {
-        props: { tasks, service },
+        props: { tasks, service, upcoming },
         status,
       } = def;
       return (
         <Execute
           tasks={tasks}
           service={service}
+          upcoming={upcoming}
           requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
           workflowHandlers={workflowHandlers}
@@ -321,15 +323,19 @@ export const ViewComponent = memo(function ViewComponent({
     }
 
     case ComponentName.Execute: {
-      const { state, status } = def;
+      const {
+        props: { upcoming },
+        state,
+        status,
+      } = def;
       const isActive = status === ComponentStatus.Active;
-      const viewProps = mapStateToViewProps(state, isActive);
+      const viewProps = mapStateToViewProps(state, isActive, upcoming);
       return <ExecuteView {...viewProps} />;
     }
 
     case ComponentName.Answer: {
       const {
-        props: { question },
+        props: { question, upcoming },
         state,
         status,
       } = def;
@@ -340,6 +346,8 @@ export const ViewComponent = memo(function ViewComponent({
           question={question}
           lines={lines}
           error={state.error}
+          upcoming={upcoming}
+          cancelled={state.cancelled}
         />
       );
     }

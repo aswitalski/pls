@@ -45,7 +45,11 @@ interface RoutingContext {
 /**
  * Handler function type for routing tasks of a specific type
  */
-type TaskRouteHandler = (tasks: Task[], context: RoutingContext) => void;
+type TaskRouteHandler = (
+  tasks: Task[],
+  context: RoutingContext,
+  upcoming: string[]
+) => void;
 
 /**
  * Determine the operation name based on task types
@@ -256,6 +260,32 @@ function executeTasksAfterConfirm(
 }
 
 /**
+ * Task types that should appear in the upcoming display
+ */
+const UPCOMING_TASK_TYPES = [TaskType.Execute, TaskType.Answer];
+
+/**
+ * Collect names of all upcoming execution units (groups and standalone tasks)
+ * for display during task execution
+ */
+function collectUpcomingNames(scheduledTasks: ScheduledTask[]): string[] {
+  const names: string[] = [];
+
+  for (const task of scheduledTasks) {
+    if (task.type === TaskType.Group && task.subtasks?.length) {
+      const subtasks = task.subtasks as Task[];
+      if (UPCOMING_TASK_TYPES.includes(subtasks[0].type)) {
+        names.push(task.action);
+      }
+    } else if (UPCOMING_TASK_TYPES.includes(task.type)) {
+      names.push(task.action);
+    }
+  }
+
+  return names;
+}
+
+/**
  * Route tasks after config is complete (or when no config is needed)
  * Processes tasks in order, grouping by type
  */
@@ -263,6 +293,10 @@ function routeTasksAfterConfig(
   scheduledTasks: ScheduledTask[],
   context: RoutingContext
 ): void {
+  // Collect all unit names for upcoming display
+  const allUnitNames = collectUpcomingNames(scheduledTasks);
+  let currentUnitIndex = 0;
+
   // Process tasks in order, preserving Group boundaries
   // Track consecutive standalone tasks to group them by type
   let consecutiveStandaloneTasks: Task[] = [];
@@ -287,7 +321,18 @@ function routeTasksAfterConfig(
     for (const [type, typeTasks] of Object.entries(tasksByType)) {
       const taskType = type as TaskType;
       if (typeTasks.length === 0) continue;
-      routeTasksByType(taskType, typeTasks, context);
+
+      // For tasks that appear in upcoming, calculate from remaining units
+      if (UPCOMING_TASK_TYPES.includes(taskType)) {
+        // Each task advances the unit index
+        for (const task of typeTasks) {
+          const upcoming = allUnitNames.slice(currentUnitIndex + 1);
+          currentUnitIndex++;
+          routeTasksByType(taskType, [task], context, upcoming);
+        }
+      } else {
+        routeTasksByType(taskType, typeTasks, context, []);
+      }
     }
 
     consecutiveStandaloneTasks = [];
@@ -303,7 +348,16 @@ function routeTasksAfterConfig(
       if (task.subtasks.length > 0) {
         const subtasks = task.subtasks as Task[];
         const taskType = subtasks[0].type;
-        routeTasksByType(taskType, subtasks, context);
+
+        // Calculate upcoming (all units after this one)
+        const upcoming = UPCOMING_TASK_TYPES.includes(taskType)
+          ? allUnitNames.slice(currentUnitIndex + 1)
+          : [];
+        if (UPCOMING_TASK_TYPES.includes(taskType)) {
+          currentUnitIndex++;
+        }
+
+        routeTasksByType(taskType, subtasks, context, upcoming);
       }
     } else {
       // Accumulate standalone task
@@ -318,10 +372,22 @@ function routeTasksAfterConfig(
 /**
  * Route Answer tasks - creates separate Answer component for each question
  */
-function routeAnswerTasks(tasks: Task[], context: RoutingContext): void {
-  for (const task of tasks) {
+function routeAnswerTasks(
+  tasks: Task[],
+  context: RoutingContext,
+  upcoming: string[]
+): void {
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i];
+    // Calculate upcoming: remaining answer tasks + original upcoming
+    const remainingAnswers = tasks.slice(i + 1).map((t) => t.action);
+    const taskUpcoming = [...remainingAnswers, ...upcoming];
     context.workflowHandlers.addToQueue(
-      createAnswer({ question: task.action, service: context.service })
+      createAnswer({
+        question: task.action,
+        service: context.service,
+        upcoming: taskUpcoming,
+      })
     );
   }
 }
@@ -329,7 +395,11 @@ function routeAnswerTasks(tasks: Task[], context: RoutingContext): void {
 /**
  * Route Introspect tasks - creates single Introspect component for all tasks
  */
-function routeIntrospectTasks(tasks: Task[], context: RoutingContext): void {
+function routeIntrospectTasks(
+  tasks: Task[],
+  context: RoutingContext,
+  _upcoming: string[]
+): void {
   context.workflowHandlers.addToQueue(
     createIntrospect({ tasks, service: context.service })
   );
@@ -338,7 +408,11 @@ function routeIntrospectTasks(tasks: Task[], context: RoutingContext): void {
 /**
  * Route Config tasks - extracts keys, caches labels, creates Config component
  */
-function routeConfigTasks(tasks: Task[], context: RoutingContext): void {
+function routeConfigTasks(
+  tasks: Task[],
+  context: RoutingContext,
+  _upcoming: string[]
+): void {
   const configKeys = tasks
     .map((task) => task.params?.key as string | undefined)
     .filter((key): key is string => key !== undefined);
@@ -390,9 +464,13 @@ function routeConfigTasks(tasks: Task[], context: RoutingContext): void {
 /**
  * Route Execute tasks - creates Execute component (validation already done)
  */
-function routeExecuteTasks(tasks: Task[], context: RoutingContext): void {
+function routeExecuteTasks(
+  tasks: Task[],
+  context: RoutingContext,
+  upcoming: string[]
+): void {
   context.workflowHandlers.addToQueue(
-    createExecute({ tasks, service: context.service })
+    createExecute({ tasks, service: context.service, upcoming })
   );
 }
 
@@ -413,10 +491,11 @@ const taskRouteHandlers: Partial<Record<TaskType, TaskRouteHandler>> = {
 function routeTasksByType(
   taskType: TaskType,
   tasks: Task[],
-  context: RoutingContext
+  context: RoutingContext,
+  upcoming: string[]
 ): void {
   const handler = taskRouteHandlers[taskType];
   if (handler) {
-    handler(tasks, context);
+    handler(tasks, context, upcoming);
   }
 }

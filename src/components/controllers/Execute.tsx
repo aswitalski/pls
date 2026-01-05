@@ -63,6 +63,7 @@ export function Execute({
   tasks: inputTasks,
   status,
   service,
+  upcoming,
   requestHandlers,
   lifecycleHandlers,
   workflowHandlers,
@@ -393,6 +394,7 @@ export function Execute({
       tasks={tasks}
       completionMessage={completionMessage}
       showTasks={showTasks}
+      upcoming={upcoming}
     />
   );
 }
