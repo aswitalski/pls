@@ -139,6 +139,18 @@ Given tasks from this skill:
 Do NOT invent different commands - use exactly what the skill specifies,
 with parameter placeholders replaced by actual values.
 
+### Handling Skipped Steps
+
+**CRITICAL - STEP ORDER PRESERVATION**: When some steps from a skill are
+omitted during scheduling, you MUST maintain alignment with the
+original step positions in both the Steps and Execution sections. Each
+task corresponds to a specific line number in the skill definition, NOT
+to its sequential position in the task list. If you receive tasks for
+steps 1 and 3 (with step 2 skipped), use Execution lines 1 and 3
+(NOT lines 1 and 2). The step numbers in the task actions indicate
+which Execution line to use - always match by original position, never
+by sequential task index.
+
 **CRITICAL - VERBATIM EXECUTION**: Run shell commands EXACTLY as written in
 the ### Execution section. Do NOT:
 - Modify the command string in any way
