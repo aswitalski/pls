@@ -190,6 +190,7 @@ export interface IntrospectState extends BaseState {
 export interface AnswerDefinitionProps {
   question: string;
   service: LLMService;
+  upcoming?: string[];
 }
 
 export type AnswerProps = ComponentProps<AnswerDefinitionProps> & {
@@ -201,6 +202,7 @@ export type AnswerProps = ComponentProps<AnswerDefinitionProps> & {
 export interface AnswerState extends BaseState {
   error: string | null;
   answer: string | null;
+  cancelled?: boolean;
 }
 
 export interface TaskOutput {
@@ -221,6 +223,7 @@ export interface TaskData {
 export interface ExecuteDefinitionProps {
   tasks: Task[];
   service: LLMService;
+  upcoming?: string[];
 }
 
 export type ExecuteProps = ComponentProps<ExecuteDefinitionProps> & {

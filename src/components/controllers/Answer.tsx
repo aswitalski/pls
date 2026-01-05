@@ -24,6 +24,7 @@ export function Answer({
   question,
   status,
   service,
+  upcoming,
   requestHandlers,
   lifecycleHandlers,
   workflowHandlers,
@@ -32,10 +33,18 @@ export function Answer({
 
   const [error, setError] = useState<string | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
+  const [cancelled, setCancelled] = useState(false);
 
   useInput(
     (input, key) => {
       if (key.escape && isActive) {
+        setCancelled(true);
+        const finalState: AnswerState = {
+          answer: null,
+          error: null,
+          cancelled: true,
+        };
+        requestHandlers.onCompleted(finalState);
         requestHandlers.onAborted('answer');
       }
     },
@@ -117,6 +126,8 @@ export function Answer({
       question={question}
       lines={lines}
       error={error}
+      upcoming={upcoming}
+      cancelled={cancelled}
     />
   );
 }

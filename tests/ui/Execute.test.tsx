@@ -1297,4 +1297,115 @@ describe('Execute component', () => {
       });
     });
   });
+
+  describe('Upcoming display', () => {
+    it('shows upcoming tasks during active execution', () => {
+      const state: ExecuteState = {
+        message: 'Executing',
+        summary: '',
+        tasks: [
+          {
+            label: 'Current task',
+            command: { description: 'Running', command: 'cmd' },
+            status: ExecutionStatus.Running,
+            elapsed: 0,
+            output: null,
+          },
+        ],
+        completionMessage: null,
+        error: null,
+      };
+      const viewProps = mapStateToViewProps(state, true, [
+        'Next group',
+        'Final group',
+      ]);
+      const { lastFrame } = render(<ExecuteView {...viewProps} />);
+
+      const frame = lastFrame();
+      expect(frame).toContain('Next:');
+      expect(frame).toContain('Next group');
+      expect(frame).toContain('Final group');
+    });
+
+    it('shows skipped upcoming tasks when execution fails', () => {
+      const state: ExecuteState = {
+        message: 'Executing',
+        summary: '',
+        tasks: [
+          {
+            label: 'Failed task',
+            command: { description: 'Failing', command: 'cmd' },
+            status: ExecutionStatus.Failed,
+            elapsed: 100,
+            output: null,
+          },
+        ],
+        completionMessage: null,
+        error: null,
+      };
+      const viewProps = mapStateToViewProps(state, false, [
+        'Skipped group',
+        'Another skipped',
+      ]);
+      const { lastFrame } = render(<ExecuteView {...viewProps} />);
+
+      const frame = lastFrame();
+      expect(frame).toContain('Skipped:');
+      expect(frame).toContain('Skipped group');
+      expect(frame).toContain('Another skipped');
+    });
+
+    it('shows cancelled upcoming tasks when execution aborted', () => {
+      const state: ExecuteState = {
+        message: 'Executing',
+        summary: '',
+        tasks: [
+          {
+            label: 'Aborted task',
+            command: { description: 'Was running', command: 'cmd' },
+            status: ExecutionStatus.Aborted,
+            elapsed: 50,
+            output: null,
+          },
+        ],
+        completionMessage: null,
+        error: null,
+      };
+      const viewProps = mapStateToViewProps(state, false, [
+        'Cancelled group',
+        'Also cancelled',
+      ]);
+      const { lastFrame } = render(<ExecuteView {...viewProps} />);
+
+      const frame = lastFrame();
+      expect(frame).toContain('Cancelled:');
+      expect(frame).toContain('Cancelled group');
+      expect(frame).toContain('Also cancelled');
+    });
+
+    it('hides upcoming when no tasks remain', () => {
+      const state: ExecuteState = {
+        message: 'Executing',
+        summary: '',
+        tasks: [
+          {
+            label: 'Task',
+            command: { description: 'Done', command: 'cmd' },
+            status: ExecutionStatus.Success,
+            elapsed: 100,
+            output: null,
+          },
+        ],
+        completionMessage: 'Done',
+        error: null,
+      };
+      const viewProps = mapStateToViewProps(state, false, []);
+      const { lastFrame } = render(<ExecuteView {...viewProps} />);
+
+      const frame = lastFrame();
+      expect(frame).not.toContain('Next:');
+      expect(frame).not.toContain('Skipped:');
+      expect(frame).not.toContain('Cancelled:');
+    });
+  });
 });

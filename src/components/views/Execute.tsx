@@ -7,6 +7,7 @@ import { ExecutionStatus } from '../../services/shell.js';
 
 import { Spinner } from './Spinner.js';
 import { TaskView } from './Task.js';
+import { Upcoming, UpcomingStatus } from './Upcoming.js';
 
 /**
  * Check if a task is finished (success, failed, or aborted)
@@ -17,6 +18,22 @@ function isTaskFinished(task: TaskData): boolean {
     task.status === ExecutionStatus.Failed ||
     task.status === ExecutionStatus.Aborted
   );
+}
+
+/**
+ * Determine the upcoming status based on task states
+ */
+function getUpcomingStatus(tasks: TaskData[]): UpcomingStatus {
+  const hasFailed = tasks.some(
+    (task) => task.status === ExecutionStatus.Failed
+  );
+  const hasAborted = tasks.some(
+    (task) => task.status === ExecutionStatus.Aborted
+  );
+
+  if (hasFailed) return ExecutionStatus.Failed;
+  if (hasAborted) return ExecutionStatus.Aborted;
+  return ExecutionStatus.Pending;
 }
 
 /**
@@ -31,6 +48,7 @@ export interface ExecuteViewProps {
   tasks: TaskData[];
   completionMessage: string | null;
   showTasks: boolean;
+  upcoming?: string[];
 }
 
 /**
@@ -38,7 +56,8 @@ export interface ExecuteViewProps {
  */
 export function mapStateToViewProps(
   state: ExecuteState,
-  isActive: boolean
+  isActive: boolean,
+  upcoming?: string[]
 ): ExecuteViewProps {
   return {
     isLoading: false,
@@ -49,6 +68,7 @@ export function mapStateToViewProps(
     tasks: state.tasks,
     completionMessage: state.completionMessage,
     showTasks: state.tasks.length > 0,
+    upcoming,
   };
 }
 
@@ -64,11 +84,20 @@ export const ExecuteView = ({
   tasks,
   completionMessage,
   showTasks,
+  upcoming,
 }: ExecuteViewProps) => {
   // Return null only when loading completes with no commands
   if (!isActive && tasks.length === 0 && !error) {
     return null;
   }
+
+  // Determine upcoming status based on task states
+  const upcomingStatus = getUpcomingStatus(tasks);
+  const isTerminated = upcomingStatus !== ExecutionStatus.Pending;
+
+  // Show upcoming during active execution or when terminated (to show skipped tasks)
+  const showUpcoming =
+    upcoming && upcoming.length > 0 && (isActive || isTerminated);
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
@@ -100,6 +129,12 @@ export const ExecuteView = ({
               />
             </Box>
           ))}
+        </Box>
+      )}
+
+      {showUpcoming && (
+        <Box marginTop={1}>
+          <Upcoming items={upcoming} status={upcomingStatus} />
         </Box>
       )}
 

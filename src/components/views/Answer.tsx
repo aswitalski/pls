@@ -3,8 +3,10 @@ import { Box, Text } from 'ink';
 import { ComponentStatus } from '../../types/components.js';
 
 import { Colors, getTextColor } from '../../services/colors.js';
+import { ExecutionStatus } from '../../services/shell.js';
 
 import { Spinner } from './Spinner.js';
+import { Upcoming } from './Upcoming.js';
 
 /**
  * Props for AnswerView - display-ready data
@@ -14,6 +16,8 @@ export interface AnswerViewProps {
   question: string;
   lines: string[] | null;
   error: string | null;
+  upcoming?: string[];
+  cancelled?: boolean;
 }
 
 /**
@@ -24,9 +28,25 @@ export const AnswerView = ({
   question,
   lines,
   error,
+  upcoming,
+  cancelled = false,
 }: AnswerViewProps) => {
   const isActive = status === ComponentStatus.Active;
   const isLoading = isActive && !lines && !error;
+
+  // Determine upcoming status: cancelled, error, or pending
+  const isTerminated = cancelled || error !== null;
+  const upcomingStatus = cancelled
+    ? ExecutionStatus.Aborted
+    : error
+      ? ExecutionStatus.Failed
+      : ExecutionStatus.Pending;
+
+  // Build full list of items to show - include current question when terminated
+  const upcomingItems =
+    isTerminated && upcoming ? [question, ...upcoming] : (upcoming ?? []);
+  const showUpcoming = upcomingItems.length > 0 && (isActive || isTerminated);
+
   return (
     <Box alignSelf="flex-start" flexDirection="column">
       {isLoading && (
@@ -49,6 +69,12 @@ export const AnswerView = ({
             ))}
           </Box>
         </>
+      )}
+
+      {showUpcoming && (
+        <Box marginTop={lines && lines.length > 0 ? 1 : 0}>
+          <Upcoming items={upcomingItems} status={upcomingStatus} />
+        </Box>
       )}
 
       {error && (

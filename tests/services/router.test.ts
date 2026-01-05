@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ComponentName, Task, TaskType } from '../../src/types/types.js';
 import {
+  AnswerDefinitionProps,
   ComponentDefinition,
   ConfirmDefinitionProps,
+  ExecuteDefinitionProps,
   ScheduleDefinitionProps,
 } from '../../src/types/components.js';
 
@@ -2174,6 +2176,329 @@ describe('Task Router', () => {
       scheduleTasks.forEach((task: Task) => {
         expect(task.type).toBe(TaskType.Execute);
       });
+    });
+  });
+
+  describe('Upcoming tasks', () => {
+    it('passes upcoming names to Execute component for multiple groups', () => {
+      const tasks = [
+        {
+          action: 'Deploy frontend',
+          type: TaskType.Group,
+          subtasks: [
+            { action: 'Build frontend', type: TaskType.Execute, config: [] },
+          ],
+        },
+        {
+          action: 'Deploy backend',
+          type: TaskType.Group,
+          subtasks: [
+            { action: 'Build backend', type: TaskType.Execute, config: [] },
+          ],
+        },
+        {
+          action: 'Deploy database',
+          type: TaskType.Group,
+          subtasks: [
+            { action: 'Migrate database', type: TaskType.Execute, config: [] },
+          ],
+        },
+      ];
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
+
+      routeTasksWithConfirm(
+        tasks,
+        'Deploy all',
+        service,
+        'deploy',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Simulate Schedule and Confirm completing
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Get Execute components
+      const executeComponents = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls
+        .slice(2)
+        .map((call) => call[0] as ComponentDefinition)
+        .filter((def) => def.name === ComponentName.Execute);
+
+      expect(executeComponents).toHaveLength(3);
+
+      // First Execute should have upcoming: ['Deploy backend', 'Deploy database']
+      const firstProps = executeComponents[0].props;
+      expect(firstProps.upcoming).toEqual([
+        'Deploy backend',
+        'Deploy database',
+      ]);
+
+      // Second Execute should have upcoming: ['Deploy database']
+      const secondProps = executeComponents[1].props;
+      expect(secondProps.upcoming).toEqual(['Deploy database']);
+
+      // Third Execute should have empty upcoming
+      const thirdProps = executeComponents[2].props;
+      expect(thirdProps.upcoming).toEqual([]);
+    });
+
+    it('passes upcoming names to Answer components', () => {
+      const tasks = [
+        { action: 'Explain React', type: TaskType.Answer, config: [] },
+        { action: 'Explain Vue', type: TaskType.Answer, config: [] },
+        { action: 'Explain Angular', type: TaskType.Answer, config: [] },
+      ];
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
+
+      routeTasksWithConfirm(
+        tasks,
+        'Explain frameworks',
+        service,
+        'explain',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Simulate Schedule and Confirm completing
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Get Answer components
+      const answerComponents = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls
+        .slice(2)
+        .map((call) => call[0] as ComponentDefinition)
+        .filter((def) => def.name === ComponentName.Answer);
+
+      expect(answerComponents).toHaveLength(3);
+
+      // First Answer should have upcoming: ['Explain Vue', 'Explain Angular']
+      const firstProps = answerComponents[0].props;
+      expect(firstProps.upcoming).toEqual(['Explain Vue', 'Explain Angular']);
+
+      // Second Answer should have upcoming: ['Explain Angular']
+      const secondProps = answerComponents[1].props;
+      expect(secondProps.upcoming).toEqual(['Explain Angular']);
+
+      // Third Answer should have empty upcoming
+      const thirdProps = answerComponents[2].props;
+      expect(thirdProps.upcoming).toEqual([]);
+    });
+
+    it('includes standalone Execute tasks in upcoming', () => {
+      const tasks = [
+        { action: 'Install deps', type: TaskType.Execute, config: [] },
+        { action: 'Run build', type: TaskType.Execute, config: [] },
+        { action: 'Run tests', type: TaskType.Execute, config: [] },
+      ];
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
+
+      routeTasksWithConfirm(
+        tasks,
+        'Build project',
+        service,
+        'build',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Simulate Schedule and Confirm completing
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Get Execute components
+      const executeComponents = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls
+        .slice(2)
+        .map((call) => call[0] as ComponentDefinition)
+        .filter((def) => def.name === ComponentName.Execute);
+
+      expect(executeComponents).toHaveLength(3);
+
+      // First Execute should have upcoming: ['Run build', 'Run tests']
+      const firstProps = executeComponents[0].props;
+      expect(firstProps.upcoming).toEqual(['Run build', 'Run tests']);
+
+      // Second Execute should have upcoming: ['Run tests']
+      const secondProps = executeComponents[1].props;
+      expect(secondProps.upcoming).toEqual(['Run tests']);
+
+      // Third Execute should have empty upcoming
+      const thirdProps = executeComponents[2].props;
+      expect(thirdProps.upcoming).toEqual([]);
+    });
+
+    it('calculates upcoming correctly for mixed Answer and Execute tasks', () => {
+      const tasks = [
+        { action: 'Explain TDD', type: TaskType.Answer, config: [] },
+        {
+          action: 'Build project',
+          type: TaskType.Group,
+          subtasks: [{ action: 'Compile', type: TaskType.Execute, config: [] }],
+        },
+        { action: 'Explain CI/CD', type: TaskType.Answer, config: [] },
+      ];
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
+
+      routeTasksWithConfirm(
+        tasks,
+        'Mixed tasks',
+        service,
+        'mixed',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Simulate Schedule and Confirm completing
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Get all routed components after Schedule and Confirm
+      const components = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls
+        .slice(2)
+        .map((call) => call[0] as ComponentDefinition);
+
+      expect(components).toHaveLength(3);
+
+      // First Answer should see Execute and second Answer upcoming
+      expect(components[0].name).toBe(ComponentName.Answer);
+      const firstProps = components[0].props as AnswerDefinitionProps;
+      expect(firstProps.upcoming).toEqual(['Build project', 'Explain CI/CD']);
+
+      // Execute should see second Answer upcoming
+      expect(components[1].name).toBe(ComponentName.Execute);
+      const executeProps = components[1].props as ExecuteDefinitionProps;
+      expect(executeProps.upcoming).toEqual(['Explain CI/CD']);
+
+      // Second Answer should have empty upcoming
+      expect(components[2].name).toBe(ComponentName.Answer);
+      const lastProps = components[2].props as AnswerDefinitionProps;
+      expect(lastProps.upcoming).toEqual([]);
+    });
+
+    it('does not include non-Execute/Answer tasks in upcoming', () => {
+      const tasks = [
+        { action: 'Install deps', type: TaskType.Execute, config: [] },
+        { action: 'List skills', type: TaskType.Introspect, config: [] },
+        { action: 'Run tests', type: TaskType.Execute, config: [] },
+      ];
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
+
+      routeTasksWithConfirm(
+        tasks,
+        'Mixed tasks',
+        service,
+        'mixed',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Simulate Schedule and Confirm completing
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Get Execute components
+      const executeComponents = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls
+        .slice(2)
+        .map((call) => call[0] as ComponentDefinition)
+        .filter((def) => def.name === ComponentName.Execute);
+
+      // First Execute should only see 'Run tests' (not Introspect)
+      const firstProps = executeComponents[0].props;
+      expect(firstProps.upcoming).toEqual(['Run tests']);
+
+      // Second Execute should have empty upcoming
+      const secondProps = executeComponents[1].props;
+      expect(secondProps.upcoming).toEqual([]);
     });
   });
 });
