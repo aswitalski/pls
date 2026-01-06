@@ -187,3 +187,23 @@ export function getExecutionErrorMessage(_error: string): string {
   ];
   return messages[Math.floor(Math.random() * messages.length)];
 }
+
+/**
+ * Returns a loading message while fetching an answer.
+ * Randomly selects from variations to sound natural.
+ */
+export function getAnswerLoadingMessage(): string {
+  const messages = [
+    'Finding that out for you.',
+    'Looking into this.',
+    'Let me find out.',
+    'One moment please.',
+    'Checking on that.',
+    'Let me look that up.',
+    'Give me a moment.',
+    'Looking that up now.',
+    'Let me check.',
+    'Just a moment.',
+  ];
+  return messages[Math.floor(Math.random() * messages.length)];
+}

@@ -9,6 +9,7 @@ import { saveDebugSetting } from '../../src/configuration/io.js';
 import {
   FeedbackMessages,
   formatErrorMessage,
+  getAnswerLoadingMessage,
   getCancellationMessage,
   getConfirmationMessage,
   getExecutionErrorMessage,
@@ -279,6 +280,22 @@ describe('Message functions', () => {
 
     it('UnexpectedError ends with a colon', () => {
       expect(FeedbackMessages.UnexpectedError).toMatch(/:$/);
+    });
+  });
+
+  describe('getAnswerLoadingMessage', () => {
+    it('returns a non-empty string ending with a period', () => {
+      const message = getAnswerLoadingMessage();
+      expect(message.length).toBeGreaterThan(0);
+      expect(message).toMatch(/\.$/);
+    });
+
+    it('varies messages across multiple calls', () => {
+      const messages = new Set<string>();
+      for (let i = 0; i < 50; i++) {
+        messages.add(getAnswerLoadingMessage());
+      }
+      expect(messages.size).toBeGreaterThan(1);
     });
   });
 });
