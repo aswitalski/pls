@@ -270,18 +270,37 @@ const UPCOMING_TASK_TYPES = [TaskType.Execute, TaskType.Answer];
  */
 function collectUpcomingNames(scheduledTasks: ScheduledTask[]): string[] {
   const names: string[] = [];
+  let standaloneTasks: Task[] = [];
 
-  for (const task of scheduledTasks) {
-    if (task.type === TaskType.Group && task.subtasks?.length) {
-      const subtasks = task.subtasks as Task[];
-      if (UPCOMING_TASK_TYPES.includes(subtasks[0].type)) {
+  const flushStandaloneTasks = () => {
+    for (const task of standaloneTasks) {
+      if (UPCOMING_TASK_TYPES.includes(task.type)) {
         names.push(task.action);
       }
-    } else if (UPCOMING_TASK_TYPES.includes(task.type)) {
-      names.push(task.action);
+    }
+    standaloneTasks = [];
+  };
+
+  for (const task of scheduledTasks) {
+    if (
+      task.type === TaskType.Group &&
+      task.subtasks &&
+      task.subtasks.length > 0
+    ) {
+      flushStandaloneTasks();
+
+      const subtasks = task.subtasks as Task[];
+      const taskType = subtasks[0].type;
+
+      if (UPCOMING_TASK_TYPES.includes(taskType)) {
+        names.push(task.action);
+      }
+    } else {
+      standaloneTasks.push(task as Task);
     }
   }
 
+  flushStandaloneTasks();
   return names;
 }
 
