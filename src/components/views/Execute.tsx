@@ -2,7 +2,7 @@ import { Box, Text } from 'ink';
 
 import { ExecuteState, TaskData } from '../../types/components.js';
 
-import { getTextColor } from '../../services/colors.js';
+import { getTextColor, Palette } from '../../services/colors.js';
 import { ExecutionStatus } from '../../services/shell.js';
 
 import { Spinner } from './Spinner.js';
@@ -114,8 +114,8 @@ export const ExecuteView = ({
               <Text color={getTextColor(isActive)}>{label}</Text>
             </Box>
           )}
-          <Box>
-            <Text color={getTextColor(isActive)}>Preparing commands. </Text>
+          <Box marginLeft={label ? 2 : 0}>
+            <Text color={Palette.Gray}>Preparing commands. </Text>
             <Spinner />
           </Box>
         </Box>
