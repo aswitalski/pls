@@ -27,12 +27,14 @@ function getUpcomingStatus(tasks: TaskData[]): UpcomingStatus {
   const hasFailed = tasks.some(
     (task) => task.status === ExecutionStatus.Failed
   );
-  const hasAborted = tasks.some(
-    (task) => task.status === ExecutionStatus.Aborted
+  const hasCancelled = tasks.some(
+    (task) =>
+      task.status === ExecutionStatus.Aborted ||
+      task.status === ExecutionStatus.Cancelled
   );
 
   if (hasFailed) return ExecutionStatus.Failed;
-  if (hasAborted) return ExecutionStatus.Aborted;
+  if (hasCancelled) return ExecutionStatus.Aborted;
   return ExecutionStatus.Pending;
 }
 

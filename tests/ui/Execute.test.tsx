@@ -1383,6 +1383,42 @@ describe('Execute component', () => {
       expect(frame).toContain('Also cancelled');
     });
 
+    it('shows cancelled upcoming tasks when cancelled between tasks', () => {
+      // When cancelled between tasks, pending tasks have Cancelled status
+      const state: ExecuteState = {
+        message: 'Executing',
+        summary: '',
+        tasks: [
+          {
+            label: 'Completed task',
+            command: { description: 'Done', command: 'cmd1' },
+            status: ExecutionStatus.Success,
+            elapsed: 100,
+            output: null,
+          },
+          {
+            label: 'Cancelled task',
+            command: { description: 'Never started', command: 'cmd2' },
+            status: ExecutionStatus.Cancelled,
+            elapsed: 0,
+            output: null,
+          },
+        ],
+        completionMessage: null,
+        error: null,
+      };
+      const viewProps = mapStateToViewProps(state, false, [
+        'Next group',
+        'Another group',
+      ]);
+      const { lastFrame } = render(<ExecuteView {...viewProps} />);
+
+      const frame = lastFrame();
+      expect(frame).toContain('Cancelled:');
+      expect(frame).toContain('Next group');
+      expect(frame).toContain('Another group');
+    });
+
     it('hides upcoming when no tasks remain', () => {
       const state: ExecuteState = {
         message: 'Executing',
