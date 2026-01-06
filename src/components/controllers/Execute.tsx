@@ -64,6 +64,7 @@ export function Execute({
   status,
   service,
   upcoming,
+  label,
   requestHandlers,
   lifecycleHandlers,
   workflowHandlers,
@@ -395,6 +396,7 @@ export function Execute({
       completionMessage={completionMessage}
       showTasks={showTasks}
       upcoming={upcoming}
+      label={label}
     />
   );
 }

@@ -357,7 +357,12 @@ function routeTasksAfterConfig(
           currentUnitIndex++;
         }
 
-        routeTasksByType(taskType, subtasks, context, upcoming);
+        // Pass group name as label for Execute groups
+        if (taskType === TaskType.Execute) {
+          routeExecuteTasks(subtasks, context, upcoming, task.action);
+        } else {
+          routeTasksByType(taskType, subtasks, context, upcoming);
+        }
       }
     } else {
       // Accumulate standalone task
@@ -467,10 +472,11 @@ function routeConfigTasks(
 function routeExecuteTasks(
   tasks: Task[],
   context: RoutingContext,
-  upcoming: string[]
+  upcoming: string[],
+  label?: string
 ): void {
   context.workflowHandlers.addToQueue(
-    createExecute({ tasks, service: context.service, upcoming })
+    createExecute({ tasks, service: context.service, upcoming, label })
   );
 }
 

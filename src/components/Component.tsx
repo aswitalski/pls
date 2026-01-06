@@ -246,7 +246,7 @@ export const ControllerComponent = memo(function ControllerComponent({
 
     case ComponentName.Execute: {
       const {
-        props: { tasks, service, upcoming },
+        props: { tasks, service, upcoming, label },
         status,
       } = def;
       return (
@@ -254,6 +254,7 @@ export const ControllerComponent = memo(function ControllerComponent({
           tasks={tasks}
           service={service}
           upcoming={upcoming}
+          label={label}
           requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
           workflowHandlers={workflowHandlers}
@@ -324,12 +325,12 @@ export const ViewComponent = memo(function ViewComponent({
 
     case ComponentName.Execute: {
       const {
-        props: { upcoming },
+        props: { upcoming, label },
         state,
         status,
       } = def;
       const isActive = status === ComponentStatus.Active;
-      const viewProps = mapStateToViewProps(state, isActive, upcoming);
+      const viewProps = mapStateToViewProps(state, isActive, upcoming, label);
       return <ExecuteView {...viewProps} />;
     }
 

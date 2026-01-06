@@ -224,6 +224,7 @@ export interface ExecuteDefinitionProps {
   tasks: Task[];
   service: LLMService;
   upcoming?: string[];
+  label?: string;
 }
 
 export type ExecuteProps = ComponentProps<ExecuteDefinitionProps> & {
