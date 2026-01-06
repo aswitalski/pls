@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { Box, Text } from 'ink';
 
 import { ComponentStatus } from '../../types/components.js';
 
 import { Colors, getTextColor } from '../../services/colors.js';
+import { getAnswerLoadingMessage } from '../../services/messages.js';
 import { ExecutionStatus } from '../../services/shell.js';
 
 import { Spinner } from './Spinner.js';
@@ -33,6 +35,7 @@ export const AnswerView = ({
 }: AnswerViewProps) => {
   const isActive = status === ComponentStatus.Active;
   const isLoading = isActive && !lines && !error;
+  const loadingMessage = useMemo(() => getAnswerLoadingMessage(), []);
 
   // Determine upcoming status: cancelled, error, or pending
   const isTerminated = cancelled || error !== null;
@@ -50,10 +53,15 @@ export const AnswerView = ({
   return (
     <Box alignSelf="flex-start" flexDirection="column">
       {isLoading && (
-        <Box marginLeft={1}>
-          <Text color={getTextColor(isActive)}>Finding answer. </Text>
-          <Spinner />
-        </Box>
+        <>
+          <Box marginLeft={1} marginBottom={1}>
+            <Text color={getTextColor(isActive)}>{question}</Text>
+          </Box>
+          <Box paddingLeft={3} marginBottom={1}>
+            <Text color={getTextColor(isActive)}>{loadingMessage} </Text>
+            <Spinner />
+          </Box>
+        </>
       )}
 
       {lines && lines.length > 0 && (

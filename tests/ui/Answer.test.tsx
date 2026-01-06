@@ -44,7 +44,10 @@ describe('Answer component', () => {
       />
     );
 
-    expect(lastFrame()).toContain('Finding answer.');
+    // Loading state shows question
+    expect(lastFrame()).toContain(
+      'What is the price of Samsung The Frame 55 inch?'
+    );
   });
 
   it('displays question and answer when done', () => {
