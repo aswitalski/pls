@@ -1,5 +1,7 @@
 import { Box } from 'ink';
 
+import { loadDebugSetting } from '../../configuration/io.js';
+import { DebugLevel } from '../../configuration/types.js';
 import { ExecuteCommand } from '../../services/anthropic.js';
 import { ExecutionStatus } from '../../services/shell.js';
 import { TaskOutput } from '../../types/components.js';
@@ -14,11 +16,13 @@ export interface TaskViewProps {
   elapsed?: number;
   output: TaskOutput | null;
   isFinished: boolean;
+  isActive?: boolean;
 }
 
 /**
  * Pure display component for a task.
  * Combines SubtaskView (label/command/status) with Output (stdout/stderr).
+ * Output is shown during active execution, or in timeline only with debug mode.
  */
 export function TaskView({
   label,
@@ -27,9 +31,13 @@ export function TaskView({
   elapsed,
   output,
   isFinished,
+  isActive = false,
 }: TaskViewProps) {
   const stdout = output?.stdout ?? '';
   const stderr = output?.stderr ?? '';
+
+  // Show output during active execution, or in timeline only with debug enabled
+  const showOutput = isActive || loadDebugSetting() !== DebugLevel.None;
 
   return (
     <Box flexDirection="column">
@@ -39,13 +47,15 @@ export function TaskView({
         status={status}
         elapsed={elapsed}
       />
-      <Output
-        key={`${stdout.length}-${stderr.length}`}
-        stdout={stdout}
-        stderr={stderr}
-        isFinished={isFinished}
-        status={status}
-      />
+      {showOutput && (
+        <Output
+          key={`${stdout.length}-${stderr.length}`}
+          stdout={stdout}
+          stderr={stderr}
+          isFinished={isFinished}
+          status={status}
+        />
+      )}
     </Box>
   );
 }
