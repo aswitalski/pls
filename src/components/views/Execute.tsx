@@ -128,6 +128,7 @@ export const ExecuteView = ({
                 elapsed={task.elapsed}
                 output={task.output}
                 isFinished={isTaskFinished(task)}
+                isActive={isActive}
               />
             </Box>
           ))}
