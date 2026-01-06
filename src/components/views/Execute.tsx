@@ -2,7 +2,7 @@ import { Box, Text } from 'ink';
 
 import { ExecuteState, TaskData } from '../../types/components.js';
 
-import { getTextColor } from '../../services/colors.js';
+import { getTextColor, Palette } from '../../services/colors.js';
 import { ExecutionStatus } from '../../services/shell.js';
 
 import { Spinner } from './Spinner.js';
@@ -51,6 +51,7 @@ export interface ExecuteViewProps {
   completionMessage: string | null;
   showTasks: boolean;
   upcoming?: string[];
+  label?: string;
 }
 
 /**
@@ -59,7 +60,8 @@ export interface ExecuteViewProps {
 export function mapStateToViewProps(
   state: ExecuteState,
   isActive: boolean,
-  upcoming?: string[]
+  upcoming?: string[],
+  label?: string
 ): ExecuteViewProps {
   return {
     isLoading: false,
@@ -71,6 +73,7 @@ export function mapStateToViewProps(
     completionMessage: state.completionMessage,
     showTasks: state.tasks.length > 0,
     upcoming,
+    label,
   };
 }
 
@@ -87,6 +90,7 @@ export const ExecuteView = ({
   completionMessage,
   showTasks,
   upcoming,
+  label,
 }: ExecuteViewProps) => {
   // Return null only when loading completes with no commands
   if (!isActive && tasks.length === 0 && !error) {
@@ -104,9 +108,16 @@ export const ExecuteView = ({
   return (
     <Box alignSelf="flex-start" flexDirection="column">
       {isLoading && (
-        <Box marginLeft={1}>
-          <Text color={getTextColor(isActive)}>Preparing commands. </Text>
-          <Spinner />
+        <Box flexDirection="column" marginLeft={1}>
+          {label && (
+            <Box marginBottom={1}>
+              <Text color={getTextColor(isActive)}>{label}</Text>
+            </Box>
+          )}
+          <Box marginLeft={label ? 2 : 0}>
+            <Text color={Palette.Gray}>Preparing commands. </Text>
+            <Spinner />
+          </Box>
         </Box>
       )}
 
