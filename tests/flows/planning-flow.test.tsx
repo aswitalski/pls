@@ -11,7 +11,7 @@ import { exitApp } from '../../src/services/process.js';
 
 import { Main } from '../../src/Main.js';
 
-import { Keys } from '../test-utils.js';
+import { createRefinementOptions, Keys } from '../test-utils.js';
 
 // Mock timing helpers to skip delays in tests
 vi.mock('../../src/services/timing.js', () => ({
@@ -233,7 +233,11 @@ describe('Planning flow', () => {
               action: 'Select environment',
               type: TaskType.Define,
               params: {
-                options: ['Development', 'Production', 'Staging'],
+                options: createRefinementOptions(
+                  'Development',
+                  'Production',
+                  'Staging'
+                ),
               },
             },
           ],
@@ -270,7 +274,11 @@ describe('Planning flow', () => {
               action: 'Select environment',
               type: TaskType.Define,
               params: {
-                options: ['Development', 'Production', 'Staging'],
+                options: createRefinementOptions(
+                  'Development',
+                  'Production',
+                  'Staging'
+                ),
               },
             },
           ],
@@ -316,7 +324,9 @@ describe('Planning flow', () => {
                 {
                   action: 'Select target',
                   type: TaskType.Define,
-                  params: { options: ['Option A', 'Option B'] },
+                  params: {
+                    options: createRefinementOptions('Option A', 'Option B'),
+                  },
                 },
               ],
             });

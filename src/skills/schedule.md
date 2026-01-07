@@ -268,6 +268,141 @@ User request with multiple config expressions
 - This applies to ALL placeholders in task actions, including those
   from skill references
 
+## Runtime Parameter Placeholders
+
+Skills may include runtime parameters in their Execution section using
+angle bracket syntax. These parameters MUST be resolved by the LLM
+during scheduling - they represent values extracted from the user's
+command, NOT from stored configuration.
+
+**Parameter Format:**
+
+- `<PARAM>` - Required parameter, extract from user command
+- `<PARAM=default>` - Parameter with default, use default if not specified
+- `<PARAM?>` - Optional parameter, omit entirely if not mentioned
+
+**Distinction from Config Placeholders:**
+
+- `{x.y.z}` - Config placeholder, resolved by system at execution from
+  ~/.plsrc
+- `{x.VARIANT.z}` - Variant config, LLM matches variant at schedule time,
+  system resolves from ~/.plsrc at execution
+- `<PARAM>` - Runtime parameter, resolved entirely by LLM at schedule time
+  from user command
+
+**Resolution Rules:**
+
+1. **Full resolution required**: All `<PARAM>` placeholders MUST be
+   resolved to concrete values before creating tasks. No angle-bracket
+   syntax should remain in task actions or params.
+
+2. **Space normalization**: When optional params are omitted, collapse
+   adjacent spaces to single space (e.g., `cmd <OPT?> file` → `cmd file`)
+
+3. **Complete descriptions**: Task actions must be human-readable with
+   all parameters filled in:
+   - CORRECT: "Process /data/report.csv in batch mode with JSON output"
+   - WRONG: "Process <INPUT> in <MODE> mode"
+
+**Parameter Classification:**
+
+Runtime parameters fall into two categories:
+
+1. **Key parameters** - Essential to the operation, define WHAT to operate on
+   - Input files, paths, URLs, target names, identifiers
+   - The primary subject of the command
+   - Cannot be guessed or listed as options
+   - Examples: `<INPUT>`, `<FILE>`, `<URL>`, `<TARGET>`
+
+2. **Modifier parameters** - Configure HOW the operation runs
+   - Have a finite set of valid options
+   - Affect behavior but not the primary subject
+   - Examples: `<MODE>`, `<QUALITY>`, `<FORMAT>`, `<VERBOSITY>`
+
+**Resolution Outcomes:**
+
+When processing runtime parameters, exactly ONE of these outcomes applies:
+
+1. **All resolved** → Create normal execute/group task
+   - All parameters extracted or defaulted successfully
+   - Task action contains fully resolved description
+
+2. **Modifier param unclear (key params present)** → Create DEFINE task
+   - Key parameters ARE specified in the user's command
+   - Only a modifier parameter is unclear but has finite options
+   - Use type `define` with params.skill and params.options
+   - MUST have more than one option (if only one option exists, use it
+     directly without refinement)
+   - Example: mode (batch/stream/interactive), format (json/xml/csv)
+   - Each option is an object: { name: string, command: string }
+     - name: readable display text for user selection
+     - command: user's natural language command with ALL params resolved
+   - Note: command is NOT the shell command - shell commands are generated
+     by EXECUTE in the next step
+
+3. **Key param missing** → Create IGNORE task
+   - A key parameter (input file, target, URL) is not specified
+   - NEVER offer options for key parameters - they cannot be guessed
+   - Use type `ignore` with descriptive action
+   - Action format: "Missing [param]: specify [what's needed]"
+   - Examples:
+     - "Missing input: specify which file to process"
+     - "Missing target: specify which server to deploy to"
+     - "Missing URL: specify which page to fetch"
+
+**Examples:**
+
+Skill execution line:
+- `process <INPUT> --mode <MODE> --format <FORMAT=json> <VERBOSE?>`
+
+Success case (all resolved):
+- User: "process /data/report.csv in batch mode"
+- Resolution:
+  - `<INPUT>` → `/data/report.csv` (extracted)
+  - `<MODE>` → `batch` (extracted from "batch mode")
+  - `<FORMAT=json>` → `json` (default used)
+  - `<VERBOSE?>` → omitted (optional, not mentioned)
+- Task action: "Process /data/report.csv in batch mode with JSON format"
+
+Define case (single listable param unclear):
+- User: "process /data/report.csv"
+- Problem: MODE not specified but can be listed (3 options available)
+- Task: type `define`, params:
+  - skill: "Process Data"
+  - options:
+    - { name: "Process in batch mode",
+        command: "process /data/report.csv in batch mode" }
+    - { name: "Process in stream mode",
+        command: "process /data/report.csv in stream mode" }
+    - { name: "Process interactively",
+        command: "process /data/report.csv interactively" }
+- User selects "Process in batch mode"
+- SCHEDULE receives: "process /data/report.csv in batch mode"
+- EXECUTE then generates the appropriate shell command
+
+Key param missing case:
+- User: "process in batch mode"
+- Problem: INPUT path not specified (key param, cannot be guessed)
+- Task: type `ignore`, action: "Missing input: specify which file to process"
+
+Key param missing with modifier specified:
+- User: "export in JSON format"
+- Problem: INPUT file not specified (key param, cannot be guessed)
+- Task: type `ignore`, action: "Missing input: specify which data to export"
+- Note: Even though format IS specified, key param is missing → IGNORE, not
+  DEFINE
+
+**Critical Rules:**
+- NEVER leave `<PARAM>` unresolved in task output
+- NEVER use placeholder values like `<UNKNOWN>` or `<MISSING>`
+- DEFINE tasks MUST have multiple options (2+); single option = use directly
+- DEFINE only for modifier params when ALL key params are present
+- IGNORE when ANY key param is missing (input, file, URL, target, etc.)
+- Key params cannot be guessed - always require IGNORE with clear error
+- option.command is user's natural language request, NOT shell command
+- Each option.command must include ALL user parameters (original + selected)
+- option.command must preserve exact paths, filenames, URLs (case-sensitive)
+
 ## Grouping Strategy
 
 Group subtasks under logical parent tasks based on:

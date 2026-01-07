@@ -5,7 +5,7 @@ import {
   ScheduleProps,
   ScheduleState,
 } from '../../types/components.js';
-import { Task, TaskType } from '../../types/types.js';
+import { RefinementOption, Task, TaskType } from '../../types/types.js';
 
 import { DebugLevel } from '../../configuration/types.js';
 import { useInput } from '../../services/keyboard.js';
@@ -49,7 +49,7 @@ export function Schedule({
   const defineTask =
     currentDefineTaskIndex >= 0 ? tasks[currentDefineTaskIndex] : null;
   const optionsCount = Array.isArray(defineTask?.params?.options)
-    ? (defineTask.params.options as string[]).length
+    ? (defineTask.params.options as RefinementOption[]).length
     : 0;
 
   const hasMoreGroups = currentDefineGroupIndex < defineTaskIndices.length - 1;
@@ -71,8 +71,7 @@ export function Schedule({
       };
       requestHandlers.onCompleted(finalState);
 
-      // Complete the selection phase - it goes to timeline
-      // Callback will create a new Plan showing refined tasks (pending) + Confirm (active)
+      // Move Schedule to pending - callback will flush to timeline
       lifecycleHandlers.completeActive();
       void onSelectionConfirmed(concreteTasks);
     }
@@ -140,13 +139,13 @@ export function Schedule({
               Array.isArray(task.params?.options)
             ) {
               // This is a Define task - only include the selected option
-              const options = task.params.options as string[];
+              const options = task.params.options as RefinementOption[];
               const selectedIndex = newCompletedSelections[defineGroupIndex];
               const selectedOption = options[selectedIndex];
 
-              // Use Execute as default - LLM will properly classify during refinement
+              // Use the command from the selected option
               refinedTasks.push({
-                action: selectedOption,
+                action: selectedOption.command,
                 type: TaskType.Execute,
                 config: [],
               });
@@ -167,14 +166,12 @@ export function Schedule({
           };
           requestHandlers.onCompleted(finalState);
 
+          // Move Schedule to pending - refinement will flush it to timeline
+          // before adding Command, ensuring correct order
+          lifecycleHandlers.completeActive();
+
           if (onSelectionConfirmed) {
-            // Complete the selection phase - it goes to timeline
-            // Callback will create a new Plan showing refined tasks (pending) + Confirm (active)
-            lifecycleHandlers.completeActive();
             void onSelectionConfirmed(refinedTasks);
-          } else {
-            // No selection callback, just complete normally
-            lifecycleHandlers.completeActive();
           }
         }
       }

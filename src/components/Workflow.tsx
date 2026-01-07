@@ -146,7 +146,18 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
         setQueue((queue) => [...queue, ...items]);
       },
       addToTimeline: (...items: ComponentDefinition[]) => {
-        setTimeline((prev) => [...prev, ...items]);
+        // Flush pending to timeline first, then add new items
+        // Both are added in a SINGLE setTimeline call to guarantee order
+        setCurrent((curr) => {
+          const { active, pending } = curr;
+          if (pending) {
+            const donePending = markAsDone(pending);
+            setTimeline((prev) => [...prev, donePending, ...items]);
+            return { active, pending: null };
+          }
+          setTimeline((prev) => [...prev, ...items]);
+          return curr;
+        });
       },
     }),
     []

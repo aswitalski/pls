@@ -1,4 +1,8 @@
-import { BaseState, ComponentDefinition } from '../types/components.js';
+import {
+  BaseState,
+  ComponentDefinition,
+  ComponentStatus,
+} from '../types/components.js';
 import {
   LifecycleHandlers,
   RequestHandlers,
@@ -7,7 +11,7 @@ import {
 import { Task, TaskType } from '../types/types.js';
 
 import { LLMService } from './anthropic.js';
-import { createRefinement } from './components.js';
+import { createCommand, createRefinement } from './components.js';
 import { formatErrorMessage, getRefiningMessage } from './messages.js';
 import { routeTasksWithConfirm } from './router.js';
 
@@ -23,6 +27,15 @@ export async function handleRefinement<TState extends BaseState = BaseState>(
   workflowHandlers: WorkflowHandlers<ComponentDefinition>,
   requestHandlers: RequestHandlers<TState>
 ): Promise<void> {
+  // Display the resolved command (from user's selection)
+  // The first task's action contains the full resolved command
+  const resolvedCommand = selectedTasks[0]?.action || originalCommand;
+  const commandDisplay = createCommand(
+    { command: resolvedCommand, service, onAborted: requestHandlers.onAborted },
+    ComponentStatus.Done
+  );
+  workflowHandlers.addToTimeline(commandDisplay);
+
   // Create and add refinement component to queue
   const refinementDef = createRefinement({
     text: getRefiningMessage(),
@@ -37,7 +50,7 @@ export async function handleRefinement<TState extends BaseState = BaseState>(
     // Build refined command from selected tasks
     const refinedCommand = selectedTasks
       .map((task) => {
-        const action = task.action.toLowerCase().replace(/,/g, ' -');
+        const action = task.action.replace(/,/g, ' -');
         const type = task.type;
         // For execute/group tasks, use generic hint - let LLM decide based on skill
         if (type === TaskType.Execute || type === TaskType.Group) {

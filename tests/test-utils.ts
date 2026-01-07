@@ -9,7 +9,7 @@ import type {
   RequestHandlers,
   WorkflowHandlers,
 } from '../src/types/components.js';
-import type { Task } from '../src/types/types.js';
+import type { RefinementOption, Task } from '../src/types/types.js';
 
 import { ComponentStatus } from '../src/types/components.js';
 import { ComponentName } from '../src/types/types.js';
@@ -200,4 +200,20 @@ export function createWorkflowHandlers<TComponentDefinition = unknown>(
     addToTimeline: vi.fn(),
     ...overrides,
   };
+}
+
+/**
+ * Creates RefinementOption array from names for testing DEFINE tasks.
+ * Each option has a name (display text) and command (lowercase with dashes).
+ *
+ * @param names - The display names for the options
+ * @returns Array of RefinementOption objects
+ */
+export function createRefinementOptions(
+  ...names: string[]
+): RefinementOption[] {
+  return names.map((name) => ({
+    name,
+    command: name.toLowerCase().replace(/\s+/g, '-'),
+  }));
 }

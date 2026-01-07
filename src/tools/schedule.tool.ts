@@ -36,7 +36,8 @@ export const scheduleTool: Tool = {
           },
           params: {
             type: 'object',
-            description: 'Parameters for leaf tasks (e.g., command, path)',
+            description:
+              'Parameters for leaf tasks. For "define" type: { skill: string, options: Array<{ name: string, command: string }> }. "name" is display text, "command" is full resolved command.',
           },
           config: {
             type: 'array',

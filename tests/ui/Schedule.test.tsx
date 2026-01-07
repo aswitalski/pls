@@ -14,9 +14,10 @@ import {
 import { Palette } from '../../src/services/colors.js';
 
 import {
-  Keys,
-  createRequestHandlers,
   createLifecycleHandlers,
+  createRefinementOptions,
+  createRequestHandlers,
+  Keys,
 } from '../test-utils.js';
 
 // Destructure for readability
@@ -55,7 +56,9 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging'] },
+              params: {
+                options: createRefinementOptions('Production', 'Staging'),
+              },
               config: [],
             },
           ]}
@@ -83,7 +86,9 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging'] },
+              params: {
+                options: createRefinementOptions('Production', 'Staging'),
+              },
               config: [],
             },
           ]}
@@ -118,7 +123,9 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging'] },
+              params: {
+                options: createRefinementOptions('Production', 'Staging'),
+              },
               config: [],
             },
           ]}
@@ -153,7 +160,9 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging'] },
+              params: {
+                options: createRefinementOptions('Production', 'Staging'),
+              },
               config: [],
             },
           ]}
@@ -179,7 +188,7 @@ describe('Schedule component', () => {
       expect(onSelectionConfirmed).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
-            action: 'Production',
+            action: 'production',
             type: TaskType.Execute,
             config: [],
           }),
@@ -197,7 +206,9 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging'] },
+              params: {
+                options: createRefinementOptions('Production', 'Staging'),
+              },
               config: [],
             },
           ]}
@@ -237,7 +248,13 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging', 'Development'] },
+              params: {
+                options: createRefinementOptions(
+                  'Production',
+                  'Staging',
+                  'Development'
+                ),
+              },
               config: [],
             },
           ]}
@@ -297,7 +314,9 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging'] },
+              params: {
+                options: createRefinementOptions('Production', 'Staging'),
+              },
               config: [],
             },
           ]}
@@ -343,7 +362,9 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging'] },
+              params: {
+                options: createRefinementOptions('Production', 'Staging'),
+              },
               config: [],
             },
           ]}
@@ -404,7 +425,13 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging', 'Development'] },
+              params: {
+                options: createRefinementOptions(
+                  'Production',
+                  'Staging',
+                  'Development'
+                ),
+              },
               config: [],
             },
           ]}
@@ -434,7 +461,7 @@ describe('Schedule component', () => {
       expect(onSelectionConfirmed).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
-            action: 'Staging',
+            action: 'staging',
             type: TaskType.Execute,
             config: [],
           }),
@@ -452,14 +479,16 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta'] },
+              params: { options: createRefinementOptions('Alpha', 'Beta') },
               config: [],
             },
             { action: 'Build project', type: TaskType.Execute, config: [] },
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production'] },
+              params: {
+                options: createRefinementOptions('Development', 'Production'),
+              },
               config: [],
             },
           ]}
@@ -489,13 +518,15 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta'] },
+              params: { options: createRefinementOptions('Alpha', 'Beta') },
               config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production'] },
+              params: {
+                options: createRefinementOptions('Development', 'Production'),
+              },
               config: [],
             },
           ]}
@@ -531,13 +562,15 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta'] },
+              params: { options: createRefinementOptions('Alpha', 'Beta') },
               config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production'] },
+              params: {
+                options: createRefinementOptions('Development', 'Production'),
+              },
               config: [],
             },
           ]}
@@ -580,13 +613,15 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta'] },
+              params: { options: createRefinementOptions('Alpha', 'Beta') },
               config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production'] },
+              params: {
+                options: createRefinementOptions('Development', 'Production'),
+              },
               config: [],
             },
           ]}
@@ -617,13 +652,15 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta'] },
+              params: { options: createRefinementOptions('Alpha', 'Beta') },
               config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production'] },
+              params: {
+                options: createRefinementOptions('Development', 'Production'),
+              },
               config: [],
             },
           ]}
@@ -650,13 +687,15 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta'] },
+              params: { options: createRefinementOptions('Alpha', 'Beta') },
               config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production'] },
+              params: {
+                options: createRefinementOptions('Development', 'Production'),
+              },
               config: [],
             },
           ]}
@@ -687,13 +726,15 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta'] },
+              params: { options: createRefinementOptions('Alpha', 'Beta') },
               config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production'] },
+              params: {
+                options: createRefinementOptions('Development', 'Production'),
+              },
               config: [],
             },
           ]}
@@ -721,12 +762,12 @@ describe('Schedule component', () => {
       expect(onSelectionConfirmed).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
-            action: 'Alpha',
+            action: 'alpha',
             type: TaskType.Execute,
             config: [],
           }),
           expect.objectContaining({
-            action: 'Development',
+            action: 'development',
             type: TaskType.Execute,
             config: [],
           }),
@@ -754,13 +795,17 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta', 'Gamma'] },
+              params: {
+                options: createRefinementOptions('Alpha', 'Beta', 'Gamma'),
+              },
               config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production'] },
+              params: {
+                options: createRefinementOptions('Development', 'Production'),
+              },
               config: [],
             },
           ]}
@@ -804,19 +849,21 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta'] },
+              params: { options: createRefinementOptions('Alpha', 'Beta') },
               config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production'] },
+              params: {
+                options: createRefinementOptions('Development', 'Production'),
+              },
               config: [],
             },
             {
               action: 'Choose region',
               type: TaskType.Define,
-              params: { options: ['US', 'EU', 'Asia'] },
+              params: { options: createRefinementOptions('US', 'EU', 'Asia') },
               config: [],
             },
           ]}
@@ -870,14 +917,16 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta'] },
+              params: { options: createRefinementOptions('Alpha', 'Beta') },
               config: [],
             },
             { action: 'Run tests', type: TaskType.Execute, config: [] },
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production'] },
+              params: {
+                options: createRefinementOptions('Development', 'Production'),
+              },
               config: [],
             },
             { action: 'Deploy', type: TaskType.Execute, config: [] },
@@ -907,7 +956,7 @@ describe('Schedule component', () => {
             config: [],
           }),
           expect.objectContaining({
-            action: 'Alpha',
+            action: 'alpha',
             type: TaskType.Execute,
             config: [],
           }),
@@ -917,7 +966,7 @@ describe('Schedule component', () => {
             config: [],
           }),
           expect.objectContaining({
-            action: 'Development',
+            action: 'development',
             type: TaskType.Execute,
             config: [],
           }),
@@ -950,13 +999,19 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta'] },
+              params: { options: createRefinementOptions('Alpha', 'Beta') },
               config: [],
             },
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production', 'Staging'] },
+              params: {
+                options: createRefinementOptions(
+                  'Development',
+                  'Production',
+                  'Staging'
+                ),
+              },
               config: [],
             },
           ]}
@@ -1005,7 +1060,9 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging'] },
+              params: {
+                options: createRefinementOptions('Production', 'Staging'),
+              },
               config: [],
             },
           ]}
@@ -1029,7 +1086,9 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging'] },
+              params: {
+                options: createRefinementOptions('Production', 'Staging'),
+              },
               config: [],
             },
           ]}
@@ -1076,7 +1135,9 @@ describe('Schedule component', () => {
             {
               action: 'Choose environment',
               type: TaskType.Define,
-              params: { options: ['Development', 'Production'] },
+              params: {
+                options: createRefinementOptions('Development', 'Production'),
+              },
               config: [],
             },
             { action: 'Skip this step', type: TaskType.Ignore, config: [] },
@@ -1111,7 +1172,7 @@ describe('Schedule component', () => {
             config: [],
           }),
           expect.objectContaining({
-            action: 'Development',
+            action: 'development',
             type: TaskType.Execute,
             config: [],
           }),
@@ -1143,7 +1204,7 @@ describe('Schedule component', () => {
             {
               action: 'Choose target',
               type: TaskType.Define,
-              params: { options: ['Alpha', 'Beta'] },
+              params: { options: createRefinementOptions('Alpha', 'Beta') },
               config: [],
             },
             {
@@ -1182,7 +1243,7 @@ describe('Schedule component', () => {
             config: [],
           }),
           expect.objectContaining({
-            action: 'Alpha',
+            action: 'alpha',
             type: TaskType.Execute,
             config: [],
           }),
@@ -1294,7 +1355,9 @@ describe('Schedule component', () => {
             {
               action: 'Choose deployment',
               type: TaskType.Define,
-              params: { options: ['Production', 'Staging'] },
+              params: {
+                options: createRefinementOptions('Production', 'Staging'),
+              },
               config: [],
             },
           ]}
@@ -1364,7 +1427,7 @@ describe('Schedule component', () => {
               action: 'Clarify what you want to know:',
               type: TaskType.Define,
               params: {
-                options: ['Explain unit testing'],
+                options: createRefinementOptions('Explain unit testing'),
               },
               config: [],
             },
@@ -1383,7 +1446,7 @@ describe('Schedule component', () => {
 
       expect(onSelectionConfirmed).toHaveBeenCalledWith([
         {
-          action: 'Explain unit testing',
+          action: 'explain-unit-testing',
           type: TaskType.Execute,
           config: [],
         },
@@ -1401,7 +1464,7 @@ describe('Schedule component', () => {
               action: 'What do you want to do:',
               type: TaskType.Define,
               params: {
-                options: ['Build the project'],
+                options: createRefinementOptions('Build the project'),
               },
               config: [],
             },
@@ -1420,7 +1483,195 @@ describe('Schedule component', () => {
 
       expect(onSelectionConfirmed).toHaveBeenCalledWith([
         {
-          action: 'Build the project',
+          action: 'build-the-project',
+          type: TaskType.Execute,
+          config: [],
+        },
+      ]);
+    });
+
+    it('preserves case in option.command for paths and URLs', async () => {
+      const onSelectionConfirmed = vi.fn();
+      const { stdin } = render(
+        <Schedule
+          message="Select processing mode."
+          tasks={[
+            {
+              action: 'Select mode',
+              type: TaskType.Define,
+              params: {
+                options: [
+                  {
+                    name: 'Process in batch mode',
+                    command:
+                      'process /Users/Dev/MyProject/Data.csv in batch mode',
+                  },
+                  {
+                    name: 'Process in stream mode',
+                    command:
+                      'process /Users/Dev/MyProject/Data.csv in stream mode',
+                  },
+                ],
+              },
+              config: [],
+            },
+          ]}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          onSelectionConfirmed={onSelectionConfirmed}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          // Path case is preserved from option.command
+          action: 'process /Users/Dev/MyProject/Data.csv in batch mode',
+          type: TaskType.Execute,
+          config: [],
+        },
+      ]);
+    });
+  });
+
+  describe('RefinementOption edge cases', () => {
+    it('handles options with different name and command values', async () => {
+      const onSelectionConfirmed = vi.fn();
+      const { stdin } = render(
+        <Schedule
+          message="Select action"
+          tasks={[
+            {
+              action: 'Choose action',
+              type: TaskType.Define,
+              params: {
+                options: [
+                  {
+                    name: 'Deploy to staging',
+                    command: 'deploy --env staging --verbose',
+                  },
+                  {
+                    name: 'Deploy to production',
+                    command: 'deploy --env production --confirm',
+                  },
+                ],
+              },
+              config: [],
+            },
+          ]}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          onSelectionConfirmed={onSelectionConfirmed}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      // Should use command (not name) as the action
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          action: 'deploy --env staging --verbose',
+          type: TaskType.Execute,
+          config: [],
+        },
+      ]);
+    });
+
+    it('displays option name in UI but uses command for action', async () => {
+      const onSelectionConfirmed = vi.fn();
+      const { lastFrame, stdin } = render(
+        <Schedule
+          message="Select mode"
+          tasks={[
+            {
+              action: 'Choose mode',
+              type: TaskType.Define,
+              params: {
+                options: [
+                  {
+                    name: 'Quick scan',
+                    command: 'scan --fast --no-deep-analysis',
+                  },
+                ],
+              },
+              config: [],
+            },
+          ]}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          onSelectionConfirmed={onSelectionConfirmed}
+        />
+      );
+
+      // UI should show the name
+      expect(lastFrame()).toContain('Quick scan');
+
+      // Select and confirm
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      // Action should be the command
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          action: 'scan --fast --no-deep-analysis',
+          type: TaskType.Execute,
+          config: [],
+        },
+      ]);
+    });
+
+    it('preserves special characters in command', async () => {
+      const onSelectionConfirmed = vi.fn();
+      const { stdin } = render(
+        <Schedule
+          message="Select command"
+          tasks={[
+            {
+              action: 'Choose',
+              type: TaskType.Define,
+              params: {
+                options: [
+                  {
+                    name: 'Fetch URL',
+                    command: 'curl https://api.example.com/v2/users?limit=100',
+                  },
+                ],
+              },
+              config: [],
+            },
+          ]}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          onSelectionConfirmed={onSelectionConfirmed}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(ArrowDown);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+      stdin.write(Enter);
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      // Special characters in URL should be preserved
+      expect(onSelectionConfirmed).toHaveBeenCalledWith([
+        {
+          action: 'curl https://api.example.com/v2/users?limit=100',
           type: TaskType.Execute,
           config: [],
         },
