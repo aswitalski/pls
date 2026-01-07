@@ -87,9 +87,9 @@ describe('Refinement service', () => {
         requestHandlers
       );
 
-      // Should call processWithTool with formatted command
+      // Should call processWithTool with formatted command (preserving case)
       expect(mockProcessWithTool).toHaveBeenCalledWith(
-        'deploy to dev (shell execution), run tests (shell execution)',
+        'Deploy to Dev (shell execution), Run tests (shell execution)',
         'schedule'
       );
     });
@@ -122,9 +122,9 @@ describe('Refinement service', () => {
         requestHandlers
       );
 
-      // Should replace commas with dashes
+      // Should replace commas with dashes (preserving case)
       expect(mockProcessWithTool).toHaveBeenCalledWith(
-        'deploy to dev - alpha (shell execution)',
+        'Deploy to Dev - Alpha (shell execution)',
         'schedule'
       );
     });
@@ -157,9 +157,51 @@ describe('Refinement service', () => {
         requestHandlers
       );
 
-      // Should use shell execution format for group tasks
+      // Should use shell execution format for group tasks (preserving case)
       expect(mockProcessWithTool).toHaveBeenCalledWith(
-        'deploy application (shell execution)',
+        'Deploy application (shell execution)',
+        'schedule'
+      );
+    });
+
+    it('preserves case in file paths and URLs', async () => {
+      const selectedTasks = [
+        {
+          action: 'process /Users/Dev/MyProject/Data.csv in batch mode',
+          type: TaskType.Execute,
+          config: [],
+        },
+      ];
+      const mockProcessWithTool = vi.fn().mockResolvedValue({
+        message: 'Refined plan',
+        tasks: [
+          {
+            action: 'process /Users/Dev/MyProject/Data.csv',
+            type: TaskType.Execute,
+            config: [],
+          },
+        ],
+      });
+      const mockService = {
+        processWithTool: mockProcessWithTool,
+      } as unknown as LLMService;
+
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+
+      await handleRefinement(
+        selectedTasks,
+        mockService,
+        'process file',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers
+      );
+
+      // Should preserve exact case in paths (lowercase command, mixed case path)
+      expect(mockProcessWithTool).toHaveBeenCalledWith(
+        'process /Users/Dev/MyProject/Data.csv in batch mode (shell execution)',
         'schedule'
       );
     });
@@ -357,6 +399,54 @@ describe('Refinement service', () => {
       // Should still call processWithTool with empty string
       expect(mockProcessWithTool).toHaveBeenCalledWith('', 'schedule');
       expect(lifecycleHandlers.completeActive).toHaveBeenCalledTimes(1);
+    });
+
+    it('adds Command component to timeline showing resolved command', async () => {
+      const selectedTasks = [
+        {
+          action: 'process /Users/Dev/MyProject/Data.csv in batch mode',
+          type: TaskType.Execute,
+          config: [],
+        },
+      ];
+      const mockService = {
+        processWithTool: vi.fn().mockResolvedValue({
+          message: 'Refined plan',
+          tasks: [
+            {
+              action: 'process /Users/Dev/MyProject/Data.csv',
+              type: TaskType.Execute,
+              config: [],
+            },
+          ],
+        }),
+      } as unknown as LLMService;
+
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+
+      await handleRefinement(
+        selectedTasks,
+        mockService,
+        'process file',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers
+      );
+
+      // Should add Command component to timeline
+      expect(workflowHandlers.addToTimeline).toHaveBeenCalled();
+      const timelineCall = vi.mocked(workflowHandlers.addToTimeline).mock
+        .calls[0][0] as ComponentDefinition;
+      expect(timelineCall.name).toBe(ComponentName.Command);
+
+      // Verify the command preserves case from the selected task action
+      if (timelineCall.name === ComponentName.Command) {
+        expect(timelineCall.props.command).toBe(
+          'process /Users/Dev/MyProject/Data.csv in batch mode'
+        );
+      }
     });
 
     it('calls onAborted when refinement is aborted', async () => {

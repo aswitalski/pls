@@ -55,6 +55,12 @@ export enum FeedbackType {
 
 export type ExitCode = 0 | 1;
 
+// Option for Define task refinement
+export interface RefinementOption {
+  name: string;
+  command: string;
+}
+
 // Structured task definition for tool-based planning
 export interface Task {
   action: string;

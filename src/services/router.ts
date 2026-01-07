@@ -88,7 +88,12 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
 
   // Check if no valid tasks remain after filtering
   if (validTasks.length === 0) {
-    const msg = createMessage({ text: getUnknownRequestMessage() });
+    // Use action from first ignore task if available, otherwise generic message
+    const ignoreTask = tasks.find((task) => task.type === TaskType.Ignore);
+    const errorText = ignoreTask?.action
+      ? `${ignoreTask.action}.`
+      : getUnknownRequestMessage();
+    const msg = createMessage({ text: errorText });
     workflowHandlers.addToQueue(msg);
     return;
   }

@@ -1,7 +1,12 @@
 import { Box } from 'ink';
 
 import { ComponentStatus } from '../../types/components.js';
-import { ScheduledTask, Task, TaskType } from '../../types/types.js';
+import {
+  RefinementOption,
+  ScheduledTask,
+  Task,
+  TaskType,
+} from '../../types/types.js';
 
 import { DebugLevel } from '../../configuration/types.js';
 import {
@@ -54,7 +59,8 @@ export function taskToListItem(
 
   // Add children for Define tasks with options
   if (task.type === TaskType.Define && Array.isArray(task.params?.options)) {
-    item.children = (task.params.options as string[]).map((option, index) => {
+    const options = task.params.options as RefinementOption[];
+    item.children = options.map((option, index) => {
       // Determine the type based on selection state
       let childType = TaskType.Select;
       if (highlightedChildIndex !== null) {
@@ -67,7 +73,7 @@ export function taskToListItem(
       const planColors = getTaskColors(TaskType.Schedule, status);
       return {
         description: {
-          text: option,
+          text: option.name,
           color: colors.description,
           highlightedColor: planColors.description,
         },

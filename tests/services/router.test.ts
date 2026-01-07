@@ -1488,16 +1488,46 @@ describe('Task Router', () => {
 
       expect(messageDef.name).toBe(ComponentName.Message);
       if (messageDef.name === ComponentName.Message) {
-        // Message should be one of the unknown request variants
-        const possibleMessages = [
-          'I do not understand the request.',
-          'I cannot understand what you want me to do.',
-          "I'm not sure what you're asking for.",
-          'I cannot determine what action to take.',
-          'This request is unclear to me.',
-          'I do not recognize this command.',
-        ];
-        expect(possibleMessages).toContain(messageDef.props.text);
+        // Message should be the action from the first ignore task + period
+        expect(messageDef.props.text).toBe('Ignore unknown "test" request.');
+      }
+    });
+
+    it('shows missing key param error from Ignore task action', () => {
+      const tasks = [
+        {
+          action: 'Missing input: specify which file to process',
+          type: TaskType.Ignore,
+          config: [],
+        },
+      ];
+      const service = {} as LLMService;
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Process the file.',
+        service,
+        'process in batch mode',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
+      const messageDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+
+      expect(messageDef.name).toBe(ComponentName.Message);
+      if (messageDef.name === ComponentName.Message) {
+        // Message should be the descriptive error from ignore task
+        expect(messageDef.props.text).toBe(
+          'Missing input: specify which file to process.'
+        );
       }
     });
   });

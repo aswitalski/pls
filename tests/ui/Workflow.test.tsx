@@ -299,6 +299,61 @@ describe('Workflow component lifecycle', () => {
       expect(secondPos).toBeLessThan(thirdPos);
     });
 
+    it('maintains order when multiple components complete in sequence', async () => {
+      // Test that timeline maintains correct order when components complete
+      const components: ComponentDefinition[] = [
+        {
+          id: 'msg-1',
+          name: ComponentName.Message,
+          props: { text: 'Alpha' },
+          status: ComponentStatus.Awaiting,
+        },
+        {
+          id: 'msg-2',
+          name: ComponentName.Message,
+          props: { text: 'Beta' },
+          status: ComponentStatus.Awaiting,
+        },
+        {
+          id: 'msg-3',
+          name: ComponentName.Message,
+          props: { text: 'Gamma' },
+          status: ComponentStatus.Awaiting,
+        },
+        {
+          id: 'msg-4',
+          name: ComponentName.Message,
+          props: { text: 'Delta' },
+          status: ComponentStatus.Awaiting,
+        },
+      ];
+
+      const { lastFrame } = render(
+        <Workflow initialQueue={components} debug={DebugLevel.Info} />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, WaitTime));
+
+      const output = lastFrame();
+      expect(output).toBeDefined();
+
+      // Verify all messages are present
+      expect(output).toContain('Alpha');
+      expect(output).toContain('Beta');
+      expect(output).toContain('Gamma');
+      expect(output).toContain('Delta');
+
+      // Verify strict ordering is maintained
+      const alphaPos = output!.indexOf('Alpha');
+      const betaPos = output!.indexOf('Beta');
+      const gammaPos = output!.indexOf('Gamma');
+      const deltaPos = output!.indexOf('Delta');
+
+      expect(alphaPos).toBeLessThan(betaPos);
+      expect(betaPos).toBeLessThan(gammaPos);
+      expect(gammaPos).toBeLessThan(deltaPos);
+    });
+
     it('separates timeline and active components visually', async () => {
       const message: ComponentDefinition = {
         id: 'msg-1',

@@ -5,7 +5,7 @@ import {
   ScheduleProps,
   ScheduleState,
 } from '../../types/components.js';
-import { Task, TaskType } from '../../types/types.js';
+import { RefinementOption, Task, TaskType } from '../../types/types.js';
 
 import { DebugLevel } from '../../configuration/types.js';
 import { useInput } from '../../services/keyboard.js';
@@ -49,7 +49,7 @@ export function Schedule({
   const defineTask =
     currentDefineTaskIndex >= 0 ? tasks[currentDefineTaskIndex] : null;
   const optionsCount = Array.isArray(defineTask?.params?.options)
-    ? (defineTask.params.options as string[]).length
+    ? (defineTask.params.options as RefinementOption[]).length
     : 0;
 
   const hasMoreGroups = currentDefineGroupIndex < defineTaskIndices.length - 1;
@@ -140,13 +140,13 @@ export function Schedule({
               Array.isArray(task.params?.options)
             ) {
               // This is a Define task - only include the selected option
-              const options = task.params.options as string[];
+              const options = task.params.options as RefinementOption[];
               const selectedIndex = newCompletedSelections[defineGroupIndex];
               const selectedOption = options[selectedIndex];
 
-              // Use Execute as default - LLM will properly classify during refinement
+              // Use the command from the selected option
               refinedTasks.push({
-                action: selectedOption,
+                action: selectedOption.command,
                 type: TaskType.Execute,
                 config: [],
               });
