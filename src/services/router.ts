@@ -20,7 +20,6 @@ import {
   createExecute,
   createFeedback,
   createIntrospect,
-  createMessage,
   createSchedule,
   createValidate,
 } from './components.js';
@@ -90,11 +89,12 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
   if (validTasks.length === 0) {
     // Use action from first ignore task if available, otherwise generic message
     const ignoreTask = tasks.find((task) => task.type === TaskType.Ignore);
-    const errorText = ignoreTask?.action
+    const message = ignoreTask?.action
       ? `${ignoreTask.action}.`
       : getUnknownRequestMessage();
-    const msg = createMessage({ text: errorText });
-    workflowHandlers.addToQueue(msg);
+    workflowHandlers.addToQueue(
+      createFeedback({ type: FeedbackType.Warning, message })
+    );
     return;
   }
 
