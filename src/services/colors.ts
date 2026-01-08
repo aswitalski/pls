@@ -22,6 +22,7 @@ export const Palette = {
   Yellow: '#cccc5c',
   Orange: '#f48c80',
   MediumOrange: '#d07560',
+  WarmOrange: '#ce985e',
   DarkOrange: '#ab5e40',
   BurntOrange: '#cc7a5c',
   Red: '#cc5c5c',
@@ -140,7 +141,7 @@ const taskColors: Record<
  */
 const feedbackColors: Record<FeedbackType, string | null> = {
   [FeedbackType.Info]: Colors.Status.Info,
-  [FeedbackType.Warning]: Palette.Yellow,
+  [FeedbackType.Warning]: Palette.WarmOrange,
   [FeedbackType.Succeeded]: Colors.Status.Success,
   [FeedbackType.Aborted]: Palette.MediumOrange,
   [FeedbackType.Failed]: Colors.Status.Error,

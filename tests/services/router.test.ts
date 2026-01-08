@@ -1,11 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ComponentName, Task, TaskType } from '../../src/types/types.js';
+import {
+  ComponentName,
+  FeedbackType,
+  Task,
+  TaskType,
+} from '../../src/types/types.js';
 import {
   AnswerDefinitionProps,
   ComponentDefinition,
   ConfirmDefinitionProps,
   ExecuteDefinitionProps,
+  FeedbackDefinitionProps,
   ScheduleDefinitionProps,
 } from '../../src/types/components.js';
 
@@ -1451,7 +1457,7 @@ describe('Task Router', () => {
       expect(saveConfigLabels).not.toHaveBeenCalled();
     });
 
-    it('shows message when all tasks are Ignore type', () => {
+    it('shows warning feedback when all tasks are Ignore type', () => {
       const tasks = [
         {
           action: 'Ignore unknown "test" request',
@@ -1480,20 +1486,20 @@ describe('Task Router', () => {
         false
       );
 
-      // Should add Message component to queue
+      // Should add Feedback component to queue
       expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
-      const messageDef = (
+      const feedbackDef = (
         workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls[0][0] as ComponentDefinition;
 
-      expect(messageDef.name).toBe(ComponentName.Message);
-      if (messageDef.name === ComponentName.Message) {
-        // Message should be the action from the first ignore task + period
-        expect(messageDef.props.text).toBe('Ignore unknown "test" request.');
-      }
+      expect(feedbackDef.name).toBe(ComponentName.Feedback);
+      const props = feedbackDef.props as FeedbackDefinitionProps;
+      expect(props.type).toBe(FeedbackType.Warning);
+      // Message should be the action from the first ignore task + period
+      expect(props.message).toBe('Ignore unknown "test" request.');
     });
 
-    it('shows missing key param error from Ignore task action', () => {
+    it('shows missing key param warning from Ignore task action', () => {
       const tasks = [
         {
           action: 'Missing input: specify which file to process',
@@ -1518,17 +1524,17 @@ describe('Task Router', () => {
       );
 
       expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
-      const messageDef = (
+      const feedbackDef = (
         workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls[0][0] as ComponentDefinition;
 
-      expect(messageDef.name).toBe(ComponentName.Message);
-      if (messageDef.name === ComponentName.Message) {
-        // Message should be the descriptive error from ignore task
-        expect(messageDef.props.text).toBe(
-          'Missing input: specify which file to process.'
-        );
-      }
+      expect(feedbackDef.name).toBe(ComponentName.Feedback);
+      const props = feedbackDef.props as FeedbackDefinitionProps;
+      expect(props.type).toBe(FeedbackType.Warning);
+      // Message should be the descriptive error from ignore task
+      expect(props.message).toBe(
+        'Missing input: specify which file to process.'
+      );
     });
   });
 
