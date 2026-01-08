@@ -98,6 +98,11 @@ describe('Complex workflows and sequential requests', () => {
       deployTasks.forEach((task) => {
         expect(task.params?.variant).toBe('beta');
       });
+
+      console.log('\n✓ Build + deploy workflow verified:');
+      console.log('  1. 6 leaf tasks total (3 build + 3 deploy)');
+      console.log('  2. Build tasks: 2 (Generate + Compile)');
+      console.log('  3. Deploy tasks: 3 (CD + Checkout + Deploy)');
     },
     LLM_TEST_TIMEOUT
   );
@@ -187,6 +192,11 @@ describe('Complex workflows and sequential requests', () => {
 
       expect(navigateTasks.length).toBe(1);
       expect(buildTasks.length).toBe(2);
+
+      console.log('\n✓ Interlaced answer and execute tasks verified:');
+      console.log('  1. 2 answer tasks (rumination + tdd)');
+      console.log('  2. 3 execute tasks (navigate + generate + compile)');
+      console.log('  3. All execute tasks have gamma variant');
     },
     LLM_TEST_TIMEOUT
   );
@@ -257,6 +267,11 @@ describe('Complex workflows and sequential requests', () => {
       betaTasks.forEach((task) => {
         expect(task.type).toBe('execute');
       });
+
+      console.log('\n✓ Comma-separated requests verified:');
+      console.log('  1. "build alpha, build beta" parsed correctly');
+      console.log('  2. Alpha tasks: 3, Beta tasks: 3');
+      console.log('  3. All tasks are execute type');
     },
     LLM_TEST_TIMEOUT
   );
@@ -320,6 +335,11 @@ describe('Complex workflows and sequential requests', () => {
       leafTasks.forEach((task) => {
         expect(task.type).toBe('execute');
       });
+
+      console.log('\n✓ Semicolon-separated requests verified:');
+      console.log('  1. "navigate to alpha; navigate to beta" parsed');
+      console.log('  2. Alpha task: 1, Beta task: 1');
+      console.log('  3. All tasks are execute type');
     },
     LLM_TEST_TIMEOUT
   );
@@ -386,6 +406,11 @@ describe('Complex workflows and sequential requests', () => {
       leafTasks.forEach((task) => {
         expect(task.type).toBe('execute');
       });
+
+      console.log('\n✓ Mixed separators handling verified:');
+      console.log('  1. Comma and semicolon separators parsed');
+      console.log(`  2. Alpha tasks: ${alphaTasks.length}`);
+      console.log(`  3. Beta tasks: ${betaTasks.length}`);
     },
     LLM_TEST_TIMEOUT
   );

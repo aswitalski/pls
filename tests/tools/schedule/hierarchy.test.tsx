@@ -90,6 +90,11 @@ describe('Task hierarchy', () => {
       leafTasks.forEach((task) => {
         expect(task.type).toBeDefined();
       });
+
+      console.log('\n✓ Complex workflow hierarchy verified:');
+      console.log(`  1. Max nesting depth: ${maxDepth} levels`);
+      console.log(`  2. Leaf tasks: ${leafTasks.length}`);
+      console.log('  3. All leaf tasks have type field');
     },
     LLM_TEST_TIMEOUT
   );
@@ -148,6 +153,11 @@ describe('Task hierarchy', () => {
           expect(task.params.variant).toBe('gamma');
         }
       });
+
+      console.log('\n✓ Logical grouping in hierarchy verified:');
+      console.log('  1. Single top-level "Build gamma" group');
+      console.log('  2. 3 leaf tasks (Navigate + Generate + Compile)');
+      console.log('  3. All tasks share gamma variant');
     },
     LLM_TEST_TIMEOUT
   );
@@ -205,6 +215,11 @@ describe('Task hierarchy', () => {
         expect(task.action).toBeTruthy();
         expect(task.type).toBeDefined();
       });
+
+      console.log('\n✓ Nesting depth limit verified:');
+      console.log(`  1. Max depth: ${maxDepth} (limit is 3)`);
+      console.log(`  2. Leaf tasks: ${leafTasks.length}`);
+      console.log('  3. All tasks have action and type');
     },
     LLM_TEST_TIMEOUT
   );

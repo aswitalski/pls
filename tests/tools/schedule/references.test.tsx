@@ -88,6 +88,11 @@ describe('Skill reference expansion', () => {
       expect(leafTasks[0].config).toEqual(['project.delta.repo']);
       expect(leafTasks[1].config).toEqual([]);
       expect(leafTasks[2].config).toEqual([]);
+
+      console.log('\n✓ Skill reference expansion verified:');
+      console.log('  1. Build references Navigate skill');
+      console.log('  2. 3 leaf tasks: navigate, generate, compile');
+      console.log('  3. "production" mapped to "delta" variant');
     },
     LLM_TEST_TIMEOUT
   );
@@ -158,6 +163,11 @@ describe('Skill reference expansion', () => {
         // LLM expanded but should have stopped at max 3 levels
         expect(executeTasks.length).toBeLessThanOrEqual(6);
       }
+
+      console.log('\n✓ Circular reference handling verified:');
+      console.log(`  1. Ignore tasks: ${ignoreTasks.length}`);
+      console.log(`  2. Execute tasks: ${executeTasks.length}`);
+      console.log('  3. No infinite expansion occurred');
     },
     LLM_TEST_TIMEOUT
   );
@@ -223,6 +233,11 @@ describe('Skill reference expansion', () => {
         // LLM expanded but should have stopped at max 3 levels
         expect(executeTasks.length).toBeLessThanOrEqual(3);
       }
+
+      console.log('\n✓ Self-reference handling verified:');
+      console.log(`  1. Ignore tasks: ${ignoreTasks.length}`);
+      console.log(`  2. Execute tasks: ${executeTasks.length}`);
+      console.log('  3. No infinite self-expansion occurred');
     },
     LLM_TEST_TIMEOUT
   );

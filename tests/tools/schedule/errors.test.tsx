@@ -61,6 +61,11 @@ describe('Error handling and edge cases', () => {
       // Should create ignore type task for unmatched verb
       expect(leafTasks.length).toBe(1);
       expect(leafTasks[0].type).toBe('ignore');
+
+      console.log('\n✓ No matching skills handling verified:');
+      console.log('  1. No skills provided to scheduler');
+      console.log('  2. "compile" request creates ignore task');
+      console.log('  3. Graceful handling without errors');
     },
     LLM_TEST_TIMEOUT
   );
@@ -106,6 +111,11 @@ describe('Error handling and edge cases', () => {
       // Should create ignore type for vague request
       expect(leafTasks.length).toBe(1);
       expect(leafTasks[0].type).toBe('ignore');
+
+      console.log('\n✓ Ambiguous request handling verified:');
+      console.log('  1. "do something" is vague request');
+      console.log('  2. Creates ignore task (not execute)');
+      console.log('  3. No false positive skill matches');
     },
     LLM_TEST_TIMEOUT
   );
@@ -167,6 +177,11 @@ describe('Error handling and edge cases', () => {
       );
       expect(ignoreTask).toBeDefined();
       expect(ignoreTask?.action).toMatch(/reticulate|spline/i);
+
+      console.log('\n✓ Mixed valid/invalid request handling verified:');
+      console.log('  1. "navigate to alpha" matched skill → execute');
+      console.log('  2. "reticulate splines" unknown → ignore');
+      console.log('  3. Both tasks created in sequence');
     },
     LLM_TEST_TIMEOUT
   );
@@ -225,6 +240,11 @@ describe('Error handling and edge cases', () => {
         expect(task.type).toBeTruthy();
         expect(task.action).toBeTruthy();
       });
+
+      console.log('\n✓ Type field requirement verified:');
+      console.log(`  1. All ${leafTasks.length} leaf tasks have type field`);
+      console.log('  2. All tasks have non-empty action');
+      console.log('  3. Mixed task types handled correctly');
     },
     LLM_TEST_TIMEOUT
   );

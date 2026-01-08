@@ -88,6 +88,11 @@ describe('Variant resolution', () => {
         'environment.staging.url',
         'environment.staging.token',
       ]);
+
+      console.log('\n✓ Multiple variant placeholder resolution verified:');
+      console.log('  1. VARIANT resolved to "beta"');
+      console.log('  2. ENV resolved to "staging"');
+      console.log('  3. Config paths correctly resolved');
     },
     LLM_TEST_TIMEOUT
   );
@@ -191,6 +196,11 @@ describe('Variant resolution', () => {
       // Verify config arrays
       expect(alphaNavigate[0].config).toEqual(['project.alpha.repo']);
       expect(betaNavigate[0].config).toEqual(['project.beta.repo']);
+
+      console.log('\n✓ Multiple variants in parallel verified:');
+      console.log('  1. Alpha tasks: 3 (navigate + generate + compile)');
+      console.log('  2. Beta tasks: 3 (navigate + generate + compile)');
+      console.log('  3. Each variant has correct config paths');
     },
     LLM_TEST_TIMEOUT
   );
@@ -257,6 +267,11 @@ describe('Variant resolution', () => {
       executeTasks.forEach((task) => {
         expect(task.params?.variant).toBe('gamma');
       });
+
+      console.log('\n✓ Non-existent variant handling verified:');
+      console.log('  1. "gamma" variant requested');
+      console.log('  2. 3 execute tasks created');
+      console.log('  3. All tasks have gamma variant');
     },
     LLM_TEST_TIMEOUT
   );

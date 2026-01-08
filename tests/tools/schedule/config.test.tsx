@@ -65,6 +65,10 @@ describe('Config extraction and validation', () => {
       expect(task.config).toBeDefined();
       expect(Array.isArray(task.config)).toBe(true);
       expect(task.config).toContain('project.alpha.repo');
+
+      console.log('\n✓ Strict placeholder config extraction verified:');
+      console.log('  1. Config path extracted from task');
+      console.log('  2. Path contains resolved variant: project.alpha.repo');
     },
     LLM_TEST_TIMEOUT
   );
@@ -120,6 +124,11 @@ describe('Config extraction and validation', () => {
       expect(deployTask.config?.length).toBe(2);
       expect(deployTask.config).toContain('environment.production.url');
       expect(deployTask.config).toContain('environment.production.token');
+
+      console.log('\n✓ Multiple config paths extraction verified:');
+      console.log('  1. Deploy task has 2 config paths');
+      console.log('  2. environment.production.url extracted');
+      console.log('  3. environment.production.token extracted');
     },
     LLM_TEST_TIMEOUT
   );
@@ -191,6 +200,11 @@ describe('Config extraction and validation', () => {
           });
         }
       });
+
+      console.log('\n✓ Variant placeholder resolution verified:');
+      console.log('  1. All tasks have variant: beta');
+      console.log('  2. No unresolved VARIANT placeholders');
+      console.log('  3. Config paths contain resolved "beta" variant');
     },
     LLM_TEST_TIMEOUT
   );
@@ -265,6 +279,11 @@ describe('Config extraction and validation', () => {
           });
         }
       });
+
+      console.log('\n✓ Same config path in multiple tasks verified:');
+      console.log('  1. Alpha variant task uses project.alpha.repo');
+      console.log('  2. Beta variant task uses project.beta.repo');
+      console.log('  3. Config paths use dot notation');
     },
     LLM_TEST_TIMEOUT
   );
@@ -324,6 +343,11 @@ describe('Config extraction and validation', () => {
       const allConfigs = leafTasks.flatMap((task) => task.config || []);
       expect(allConfigs).toContain('list.directory');
       expect(allConfigs).toContain('list.pattern');
+
+      console.log('\n✓ Non-variant config extraction verified:');
+      console.log('  1. list.directory config extracted');
+      console.log('  2. list.pattern config extracted');
+      console.log('  3. Both placeholders captured from skill');
     },
     LLM_TEST_TIMEOUT
   );
@@ -376,6 +400,10 @@ describe('Config extraction and validation', () => {
           expect(uniquePaths.size).toBe(task.config.length);
         }
       });
+
+      console.log('\n✓ Duplicate config path handling verified:');
+      console.log('  1. No duplicate paths within any task');
+      console.log('  2. Config arrays contain unique entries');
     },
     LLM_TEST_TIMEOUT
   );

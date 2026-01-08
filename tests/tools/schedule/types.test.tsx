@@ -68,6 +68,11 @@ describe('Task types', () => {
       );
       expect(introspectTask).toBeDefined();
       expect(introspectTask?.action).toBeTruthy();
+
+      console.log('\n✓ Introspect type for capability queries verified:');
+      console.log('  1. "list your skills" recognized as introspection');
+      console.log('  2. Single introspect task created');
+      console.log('  3. Task has valid action');
     },
     LLM_TEST_TIMEOUT
   );
@@ -118,6 +123,11 @@ describe('Task types', () => {
       answerTasks.forEach((task) => {
         expect(task.action).toBeTruthy();
       });
+
+      console.log('\n✓ Answer type for information requests verified:');
+      console.log('  1. "explain quantum computing" recognized');
+      console.log(`  2. Answer tasks created: ${answerTasks.length}`);
+      console.log('  3. All answer tasks have valid actions');
     },
     LLM_TEST_TIMEOUT
   );
@@ -167,6 +177,11 @@ describe('Task types', () => {
       expect(leafTasks.length).toBe(1);
       expect(leafTasks[0].type).toBe('ignore');
       expect(leafTasks[0].action).toContain('validate');
+
+      console.log('\n✓ Ignore type for unmatched verbs verified:');
+      console.log('  1. "validate" has no matching skill');
+      console.log('  2. Creates ignore task (not execute)');
+      console.log('  3. Action mentions the unmatched verb');
     },
     LLM_TEST_TIMEOUT
   );
@@ -215,6 +230,11 @@ describe('Task types', () => {
       );
       expect(configTask).toBeDefined();
       expect(configTask?.action).toBeTruthy();
+
+      console.log('\n✓ Config type for configuration requests verified:');
+      console.log('  1. "change config settings" recognized');
+      console.log('  2. Single configure task created');
+      console.log('  3. Task type is configure');
     },
     LLM_TEST_TIMEOUT
   );
@@ -261,6 +281,11 @@ describe('Task types', () => {
       expect(configTask.type).toBe('configure');
       expect(configTask.action).toBeTruthy();
       expect(configTask.params?.query).toBe('debug');
+
+      console.log('\n✓ Config type with specific query verified:');
+      console.log('  1. "config debug" recognized');
+      console.log('  2. Configure task created');
+      console.log('  3. Query param set to "debug"');
     },
     LLM_TEST_TIMEOUT
   );

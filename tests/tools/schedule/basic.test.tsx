@@ -82,6 +82,11 @@ describe('Basic task scheduling and message variation', () => {
       expect(task.config).toBeDefined();
       expect(Array.isArray(task.config)).toBe(true);
       expect(task.config).toEqual(['project.beta.repo']);
+
+      console.log('\n✓ Skill recognition with verb variations verified:');
+      console.log('  1. "go to beta repo" matched Navigate To Project skill');
+      console.log('  2. Variant "beta" correctly identified');
+      console.log('  3. Config path resolved to project.beta.repo');
     },
     LLM_TEST_TIMEOUT
   );
@@ -150,6 +155,11 @@ describe('Basic task scheduling and message variation', () => {
       expect(task.config).toBeDefined();
       expect(Array.isArray(task.config)).toBe(true);
       expect(task.config).toEqual(['project.beta.repo']);
+
+      console.log('\n✓ Natural language variant matching verified:');
+      console.log('  1. "experimental" mapped to "beta" variant');
+      console.log('  2. Skill correctly identified as Navigate To Project');
+      console.log('  3. Config path resolved with beta variant');
     },
     LLM_TEST_TIMEOUT
   );
