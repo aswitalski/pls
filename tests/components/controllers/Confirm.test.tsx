@@ -2,11 +2,11 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ComponentStatus } from '../../src/types/components.js';
+import { ComponentStatus } from '../../../src/types/components.js';
 
-import { Confirm } from '../../src/components/controllers/Confirm.js';
+import { Confirm } from '../../../src/components/controllers/Confirm.js';
 
-import { Keys, createRequestHandlers } from '../test-utils.js';
+import { Keys, createRequestHandlers } from '../../test-utils.js';
 
 describe('Confirm component', () => {
   describe('Rendering', () => {

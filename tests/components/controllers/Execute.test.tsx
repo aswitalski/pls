@@ -2,16 +2,22 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ComponentStatus, ExecuteState } from '../../src/types/components.js';
-import { TaskType } from '../../src/types/types.js';
+import {
+  ComponentStatus,
+  ExecuteState,
+} from '../../../src/types/components.js';
+import { TaskType } from '../../../src/types/types.js';
 
-import { ExecutionResult, ExecutionStatus } from '../../src/services/shell.js';
+import {
+  ExecutionResult,
+  ExecutionStatus,
+} from '../../../src/services/shell.js';
 
 import {
   Execute,
   ExecuteView,
   mapStateToViewProps,
-} from '../../src/components/controllers/Execute.js';
+} from '../../../src/components/controllers/Execute.js';
 
 import {
   createRequestHandlers,
@@ -19,10 +25,10 @@ import {
   createMockAnthropicService,
   createMockDebugComponents,
   createWorkflowHandlers,
-} from '../test-utils.js';
+} from '../../test-utils.js';
 
 // Mock timing helpers to skip delays in tests
-vi.mock('../../src/services/timing.js', () => ({
+vi.mock('../../../src/services/timing.js', () => ({
   ELAPSED_UPDATE_INTERVAL: 250,
   ensureMinimumTime: vi.fn().mockResolvedValue(undefined),
   withMinimumTime: vi
@@ -33,7 +39,7 @@ vi.mock('../../src/services/timing.js', () => ({
 vi.useFakeTimers();
 
 // Mock config loader to provide test config
-vi.mock('../../src/services/loader.js', () => ({
+vi.mock('../../../src/services/loader.js', () => ({
   loadUserConfig: vi.fn().mockReturnValue({
     project: {
       alpha: {
@@ -48,8 +54,8 @@ vi.mock('../../src/services/loader.js', () => ({
 }));
 
 // Mock shell service to avoid actual command execution
-vi.mock('../../src/services/shell.js', async () => {
-  const actual = await vi.importActual('../../src/services/shell.js');
+vi.mock('../../../src/services/shell.js', async () => {
+  const actual = await vi.importActual('../../../src/services/shell.js');
   return {
     ...actual,
     executeCommand: vi
@@ -330,7 +336,7 @@ describe('Execute component', () => {
 
   describe('Placeholder resolution', () => {
     it('resolves single placeholder', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
 
       const service = createMockAnthropicService({
         message: 'Navigating to repository.',
@@ -372,7 +378,7 @@ describe('Execute component', () => {
     });
 
     it('resolves multiple placeholders in one command', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
 
       const service = createMockAnthropicService({
         message: 'Syncing projects.',
@@ -416,7 +422,7 @@ describe('Execute component', () => {
     });
 
     it('throws error when placeholders cannot be resolved', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
       const errorHandlers = createRequestHandlers();
 
       const service = createMockAnthropicService({
@@ -466,7 +472,7 @@ describe('Execute component', () => {
 
   describe('Command failure handling', () => {
     it('stops execution when critical command fails', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
 
       // First command fails, second should not execute
       vi.mocked(executeCommand).mockImplementation(
@@ -540,7 +546,7 @@ describe('Execute component', () => {
     });
 
     it('shows appropriate error message for failed command', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
 
       const errorMessage = 'Permission denied: cannot write to /usr/local';
       vi.mocked(executeCommand).mockResolvedValue({
@@ -591,7 +597,7 @@ describe('Execute component', () => {
 
   describe('Multi-task execution', () => {
     it('executes multiple tasks in sequence', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
 
       const executionOrder: string[] = [];
       vi.mocked(executeCommand).mockImplementation(
@@ -650,7 +656,7 @@ describe('Execute component', () => {
     });
 
     it('maintains task state across execution', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
 
       let taskIndex = 0;
       vi.mocked(executeCommand).mockImplementation(async () => {
@@ -703,7 +709,7 @@ describe('Execute component', () => {
 
   describe('Edge cases', () => {
     it('handles empty command string', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
 
       const service = createMockAnthropicService({
         message: 'Processing.',
@@ -735,7 +741,7 @@ describe('Execute component', () => {
     });
 
     it('handles commands with special characters', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
 
       const specialCommand = 'echo "Hello $USER" && ls -la | grep "*.txt"';
       const service = createMockAnthropicService({
@@ -778,7 +784,7 @@ describe('Execute component', () => {
     });
 
     it('handles very long command descriptions', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
 
       const longDescription =
         'This is a very long description that exceeds the normal length ' +
@@ -825,7 +831,7 @@ describe('Execute component', () => {
 
   describe('Abort scenarios', () => {
     it('handles abort during multi-task execution', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
 
       const executedCommands: string[] = [];
       vi.mocked(executeCommand).mockImplementation(
@@ -893,7 +899,7 @@ describe('Execute component', () => {
     });
 
     it('marks running task as aborted when execution cancelled', async () => {
-      const { executeCommand } = await import('../../src/services/shell.js');
+      const { executeCommand } = await import('../../../src/services/shell.js');
 
       vi.mocked(executeCommand).mockImplementation(async () => {
         // Simulate long-running command

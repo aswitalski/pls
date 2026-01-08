@@ -2,9 +2,12 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AnswerState, ComponentStatus } from '../../src/types/components.js';
+import { AnswerState, ComponentStatus } from '../../../src/types/components.js';
 
-import { Answer, AnswerView } from '../../src/components/controllers/Answer.js';
+import {
+  Answer,
+  AnswerView,
+} from '../../../src/components/controllers/Answer.js';
 
 import {
   createRequestHandlers,
@@ -12,10 +15,10 @@ import {
   createMockAnthropicService,
   createMockDebugComponents,
   createWorkflowHandlers,
-} from '../test-utils.js';
+} from '../../test-utils.js';
 
 // Mock timing helpers to skip delays in tests
-vi.mock('../../src/services/timing.js', () => ({
+vi.mock('../../../src/services/timing.js', () => ({
   ELAPSED_UPDATE_INTERVAL: 250,
   ensureMinimumTime: vi.fn().mockResolvedValue(undefined),
   withMinimumTime: vi
@@ -147,7 +150,7 @@ describe('Answer component', () => {
   });
 
   it('uses withMinimumTime for UX polish', async () => {
-    const { withMinimumTime } = await import('../../src/services/timing.js');
+    const { withMinimumTime } = await import('../../../src/services/timing.js');
     const answer = 'Quick answer';
     const service = createMockAnthropicService({ answer });
     const completeActive = vi.fn();

@@ -1,9 +1,9 @@
 import { render } from 'ink-testing-library';
 import { describe, expect, it } from 'vitest';
 
-import { ExecutionStatus } from '../../src/services/shell.js';
+import { ExecutionStatus } from '../../../src/services/shell.js';
 
-import { Output } from '../../src/components/views/Output.js';
+import { Output } from '../../../src/components/views/Output.js';
 
 describe('Output component', () => {
   describe('Empty line filtering', () => {

@@ -2,16 +2,16 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DebugLevel } from '../../src/configuration/types.js';
-import { App } from '../../src/types/types.js';
+import { DebugLevel } from '../src/configuration/types.js';
+import { App } from '../src/types/types.js';
 
-import { loadConfig } from '../../src/configuration/io.js';
-import { getMissingConfigKeys } from '../../src/configuration/schema.js';
+import { loadConfig } from '../src/configuration/io.js';
+import { getMissingConfigKeys } from '../src/configuration/schema.js';
 
-import { Main } from '../../src/Main.js';
+import { Main } from '../src/Main.js';
 
 // Mock timing helpers to skip delays in tests
-vi.mock('../../src/services/timing.js', () => ({
+vi.mock('../src/services/timing.js', () => ({
   ELAPSED_UPDATE_INTERVAL: 250,
   ensureMinimumTime: vi.fn().mockResolvedValue(undefined),
   withMinimumTime: vi
@@ -20,20 +20,20 @@ vi.mock('../../src/services/timing.js', () => ({
 }));
 
 // Mock configuration modules
-vi.mock('../../src/configuration/schema.js', async () => {
+vi.mock('../src/configuration/schema.js', async () => {
   const actual = await vi.importActual<
-    typeof import('../../src/configuration/schema.js')
-  >('../../src/configuration/schema.js');
+    typeof import('../src/configuration/schema.js')
+  >('../src/configuration/schema.js');
   return {
     ...actual,
     getMissingConfigKeys: vi.fn(),
   };
 });
 
-vi.mock('../../src/configuration/io.js', async () => {
+vi.mock('../src/configuration/io.js', async () => {
   const actual = await vi.importActual<
-    typeof import('../../src/configuration/io.js')
-  >('../../src/configuration/io.js');
+    typeof import('../src/configuration/io.js')
+  >('../src/configuration/io.js');
   return {
     ...actual,
     loadConfig: vi.fn(),
@@ -143,7 +143,7 @@ describe('Main component queue-based architecture', () => {
   describe('Exit behavior', () => {
     it('exits after showing welcome screen with no command', async () => {
       // Import the module to spy on
-      const processModule = await import('../../src/services/process.js');
+      const processModule = await import('../src/services/process.js');
       const exitSpy = vi
         .spyOn(processModule, 'exitApp')
         .mockImplementation(() => {});
@@ -167,8 +167,8 @@ describe('Main component queue-based architecture', () => {
 
   describe('Service creation failures', () => {
     it('shows error feedback when service creation fails on startup', async () => {
-      const anthropicModule = await import('../../src/services/anthropic.js');
-      const processModule = await import('../../src/services/process.js');
+      const anthropicModule = await import('../src/services/anthropic.js');
+      const processModule = await import('../src/services/process.js');
 
       // Mock exitApp to prevent process.exit
       const exitSpy = vi
@@ -200,9 +200,9 @@ describe('Main component queue-based architecture', () => {
     });
 
     it('shows error feedback when config save fails during initial setup', async () => {
-      const schemaModule = await import('../../src/configuration/schema.js');
-      const ioModule = await import('../../src/configuration/io.js');
-      const processModule = await import('../../src/services/process.js');
+      const schemaModule = await import('../src/configuration/schema.js');
+      const ioModule = await import('../src/configuration/io.js');
+      const processModule = await import('../src/services/process.js');
 
       // Mock exitApp to prevent process.exit
       const exitSpy = vi
@@ -238,8 +238,8 @@ describe('Main component queue-based architecture', () => {
     });
 
     it('handles service creation with non-Error exception', async () => {
-      const anthropicModule = await import('../../src/services/anthropic.js');
-      const processModule = await import('../../src/services/process.js');
+      const anthropicModule = await import('../src/services/anthropic.js');
+      const processModule = await import('../src/services/process.js');
 
       // Mock exitApp to prevent process.exit
       const exitSpy = vi
@@ -273,8 +273,8 @@ describe('Main component queue-based architecture', () => {
 
   describe('Confirmation flow', () => {
     it('shows confirmation after plan without Define tasks', async () => {
-      const componentsModule = await import('../../src/services/components.js');
-      const processModule = await import('../../src/services/process.js');
+      const componentsModule = await import('../src/services/components.js');
+      const processModule = await import('../src/services/process.js');
 
       // Mock exitApp to prevent process.exit
       const exitSpy = vi
@@ -318,9 +318,9 @@ describe('Main component queue-based architecture', () => {
     });
 
     it('does not exit when showing confirmation', async () => {
-      const anthropicModule = await import('../../src/services/anthropic.js');
-      const processModule = await import('../../src/services/process.js');
-      const messagesModule = await import('../../src/services/messages.js');
+      const anthropicModule = await import('../src/services/anthropic.js');
+      const processModule = await import('../src/services/process.js');
+      const messagesModule = await import('../src/services/messages.js');
 
       // Mock confirmation message to make test deterministic
       vi.spyOn(messagesModule, 'getConfirmationMessage').mockReturnValue(
@@ -367,9 +367,9 @@ describe('Main component queue-based architecture', () => {
 
   describe('Abort messages', () => {
     it('shows cancellation message when aborting plan confirmation', async () => {
-      const anthropicModule = await import('../../src/services/anthropic.js');
-      const processModule = await import('../../src/services/process.js');
-      const { Keys } = await import('../test-utils.js');
+      const anthropicModule = await import('../src/services/anthropic.js');
+      const processModule = await import('../src/services/process.js');
+      const { Keys } = await import('./test-utils.js');
 
       // Mock exitApp to prevent process.exit
       const exitSpy = vi
@@ -416,9 +416,9 @@ describe('Main component queue-based architecture', () => {
     });
 
     it('shows cancellation message when aborting plan navigation', async () => {
-      const anthropicModule = await import('../../src/services/anthropic.js');
-      const processModule = await import('../../src/services/process.js');
-      const { Keys } = await import('../test-utils.js');
+      const anthropicModule = await import('../src/services/anthropic.js');
+      const processModule = await import('../src/services/process.js');
+      const { Keys } = await import('./test-utils.js');
 
       // Mock exitApp to prevent process.exit
       const exitSpy = vi
@@ -468,9 +468,9 @@ describe('Main component queue-based architecture', () => {
     });
 
     it('shows cancellation message when aborting introspect-only plan', async () => {
-      const anthropicModule = await import('../../src/services/anthropic.js');
-      const processModule = await import('../../src/services/process.js');
-      const { Keys } = await import('../test-utils.js');
+      const anthropicModule = await import('../src/services/anthropic.js');
+      const processModule = await import('../src/services/process.js');
+      const { Keys } = await import('./test-utils.js');
 
       // Mock exitApp to prevent process.exit
       const exitSpy = vi

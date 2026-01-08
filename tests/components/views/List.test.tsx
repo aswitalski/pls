@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it } from 'vitest';
 
-import { List } from '../../src/components/views/List.js';
+import { List } from '../../../src/components/views/List.js';
 
 describe('UI component edge cases', () => {
   describe('List edge cases', () => {

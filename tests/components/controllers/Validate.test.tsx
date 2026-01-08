@@ -2,11 +2,14 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ComponentStatus, ValidateState } from '../../src/types/components.js';
-import { ConfigRequirement } from '../../src/types/skills.js';
-import { Task, TaskType } from '../../src/types/types.js';
+import {
+  ComponentStatus,
+  ValidateState,
+} from '../../../src/types/components.js';
+import { ConfigRequirement } from '../../../src/types/skills.js';
+import { Task, TaskType } from '../../../src/types/types.js';
 
-import { Validate } from '../../src/components/controllers/Validate.js';
+import { Validate } from '../../../src/components/controllers/Validate.js';
 
 import {
   createLifecycleHandlers,
@@ -15,10 +18,10 @@ import {
   createRequestHandlers,
   createWorkflowHandlers,
   Keys,
-} from '../test-utils.js';
+} from '../../test-utils.js';
 
 // Mock timing helpers to skip delays in tests
-vi.mock('../../src/services/timing.js', () => ({
+vi.mock('../../../src/services/timing.js', () => ({
   ELAPSED_UPDATE_INTERVAL: 250,
   ensureMinimumTime: vi.fn().mockResolvedValue(undefined),
   withMinimumTime: vi
@@ -27,7 +30,7 @@ vi.mock('../../src/services/timing.js', () => ({
 }));
 
 // Mock Config component to auto-complete when rendered
-vi.mock('../../src/ui/Config.js', () => ({
+vi.mock('../../../src/ui/Config.js', () => ({
   Config: ({
     onFinished,
   }: {
@@ -48,8 +51,10 @@ vi.mock('../../src/ui/Config.js', () => ({
 }));
 
 // Mock saveConfig to avoid file system operations in tests
-vi.mock('../../src/services/configuration.js', async () => {
-  const actual = await vi.importActual('../../src/services/configuration.js');
+vi.mock('../../../src/services/configuration.js', async () => {
+  const actual = await vi.importActual(
+    '../../../src/services/configuration.js'
+  );
   return {
     ...actual,
     saveConfig: vi.fn(),
@@ -57,7 +62,7 @@ vi.mock('../../src/services/configuration.js', async () => {
 });
 
 // Mock saveConfigLabels to avoid file system operations in tests
-vi.mock('../../src/services/config-labels.js', () => ({
+vi.mock('../../../src/services/config-labels.js', () => ({
   saveConfigLabels: vi.fn(),
   saveConfigLabel: vi.fn(),
   loadConfigLabels: vi.fn().mockReturnValue({}),
@@ -406,7 +411,7 @@ describe('Validate component', () => {
   describe('Minimum processing time', () => {
     it('uses ensureMinimumTime for UX polish', async () => {
       const { ensureMinimumTime } =
-        await import('../../src/services/timing.js');
+        await import('../../../src/services/timing.js');
       const missingConfig: ConfigRequirement[] = [
         { path: 'api.key', type: 'string' },
       ];

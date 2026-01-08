@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { AnthropicService } from '../../src/services/anthropic.js';
+import { AnthropicService } from '../../../src/services/anthropic.js';
 import {
   hasValidAnthropicKey,
   loadConfig,
-} from '../../src/configuration/io.js';
-import { toolRegistry } from '../../src/services/registry.js';
-import { formatSkillsForPrompt } from '../../src/services/skills.js';
-import { TaskType } from '../../src/types/types.js';
-import type { ScheduledTask } from '../../src/types/types.js';
+} from '../../../src/configuration/io.js';
+import { toolRegistry } from '../../../src/services/registry.js';
+import { formatSkillsForPrompt } from '../../../src/services/skills.js';
+import { TaskType } from '../../../src/types/types.js';
+import type { ScheduledTask } from '../../../src/types/types.js';
 
 import {
   getAllLeafTasks,
@@ -17,85 +17,11 @@ import {
   renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
-} from '../tools/schedule-test-helpers.js';
+} from './test-helpers.js';
 
-describe('Variant resolution', () => {
+describe('Skill reference expansion', () => {
   it(
-    'resolves multiple different variant placeholders',
-    async () => {
-      if (!hasValidAnthropicKey()) {
-        console.log(
-          'Skipping LLM test: No valid Anthropic API key in ~/.plsrc'
-        );
-        return;
-      }
-
-      const config = loadConfig();
-      const service = new AnthropicService(
-        config.anthropic.key,
-        config.anthropic.model
-      );
-
-      // Load deploy skill with two different variant types
-      const skills = loadTestSkills(['deploy-app.skill.md']);
-      const skillsSection = formatSkillsForPrompt(skills);
-
-      const baseInstructions = toolRegistry.getInstructions('schedule');
-      const enhancedInstructions = baseInstructions + skillsSection;
-
-      // Show base prompt once
-      renderBasePrompt(baseInstructions);
-
-      // Test multiple variants - "deploy beta to staging"
-      // Should resolve VARIANT=beta and ENV=staging
-      const userCommand = 'deploy beta to staging';
-
-      const startTime = Date.now();
-      const result = await service.processWithTool(
-        userCommand,
-        'schedule',
-        enhancedInstructions
-      );
-      const duration = Date.now() - startTime;
-
-      renderCompactPrompt(userCommand, baseInstructions, skills);
-      renderResponse(duration, result);
-
-      expect(result.message).toBeDefined();
-      expect(result.tasks).toBeDefined();
-
-      const tasks = result.tasks as unknown as ScheduledTask[];
-      expect(tasks.length).toBe(1); // Single "Deploy beta to staging" task
-
-      const leafTasks = getAllLeafTasks(tasks);
-
-      // Should have exactly 3 leaf tasks: cd, git checkout, deploy
-      expect(leafTasks.length).toBe(3);
-
-      // Verify all leaf tasks have proper structure
-      leafTasks.forEach((task) => {
-        expect(task.action).toBeTruthy();
-        expect(task.type).toBe('execute');
-        expect(task.config).toBeDefined();
-        expect(Array.isArray(task.config)).toBe(true);
-        expect(task.params).toBeDefined();
-        expect(task.params?.skill).toBe('Deploy App');
-        expect(task.params?.variant).toBe('beta');
-      });
-
-      // Verify exact config arrays for each task
-      expect(leafTasks[0].config).toEqual(['project.beta.repo']);
-      expect(leafTasks[1].config).toEqual(['project.beta.version']);
-      expect(leafTasks[2].config).toEqual([
-        'environment.staging.url',
-        'environment.staging.token',
-      ]);
-    },
-    LLM_TEST_TIMEOUT
-  );
-
-  it(
-    'handles multiple variants in parallel',
+    'resolves skill references to other skills',
     async () => {
       if (!hasValidAnthropicKey()) {
         console.log(
@@ -123,8 +49,9 @@ describe('Variant resolution', () => {
       // Show base prompt once
       renderBasePrompt(baseInstructions);
 
-      // Test multiple variants - "build alpha and beta"
-      const userCommand = 'build alpha and beta';
+      // Test skill reference - "build production" should navigate then build
+      // "production" maps to "delta" variant per build-project skill
+      const userCommand = 'build production';
 
       const startTime = Date.now();
       const result = await service.processWithTool(
@@ -141,12 +68,12 @@ describe('Variant resolution', () => {
       expect(result.tasks).toBeDefined();
 
       const tasks = result.tasks as unknown as ScheduledTask[];
-      expect(tasks.length).toBe(2); // Build alpha + Build beta
+      expect(tasks.length).toBe(1); // Single "Build production" task
 
       const leafTasks = getAllLeafTasks(tasks);
 
-      // Should have exactly 6 leaf tasks: 3 for alpha + 3 for beta
-      expect(leafTasks.length).toBe(6);
+      // Should have exactly 3 leaf tasks: navigate, generate, compile
+      expect(leafTasks.length).toBe(3);
 
       // Verify all leaf tasks have proper structure
       leafTasks.forEach((task) => {
@@ -156,50 +83,19 @@ describe('Variant resolution', () => {
         expect(Array.isArray(task.config)).toBe(true);
         expect(task.params).toBeDefined();
         expect(task.params?.skill).toBeDefined();
-        expect(task.params?.variant).toBeDefined();
+        expect(task.params?.variant).toBe('delta');
       });
 
-      // Verify we have 3 alpha tasks and 3 beta tasks
-      const alphaTasks = leafTasks.filter(
-        (task) => task.params?.variant === 'alpha'
-      );
-      const betaTasks = leafTasks.filter(
-        (task) => task.params?.variant === 'beta'
-      );
-
-      expect(alphaTasks.length).toBe(3);
-      expect(betaTasks.length).toBe(3);
-
-      // Verify each variant has navigate + 2 build tasks
-      const alphaNavigate = alphaTasks.filter(
-        (task) => task.params?.skill === 'Navigate To Project'
-      );
-      const alphaBuild = alphaTasks.filter(
-        (task) => task.params?.skill === 'Build Project'
-      );
-
-      expect(alphaNavigate.length).toBe(1);
-      expect(alphaBuild.length).toBe(2);
-
-      const betaNavigate = betaTasks.filter(
-        (task) => task.params?.skill === 'Navigate To Project'
-      );
-      const betaBuild = betaTasks.filter(
-        (task) => task.params?.skill === 'Build Project'
-      );
-
-      expect(betaNavigate.length).toBe(1);
-      expect(betaBuild.length).toBe(2);
-
-      // Verify config arrays
-      expect(alphaNavigate[0].config).toEqual(['project.alpha.repo']);
-      expect(betaNavigate[0].config).toEqual(['project.beta.repo']);
+      // Verify config arrays prove skill reference was expanded correctly
+      expect(leafTasks[0].config).toEqual(['project.delta.repo']);
+      expect(leafTasks[1].config).toEqual([]);
+      expect(leafTasks[2].config).toEqual([]);
     },
     LLM_TEST_TIMEOUT
   );
 
   it(
-    'handles non-existent variant gracefully',
+    'handles circular skill references gracefully',
     async () => {
       if (!hasValidAnthropicKey()) {
         console.log(
@@ -214,21 +110,19 @@ describe('Variant resolution', () => {
         config.anthropic.model
       );
 
-      // Load build skill that only has alpha and beta variants
+      // Load circular skills - A references B, B references A
       const skills = loadTestSkills([
-        'navigate-to-project.skill.md',
-        'build-project.skill.md',
+        'circular-a.skill.md',
+        'circular-b.skill.md',
       ]);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
 
-      // Show base prompt once
       renderBasePrompt(baseInstructions);
 
-      // Request gamma variant (third variant - testing)
-      const userCommand = 'build gamma';
+      const userCommand = 'run circular a';
 
       const startTime = Date.now();
       const result = await service.processWithTool(
@@ -245,22 +139,96 @@ describe('Variant resolution', () => {
       expect(result.tasks).toBeDefined();
 
       const tasks = result.tasks as unknown as ScheduledTask[];
-      expect(tasks.length).toBe(1); // Single "Build gamma" task
-
       const leafTasks = getAllLeafTasks(tasks);
 
-      // Should have exactly 3 leaf tasks: navigate, generate, compile
-      expect(leafTasks.length).toBe(3);
+      // Should detect circular reference and handle gracefully
+      // Either by creating ignore task or limiting depth
+      expect(leafTasks.length).toBeGreaterThan(0);
 
-      // All tasks should have gamma variant
+      // Check if LLM detected the circular reference
+      // It should either create ignore task or limit nesting depth
+      const ignoreTasks = leafTasks.filter(
+        (task) => task.type === TaskType.Ignore
+      );
       const executeTasks = leafTasks.filter(
         (task) => task.type === TaskType.Execute
       );
-      expect(executeTasks.length).toBe(3);
 
-      executeTasks.forEach((task) => {
-        expect(task.params?.variant).toBe('gamma');
-      });
+      // Either has ignore task OR limited execute tasks (not infinite)
+      if (ignoreTasks.length > 0) {
+        // LLM detected circular reference and created ignore task
+        expect(ignoreTasks[0].action).toMatch(/circular|unknown|ignore/i);
+      } else {
+        // LLM expanded but should have stopped at max 3 levels
+        expect(executeTasks.length).toBeLessThanOrEqual(6);
+      }
+    },
+    LLM_TEST_TIMEOUT
+  );
+
+  it(
+    'handles self-referencing skills gracefully',
+    async () => {
+      if (!hasValidAnthropicKey()) {
+        console.log(
+          'Skipping LLM test: No valid Anthropic API key in ~/.plsrc'
+        );
+        return;
+      }
+
+      const config = loadConfig();
+      const service = new AnthropicService(
+        config.anthropic.key,
+        config.anthropic.model
+      );
+
+      // Load self-referencing skill
+      const skills = loadTestSkills(['self-reference.skill.md']);
+      const skillsSection = formatSkillsForPrompt(skills);
+
+      const baseInstructions = toolRegistry.getInstructions('schedule');
+      const enhancedInstructions = baseInstructions + skillsSection;
+
+      renderBasePrompt(baseInstructions);
+
+      const userCommand = 'run self reference';
+
+      const startTime = Date.now();
+      const result = await service.processWithTool(
+        userCommand,
+        'schedule',
+        enhancedInstructions
+      );
+      const duration = Date.now() - startTime;
+
+      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderResponse(duration, result);
+
+      expect(result.message).toBeDefined();
+      expect(result.tasks).toBeDefined();
+
+      const tasks = result.tasks as unknown as ScheduledTask[];
+      const leafTasks = getAllLeafTasks(tasks);
+
+      // Should detect self-reference and handle gracefully
+      expect(leafTasks.length).toBeGreaterThan(0);
+
+      // Check if LLM detected the self-reference
+      const ignoreTasks = leafTasks.filter(
+        (task) => task.type === TaskType.Ignore
+      );
+      const executeTasks = leafTasks.filter(
+        (task) => task.type === TaskType.Execute
+      );
+
+      // Either has ignore task OR limited execute tasks (not infinite)
+      if (ignoreTasks.length > 0) {
+        // LLM detected self-reference and created ignore task
+        expect(ignoreTasks[0].action).toMatch(/self|circular|unknown|ignore/i);
+      } else {
+        // LLM expanded but should have stopped at max 3 levels
+        expect(executeTasks.length).toBeLessThanOrEqual(3);
+      }
     },
     LLM_TEST_TIMEOUT
   );

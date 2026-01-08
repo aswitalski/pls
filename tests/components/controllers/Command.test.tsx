@@ -1,5 +1,8 @@
-import { CommandState, ComponentStatus } from '../../src/types/components.js';
-import { TaskType } from '../../src/types/types.js';
+import {
+  CommandState,
+  ComponentStatus,
+} from '../../../src/types/components.js';
+import { TaskType } from '../../../src/types/types.js';
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
@@ -7,14 +10,14 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   Command,
   CommandView,
-} from '../../src/components/controllers/Command.js';
+} from '../../../src/components/controllers/Command.js';
 import {
   Keys,
   createRequestHandlers,
   createLifecycleHandlers,
   createMockAnthropicService,
   createWorkflowHandlers,
-} from '../test-utils.js';
+} from '../../test-utils.js';
 
 const { Escape } = Keys;
 

@@ -2,11 +2,11 @@ import React from 'react';
 import { describe, expect, it } from 'vitest';
 import { render } from 'ink-testing-library';
 
-import { ComponentStatus } from '../../src/types/components.js';
+import { ComponentStatus } from '../../../src/types/components.js';
 
-import { Palette } from '../../src/services/colors.js';
+import { Palette } from '../../../src/services/colors.js';
 
-import { Debug } from '../../src/components/views/Debug.js';
+import { Debug } from '../../../src/components/views/Debug.js';
 
 describe('Debug component', () => {
   describe('Rendering', () => {

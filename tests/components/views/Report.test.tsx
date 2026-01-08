@@ -2,10 +2,10 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it } from 'vitest';
 
-import { ComponentStatus, Capability } from '../../src/types/components.js';
-import { Origin } from '../../src/types/types.js';
+import { ComponentStatus, Capability } from '../../../src/types/components.js';
+import { Origin } from '../../../src/types/types.js';
 
-import { Report } from '../../src/components/views/Report.js';
+import { Report } from '../../../src/components/views/Report.js';
 
 describe('Report component', () => {
   it('renders message and capabilities list', () => {

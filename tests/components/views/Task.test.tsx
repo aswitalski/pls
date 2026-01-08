@@ -2,17 +2,17 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DebugLevel } from '../../src/configuration/types.js';
-import { ExecutionStatus } from '../../src/services/shell.js';
+import { DebugLevel } from '../../../src/configuration/types.js';
+import { ExecutionStatus } from '../../../src/services/shell.js';
 
-import { TaskView } from '../../src/components/views/Task.js';
+import { TaskView } from '../../../src/components/views/Task.js';
 
 // Mock the debug setting loader
-vi.mock('../../src/configuration/io.js', () => ({
+vi.mock('../../../src/configuration/io.js', () => ({
   loadDebugSetting: vi.fn(),
 }));
 
-import { loadDebugSetting } from '../../src/configuration/io.js';
+import { loadDebugSetting } from '../../../src/configuration/io.js';
 
 describe('TaskView component', () => {
   beforeEach(() => {

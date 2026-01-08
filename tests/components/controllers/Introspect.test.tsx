@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { Capability } from '../../src/types/components.js';
-import { Origin } from '../../src/types/types.js';
+import { Capability } from '../../../src/types/components.js';
+import { Origin } from '../../../src/types/types.js';
 
 describe('Introspect capability handling', () => {
   it('filters debug-only capabilities in normal mode', () => {

@@ -2,23 +2,26 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ComponentStatus, ScheduleState } from '../../src/types/components.js';
-import { ScheduledTask, Task, TaskType } from '../../src/types/types.js';
+import {
+  ComponentStatus,
+  ScheduleState,
+} from '../../../src/types/components.js';
+import { ScheduledTask, Task, TaskType } from '../../../src/types/types.js';
 
-import { DebugLevel } from '../../src/configuration/types.js';
+import { DebugLevel } from '../../../src/configuration/types.js';
 
 import {
   Schedule,
   taskToListItem,
-} from '../../src/components/controllers/Schedule.js';
-import { Palette } from '../../src/services/colors.js';
+} from '../../../src/components/controllers/Schedule.js';
+import { Palette } from '../../../src/services/colors.js';
 
 import {
   createLifecycleHandlers,
   createRefinementOptions,
   createRequestHandlers,
   Keys,
-} from '../test-utils.js';
+} from '../../test-utils.js';
 
 // Destructure for readability
 const { ArrowDown, ArrowUp, Enter, Escape } = Keys;

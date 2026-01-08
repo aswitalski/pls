@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { AnthropicService } from '../../src/services/anthropic.js';
+import { AnthropicService } from '../../../src/services/anthropic.js';
 import {
   hasValidAnthropicKey,
   loadConfig,
-} from '../../src/configuration/io.js';
-import { toolRegistry } from '../../src/services/registry.js';
-import { formatSkillsForPrompt } from '../../src/services/skills.js';
-import { TaskType } from '../../src/types/types.js';
-import type { ScheduledTask } from '../../src/types/types.js';
+} from '../../../src/configuration/io.js';
+import { toolRegistry } from '../../../src/services/registry.js';
+import { formatSkillsForPrompt } from '../../../src/services/skills.js';
+import type { ScheduledTask } from '../../../src/types/types.js';
 
 import {
   getAllLeafTasks,
@@ -17,257 +16,11 @@ import {
   renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
-} from '../tools/schedule-test-helpers.js';
+} from './test-helpers.js';
 
-describe('Complex workflows and sequential requests', () => {
+describe('Config extraction and validation', () => {
   it(
-    'handles build + deploy workflow',
-    async () => {
-      if (!hasValidAnthropicKey()) {
-        console.log(
-          'Skipping LLM test: No valid Anthropic API key in ~/.plsrc'
-        );
-        return;
-      }
-
-      const config = loadConfig();
-      const service = new AnthropicService(
-        config.anthropic.key,
-        config.anthropic.model
-      );
-
-      // Load all skills
-      const skills = loadTestSkills([
-        'navigate-to-project.skill.md',
-        'build-project.skill.md',
-        'deploy-app.skill.md',
-      ]);
-      const skillsSection = formatSkillsForPrompt(skills);
-
-      const baseInstructions = toolRegistry.getInstructions('schedule');
-      const enhancedInstructions = baseInstructions + skillsSection;
-
-      // Show base prompt once
-      renderBasePrompt(baseInstructions);
-
-      // Test build + deploy workflow
-      const userCommand = 'build beta and deploy to staging';
-
-      const startTime = Date.now();
-      const result = await service.processWithTool(
-        userCommand,
-        'schedule',
-        enhancedInstructions
-      );
-      const duration = Date.now() - startTime;
-
-      renderCompactPrompt(userCommand, baseInstructions, skills);
-      renderResponse(duration, result);
-
-      expect(result.message).toBeDefined();
-      expect(result.tasks).toBeDefined();
-
-      const tasks = result.tasks as unknown as ScheduledTask[];
-      expect(tasks.length).toBe(2); // Build and Deploy
-
-      const leafTasks = getAllLeafTasks(tasks);
-
-      // Should have exactly 6 leaf tasks: 3 from Build + 3 from Deploy
-      expect(leafTasks.length).toBe(6);
-
-      // Verify all tasks are execute type
-      const executeTasks = leafTasks.filter(
-        (task) => task.type === TaskType.Execute
-      );
-      expect(executeTasks.length).toBe(leafTasks.length);
-
-      // Verify we have tasks from both Build Project and Deploy App
-      const buildTasks = leafTasks.filter(
-        (task) => task.params?.skill === 'Build Project'
-      );
-      const deployTasks = leafTasks.filter(
-        (task) => task.params?.skill === 'Deploy App'
-      );
-
-      expect(buildTasks.length).toBe(2); // Generate + Compile (Navigate has no skill param)
-      expect(deployTasks.length).toBe(3); // CD + Checkout + Deploy
-
-      // Verify correct variants (beta is the project variant being deployed)
-      buildTasks.forEach((task) => {
-        expect(task.params?.variant).toBe('beta');
-      });
-
-      deployTasks.forEach((task) => {
-        expect(task.params?.variant).toBe('beta');
-      });
-    },
-    LLM_TEST_TIMEOUT
-  );
-
-  it(
-    'handles multiple answer tasks interlaced with execute',
-    async () => {
-      if (!hasValidAnthropicKey()) {
-        console.log(
-          'Skipping LLM test: No valid Anthropic API key in ~/.plsrc'
-        );
-        return;
-      }
-
-      const config = loadConfig();
-      const service = new AnthropicService(
-        config.anthropic.key,
-        config.anthropic.model
-      );
-
-      // Load build skill only
-      const skills = loadTestSkills([
-        'navigate-to-project.skill.md',
-        'build-project.skill.md',
-      ]);
-      const skillsSection = formatSkillsForPrompt(skills);
-
-      const baseInstructions = toolRegistry.getInstructions('schedule');
-      const enhancedInstructions = baseInstructions + skillsSection;
-
-      // Show base prompt once
-      renderBasePrompt(baseInstructions);
-
-      // Test unrelated answer + build + answer: answer about rumination, build, answer about tdd
-      const userCommand = 'explain rumination, build gamma, explain tdd';
-
-      const startTime = Date.now();
-      const result = await service.processWithTool(
-        userCommand,
-        'schedule',
-        enhancedInstructions
-      );
-      const duration = Date.now() - startTime;
-
-      renderCompactPrompt(userCommand, baseInstructions, skills);
-      renderResponse(duration, result);
-
-      expect(result.message).toBeDefined();
-      expect(result.tasks).toBeDefined();
-
-      const tasks = result.tasks as unknown as ScheduledTask[];
-      expect(tasks.length).toBe(3); // Explain rumination + Build gamma + Explain TDD
-
-      const leafTasks = getAllLeafTasks(tasks);
-
-      // Should have exactly 5 leaf tasks: 2 answer + 3 execute
-      // Answer tasks may be wrapped in parent tasks with descriptive actions
-      expect(leafTasks.length).toBe(5);
-
-      // Verify we have answer and execute tasks
-      const answerTasks = leafTasks.filter(
-        (task) => task.type === TaskType.Answer || task.type === TaskType.Report
-      );
-      const executeTasks = leafTasks.filter(
-        (task) => task.type === TaskType.Execute
-      );
-
-      expect(answerTasks.length).toBe(2); // Exactly 2 answer tasks (rumination + tdd)
-      expect(executeTasks.length).toBe(3); // Exactly 3 execute tasks (navigate + generate + compile)
-
-      // Verify all answer tasks have proper type field
-      answerTasks.forEach((task) => {
-        expect(['answer', 'report']).toContain(task.type);
-      });
-
-      // Verify all execute tasks have gamma variant
-      executeTasks.forEach((task) => {
-        expect(task.params?.variant).toBe('gamma');
-      });
-
-      // Verify we have one navigate task and two build tasks
-      const navigateTasks = executeTasks.filter(
-        (task) => task.params?.skill === 'Navigate To Project'
-      );
-      const buildTasks = executeTasks.filter(
-        (task) => task.params?.skill === 'Build Project'
-      );
-
-      expect(navigateTasks.length).toBe(1);
-      expect(buildTasks.length).toBe(2);
-    },
-    LLM_TEST_TIMEOUT
-  );
-
-  it(
-    'handles comma-separated sequential requests',
-    async () => {
-      if (!hasValidAnthropicKey()) {
-        console.log(
-          'Skipping LLM test: No valid Anthropic API key in ~/.plsrc'
-        );
-        return;
-      }
-
-      const config = loadConfig();
-      const service = new AnthropicService(
-        config.anthropic.key,
-        config.anthropic.model
-      );
-
-      const skills = loadTestSkills([
-        'navigate-to-project.skill.md',
-        'build-project.skill.md',
-      ]);
-      const skillsSection = formatSkillsForPrompt(skills);
-
-      const baseInstructions = toolRegistry.getInstructions('schedule');
-      const enhancedInstructions = baseInstructions + skillsSection;
-
-      renderBasePrompt(baseInstructions);
-
-      // Test comma-separated requests
-      const userCommand = 'build alpha, build beta';
-
-      const startTime = Date.now();
-      const result = await service.processWithTool(
-        userCommand,
-        'schedule',
-        enhancedInstructions
-      );
-      const duration = Date.now() - startTime;
-
-      renderCompactPrompt(userCommand, baseInstructions, skills);
-      renderResponse(duration, result);
-
-      expect(result.message).toBeDefined();
-      expect(result.tasks).toBeDefined();
-
-      const tasks = result.tasks as unknown as ScheduledTask[];
-      expect(tasks.length).toBe(2); // Build alpha + Build beta
-
-      const leafTasks = getAllLeafTasks(tasks);
-
-      // Should have tasks for both alpha and beta variants
-      const alphaTasks = leafTasks.filter(
-        (task) => task.params?.variant === 'alpha'
-      );
-      const betaTasks = leafTasks.filter(
-        (task) => task.params?.variant === 'beta'
-      );
-
-      expect(alphaTasks.length).toBe(3); // Navigate + Generate + Compile for alpha
-      expect(betaTasks.length).toBe(3); // Navigate + Generate + Compile for beta
-
-      // Each variant should have execution tasks
-      alphaTasks.forEach((task) => {
-        expect(task.type).toBe('execute');
-      });
-
-      betaTasks.forEach((task) => {
-        expect(task.type).toBe('execute');
-      });
-    },
-    LLM_TEST_TIMEOUT
-  );
-
-  it(
-    'handles semicolon-separated sequential requests',
+    'extracts config paths from strict placeholders',
     async () => {
       if (!hasValidAnthropicKey()) {
         console.log(
@@ -290,8 +43,7 @@ describe('Complex workflows and sequential requests', () => {
 
       renderBasePrompt(baseInstructions);
 
-      // Test semicolon-separated requests
-      const userCommand = 'navigate to alpha; navigate to beta';
+      const userCommand = 'navigate to alpha';
 
       const startTime = Date.now();
       const result = await service.processWithTool(
@@ -308,31 +60,77 @@ describe('Complex workflows and sequential requests', () => {
       expect(result.tasks).toBeDefined();
 
       const tasks = result.tasks as unknown as ScheduledTask[];
-      expect(tasks.length).toBeGreaterThan(0);
-
       const leafTasks = getAllLeafTasks(tasks);
 
-      // Should have tasks for both alpha and beta
-      const alphaTasks = leafTasks.filter(
-        (task) => task.params?.variant === 'alpha'
-      );
-      const betaTasks = leafTasks.filter(
-        (task) => task.params?.variant === 'beta'
-      );
+      expect(leafTasks.length).toBe(1);
 
-      expect(alphaTasks.length).toBe(1);
-      expect(betaTasks.length).toBe(1);
-
-      // All should be execute type
-      leafTasks.forEach((task) => {
-        expect(task.type).toBe('execute');
-      });
+      const task = leafTasks[0];
+      expect(task.config).toBeDefined();
+      expect(Array.isArray(task.config)).toBe(true);
+      expect(task.config).toContain('project.alpha.repo');
     },
     LLM_TEST_TIMEOUT
   );
 
   it(
-    'handles mixed separators in sequential requests',
+    'extracts multiple config paths from single task',
+    async () => {
+      if (!hasValidAnthropicKey()) {
+        console.log(
+          'Skipping LLM test: No valid Anthropic API key in ~/.plsrc'
+        );
+        return;
+      }
+
+      const config = loadConfig();
+      const service = new AnthropicService(
+        config.anthropic.key,
+        config.anthropic.model
+      );
+
+      const skills = loadTestSkills(['deploy-app.skill.md']);
+      const skillsSection = formatSkillsForPrompt(skills);
+
+      const baseInstructions = toolRegistry.getInstructions('schedule');
+      const enhancedInstructions = baseInstructions + skillsSection;
+
+      renderBasePrompt(baseInstructions);
+
+      // This should create a task with multiple config paths
+      const userCommand = 'deploy gamma to production';
+
+      const startTime = Date.now();
+      const result = await service.processWithTool(
+        userCommand,
+        'schedule',
+        enhancedInstructions
+      );
+      const duration = Date.now() - startTime;
+
+      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderResponse(duration, result);
+
+      expect(result.message).toBeDefined();
+      expect(result.tasks).toBeDefined();
+
+      const tasks = result.tasks as unknown as ScheduledTask[];
+      const leafTasks = getAllLeafTasks(tasks);
+
+      // Find the deploy task (last one)
+      const deployTask = leafTasks[leafTasks.length - 1];
+      expect(deployTask.config).toBeDefined();
+      expect(Array.isArray(deployTask.config)).toBe(true);
+
+      // Should have exactly 2 config paths: environment.production.url and token
+      expect(deployTask.config?.length).toBe(2);
+      expect(deployTask.config).toContain('environment.production.url');
+      expect(deployTask.config).toContain('environment.production.token');
+    },
+    LLM_TEST_TIMEOUT
+  );
+
+  it(
+    'resolves variant placeholders in config paths',
     async () => {
       if (!hasValidAnthropicKey()) {
         console.log(
@@ -348,8 +146,8 @@ describe('Complex workflows and sequential requests', () => {
       );
 
       const skills = loadTestSkills([
-        'navigate-to-project.skill.md',
         'build-project.skill.md',
+        'navigate-to-project.skill.md',
       ]);
       const skillsSection = formatSkillsForPrompt(skills);
 
@@ -358,8 +156,7 @@ describe('Complex workflows and sequential requests', () => {
 
       renderBasePrompt(baseInstructions);
 
-      // Test mixed separators: comma and semicolon
-      const userCommand = 'navigate to alpha, build alpha; navigate to beta';
+      const userCommand = 'build beta';
 
       const startTime = Date.now();
       const result = await service.processWithTool(
@@ -376,24 +173,221 @@ describe('Complex workflows and sequential requests', () => {
       expect(result.tasks).toBeDefined();
 
       const tasks = result.tasks as unknown as ScheduledTask[];
-      expect(tasks.length).toBeGreaterThan(0);
-
       const leafTasks = getAllLeafTasks(tasks);
 
-      // Should have tasks for alpha and beta variants
-      const alphaTasks = leafTasks.filter(
-        (task) => task.params?.variant === 'alpha'
-      );
-      const betaTasks = leafTasks.filter(
-        (task) => task.params?.variant === 'beta'
-      );
+      // First task should navigate to beta repo
+      const firstTask = leafTasks[0];
+      expect(firstTask.config).toBeDefined();
+      expect(firstTask.config).toContain('project.beta.repo');
 
-      expect(alphaTasks.length).toBeGreaterThan(0);
-      expect(betaTasks.length).toBeGreaterThan(0);
-
-      // All should be execute type
+      // All tasks should have variant: beta
       leafTasks.forEach((task) => {
-        expect(task.type).toBe('execute');
+        if (task.params?.variant) {
+          expect(task.params.variant).toBe('beta');
+        }
+      });
+
+      // All config paths should have 'beta' resolved (no VARIANT)
+      leafTasks.forEach((task) => {
+        if (task.config && task.config.length > 0) {
+          task.config.forEach((path) => {
+            expect(path).not.toContain('VARIANT');
+            if (path.includes('project.')) {
+              expect(path).toContain('beta');
+            }
+          });
+        }
+      });
+    },
+    LLM_TEST_TIMEOUT
+  );
+
+  it(
+    'handles same config path in multiple tasks correctly',
+    async () => {
+      if (!hasValidAnthropicKey()) {
+        console.log(
+          'Skipping LLM test: No valid Anthropic API key in ~/.plsrc'
+        );
+        return;
+      }
+
+      const config = loadConfig();
+      const service = new AnthropicService(
+        config.anthropic.key,
+        config.anthropic.model
+      );
+
+      const skills = loadTestSkills([
+        'build-project.skill.md',
+        'navigate-to-project.skill.md',
+      ]);
+      const skillsSection = formatSkillsForPrompt(skills);
+
+      const baseInstructions = toolRegistry.getInstructions('schedule');
+      const enhancedInstructions = baseInstructions + skillsSection;
+
+      renderBasePrompt(baseInstructions);
+
+      // Build alpha and beta - both will need project.alpha.repo and project.beta.repo
+      const userCommand = 'build alpha and beta';
+
+      const startTime = Date.now();
+      const result = await service.processWithTool(
+        userCommand,
+        'schedule',
+        enhancedInstructions
+      );
+      const duration = Date.now() - startTime;
+
+      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderResponse(duration, result);
+
+      expect(result.message).toBeDefined();
+      expect(result.tasks).toBeDefined();
+
+      const tasks = result.tasks as unknown as ScheduledTask[];
+      const leafTasks = getAllLeafTasks(tasks);
+
+      // Find all tasks that use project.alpha.repo
+      const alphaRepoTasks = leafTasks.filter(
+        (task) => task.config && task.config.includes('project.alpha.repo')
+      );
+
+      // Find all tasks that use project.beta.repo
+      const betaRepoTasks = leafTasks.filter(
+        (task) => task.config && task.config.includes('project.beta.repo')
+      );
+
+      // Should have exactly 1 navigate task for each variant
+      expect(alphaRepoTasks.length).toBe(1);
+      expect(betaRepoTasks.length).toBe(1);
+
+      // Each task should have valid config array
+      leafTasks.forEach((task) => {
+        if (task.config && task.config.length > 0) {
+          expect(Array.isArray(task.config)).toBe(true);
+          // Config paths should be in dot notation
+          task.config.forEach((path) => {
+            expect(typeof path).toBe('string');
+            expect(path.includes('.')).toBe(true);
+          });
+        }
+      });
+    },
+    LLM_TEST_TIMEOUT
+  );
+
+  it(
+    'extracts config paths from non-variant placeholders',
+    async () => {
+      if (!hasValidAnthropicKey()) {
+        console.log(
+          'Skipping LLM test: No valid Anthropic API key in ~/.plsrc'
+        );
+        return;
+      }
+
+      const config = loadConfig();
+      const service = new AnthropicService(
+        config.anthropic.key,
+        config.anthropic.model
+      );
+
+      const skills = loadTestSkills(['list-files.skill.md']);
+      const skillsSection = formatSkillsForPrompt(skills);
+
+      const baseInstructions = toolRegistry.getInstructions('schedule');
+      const enhancedInstructions = baseInstructions + skillsSection;
+
+      renderBasePrompt(baseInstructions);
+
+      const userCommand = 'list files';
+
+      const startTime = Date.now();
+      const result = await service.processWithTool(
+        userCommand,
+        'schedule',
+        enhancedInstructions
+      );
+      const duration = Date.now() - startTime;
+
+      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderResponse(duration, result);
+
+      expect(result.message).toBeDefined();
+      expect(result.tasks).toBeDefined();
+
+      const tasks = result.tasks as unknown as ScheduledTask[];
+      const leafTasks = getAllLeafTasks(tasks);
+
+      // List Files skill should create 1-2 tasks (could be split or combined)
+      expect(leafTasks.length).toBeGreaterThanOrEqual(1);
+      expect(leafTasks.length).toBeLessThanOrEqual(2);
+
+      // All tasks should have config arrays
+      leafTasks.forEach((task) => {
+        expect(task.config).toBeDefined();
+        expect(Array.isArray(task.config)).toBe(true);
+      });
+
+      // List Files skill has TWO config placeholders - verify both are extracted
+      const allConfigs = leafTasks.flatMap((task) => task.config || []);
+      expect(allConfigs).toContain('list.directory');
+      expect(allConfigs).toContain('list.pattern');
+    },
+    LLM_TEST_TIMEOUT
+  );
+
+  it(
+    'handles config with duplicate paths gracefully',
+    async () => {
+      if (!hasValidAnthropicKey()) {
+        console.log(
+          'Skipping LLM test: No valid Anthropic API key in ~/.plsrc'
+        );
+        return;
+      }
+
+      const config = loadConfig();
+      const service = new AnthropicService(
+        config.anthropic.key,
+        config.anthropic.model
+      );
+
+      const skills = loadTestSkills(['deploy-app.skill.md']);
+      const skillsSection = formatSkillsForPrompt(skills);
+
+      const baseInstructions = toolRegistry.getInstructions('schedule');
+      const enhancedInstructions = baseInstructions + skillsSection;
+
+      renderBasePrompt(baseInstructions);
+
+      const userCommand = 'deploy alpha to production';
+
+      const startTime = Date.now();
+      const result = await service.processWithTool(
+        userCommand,
+        'schedule',
+        enhancedInstructions
+      );
+      const duration = Date.now() - startTime;
+
+      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderResponse(duration, result);
+
+      expect(result.message).toBeDefined();
+      expect(result.tasks).toBeDefined();
+
+      const tasks = result.tasks as unknown as ScheduledTask[];
+      const leafTasks = getAllLeafTasks(tasks);
+
+      // Verify all config arrays contain unique paths (no duplicates within a task)
+      leafTasks.forEach((task) => {
+        if (task.config && task.config.length > 0) {
+          const uniquePaths = new Set(task.config);
+          expect(uniquePaths.size).toBe(task.config.length);
+        }
       });
     },
     LLM_TEST_TIMEOUT

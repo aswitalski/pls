@@ -1,21 +1,25 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { AnthropicService } from '../../src/services/anthropic.js';
+import { AnthropicService } from '../../../src/services/anthropic.js';
 import {
   hasValidAnthropicKey,
   loadConfig,
-} from '../../src/configuration/io.js';
-import { toolRegistry } from '../../src/services/registry.js';
-import { formatSkillsForPrompt } from '../../src/services/skills.js';
-import { handleRefinement } from '../../src/services/refinement.js';
-import { TaskType } from '../../src/types/types.js';
-import type { ScheduledTask, Task } from '../../src/types/types.js';
-import type { BaseState } from '../../src/types/components.js';
+} from '../../../src/configuration/io.js';
+import { toolRegistry } from '../../../src/services/registry.js';
+import { formatSkillsForPrompt } from '../../../src/services/skills.js';
+import { handleRefinement } from '../../../src/services/refinement.js';
+import { TaskType } from '../../../src/types/types.js';
+import type {
+  RefinementOption,
+  ScheduledTask,
+  Task,
+} from '../../../src/types/types.js';
+import type { BaseState } from '../../../src/types/components.js';
 import type {
   LifecycleHandlers,
   RequestHandlers,
   WorkflowHandlers,
-} from '../../src/types/handlers.js';
+} from '../../../src/types/handlers.js';
 
 import {
   getAllLeafTasks,
@@ -24,7 +28,7 @@ import {
   renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
-} from '../tools/schedule-test-helpers.js';
+} from './test-helpers.js';
 
 describe('Define task flow', () => {
   it(
@@ -87,20 +91,22 @@ describe('Define task flow', () => {
       expect(defineTask.params?.options).toBeDefined();
       expect(Array.isArray(defineTask.params?.options)).toBe(true);
 
-      const options = defineTask.params?.options as string[];
+      const options = defineTask.params?.options as RefinementOption[];
       expect(options.length).toBe(4); // All 4 variants: alpha, beta, gamma, delta
 
       // Verify options describe different variants
       // Each option should mention a different project variant
       const hasAlpha = options.some((opt) =>
-        opt.toLowerCase().includes('alpha')
+        opt.name.toLowerCase().includes('alpha')
       );
-      const hasBeta = options.some((opt) => opt.toLowerCase().includes('beta'));
+      const hasBeta = options.some((opt) =>
+        opt.name.toLowerCase().includes('beta')
+      );
       const hasGamma = options.some((opt) =>
-        opt.toLowerCase().includes('gamma')
+        opt.name.toLowerCase().includes('gamma')
       );
       const hasDelta = options.some((opt) =>
-        opt.toLowerCase().includes('delta')
+        opt.name.toLowerCase().includes('delta')
       );
 
       // Should have all 4 variants in options

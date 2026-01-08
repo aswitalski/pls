@@ -2,8 +2,8 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it } from 'vitest';
 
-import { Upcoming } from '../../src/components/views/Upcoming.js';
-import { ExecutionStatus } from '../../src/services/shell.js';
+import { Upcoming } from '../../../src/components/views/Upcoming.js';
+import { ExecutionStatus } from '../../../src/services/shell.js';
 
 describe('Upcoming component', () => {
   describe('Rendering', () => {

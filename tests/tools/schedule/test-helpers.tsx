@@ -3,11 +3,11 @@ import { join } from 'path';
 import React from 'react';
 import { render } from 'ink-testing-library';
 
-import { Palette } from '../../src/services/colors.js';
-import { formatSkillsForPrompt } from '../../src/services/skills.js';
-import { ComponentStatus } from '../../src/types/components.js';
-import type { ScheduledTask } from '../../src/types/types.js';
-import { Debug } from '../../src/components/views/Debug.js';
+import { Palette } from '../../../src/services/colors.js';
+import { formatSkillsForPrompt } from '../../../src/services/skills.js';
+import { ComponentStatus } from '../../../src/types/components.js';
+import type { ScheduledTask } from '../../../src/types/types.js';
+import { Debug } from '../../../src/components/views/Debug.js';
 
 export const LLM_TEST_TIMEOUT = 30000;
 

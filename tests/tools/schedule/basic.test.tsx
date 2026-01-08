@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { AnthropicService } from '../../src/services/anthropic.js';
+import { AnthropicService } from '../../../src/services/anthropic.js';
 import {
   hasValidAnthropicKey,
   loadConfig,
-} from '../../src/configuration/io.js';
-import { toolRegistry } from '../../src/services/registry.js';
-import { formatSkillsForPrompt } from '../../src/services/skills.js';
-import type { ScheduledTask } from '../../src/types/types.js';
+} from '../../../src/configuration/io.js';
+import { toolRegistry } from '../../../src/services/registry.js';
+import { formatSkillsForPrompt } from '../../../src/services/skills.js';
+import type { ScheduledTask } from '../../../src/types/types.js';
 
 import {
   getAllLeafTasks,
@@ -16,7 +16,7 @@ import {
   renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
-} from '../tools/schedule-test-helpers.js';
+} from './test-helpers.js';
 
 describe('Basic task scheduling and message variation', () => {
   it(

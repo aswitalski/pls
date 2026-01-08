@@ -2,22 +2,22 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ComponentStatus, ConfigState } from '../../src/types/components.js';
+import { ComponentStatus, ConfigState } from '../../../src/types/components.js';
 
-import { AnthropicModel } from '../../src/configuration/types.js';
+import { AnthropicModel } from '../../../src/configuration/types.js';
 
 import {
   Config,
   ConfigView,
   ConfigStep,
   StepType,
-} from '../../src/components/controllers/Config.js';
+} from '../../../src/components/controllers/Config.js';
 
 import {
   Keys,
   createRequestHandlers,
   createLifecycleHandlers,
-} from '../test-utils.js';
+} from '../../test-utils.js';
 
 describe('Config component interaction flows', () => {
   const mockValidate = () => true;
