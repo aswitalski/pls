@@ -23,32 +23,8 @@ export function loadTestSkills(skillNames: string[]): string[] {
   });
 }
 
-let basePromptShown = false;
-
 /**
- * Show the base schedule prompt once
- */
-export function renderBasePrompt(basePrompt: string): void {
-  if (basePromptShown) return;
-  basePromptShown = true;
-
-  const lines = basePrompt.split('\n').length;
-  const bytes = Buffer.byteLength(basePrompt, 'utf-8');
-
-  const box = render(
-    <Debug
-      title={`SYSTEM PROMPT (${String(lines)} lines, ${String(bytes)} bytes)`}
-      content={`\n${basePrompt}`}
-      color={Palette.Gray}
-      status={ComponentStatus.Done}
-    />
-  );
-  console.log(box.lastFrame());
-  box.unmount();
-}
-
-/**
- * Render compact prompt header with command and skills
+ * Render compact prompt header with command and skills only
  */
 export function renderCompactPrompt(
   command: string,
@@ -70,7 +46,7 @@ export function renderCompactPrompt(
     '',
     separator,
     '',
-    skillsContent.trim(),
+    skillsContent.trim() || '(no skills)',
   ].join('\n');
 
   const box = render(

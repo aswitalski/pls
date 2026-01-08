@@ -14,7 +14,6 @@ import {
   getAllLeafTasks,
   LLM_TEST_TIMEOUT,
   loadTestSkills,
-  renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
 } from './test-helpers.js';
@@ -47,7 +46,6 @@ describe('Skill reference expansion', () => {
       const enhancedInstructions = baseInstructions + skillsSection;
 
       // Show base prompt once
-      renderBasePrompt(baseInstructions);
 
       // Test skill reference - "build production" should navigate then build
       // "production" maps to "delta" variant per build-project skill
@@ -120,8 +118,6 @@ describe('Skill reference expansion', () => {
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
 
-      renderBasePrompt(baseInstructions);
-
       const userCommand = 'run circular a';
 
       const startTime = Date.now();
@@ -188,8 +184,6 @@ describe('Skill reference expansion', () => {
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
-
-      renderBasePrompt(baseInstructions);
 
       const userCommand = 'run self reference';
 

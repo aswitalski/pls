@@ -14,7 +14,6 @@ import {
   getAllLeafTasks,
   LLM_TEST_TIMEOUT,
   loadTestSkills,
-  renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
 } from './test-helpers.js';
@@ -41,8 +40,6 @@ describe('Task types', () => {
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
-
-      renderBasePrompt(baseInstructions);
 
       const userCommand = 'list your skills';
 
@@ -92,8 +89,6 @@ describe('Task types', () => {
       );
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
-
-      renderBasePrompt(baseInstructions);
 
       const userCommand = 'explain quantum computing';
 
@@ -150,8 +145,6 @@ describe('Task types', () => {
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
 
-      renderBasePrompt(baseInstructions);
-
       const userCommand = 'validate the project';
 
       const startTime = Date.now();
@@ -195,8 +188,6 @@ describe('Task types', () => {
       );
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
-
-      renderBasePrompt(baseInstructions);
 
       const userCommand = 'change config settings';
 
@@ -245,8 +236,6 @@ describe('Task types', () => {
       );
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
-
-      renderBasePrompt(baseInstructions);
 
       const userCommand = 'config debug';
 

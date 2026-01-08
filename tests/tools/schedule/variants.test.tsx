@@ -14,7 +14,6 @@ import {
   getAllLeafTasks,
   LLM_TEST_TIMEOUT,
   loadTestSkills,
-  renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
 } from './test-helpers.js';
@@ -44,7 +43,6 @@ describe('Variant resolution', () => {
       const enhancedInstructions = baseInstructions + skillsSection;
 
       // Show base prompt once
-      renderBasePrompt(baseInstructions);
 
       // Test multiple variants - "deploy beta to staging"
       // Should resolve VARIANT=beta and ENV=staging
@@ -121,7 +119,6 @@ describe('Variant resolution', () => {
       const enhancedInstructions = baseInstructions + skillsSection;
 
       // Show base prompt once
-      renderBasePrompt(baseInstructions);
 
       // Test multiple variants - "build alpha and beta"
       const userCommand = 'build alpha and beta';
@@ -225,7 +222,6 @@ describe('Variant resolution', () => {
       const enhancedInstructions = baseInstructions + skillsSection;
 
       // Show base prompt once
-      renderBasePrompt(baseInstructions);
 
       // Request gamma variant (third variant - testing)
       const userCommand = 'build gamma';

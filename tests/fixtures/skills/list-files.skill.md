@@ -4,8 +4,8 @@ List Files
 
 ### Description
 
-Lists files and directories in a specified location with optional
-filtering.
+Lists files and directories in a specified location and filters them
+by pattern.
 
 ### Aliases
 
@@ -25,7 +25,7 @@ list:
 ### Steps
 
 - Read directory contents
-- Filter by pattern if specified
+- Filter results by pattern
 
 ### Execution
 

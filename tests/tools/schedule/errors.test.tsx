@@ -14,7 +14,6 @@ import {
   getAllLeafTasks,
   LLM_TEST_TIMEOUT,
   loadTestSkills,
-  renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
 } from './test-helpers.js';
@@ -38,8 +37,6 @@ describe('Error handling and edge cases', () => {
 
       // Provide no skills
       const baseInstructions = toolRegistry.getInstructions('schedule');
-
-      renderBasePrompt(baseInstructions);
 
       // Request something that would need a skill
       const userCommand = 'compile the project';
@@ -85,8 +82,6 @@ describe('Error handling and edge cases', () => {
       );
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
-
-      renderBasePrompt(baseInstructions);
 
       // Vague request
       const userCommand = 'do something';
@@ -136,8 +131,6 @@ describe('Error handling and edge cases', () => {
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
-
-      renderBasePrompt(baseInstructions);
 
       // Mix of valid skill and invalid operation
       const userCommand = 'navigate to alpha and reticulate splines';
@@ -202,8 +195,6 @@ describe('Error handling and edge cases', () => {
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
-
-      renderBasePrompt(baseInstructions);
 
       // Complex request with multiple operations
       const userCommand =

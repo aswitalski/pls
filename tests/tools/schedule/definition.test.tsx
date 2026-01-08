@@ -25,7 +25,6 @@ import {
   getAllLeafTasks,
   LLM_TEST_TIMEOUT,
   loadTestSkills,
-  renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
 } from './test-helpers.js';
@@ -56,8 +55,6 @@ describe('Define task flow', () => {
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
-
-      renderBasePrompt(baseInstructions);
 
       // Request without specifying which variant is ambiguous
       // Should create DEFINE task with options

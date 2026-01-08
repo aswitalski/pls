@@ -13,7 +13,6 @@ import {
   getAllLeafTasks,
   LLM_TEST_TIMEOUT,
   loadTestSkills,
-  renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
 } from './test-helpers.js';
@@ -43,7 +42,6 @@ describe('Basic task scheduling and message variation', () => {
       const enhancedInstructions = baseInstructions + skillsSection;
 
       // Show base prompt once
-      renderBasePrompt(baseInstructions);
 
       // Test different verb variations - specify variant to avoid ambiguity
       const userCommand = 'go to beta repo';
@@ -112,7 +110,6 @@ describe('Basic task scheduling and message variation', () => {
       const enhancedInstructions = baseInstructions + skillsSection;
 
       // Show base prompt once
-      renderBasePrompt(baseInstructions);
 
       // Test variant matching - LLM should match "experimental" to "beta"
       const userCommand = 'navigate to experimental project';

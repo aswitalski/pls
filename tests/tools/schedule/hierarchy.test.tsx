@@ -13,7 +13,6 @@ import {
   getAllLeafTasks,
   LLM_TEST_TIMEOUT,
   loadTestSkills,
-  renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
 } from './test-helpers.js';
@@ -62,8 +61,6 @@ describe('Task hierarchy', () => {
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
-
-      renderBasePrompt(baseInstructions);
 
       // Complex multi-step workflow
       const userCommand = 'build alpha and beta projects';
@@ -122,8 +119,6 @@ describe('Task hierarchy', () => {
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
 
-      renderBasePrompt(baseInstructions);
-
       const userCommand = 'build gamma variant';
 
       const startTime = Date.now();
@@ -181,8 +176,6 @@ describe('Task hierarchy', () => {
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
-
-      renderBasePrompt(baseInstructions);
 
       const userCommand = 'build alpha, beta, and gamma';
 

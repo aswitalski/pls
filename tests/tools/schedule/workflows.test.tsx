@@ -14,7 +14,6 @@ import {
   getAllLeafTasks,
   LLM_TEST_TIMEOUT,
   loadTestSkills,
-  renderBasePrompt,
   renderCompactPrompt,
   renderResponse,
 } from './test-helpers.js';
@@ -48,7 +47,6 @@ describe('Complex workflows and sequential requests', () => {
       const enhancedInstructions = baseInstructions + skillsSection;
 
       // Show base prompt once
-      renderBasePrompt(baseInstructions);
 
       // Test build + deploy workflow
       const userCommand = 'build beta and deploy to staging';
@@ -131,7 +129,6 @@ describe('Complex workflows and sequential requests', () => {
       const enhancedInstructions = baseInstructions + skillsSection;
 
       // Show base prompt once
-      renderBasePrompt(baseInstructions);
 
       // Test unrelated answer + build + answer: answer about rumination, build, answer about tdd
       const userCommand = 'explain rumination, build gamma, explain tdd';
@@ -219,8 +216,6 @@ describe('Complex workflows and sequential requests', () => {
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
 
-      renderBasePrompt(baseInstructions);
-
       // Test comma-separated requests
       const userCommand = 'build alpha, build beta';
 
@@ -288,8 +283,6 @@ describe('Complex workflows and sequential requests', () => {
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
 
-      renderBasePrompt(baseInstructions);
-
       // Test semicolon-separated requests
       const userCommand = 'navigate to alpha; navigate to beta';
 
@@ -355,8 +348,6 @@ describe('Complex workflows and sequential requests', () => {
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
       const enhancedInstructions = baseInstructions + skillsSection;
-
-      renderBasePrompt(baseInstructions);
 
       // Test mixed separators: comma and semicolon
       const userCommand = 'navigate to alpha, build alpha; navigate to beta';
