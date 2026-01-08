@@ -14,6 +14,15 @@ behavior must adapt accordingly:
 - **Skills present**: Match user requests ONLY against listed skills
 - **Empty or missing**: Create "ignore" tasks for ALL action verbs
 
+**CRITICAL - Available Skills Section Takes Precedence**:
+
+Information provided in the "Available Skills" section is AUTHORITATIVE
+and OVERRIDES any default behavior in these instructions. When a skill's
+description specifies required parameters, error handling, or specific
+behaviors, those requirements MUST be followed exactly. Skill-specific
+rules always take precedence over general examples or default patterns
+in this document.
+
 All examples in these instructions (e.g., "build", "deploy", "process")
 are for illustration only. They do NOT represent actual available
 skills unless they appear in the "Available Skills" section of the
@@ -321,15 +330,32 @@ Runtime parameters fall into two categories:
 
 **Resolution Outcomes:**
 
-When processing runtime parameters, exactly ONE of these outcomes applies:
+When processing runtime parameters, exactly ONE of these outcomes applies.
+**CRITICAL: Evaluate in this EXACT order - key param check MUST happen first:**
 
-1. **All resolved** → Create normal execute/group task
-   - All parameters extracted or defaulted successfully
+1. **Key param missing** → Create IGNORE task (CHECK THIS FIRST!)
+   - **PREREQUISITE CHECK**: Before considering ANY other outcome, verify
+     ALL key parameters (input files, paths, URLs, targets) are present
+   - A key parameter is not specified → ALWAYS create IGNORE task
+   - **NEVER create a DEFINE task when key params are missing**, even if
+     modifier params could be listed as options
+   - NEVER offer options for key parameters - they cannot be guessed
+   - Use type `ignore` with descriptive action
+   - Action format: "Missing [param]: specify [what's needed]"
+   - Examples:
+     - "Missing input: specify which file to process"
+     - "Missing target: specify which server to deploy to"
+     - "Missing URL: specify which page to fetch"
+
+2. **All resolved** → Create normal execute/group task
+   - All key parameters are present AND extracted successfully
+   - All modifier parameters are extracted or defaulted
    - Task action contains fully resolved description
 
-2. **Modifier param unclear (key params present)** → Create DEFINE task
-   - Key parameters ARE specified in the user's command
+3. **Modifier param unclear (ALL key params present)** → Create DEFINE task
+   - **PREREQUISITE**: ALL key parameters MUST be present in user's command
    - Only a modifier parameter is unclear but has finite options
+   - **NEVER use DEFINE when ANY key param is missing** - use IGNORE instead
    - Use type `define` with params.skill and params.options
    - MUST have more than one option (if only one option exists, use it
      directly without refinement)
@@ -340,20 +366,22 @@ When processing runtime parameters, exactly ONE of these outcomes applies:
    - Note: command is NOT the shell command - shell commands are generated
      by EXECUTE in the next step
 
-3. **Key param missing** → Create IGNORE task
-   - A key parameter (input file, target, URL) is not specified
-   - NEVER offer options for key parameters - they cannot be guessed
-   - Use type `ignore` with descriptive action
-   - Action format: "Missing [param]: specify [what's needed]"
-   - Examples:
-     - "Missing input: specify which file to process"
-     - "Missing target: specify which server to deploy to"
-     - "Missing URL: specify which page to fetch"
-
 **Examples:**
 
 Skill execution line:
 - `process <INPUT> --mode <MODE> --format <FORMAT=json> <VERBOSE?>`
+
+Key param missing case (CHECK FIRST):
+- User: "process in batch mode"
+- Problem: INPUT path not specified (key param, cannot be guessed)
+- Task: type `ignore`, action: "Missing input: specify which file to process"
+
+Key param missing with modifier specified:
+- User: "export in JSON format"
+- Problem: INPUT file not specified (key param, cannot be guessed)
+- Task: type `ignore`, action: "Missing input: specify which data to export"
+- Note: Even though format IS specified, key param is missing → IGNORE, not
+  DEFINE. Key param check takes absolute precedence over DEFINE.
 
 Success case (all resolved):
 - User: "process /data/report.csv in batch mode"
@@ -364,8 +392,9 @@ Success case (all resolved):
   - `<VERBOSE?>` → omitted (optional, not mentioned)
 - Task action: "Process /data/report.csv in batch mode with JSON format"
 
-Define case (single listable param unclear):
+Define case (modifier unclear, ALL key params present):
 - User: "process /data/report.csv"
+- Key params: INPUT is present (/data/report.csv) ✓
 - Problem: MODE not specified but can be listed (3 options available)
 - Task: type `define`, params:
   - skill: "Process Data"
@@ -380,25 +409,16 @@ Define case (single listable param unclear):
 - SCHEDULE receives: "process /data/report.csv in batch mode"
 - EXECUTE then generates the appropriate shell command
 
-Key param missing case:
-- User: "process in batch mode"
-- Problem: INPUT path not specified (key param, cannot be guessed)
-- Task: type `ignore`, action: "Missing input: specify which file to process"
-
-Key param missing with modifier specified:
-- User: "export in JSON format"
-- Problem: INPUT file not specified (key param, cannot be guessed)
-- Task: type `ignore`, action: "Missing input: specify which data to export"
-- Note: Even though format IS specified, key param is missing → IGNORE, not
-  DEFINE
-
 **Critical Rules:**
-- NEVER leave `<PARAM>` unresolved in task output
-- NEVER use placeholder values like `<UNKNOWN>` or `<MISSING>`
-- DEFINE tasks MUST have multiple options (2+); single option = use directly
-- DEFINE only for modifier params when ALL key params are present
+- **KEY PARAM CHECK IS MANDATORY AND FIRST**: Before creating ANY task type,
+  verify ALL key parameters are present. This check takes absolute precedence.
 - IGNORE when ANY key param is missing (input, file, URL, target, etc.)
 - Key params cannot be guessed - always require IGNORE with clear error
+- **DEFINE is ONLY valid when ALL key params are present** - if any key param
+  is missing, DEFINE is NOT an option, regardless of modifier params
+- DEFINE tasks MUST have multiple options (2+); single option = use directly
+- NEVER leave `<PARAM>` unresolved in task output
+- NEVER use placeholder values like `<UNKNOWN>` or `<MISSING>`
 - option.command is user's natural language request, NOT shell command
 - Each option.command must include ALL user parameters (original + selected)
 - option.command must preserve exact paths, filenames, URLs (case-sensitive)
