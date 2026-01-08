@@ -311,7 +311,7 @@ command, NOT from stored configuration.
 3. **Complete descriptions**: Task actions must be human-readable with
    all parameters filled in:
    - CORRECT: "Process /data/report.csv in batch mode with JSON output"
-   - WRONG: "Process <INPUT> in <MODE> mode"
+   - WRONG: "Process <SOURCE> in <MODE> mode"
 
 **Parameter Classification:**
 
@@ -321,7 +321,7 @@ Runtime parameters fall into two categories:
    - Input files, paths, URLs, target names, identifiers
    - The primary subject of the command
    - Cannot be guessed or listed as options
-   - Examples: `<INPUT>`, `<FILE>`, `<URL>`, `<TARGET>`
+   - Examples: `<SOURCE>`, `<FILE>`, `<URL>`, `<TARGET>`
 
 2. **Modifier parameters** - Configure HOW the operation runs
    - Have a finite set of valid options
@@ -369,24 +369,24 @@ When processing runtime parameters, exactly ONE of these outcomes applies.
 **Examples:**
 
 Skill execution line:
-- `process <INPUT> --mode <MODE> --format <FORMAT=json> <VERBOSE?>`
+- `process <SOURCE> --mode <MODE> --format <FORMAT=json> <VERBOSE?>`
 
 Key param missing case (CHECK FIRST):
 - User: "process in batch mode"
-- Problem: INPUT path not specified (key param, cannot be guessed)
-- Task: type `ignore`, action: "Missing input: specify which file to process"
+- Problem: SOURCE path not specified (key param, cannot be guessed)
+- Task: type `ignore`, action: "Missing source: specify which file to process"
 
 Key param missing with modifier specified:
 - User: "export in JSON format"
-- Problem: INPUT file not specified (key param, cannot be guessed)
-- Task: type `ignore`, action: "Missing input: specify which data to export"
+- Problem: SOURCE file not specified (key param, cannot be guessed)
+- Task: type `ignore`, action: "Missing source: specify which data to export"
 - Note: Even though format IS specified, key param is missing → IGNORE, not
   DEFINE. Key param check takes absolute precedence over DEFINE.
 
 Success case (all resolved):
 - User: "process /data/report.csv in batch mode"
 - Resolution:
-  - `<INPUT>` → `/data/report.csv` (extracted)
+  - `<SOURCE>` → `/data/report.csv` (extracted)
   - `<MODE>` → `batch` (extracted from "batch mode")
   - `<FORMAT=json>` → `json` (default used)
   - `<VERBOSE?>` → omitted (optional, not mentioned)
@@ -394,7 +394,7 @@ Success case (all resolved):
 
 Define case (modifier unclear, ALL key params present):
 - User: "process /data/report.csv"
-- Key params: INPUT is present (/data/report.csv) ✓
+- Key params: SOURCE is present (/data/report.csv) ✓
 - Problem: MODE not specified but can be listed (3 options available)
 - Task: type `define`, params:
   - skill: "Process Data"
