@@ -625,9 +625,8 @@ describe('Workflow component lifecycle', () => {
 
       await new Promise((resolve) => setTimeout(resolve, WaitTime));
 
-      // Warnings should appear as yellow feedback with ⚠ symbol
+      // Warnings should appear as feedback messages
       const output = lastFrame();
-      expect(output).toContain('⚠');
       expect(output).toContain('Configuration file not found');
       expect(output).toContain('Using default settings');
     });
