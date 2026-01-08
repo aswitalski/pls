@@ -164,6 +164,14 @@ maintainable and allows dynamic loading at runtime.
 - Keep examples concise and readable for human understanding
 - Show all user-facing messages and prompts in lowercase to match the
   conversational, casual tone of the interface
+- **CRITICAL - Avoid biasing examples**: Examples in instruction files MUST be
+  generic and abstract. NEVER use parameter names, skill names, or patterns
+  similar to those the developer provides in actual skill definitions. For
+  instance, if demonstrating a file processing parameter, use abstract names
+  like `<SOURCE>` or `<DATA>` rather than names the developer uses in their
+  skills. This prevents the LLM from being biased toward instruction-file
+  examples when processing user-provided skills, ensuring skills are matched
+  on their own merits rather than similarity to documentation examples.
 
 #### Skills System
 
