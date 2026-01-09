@@ -50,16 +50,22 @@ present continuous ("-ing" form).
 
 Create a hierarchical structure with dynamic nesting levels:
 
-1. **Tasks** at any level can contain subtasks
-   - action: clear description of what needs to be done (max 64 chars)
-   - subtasks: optional array of nested subtasks
+**CRITICAL - Task Structure**:
 
-2. **Leaf tasks** (no subtasks) are executable operations
+Every task object has EXACTLY these fields (and no others):
+
+1. **Parent tasks** (tasks with subtasks):
+   - action: clear description of what needs to be done (max 64 chars)
+   - type: MUST be "group"
+   - subtasks: array of nested tasks (REQUIRED for group type)
+
+2. **Leaf tasks** (tasks without subtasks):
    - action: what needs to be done (clear, professional English)
-   - type: operation category (REQUIRED for all leaf tasks)
-   - params: specific parameters (when relevant)
-   - config: array of resolved configuration paths in dot notation
-     (e.g., ["project.beta.repo", "env.production.url"])
+   - type: operation category (REQUIRED - see Operation Types section)
+   - params: optional object containing task-specific parameters. Fields
+     like "skill" go INSIDE params, never as top-level fields
+   - config: optional array of resolved configuration paths in dot
+     notation (e.g., ["project.beta.repo", "env.production.url"])
 
 3. **Nesting depth**: Maximum 3 levels of nesting allowed. Use depth
    that matches the natural workflow structure (typically 2-3 levels).
