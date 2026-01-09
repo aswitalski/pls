@@ -470,6 +470,142 @@ describe('Execute component', () => {
     });
   });
 
+  describe('Step-based execution', () => {
+    it('uses step field to select correct execution line', async () => {
+      const { executeCommand } = await import('../../../src/services/shell.js');
+
+      const service = createMockAnthropicService({
+        message: 'Processing data.',
+        commands: [
+          {
+            description: 'Load dataset',
+            command: 'curl -O https://data.example.com/sales.csv',
+          },
+          {
+            description: 'Transform data',
+            command: 'python3 transform.py --input sales.csv',
+          },
+        ],
+      });
+
+      const tasks = [
+        {
+          action: 'Load the sales dataset',
+          type: TaskType.Execute,
+          step: 1,
+          params: { skill: 'Process Data' },
+        },
+        {
+          action: 'Transform the sales data',
+          type: TaskType.Execute,
+          step: 2,
+          params: { skill: 'Process Data' },
+        },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          requestHandlers={createRequestHandlers<ExecuteState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(executeCommand).toHaveBeenCalled();
+        },
+        { timeout: 500 }
+      );
+
+      // Verify both commands executed in order
+      expect(executeCommand).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(executeCommand).mock.calls[0][0].command).toBe(
+        'curl -O https://data.example.com/sales.csv'
+      );
+      expect(vi.mocked(executeCommand).mock.calls[1][0].command).toBe(
+        'python3 transform.py --input sales.csv'
+      );
+    });
+
+    it('handles non-consecutive step numbers when steps are skipped', async () => {
+      const { executeCommand } = await import('../../../src/services/shell.js');
+
+      const service = createMockAnthropicService({
+        message: 'Publishing package.',
+        commands: [
+          {
+            description: 'Run tests',
+            command: 'npm run test',
+          },
+          {
+            description: 'Build package',
+            command: 'npm run build',
+          },
+          {
+            description: 'Publish to registry',
+            command: 'npm publish',
+          },
+        ],
+      });
+
+      // Steps 1, 2, and 4 (step 3 was skipped - version bump)
+      const tasks = [
+        {
+          action: 'Run tests',
+          type: TaskType.Execute,
+          step: 1,
+          params: { skill: 'Publish Package' },
+        },
+        {
+          action: 'Build package',
+          type: TaskType.Execute,
+          step: 2,
+          params: { skill: 'Publish Package' },
+        },
+        {
+          action: 'Publish to registry',
+          type: TaskType.Execute,
+          step: 4,
+          params: { skill: 'Publish Package' },
+        },
+      ];
+
+      render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          requestHandlers={createRequestHandlers<ExecuteState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(executeCommand).toHaveBeenCalled();
+        },
+        { timeout: 500 }
+      );
+
+      // Verify all three commands executed (step 3 was skipped)
+      expect(executeCommand).toHaveBeenCalledTimes(3);
+      expect(vi.mocked(executeCommand).mock.calls[0][0].command).toBe(
+        'npm run test'
+      );
+      expect(vi.mocked(executeCommand).mock.calls[1][0].command).toBe(
+        'npm run build'
+      );
+      expect(vi.mocked(executeCommand).mock.calls[2][0].command).toBe(
+        'npm publish'
+      );
+    });
+  });
+
   describe('Command failure handling', () => {
     it('stops execution when critical command fails', async () => {
       const { executeCommand } = await import('../../../src/services/shell.js');

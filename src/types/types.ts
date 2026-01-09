@@ -65,6 +65,7 @@ export interface RefinementOption {
 export interface Task {
   action: string;
   type: TaskType;
+  step?: number;
   params?: Record<string, unknown>;
   config?: string[];
 }
@@ -73,6 +74,7 @@ export interface Task {
 export interface ScheduledTask {
   action: string;
   type: TaskType;
+  step?: number;
   params?: Record<string, unknown>;
   config?: string[];
   subtasks?: ScheduledTask[];

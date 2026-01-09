@@ -70,10 +70,15 @@ describe('Task structure validation', () => {
       const task = leafTasks[0];
       expect(task.type).toBe(TaskType.Execute);
 
+      // Verify step field for single-step skill
+      expect(task.step).toBeDefined();
+      expect(task.step).toBe(1);
+
       console.log('\n✓ Single-step skill structure verified:');
       console.log('  1. Skill has ONE execution step');
       console.log('  2. Can be leaf execute task (not required to be group)');
       console.log(`  3. Leaf tasks: ${leafTasks.length}`);
+      console.log('  4. Step field: 1');
     },
     LLM_TEST_TIMEOUT
   );
@@ -138,11 +143,20 @@ describe('Task structure validation', () => {
         expect(leaf.type).toBe(TaskType.Execute);
       }
 
+      // Verify step fields for multi-step skill (should be 1, 2, 3)
+      expect(leafTasks[0].step).toBeDefined();
+      expect(leafTasks[0].step).toBe(1);
+      expect(leafTasks[1].step).toBeDefined();
+      expect(leafTasks[1].step).toBe(2);
+      expect(leafTasks[2].step).toBeDefined();
+      expect(leafTasks[2].step).toBe(3);
+
       console.log('\n✓ Multi-step skill group structure verified:');
       console.log('  1. Skill has THREE execution steps');
       console.log('  2. Top task has subtasks (group structure)');
       console.log(`  3. Leaf tasks: ${leafTasks.length} (matches steps)`);
       console.log('  4. All leaf tasks are execute type');
+      console.log('  5. Step fields: 1, 2, 3');
     },
     LLM_TEST_TIMEOUT
   );
@@ -200,6 +214,14 @@ describe('Task structure validation', () => {
       // Should have 3 leaf tasks (build, sign, upload)
       expect(leafTasks.length).toBe(3);
 
+      // Verify all leaf tasks have step fields
+      leafTasks.forEach((task) => {
+        expect(task.step).toBeDefined();
+        expect(typeof task.step).toBe('number');
+        expect(task.step).toBeGreaterThan(0);
+        expect(task.step).toBeLessThanOrEqual(3);
+      });
+
       // Verify variant is resolved in config paths
       const configPaths = leafTasks
         .filter((t) => t.config && t.config.length > 0)
@@ -221,6 +243,7 @@ describe('Task structure validation', () => {
       console.log('  1. Multi-step skill uses group structure');
       console.log(`  2. Leaf tasks: ${leafTasks.length}`);
       console.log(`  3. Config paths: ${configPaths.length}`);
+      console.log('  4. All leaf tasks have valid step fields');
     },
     LLM_TEST_TIMEOUT
   );

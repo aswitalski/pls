@@ -79,6 +79,13 @@ describe('Complex workflows and sequential requests', () => {
       );
       expect(executeTasks.length).toBe(leafTasks.length);
 
+      // Verify all execute tasks have step field
+      executeTasks.forEach((task) => {
+        expect(task.step).toBeDefined();
+        expect(typeof task.step).toBe('number');
+        expect(task.step).toBeGreaterThan(0);
+      });
+
       // Verify we have tasks from both Build Project and Deploy App
       const buildTasks = leafTasks.filter(
         (task) => task.params?.skill === 'Build Project'
@@ -177,9 +184,12 @@ describe('Complex workflows and sequential requests', () => {
         expect(['answer', 'report']).toContain(task.type);
       });
 
-      // Verify all execute tasks have gamma variant
+      // Verify all execute tasks have gamma variant and step field
       executeTasks.forEach((task) => {
         expect(task.params?.variant).toBe('gamma');
+        expect(task.step).toBeDefined();
+        expect(typeof task.step).toBe('number');
+        expect(task.step).toBeGreaterThan(0);
       });
 
       // Verify we have one navigate task and two build tasks
@@ -259,13 +269,17 @@ describe('Complex workflows and sequential requests', () => {
       expect(alphaTasks.length).toBe(3); // Navigate + Generate + Compile for alpha
       expect(betaTasks.length).toBe(3); // Navigate + Generate + Compile for beta
 
-      // Each variant should have execution tasks
+      // Each variant should have execution tasks with step fields
       alphaTasks.forEach((task) => {
         expect(task.type).toBe('execute');
+        expect(task.step).toBeDefined();
+        expect(typeof task.step).toBe('number');
       });
 
       betaTasks.forEach((task) => {
         expect(task.type).toBe('execute');
+        expect(task.step).toBeDefined();
+        expect(typeof task.step).toBe('number');
       });
 
       console.log('\n✓ Comma-separated requests verified:');
@@ -331,9 +345,11 @@ describe('Complex workflows and sequential requests', () => {
       expect(alphaTasks.length).toBe(1);
       expect(betaTasks.length).toBe(1);
 
-      // All should be execute type
+      // All should be execute type with step field
       leafTasks.forEach((task) => {
         expect(task.type).toBe('execute');
+        expect(task.step).toBeDefined();
+        expect(task.step).toBe(1); // Single-step skill
       });
 
       console.log('\n✓ Semicolon-separated requests verified:');
@@ -402,9 +418,12 @@ describe('Complex workflows and sequential requests', () => {
       expect(alphaTasks.length).toBeGreaterThan(0);
       expect(betaTasks.length).toBeGreaterThan(0);
 
-      // All should be execute type
+      // All should be execute type with step field
       leafTasks.forEach((task) => {
         expect(task.type).toBe('execute');
+        expect(task.step).toBeDefined();
+        expect(typeof task.step).toBe('number');
+        expect(task.step).toBeGreaterThan(0);
       });
 
       console.log('\n✓ Mixed separators handling verified:');

@@ -46,6 +46,31 @@ present continuous ("-ing" form).
 - ALWAYS end with period (.)
 - Vary phrasing naturally
 
+**CRITICAL - Step Field for Execute Tasks**:
+
+EVERY execute task MUST include a `step` field (at task level, NOT in
+params). This is REQUIRED for ALL tasks with type="execute":
+
+- `step`: 1-based step number (1, 2, 3, etc.) indicating which execution
+  line from the skill's Execution section this task corresponds to
+- Example: First execution line → step: 1, second → step: 2, third → step: 3
+- For single-step skills: always step: 1
+- For multi-step skills: each subtask gets its corresponding step number
+
+Task structure for execute tasks:
+```
+{
+  "action": "Task description",
+  "type": "execute",
+  "step": 1,
+  "params": { "skill": "Skill Name", "variant": "alpha" },
+  "config": ["config.path.here"]
+}
+```
+
+WITHOUT the step field, execution will FAIL. This field is REQUIRED for
+every task with type="execute".
+
 ## Task Organization
 
 Create a hierarchical structure with dynamic nesting levels:
@@ -62,6 +87,12 @@ Every task object has EXACTLY these fields (and no others):
 2. **Leaf tasks** (tasks without subtasks):
    - action: what needs to be done (clear, professional English)
    - type: operation category (REQUIRED - see Operation Types section)
+   - **step: REQUIRED for ALL type="execute" tasks** - 1-based step
+     number (1, 2, 3...) indicating which execution line from the skill
+     this task corresponds to. For single-step skills use step: 1. For
+     multi-step skills, each task gets its step number (1st line = 1,
+     2nd line = 2, etc.). This field is at task level, NOT in params.
+     MUST be present for every execute task.
    - params: optional object containing task-specific parameters. Fields
      like "skill" go INSIDE params, never as top-level fields
    - config: optional array of resolved configuration paths in dot
@@ -214,11 +245,16 @@ components (e.g., {project.VARIANT.path}, {env.TYPE.config},
    - User variant: "alpha"
    - Resolved: {project.alpha.path}
 
-4. **Include in params**: All leaf tasks must include:
-   - `skill`: the skill name (REQUIRED for skill-based tasks)
-   - `variant`: the resolved variant value (REQUIRED if skill has
+4. **Execute task fields**: All execute tasks MUST include:
+   - `step`: the 1-based step number indicating which execution line in
+     the skill's Execution section this task corresponds to (REQUIRED
+     for ALL execute tasks, at task level NOT in params). Step 1 = first
+     execution line, step 2 = second, etc. EXECUTE will use (step - 1)
+     to index into the execution array. This allows matching tasks to
+     commands even when some steps are skipped
+   - `params.skill`: the skill name (REQUIRED for skill-based tasks)
+   - `params.variant`: the resolved variant value (REQUIRED if skill has
      variant placeholders)
-   - Any other parameters used in the action
 
 5. **Extract config expressions**: All leaf tasks must include a
    `config` array listing resolved configuration paths:
@@ -269,29 +305,32 @@ components (e.g., {project.VARIANT.path}, {env.TYPE.config},
 **Examples**:
 
 User request with variant placeholder
-- Skill execution: `cd {project.VARIANT.repo}`
+- Skill execution: `cd {project.VARIANT.repo}` (single execution line)
 - Variant identified from request: "beta"
 - Task action: "Navigate to Beta project directory"
+- Task step: 1
 - Task params: { skill: "Skill Name", variant: "beta" }
 - Task config: ["project.beta.repo"]
 - Resolved command: `cd {project.beta.repo}`
 
 User request with different placeholder type
-- Skill execution: `setup {env.TYPE.config}`
+- Skill execution: `setup {env.TYPE.config}` (single execution line)
 - Variant identified from request: "production"
 - Task action: "Setup production environment configuration"
+- Task step: 1
 - Task params: { skill: "Skill Name", variant: "production" }
 - Task config: ["env.production.config"]
 - Resolved command: `setup {env.production.config}`
 
 User request with multiple config expressions
-- Skill executions: `cd {project.VARIANT.repo}`, `git checkout
-  {project.VARIANT.version}`, `make process`
+- Skill has 3 execution lines: `cd {project.VARIANT.repo}`, `git
+  checkout {project.VARIANT.version}`, `make process`
 - Variant identified from request: "delta"
-- Task action: "Process Delta variant"
+- Creates 3 tasks, second task example:
+- Task action: "Checkout Delta version"
+- Task step: 2
 - Task params: { skill: "Skill Name", variant: "delta" }
-- Task config: ["project.delta.repo", "project.delta.version"]
-- Multiple config expressions from the same task's commands
+- Task config: ["project.delta.version"]
 
 **Critical Rules**:
 - **NEVER use placeholder values** like `<UNKNOWN>`, `UNKNOWN`, or
@@ -668,7 +707,7 @@ Schedule: One task "Explain what Docker is and its use" (type: answer)
 **Single-step skill with variant placeholder**:
 User: "navigate to alpha"
 Skill execution: `cd {project.VARIANT.path}` (single step)
-Schedule: One task "Navigate to Alpha directory" (type: execute,
+Schedule: One task "Navigate to Alpha directory" (type: execute, step: 1,
 params: { skill: "Navigate", variant: "alpha" },
 config: ["project.alpha.path"])
 Note: Single-step skills become direct execute tasks, never groups
@@ -677,11 +716,11 @@ Note: Single-step skills become direct execute tasks, never groups
 User: "deploy beta"
 Skill execution: 3 steps including `cd {project.VARIANT.repo}`
 Schedule: One task "Deploy Beta" (type: group) with subtasks:
-- Navigate to Beta repo (type: execute, params: { skill: "Deploy",
-  variant: "beta" }, config: ["project.beta.repo"])
-- Build application (type: execute, params: { skill: "Deploy",
+- Navigate to Beta repo (type: execute, step: 1, params: { skill:
+  "Deploy", variant: "beta" }, config: ["project.beta.repo"])
+- Build application (type: execute, step: 2, params: { skill: "Deploy",
   variant: "beta" }, config: [])
-- Push to server (type: execute, params: { skill: "Deploy",
+- Push to server (type: execute, step: 3, params: { skill: "Deploy",
   variant: "beta" }, config: [])
 
 Note: The first subtask includes config because its execution command

@@ -34,6 +34,11 @@ export const scheduleTool: Tool = {
             description:
               'Type: "group" for parent tasks with subtasks. For leaf tasks: "configure", "execute", "answer", "introspect", "report", "define", "ignore"',
           },
+          step: {
+            type: 'number',
+            description:
+              'Step number (1-based integer). REQUIRED for ALL type="execute" tasks. Indicates which execution line from the skill this task corresponds to (1=first line, 2=second line, etc). For single-step skills: always 1. For multi-step skills: use the corresponding line number (1, 2, 3, etc).',
+          },
           params: {
             type: 'object',
             description:
@@ -56,7 +61,15 @@ export const scheduleTool: Tool = {
             },
           },
         },
-        required: ['action'],
+        required: ['action', 'type'],
+        if: {
+          properties: {
+            type: { const: 'execute' },
+          },
+        },
+        then: {
+          required: ['step'],
+        },
       },
     },
   },

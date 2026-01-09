@@ -103,10 +103,18 @@ position.
 1. **Identify skill tasks**: Check if tasks have params.skill
 2. **Find the skill**: Look up the skill in "Available Skills" section
    below (REQUIRED - must exist)
-3. **Match tasks to Execution**: Each task action came from a Steps line;
-   use the corresponding Execution line for the command
+3. **Match tasks to Execution**: Use task.step to get the execution line.
+   Each task has a `step` field (at the task level, NOT in params) that
+   is a 1-based step number. Use skill.execution[step - 1] to get the
+   correct command for this task (subtract 1 because arrays are
+   0-indexed)
 4. **Substitute parameters**: Replace {PARAM} placeholders with actual
    values from task params
+
+**CRITICAL**: Always use task.step to match tasks to execution lines.
+Step numbers are 1-based (step 1 = first execution line). Do NOT try to
+match by position in the task array or by description matching, as some
+execution steps may be skipped based on user intent.
 
 ### Example Skill
 
@@ -216,40 +224,7 @@ When generating commands:
 
 ## Examples
 
-### Example 1: Simple file creation
-
-Task: {
-  action: "Create a new file called test.txt",
-  type: "execute",
-  params: { filename: "test.txt" }
-}
-
-Response:
-```
-message: "Create the file:"
-summary: "File created"
-commands:
-  - description: "Create test.txt"
-    command: "touch test.txt"
-```
-
-### Example 2: Directory listing
-
-Task: {
-  action: "Show files in the current directory",
-  type: "execute"
-}
-
-Response:
-```
-message: "List directory contents:"
-summary: "I've listed the directory contents"
-commands:
-  - description: "List files with details"
-    command: "ls -la"
-```
-
-### Example 3: Multiple sequential commands
+### Example 1: Multiple sequential commands
 
 Tasks:
 - {
@@ -257,8 +232,8 @@ Tasks:
     type: "execute",
     params: { path: "my-project" }
   }
-- { action: "Initialize git repository", type: "execute" }
-- { action: "Create README file", type: "execute" }
+- { action: "Install dependencies", type: "execute" }
+- { action: "Run build process", type: "execute" }
 
 Response:
 ```
@@ -267,109 +242,115 @@ summary: "Project ready to go"
 commands:
   - description: "Create project directory"
     command: "mkdir -p my-project"
-  - description: "Initialize git repository"
-    command: "git init"
-    workdir: "my-project"
-  - description: "Create README file"
-    command: "echo '# My Project' > README.md"
-    workdir: "my-project"
-```
-
-### Example 4: Install dependencies
-
-Task: {
-  action: "Install dependencies",
-  type: "execute"
-}
-
-Response:
-```
-message: "Install dependencies:"
-summary: "Dependencies installed successfully"
-commands:
-  - description: "Install npm packages"
+  - description: "Install dependencies"
     command: "npm install"
+    workdir: "my-project"
     timeout: 120000
+  - description: "Run build process"
+    command: "npm run build"
+    workdir: "my-project"
+    timeout: 180000
 ```
 
-### Example 5: Skill-based execution
+### Example 2: Skill-based execution with all steps
 
-When executing from a skill like "Process Data", tasks include
-params.skill:
+When executing from a skill, tasks include params.skill and task.step.
 
-Tasks:
+Skill "Backup Database" Execution section:
+- Line 1: mkdir -p /backups/{DATE}
+- Line 2: pg_dump {DATABASE} > /backups/{DATE}/dump.sql
+- Line 3: gzip /backups/{DATE}/dump.sql
+
+Tasks (all 3 steps):
 - {
-    action: "Load the sales dataset",
+    action: "Create backup directory",
     type: "execute",
-    params: { skill: "Process Data", source: "sales", format: "json" }
+    step: 1,
+    params: { skill: "Backup Database", database: "production",
+      date: "2024-01" }
   }
 - {
-    action: "Transform the sales data",
+    action: "Export database",
     type: "execute",
-    params: { skill: "Process Data", source: "sales", format: "json" }
+    step: 2,
+    params: { skill: "Backup Database", database: "production",
+      date: "2024-01" }
   }
 - {
-    action: "Export the results to json",
+    action: "Compress backup file",
     type: "execute",
-    params: { skill: "Process Data", source: "sales", format: "json" }
+    step: 3,
+    params: { skill: "Backup Database", database: "production",
+      date: "2024-01" }
   }
-
-The "Process Data" skill's Execution section specifies:
-- Line 1: curl -O https://data.example.com/{SOURCE}.csv
-- Line 2: python3 transform.py --input {SOURCE}.csv --output data.csv
-- Line 3: csvtool col 1-3 data.csv > output.{FORMAT}
-
-Response (using skill's Execution commands):
-```
-message: "Process sales data:"
-summary: "Sales data transformed and exported"
-commands:
-  - description: "Load the sales dataset"
-    command: "curl -O https://data.example.com/sales.csv"
-    timeout: 60000
-  - description: "Transform the sales data"
-    command: "python3 transform.py --input sales.csv --output data.csv"
-    timeout: 120000
-  - description: "Export the results to json"
-    command: "csvtool col 1-3 data.csv > output.json"
-```
-
-Note: Commands come directly from the skill's Execution section, with
-{SOURCE} replaced by "sales" and {FORMAT} replaced by "json" from task
-params.
-
-### Example 6: File operations with paths
-
-Task: {
-  action: "Copy config to backup",
-  type: "execute",
-  params: { source: "~/.config/app", destination: "~/.config/app.backup" }
-}
 
 Response:
 ```
-message: "Create backup:"
-summary: "Backup complete"
+message: "Backup production database:"
+summary: "Database backup completed"
 commands:
-  - description: "Copy config directory"
-    command: "cp -r ~/.config/app ~/.config/app.backup"
+  - description: "Create backup directory"
+    command: "mkdir -p /backups/2024-01"
+  - description: "Export database"
+    command: "pg_dump production > /backups/2024-01/dump.sql"
+  - description: "Compress backup file"
+    command: "gzip /backups/2024-01/dump.sql"
 ```
 
-### Example 7: Checking system information
+Note: Each task's step field maps to execution lines: step 1 → line 0,
+step 2 → line 1, step 3 → line 2.
 
-Task: {
-  action: "Check disk space",
-  type: "execute"
-}
+### Example 3: Skill-based execution with skipped steps
+
+Skill "Publish Package" description says: "Version bumping only required
+for new releases. Republishing existing version skips this step."
+
+Skill "Publish Package" Execution section:
+- Line 1: npm run test
+- Line 2: npm run build
+- Line 3: npm version patch
+- Line 4: npm publish
+
+User request: "republish package"
+
+Tasks (SCHEDULE infers: republishing means skip version bump):
+- {
+    action: "Run tests",
+    type: "execute",
+    step: 1,
+    params: { skill: "Publish Package" }
+  }
+- {
+    action: "Build package",
+    type: "execute",
+    step: 2,
+    params: { skill: "Publish Package" }
+  }
+- {
+    action: "Publish to registry",
+    type: "execute",
+    step: 4,
+    params: { skill: "Publish Package" }
+  }
 
 Response:
 ```
-message: "Check disk space:"
-summary: "Disk space verified"
+message: "Republish package:"
+summary: "Package republished successfully"
 commands:
-  - description: "Show disk usage"
-    command: "df -h"
+  - description: "Run tests"
+    command: "npm run test"
+  - description: "Build package"
+    command: "npm run build"
+  - description: "Publish to registry"
+    command: "npm publish"
 ```
+
+Note: Step numbers are non-consecutive (1, 2, 4) because step 3 was
+skipped. User said "republish" (not "publish new version"), so SCHEDULE
+inferred that version bumping should be omitted. EXECUTE uses step - 1
+to index: execution[0] for step 1, execution[1] for step 2, execution[3]
+for step 4. Line 2 (version bump) is skipped.
 
 ## Handling Complex Operations
 

@@ -73,6 +73,10 @@ describe('Basic task scheduling and message variation', () => {
       expect(task.action).toBeTruthy();
       expect(task.type).toBe('execute');
 
+      // Verify step field is present and correct (single-step skill)
+      expect(task.step).toBeDefined();
+      expect(task.step).toBe(1);
+
       // Verify skill and variant params
       expect(task.params).toBeDefined();
       expect(task.params?.skill).toBe('Navigate To Project');
@@ -145,6 +149,10 @@ describe('Basic task scheduling and message variation', () => {
       const task = leafTasks[0];
       expect(task.action).toBeTruthy();
       expect(task.type).toBe('execute');
+
+      // Verify step field is present and correct (single-step skill)
+      expect(task.step).toBeDefined();
+      expect(task.step).toBe(1);
 
       // Verify skill and variant params - "experimental" should map to "beta"
       expect(task.params).toBeDefined();

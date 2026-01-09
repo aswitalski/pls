@@ -92,6 +92,7 @@ deployment:
         {
           action: 'Deploy to production',
           type: TaskType.Execute,
+          step: 1,
           config: ['deployment.prod.server', 'deployment.prod.path'],
           params: {
             skill: 'Deploy Application',
@@ -406,6 +407,7 @@ Missing execution
         {
           action: 'Run broken skill',
           type: TaskType.Execute,
+          step: 1,
           params: {
             skill: 'Broken Skill',
           },
@@ -445,6 +447,7 @@ Steps and execution counts do not match
         {
           action: 'Run mismatched skill',
           type: TaskType.Execute,
+          step: 1,
           params: {
             skill: 'Mismatched Skill',
           },
@@ -629,6 +632,7 @@ Connect and run database query
         {
           action: 'Run database query',
           type: TaskType.Execute,
+          step: 1,
           config: ['db.host', 'db.port'],
           params: {
             skill: 'Run Query',
@@ -667,6 +671,7 @@ Build the second version of the project
         {
           action: 'Build version 2',
           type: TaskType.Execute,
+          step: 1,
           params: {
             skill: 'Build Project 2',
           },
@@ -715,6 +720,7 @@ Deploy the web application after setup
         {
           action: 'Deploy application',
           type: TaskType.Execute,
+          step: 1,
           params: {
             skill: 'Deploy Web App',
           },
@@ -783,6 +789,7 @@ Run full CI pipeline
         {
           action: 'Run CI',
           type: TaskType.Execute,
+          step: 1,
           params: {
             skill: 'CI Pipeline',
           },
@@ -792,6 +799,213 @@ Run full CI pipeline
       const result = validateExecuteTasks(tasks, fs);
 
       expect(result.validationErrors).toHaveLength(0);
+    });
+  });
+
+  describe('Step-based execution', () => {
+    it('validates tasks include step field for skill execution', () => {
+      const buildSkill = `### Name
+Build Application
+
+### Description
+Build application with multiple steps
+
+### Steps
+- Install dependencies
+- Run tests
+- Compile code
+
+### Execution
+- npm install
+- npm test
+- npm run build
+`;
+
+      fs.writeFile(join(skillsDir, 'build-app.md'), buildSkill);
+
+      const tasks: Task[] = [
+        {
+          action: 'Install dependencies',
+          type: TaskType.Execute,
+          step: 1,
+          params: {
+            skill: 'Build Application',
+          },
+        },
+        {
+          action: 'Run tests',
+          type: TaskType.Execute,
+          step: 2,
+          params: {
+            skill: 'Build Application',
+          },
+        },
+        {
+          action: 'Compile code',
+          type: TaskType.Execute,
+          step: 3,
+          params: {
+            skill: 'Build Application',
+          },
+        },
+      ];
+
+      const result = validateExecuteTasks(tasks, fs);
+
+      expect(result.validationErrors).toHaveLength(0);
+      expect(result.missingConfig).toHaveLength(0);
+    });
+
+    it('handles non-consecutive step numbers when steps are skipped', () => {
+      const publishSkill = `### Name
+Publish Package
+
+### Description
+Version bumping only required for new releases. Republishing existing version skips this step.
+
+### Steps
+- Run tests
+- Build package
+- Bump version
+- Publish to registry
+
+### Execution
+- npm run test
+- npm run build
+- npm version patch
+- npm publish
+`;
+
+      fs.writeFile(join(skillsDir, 'publish-package.md'), publishSkill);
+
+      // User requested "republish", so step 3 (version bump) is skipped
+      const tasks: Task[] = [
+        {
+          action: 'Run tests',
+          type: TaskType.Execute,
+          step: 1,
+          params: {
+            skill: 'Publish Package',
+          },
+        },
+        {
+          action: 'Build package',
+          type: TaskType.Execute,
+          step: 2,
+          params: {
+            skill: 'Publish Package',
+          },
+        },
+        {
+          action: 'Publish to registry',
+          type: TaskType.Execute,
+          step: 4, // Step 3 was skipped
+          params: {
+            skill: 'Publish Package',
+          },
+        },
+      ];
+
+      const result = validateExecuteTasks(tasks, fs);
+
+      expect(result.validationErrors).toHaveLength(0);
+      expect(result.missingConfig).toHaveLength(0);
+    });
+
+    it('handles step field with skill references', () => {
+      const navigateSkill = `### Name
+Navigate To Repository
+
+### Description
+Change to repository directory
+
+### Config
+repo:
+  path: string
+
+### Steps
+- Navigate to repo
+
+### Execution
+- cd {repo.path}
+`;
+
+      const buildSkill = `### Name
+Build With Navigation
+
+### Description
+Navigate and build
+
+### Steps
+- Navigate to repository
+- Compile code
+
+### Execution
+- [ Navigate To Repository ]
+- make build
+`;
+
+      fs.writeFile(join(skillsDir, 'navigate-to-repo.md'), navigateSkill);
+      fs.writeFile(join(skillsDir, 'build-with-nav.md'), buildSkill);
+
+      const tasks: Task[] = [
+        {
+          action: 'Navigate to repository',
+          type: TaskType.Execute,
+          step: 1,
+          config: ['repo.path'],
+          params: {
+            skill: 'Build With Navigation',
+          },
+        },
+        {
+          action: 'Compile code',
+          type: TaskType.Execute,
+          step: 2,
+          params: {
+            skill: 'Build With Navigation',
+          },
+        },
+      ];
+
+      const result = validateExecuteTasks(tasks, fs);
+
+      expect(result.validationErrors).toHaveLength(0);
+      expect(result.missingConfig.length).toBe(1);
+      expect(result.missingConfig[0].path).toBe('repo.path');
+    });
+
+    it('handles single-step skill with step: 1', () => {
+      const simpleSkill = `### Name
+Simple Task
+
+### Description
+Execute a single command
+
+### Steps
+- Run command
+
+### Execution
+- echo "hello world"
+`;
+
+      fs.writeFile(join(skillsDir, 'simple-task.md'), simpleSkill);
+
+      const tasks: Task[] = [
+        {
+          action: 'Run command',
+          type: TaskType.Execute,
+          step: 1,
+          params: {
+            skill: 'Simple Task',
+          },
+        },
+      ];
+
+      const result = validateExecuteTasks(tasks, fs);
+
+      expect(result.validationErrors).toHaveLength(0);
+      expect(result.missingConfig).toHaveLength(0);
     });
   });
 

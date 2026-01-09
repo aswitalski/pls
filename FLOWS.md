@@ -138,7 +138,8 @@ flowchart TD
    - If variant specified → Extract steps from skill's Execution section
    - If variant not specified → Create "define" task with options
    - Replace all placeholders with actual values
-   - Create task for each step with params.skill and params.variant
+   - Create task for each step with step field, params.skill, and
+     params.variant
 4. LLM returns structured response:
    - Introductory message (max 64 chars, ends with period)
    - Array of task definitions with action, type, and params
@@ -160,7 +161,7 @@ flowchart TD
     CheckSkill -->|No variant| CreateDefineOpts[Create define task<br/>with options]
 
     ExtractSteps --> ReplacePlaceholders[Replace placeholders<br/>with values]
-    ReplacePlaceholders --> CreateTasks[Create task per step<br/>with params.skill]
+    ReplacePlaceholders --> CreateTasks[Create task per step<br/>with step and params.skill]
 
     CreateIntrospect --> Validate
     CreateAnswer --> Validate
