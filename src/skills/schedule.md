@@ -74,12 +74,16 @@ Every task MUST have a type field. Use the appropriate type:
 **Leaf tasks** (tasks without subtasks):
 - `configure` - Configuration changes, settings
 - `execute` - Shell commands, running programs (ONLY if skill exists)
-- `answer` - Answering questions, explaining concepts
+- `answer` - Answering questions, explaining concepts (always leaf)
 - `introspect` - Listing capabilities when user asks what you can do
 - `report` - Generating summaries, displaying results
 - `define` - Presenting options when a matching skill needs variant
   selection
 - `ignore` - Request has NO matching skill OR is too vague to execute
+
+**Note**: Types `answer`, `introspect`, `report`, `define`, `ignore`, and
+`configure` are ALWAYS leaf tasks - they never have subtasks. Only
+`execute` tasks can appear as subtasks within a `group`.
 
 **CRITICAL SKILL MATCHING RULES**:
 
@@ -140,9 +144,10 @@ Before creating tasks, evaluate the request type:
      section
    - If verb matches a skill → examine the skill's Execution section
      to determine structure:
-     - Multiple execution steps → create ONLY a group task with those
-       steps as subtasks (never create a flat execute task)
-     - Single execution step → can use a leaf execute task
+     - Multiple execution steps → create a group task with those steps
+       as subtasks (never collapse into a single execute task)
+     - Single execution step → create a leaf execute task directly
+       (never wrap in a group with one subtask)
    - If verb does NOT match any skill in "Available Skills" → ignore
      type with action "Ignore unknown 'X' request" where X is the
      verb/phrase
@@ -224,18 +229,36 @@ components (e.g., {project.VARIANT.path}, {env.TYPE.config},
      {project.beta.config}` should include config:
      ["project.beta.repo", "project.beta.config"]
 
-6. **Multi-step skills MUST use group structure**:
-   - **CRITICAL**: When a skill has multiple execution steps, it MUST
-     be represented as a group task with those steps as subtasks
-   - **NEVER use a flat execute task** for multi-step skills
-   - Single execution step: Can be represented as a leaf execute task
-   - Multiple execution steps: ALWAYS use group structure, never flat
-   - Note: The same skill can appear multiple times if the user
-     requests it in sequence (e.g., "deploy alpha, test, deploy beta")
-     - Each occurrence must still use group structure
-   - Example: "deploy alpha" → "Deploy Alpha" (group) with subtasks
-   - Example: "deploy alpha, test, deploy alpha" → "Deploy Alpha"
-     (group), "Run tests" (execute), "Deploy Alpha" (group)
+6. **Task structure based on execution step count**:
+
+   **The fundamental rule**: Match task structure to skill complexity:
+   - **Single execution step** → leaf `execute` task (no group wrapper)
+   - **Multiple execution steps** → `group` task containing subtasks
+
+   **CRITICAL constraints**:
+   - **NEVER wrap single steps in a group** - a skill with one execution
+     step MUST become a direct leaf `execute` task, not a group with one
+     subtask
+   - **NEVER collapse multiple steps into one task** - a skill with
+     multiple execution steps MUST become a `group` with each step as a
+     separate `execute` subtask
+
+   **Skill reference expansion**: When a skill references another skill
+   (e.g., `[Other Skill]` in Execution section), expand it inline and
+   apply the same rule: if the referenced skill has one step, inject it
+   as a direct `execute` task; if multiple steps, inject them as a
+   nested `group` with subtasks.
+
+   **Repeated skills**: The same skill can appear multiple times in a
+   sequence (e.g., "deploy alpha, test, deploy beta"). Each occurrence
+   follows the same structure rules independently.
+
+   **Examples**:
+   - "deploy alpha" (3-step skill) → "Deploy Alpha" (group) with 3
+     execute subtasks
+   - "run tests" (1-step skill) → "Run tests" (execute) - NO group
+   - "deploy alpha, test, deploy beta" → "Deploy Alpha" (group), "Run
+     tests" (execute), "Deploy Beta" (group)
 
 **Examples**:
 
@@ -607,10 +630,9 @@ Before finalizing the schedule, perform strict validation:
 
 ## Examples
 
-**Simple request**:
+**Simple request (single-step skill)**:
 User: "install dependencies"
-Schedule: One task "Install dependencies" (type: group) with subtask:
-install project dependencies (type: execute)
+Schedule: One task "Install project dependencies" (type: execute)
 
 **Two-level hierarchy**:
 User: "deploy to production"
@@ -635,19 +657,26 @@ Schedule: Two tasks:
 
 **Information request**:
 User: "explain docker"
-Schedule: One task "Explain Docker" (type: group) with subtask: explain
-what Docker is and its use (type: answer)
+Schedule: One task "Explain what Docker is and its use" (type: answer)
 
-**Skill with variant placeholder**:
-User request with variant
-Schedule: One task (type: group) with subtasks:
-- First task action (type: execute, params: { skill: "Skill Name",
+**Single-step skill with variant placeholder**:
+User: "navigate to alpha"
+Skill execution: `cd {project.VARIANT.path}` (single step)
+Schedule: One task "Navigate to Alpha directory" (type: execute,
+params: { skill: "Navigate", variant: "alpha" },
+config: ["project.alpha.path"])
+Note: Single-step skills become direct execute tasks, never groups
+
+**Multi-step skill with variant placeholder**:
+User: "deploy beta"
+Skill execution: 3 steps including `cd {project.VARIANT.repo}`
+Schedule: One task "Deploy Beta" (type: group) with subtasks:
+- Navigate to Beta repo (type: execute, params: { skill: "Deploy",
   variant: "beta" }, config: ["project.beta.repo"])
-- Second task action (type: execute, params: { skill: "Skill Name",
+- Build application (type: execute, params: { skill: "Deploy",
   variant: "beta" }, config: [])
-- Third task action (type: execute, params: { skill: "Skill Name",
+- Push to server (type: execute, params: { skill: "Deploy",
   variant: "beta" }, config: [])
 
-Note: The first subtask includes config: ["project.beta.repo"] because
-its execution command is `cd {project.beta.repo}`. The app will check
-if this value exists in ~/.plsrc and prompt the user if missing.
+Note: The first subtask includes config because its execution command
+uses `{project.beta.repo}`. The app checks ~/.plsrc for this value.
