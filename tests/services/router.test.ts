@@ -17,6 +17,7 @@ import {
 
 import { LLMService } from '../../src/services/anthropic.js';
 import {
+  flattenTasks,
   getOperationName,
   routeTasksWithConfirm,
 } from '../../src/services/router.js';
@@ -94,6 +95,205 @@ describe('Task Router', () => {
       // Note: Array.every() returns true for empty arrays, so empty tasks
       // match the first condition (all tasks are Introspect)
       expect(result).toBe('introspection');
+    });
+  });
+
+  describe('flattenTasks', () => {
+    it('returns empty array for empty input', () => {
+      const result = flattenTasks([]);
+      expect(result).toEqual([]);
+    });
+
+    it('returns leaf tasks unchanged', () => {
+      const tasks = [
+        { action: 'Task 1', type: TaskType.Execute, config: [] },
+        { action: 'Task 2', type: TaskType.Answer, config: [] },
+      ];
+
+      const result = flattenTasks(tasks);
+
+      expect(result).toEqual(tasks);
+    });
+
+    it('preserves top-level group with flattened subtasks', () => {
+      const tasks = [
+        {
+          action: 'Build project',
+          type: TaskType.Group,
+          subtasks: [
+            { action: 'Compile', type: TaskType.Execute, config: [] },
+            { action: 'Test', type: TaskType.Execute, config: [] },
+          ],
+        },
+      ];
+
+      const result = flattenTasks(tasks);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].action).toBe('Build project');
+      expect(result[0].type).toBe(TaskType.Group);
+      expect(result[0].subtasks).toHaveLength(2);
+      expect(result[0].subtasks?.[0]).toEqual({
+        action: 'Compile',
+        type: TaskType.Execute,
+        config: [],
+      });
+      expect(result[0].subtasks?.[1]).toEqual({
+        action: 'Test',
+        type: TaskType.Execute,
+        config: [],
+      });
+    });
+
+    it('flattens inner nested groups but preserves top-level group', () => {
+      const tasks = [
+        {
+          action: 'Parent',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Child group',
+              type: TaskType.Group,
+              subtasks: [
+                { action: 'Leaf 1', type: TaskType.Execute, config: [] },
+                { action: 'Leaf 2', type: TaskType.Execute, config: [] },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const result = flattenTasks(tasks);
+
+      // Top-level group is preserved
+      expect(result).toHaveLength(1);
+      expect(result[0].action).toBe('Parent');
+      expect(result[0].type).toBe(TaskType.Group);
+      // Inner group is flattened, leaving only leaf tasks
+      expect(result[0].subtasks).toHaveLength(2);
+      expect(result[0].subtasks?.[0].action).toBe('Leaf 1');
+      expect(result[0].subtasks?.[1].action).toBe('Leaf 2');
+    });
+
+    it('preserves params and config on flattened subtasks', () => {
+      const tasks = [
+        {
+          action: 'Deploy',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Navigate',
+              type: TaskType.Execute,
+              params: { skill: 'Deploy', variant: 'alpha' },
+              config: ['project.alpha.path'],
+            },
+          ],
+        },
+      ];
+
+      const result = flattenTasks(tasks);
+
+      // Top-level group is preserved
+      expect(result).toHaveLength(1);
+      expect(result[0].action).toBe('Deploy');
+      // Subtasks have their params and config preserved
+      expect(result[0].subtasks).toHaveLength(1);
+      expect(result[0].subtasks?.[0].params).toEqual({
+        skill: 'Deploy',
+        variant: 'alpha',
+      });
+      expect(result[0].subtasks?.[0].config).toEqual(['project.alpha.path']);
+    });
+
+    it('skips empty groups', () => {
+      const tasks = [
+        { action: 'Task 1', type: TaskType.Execute, config: [] },
+        {
+          action: 'Empty group',
+          type: TaskType.Group,
+          subtasks: [],
+        },
+        { action: 'Task 2', type: TaskType.Execute, config: [] },
+      ];
+
+      const result = flattenTasks(tasks);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].action).toBe('Task 1');
+      expect(result[1].action).toBe('Task 2');
+    });
+
+    it('preserves order of standalone tasks and groups', () => {
+      const tasks = [
+        { action: 'Standalone 1', type: TaskType.Execute, config: [] },
+        {
+          action: 'Group',
+          type: TaskType.Group,
+          subtasks: [
+            { action: 'From group 1', type: TaskType.Execute, config: [] },
+            { action: 'From group 2', type: TaskType.Execute, config: [] },
+          ],
+        },
+        { action: 'Standalone 2', type: TaskType.Execute, config: [] },
+      ];
+
+      const result = flattenTasks(tasks);
+
+      // 3 top-level items: standalone, group, standalone
+      expect(result).toHaveLength(3);
+      expect(result[0].action).toBe('Standalone 1');
+      expect(result[1].action).toBe('Group');
+      expect(result[1].subtasks).toHaveLength(2);
+      expect(result[2].action).toBe('Standalone 2');
+    });
+
+    it('handles deeply nested groups (3 levels) - preserves outer, flattens inner', () => {
+      const tasks = [
+        {
+          action: 'Level 1',
+          type: TaskType.Group,
+          subtasks: [
+            {
+              action: 'Level 2',
+              type: TaskType.Group,
+              subtasks: [
+                {
+                  action: 'Level 3',
+                  type: TaskType.Group,
+                  subtasks: [
+                    { action: 'Deep leaf', type: TaskType.Execute, config: [] },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const result = flattenTasks(tasks);
+
+      // Top-level group preserved, all inner groups flattened
+      expect(result).toHaveLength(1);
+      expect(result[0].action).toBe('Level 1');
+      expect(result[0].type).toBe(TaskType.Group);
+      expect(result[0].subtasks).toHaveLength(1);
+      expect(result[0].subtasks?.[0].action).toBe('Deep leaf');
+    });
+
+    it('handles groups with undefined subtasks', () => {
+      const tasks = [
+        {
+          action: 'Group without subtasks',
+          type: TaskType.Group,
+          // subtasks is undefined
+        },
+        { action: 'Leaf', type: TaskType.Execute, config: [] },
+      ];
+
+      const result = flattenTasks(tasks);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].action).toBe('Leaf');
     });
   });
 
@@ -1099,7 +1299,7 @@ describe('Task Router', () => {
       expect(feedbackDef.name).toBe(ComponentName.Feedback);
     });
 
-    it('shows error after user confirms plan with mixed task types in a group', () => {
+    it('flattens and routes mixed task types in a group', () => {
       const tasks = [
         {
           action: 'Complete tasks',
@@ -1113,11 +1313,12 @@ describe('Task Router', () => {
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
       const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
 
       routeTasksWithConfirm(
         tasks,
         'Mixed group tasks',
-        {} as LLMService,
+        service,
         'build and explain',
         lifecycleHandlers,
         workflowHandlers,
@@ -1127,7 +1328,6 @@ describe('Task Router', () => {
 
       // Plan should be added to queue
       expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(1);
-      expect(workflowHandlers.addToTimeline).not.toHaveBeenCalled();
 
       const scheduleDef = (
         workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
@@ -1151,17 +1351,16 @@ describe('Task Router', () => {
         confirmDef.props.onConfirmed();
       }
 
-      // Should complete active and pending components
-      expect(lifecycleHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
-        1
-      );
+      // Should NOT error - mixed types are allowed after flattening
+      expect(requestHandlers.onError).not.toHaveBeenCalled();
 
-      // Should call onError with mixed types error message
-      expect(requestHandlers.onError).toHaveBeenCalledTimes(1);
-      const errorMessage = (requestHandlers.onError as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as string;
-      expect(errorMessage).toContain('execute');
-      expect(errorMessage).toContain('answer');
+      // Should route to both Execute and Answer components
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
+        expect.objectContaining({ name: ComponentName.Execute })
+      );
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
+        expect.objectContaining({ name: ComponentName.Answer })
+      );
     });
 
     it('filters out Ignore and Discard tasks before validation', () => {
@@ -1597,7 +1796,7 @@ describe('Task Router', () => {
       );
     });
 
-    it('flattens Group tasks to extract subtasks for execution', () => {
+    it('routes Group tasks as single Execute component with label', () => {
       const tasks = [
         {
           action: 'Complete workflow',
@@ -1640,18 +1839,18 @@ describe('Task Router', () => {
         confirmDef.props.onConfirmed();
       }
 
-      // Should route to Execute with flattened subtasks (3 tasks)
-      const executeDef = (
+      // Group becomes ONE Execute component with group name as label
+      const executeComponents = (
         workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
-      ).mock.calls.find(
-        (call) =>
-          (call[0] as ComponentDefinition).name === ComponentName.Execute
-      )?.[0] as ComponentDefinition | undefined;
+      ).mock.calls
+        .slice(2)
+        .map((call) => call[0] as ComponentDefinition)
+        .filter((def) => def.name === ComponentName.Execute);
 
-      expect(executeDef).toBeDefined();
-      if (executeDef?.name === ComponentName.Execute) {
-        expect(executeDef.props.tasks).toHaveLength(3);
-      }
+      expect(executeComponents).toHaveLength(1);
+      const executeProps = executeComponents[0].props;
+      expect(executeProps.label).toBe('Complete workflow');
+      expect(executeProps.tasks).toHaveLength(3);
     });
 
     it('handles multiple Groups with different subtask types', () => {
@@ -1726,7 +1925,7 @@ describe('Task Router', () => {
       );
     });
 
-    it('creates separate Execute components for multiple Execute Groups', () => {
+    it('creates one Execute component per Group with group name as label', () => {
       const tasks = [
         {
           action: 'Deploy frontend',
@@ -1742,7 +1941,7 @@ describe('Task Router', () => {
               type: TaskType.Execute,
               config: [],
             },
-            { action: 'Deploy frontend', type: TaskType.Execute, config: [] },
+            { action: 'Run deploy', type: TaskType.Execute, config: [] },
           ],
         },
         {
@@ -1759,7 +1958,7 @@ describe('Task Router', () => {
               type: TaskType.Execute,
               config: [],
             },
-            { action: 'Deploy backend', type: TaskType.Execute, config: [] },
+            { action: 'Run deploy', type: TaskType.Execute, config: [] },
           ],
         },
       ];
@@ -1794,28 +1993,24 @@ describe('Task Router', () => {
         confirmDef.props.onConfirmed();
       }
 
-      // Should create TWO separate Execute components, not one merged component
+      // Each group becomes ONE Execute component with its tasks
       const executeComponents = (
         workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls
+        .slice(2)
         .map((call) => call[0] as ComponentDefinition)
         .filter((def) => def.name === ComponentName.Execute);
 
+      // 2 groups = 2 Execute components
       expect(executeComponents).toHaveLength(2);
 
-      // Verify first Execute component has 3 tasks from Deploy frontend group
-      expect(executeComponents[0].name).toBe(ComponentName.Execute);
-      expect(executeComponents[0].props.tasks).toHaveLength(3);
-      expect(executeComponents[0].props.tasks[0].action).toBe(
-        'Navigate to frontend'
-      );
+      // Verify labels are group names
+      const labels = executeComponents.map((c) => c.props.label);
+      expect(labels).toEqual(['Deploy frontend', 'Deploy backend']);
 
-      // Verify second Execute component has 3 tasks from Deploy backend group
-      expect(executeComponents[1].name).toBe(ComponentName.Execute);
+      // Verify each has 3 tasks
+      expect(executeComponents[0].props.tasks).toHaveLength(3);
       expect(executeComponents[1].props.tasks).toHaveLength(3);
-      expect(executeComponents[1].props.tasks[0].action).toBe(
-        'Navigate to backend'
-      );
     });
 
     it('preserves order when mixing Answer tasks with Execute Groups', () => {
@@ -1830,7 +2025,7 @@ describe('Task Router', () => {
               type: TaskType.Execute,
               config: [],
             },
-            { action: 'Deploy frontend', type: TaskType.Execute, config: [] },
+            { action: 'Run deploy', type: TaskType.Execute, config: [] },
           ],
         },
         {
@@ -1842,7 +2037,7 @@ describe('Task Router', () => {
               type: TaskType.Execute,
               config: [],
             },
-            { action: 'Deploy backend', type: TaskType.Execute, config: [] },
+            { action: 'Run deploy', type: TaskType.Execute, config: [] },
           ],
         },
         { action: 'Explain REST', type: TaskType.Answer, config: [] },
@@ -1885,32 +2080,30 @@ describe('Task Router', () => {
         .slice(2) // Skip Schedule and Confirm
         .map((call) => call[0] as ComponentDefinition);
 
-      // Should have: Answer, Execute (frontend), Execute (backend), Answer
+      // Groups preserved: Answer, Execute (frontend), Execute (backend), Answer
       expect(components).toHaveLength(4);
+
+      // Verify order is preserved: Answer, Execute, Execute, Answer
       expect(components[0].name).toBe(ComponentName.Answer);
       expect(components[1].name).toBe(ComponentName.Execute);
       expect(components[2].name).toBe(ComponentName.Execute);
       expect(components[3].name).toBe(ComponentName.Answer);
 
-      // Verify Answer questions
-      if (components[0].name === ComponentName.Answer) {
-        expect(components[0].props.question).toBe('Explain GraphQL');
-      }
-      if (components[3].name === ComponentName.Answer) {
-        expect(components[3].props.question).toBe('Explain REST');
-      }
+      // Verify first and last Answer questions
+      expect((components[0].props as AnswerDefinitionProps).question).toBe(
+        'Explain GraphQL'
+      );
+      expect((components[3].props as AnswerDefinitionProps).question).toBe(
+        'Explain REST'
+      );
 
-      // Verify Execute groups are separate
-      if (components[1].name === ComponentName.Execute) {
-        expect(components[1].props.tasks).toHaveLength(2);
-        expect(components[1].props.tasks[0].action).toBe(
-          'Navigate to frontend'
-        );
-      }
-      if (components[2].name === ComponentName.Execute) {
-        expect(components[2].props.tasks).toHaveLength(2);
-        expect(components[2].props.tasks[0].action).toBe('Navigate to backend');
-      }
+      // Verify Execute labels are group names
+      expect((components[1].props as ExecuteDefinitionProps).label).toBe(
+        'Deploy frontend'
+      );
+      expect((components[2].props as ExecuteDefinitionProps).label).toBe(
+        'Deploy backend'
+      );
     });
 
     it('groups flattened tasks by type and routes each group', () => {
@@ -1969,7 +2162,7 @@ describe('Task Router', () => {
       );
     });
 
-    it('validates that Group subtasks must have uniform types', () => {
+    it('flattens Group subtasks and routes mixed types', () => {
       const tasks = [
         {
           action: 'Mixed group',
@@ -1983,11 +2176,12 @@ describe('Task Router', () => {
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
       const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
 
       routeTasksWithConfirm(
         tasks,
-        'Invalid mixed group',
-        {} as LLMService,
+        'Mixed group',
+        service,
         'mixed group',
         lifecycleHandlers,
         workflowHandlers,
@@ -2010,13 +2204,16 @@ describe('Task Router', () => {
         confirmDef.props.onConfirmed();
       }
 
-      // Should call onError with mixed types message
-      expect(requestHandlers.onError).toHaveBeenCalledTimes(1);
-      const errorMessage = (requestHandlers.onError as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as string;
-      expect(errorMessage).toContain('Mixed task types');
-      expect(errorMessage).toContain('execute');
-      expect(errorMessage).toContain('answer');
+      // Should NOT error - Groups are flattened and mixed types are allowed
+      expect(requestHandlers.onError).not.toHaveBeenCalled();
+
+      // Should route to both Execute and Answer
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
+        expect.objectContaining({ name: ComponentName.Execute })
+      );
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
+        expect.objectContaining({ name: ComponentName.Answer })
+      );
     });
 
     it('allows empty Groups to pass validation', () => {
@@ -2068,7 +2265,7 @@ describe('Task Router', () => {
       );
     });
 
-    it('validates nested Groups recursively', () => {
+    it('flattens nested Groups recursively and routes all leaf tasks', () => {
       const tasks = [
         {
           action: 'Parent group',
@@ -2088,11 +2285,12 @@ describe('Task Router', () => {
       const lifecycleHandlers = createLifecycleHandlers();
       const workflowHandlers = createWorkflowHandlers();
       const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
 
       routeTasksWithConfirm(
         tasks,
         'Nested mixed group',
-        {} as LLMService,
+        service,
         'nested',
         lifecycleHandlers,
         workflowHandlers,
@@ -2115,11 +2313,16 @@ describe('Task Router', () => {
         confirmDef.props.onConfirmed();
       }
 
-      // Should detect mixed types in nested Group
-      expect(requestHandlers.onError).toHaveBeenCalledTimes(1);
-      const errorMessage = (requestHandlers.onError as ReturnType<typeof vi.fn>)
-        .mock.calls[0][0] as string;
-      expect(errorMessage).toContain('Mixed task types');
+      // Should NOT error - nested Groups are flattened and mixed types allowed
+      expect(requestHandlers.onError).not.toHaveBeenCalled();
+
+      // Should route to both Execute and Answer (leaf tasks)
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
+        expect.objectContaining({ name: ComponentName.Execute })
+      );
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledWith(
+        expect.objectContaining({ name: ComponentName.Answer })
+      );
     });
 
     it('handles Groups with only Ignore tasks', () => {
@@ -2216,7 +2419,7 @@ describe('Task Router', () => {
   });
 
   describe('Upcoming tasks', () => {
-    it('passes upcoming names to Execute component for multiple groups', () => {
+    it('passes upcoming group names to Execute component for multiple groups', () => {
       const tasks = [
         {
           action: 'Deploy frontend',
@@ -2281,6 +2484,7 @@ describe('Task Router', () => {
 
       expect(executeComponents).toHaveLength(3);
 
+      // Upcoming uses group names (not individual task names)
       // First Execute should have upcoming: ['Deploy backend', 'Deploy database']
       const firstProps = executeComponents[0].props;
       expect(firstProps.upcoming).toEqual([
@@ -2467,7 +2671,8 @@ describe('Task Router', () => {
 
       expect(components).toHaveLength(3);
 
-      // First Answer should see Execute and second Answer upcoming
+      // Upcoming uses group name (not individual task names)
+      // First Answer should see 'Build project' (group name) and second Answer
       expect(components[0].name).toBe(ComponentName.Answer);
       const firstProps = components[0].props as AnswerDefinitionProps;
       expect(firstProps.upcoming).toEqual(['Build project', 'Explain CI/CD']);

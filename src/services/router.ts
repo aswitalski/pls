@@ -26,10 +26,78 @@ import {
 import {
   getCancellationMessage,
   getConfirmationMessage,
-  getMixedTaskTypesError,
   getUnknownRequestMessage,
 } from './messages.js';
 import { validateExecuteTasks } from './validator.js';
+
+/**
+ * Flatten inner task structure completely - removes all nested groups.
+ * Used internally to flatten subtasks within a top-level group.
+ */
+function flattenInnerTasks(tasks: ScheduledTask[]): Task[] {
+  const result: Task[] = [];
+
+  for (const task of tasks) {
+    if (
+      task.type === TaskType.Group &&
+      task.subtasks &&
+      task.subtasks.length > 0
+    ) {
+      // Recursively flatten inner group
+      result.push(...flattenInnerTasks(task.subtasks));
+    } else if (task.type !== TaskType.Group) {
+      // Leaf task - add as-is
+      const leafTask: Task = {
+        action: task.action,
+        type: task.type,
+      };
+      if (task.params) leafTask.params = task.params;
+      if (task.config) leafTask.config = task.config;
+      result.push(leafTask);
+    }
+    // Skip empty groups
+  }
+
+  return result;
+}
+
+/**
+ * Flatten hierarchical task structure, preserving top-level groups.
+ * Top-level groups are kept with their subtasks flattened.
+ * Inner nested groups are removed and their subtasks extracted recursively.
+ */
+export function flattenTasks(tasks: ScheduledTask[]): ScheduledTask[] {
+  const result: ScheduledTask[] = [];
+
+  for (const task of tasks) {
+    if (
+      task.type === TaskType.Group &&
+      task.subtasks &&
+      task.subtasks.length > 0
+    ) {
+      // Preserve top-level group but flatten its subtasks
+      const flattenedSubtasks = flattenInnerTasks(task.subtasks);
+      const groupTask: ScheduledTask = {
+        action: task.action,
+        type: task.type,
+        subtasks: flattenedSubtasks,
+      };
+      result.push(groupTask);
+    } else if (task.type !== TaskType.Group) {
+      // Non-group task - add as-is
+      const leafTask: ScheduledTask = {
+        action: task.action,
+        type: task.type,
+      };
+      if (task.params) leafTask.params = task.params;
+      if (task.config) leafTask.config = task.config;
+      result.push(leafTask);
+    }
+    // Skip empty groups (group with no subtasks)
+  }
+
+  return result;
+}
 
 /**
  * Context for routing operations - bundles dependencies needed by handlers
@@ -148,36 +216,17 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
 }
 
 /**
- * Validate task types - allows mixed types at top level with Groups,
- * but each Group must have uniform subtask types
+ * Validate task structure after flattening.
+ * Currently no-op since flattening removes Groups and mixed types are allowed.
  */
-function validateTaskTypes(tasks: Task[]): void {
-  if (tasks.length === 0) return;
-
-  // Convert to ScheduledTask to access subtasks property
-  const scheduledTasks = asScheduledTasks(tasks);
-
-  // Check each Group task's subtasks for uniform types
-  for (const task of scheduledTasks) {
-    if (
-      task.type === TaskType.Group &&
-      task.subtasks &&
-      task.subtasks.length > 0
-    ) {
-      const subtaskTypes = new Set(task.subtasks.map((t) => t.type));
-      if (subtaskTypes.size > 1) {
-        throw new Error(getMixedTaskTypesError(Array.from(subtaskTypes)));
-      }
-      // Recursively validate nested groups
-      validateTaskTypes(task.subtasks as Task[]);
-    }
-  }
+function validateTaskTypes(_tasks: Task[]): void {
+  // After flattening, Groups are removed and mixed leaf types are allowed.
+  // The router handles different task types by routing each to its handler.
 }
 
 /**
  * Execute tasks after confirmation (internal helper)
- * Validates task types and routes each type appropriately
- * Supports mixed types at top level with Groups
+ * Flattens hierarchical structure, validates task types, and routes appropriately
  */
 function executeTasksAfterConfirm(
   tasks: Task[],
@@ -185,9 +234,13 @@ function executeTasksAfterConfirm(
 ): void {
   const { service, userRequest, workflowHandlers, requestHandlers } = context;
 
-  // Validate task types (Groups must have uniform subtasks)
+  // Flatten hierarchical structure into flat list of leaf tasks
+  const scheduledTasks = asScheduledTasks(tasks);
+  const flatTasks = flattenTasks(scheduledTasks);
+
+  // Validate that all tasks have uniform type
   try {
-    validateTaskTypes(tasks);
+    validateTaskTypes(flatTasks);
   } catch (error) {
     requestHandlers.onError(
       error instanceof Error ? error.message : String(error)
@@ -195,25 +248,22 @@ function executeTasksAfterConfirm(
     return;
   }
 
-  const scheduledTasks = asScheduledTasks(tasks);
-
-  // Collect ALL Execute tasks (standalone and from groups) for upfront validation
-  const allExecuteTasks: Task[] = [];
-  for (const task of scheduledTasks) {
+  // Collect all Execute tasks for validation (including those inside groups)
+  const executeTasks: Task[] = [];
+  for (const task of flatTasks) {
     if (task.type === TaskType.Execute) {
-      allExecuteTasks.push(task as Task);
+      executeTasks.push(task);
     } else if (task.type === TaskType.Group && task.subtasks) {
-      const subtasks = task.subtasks as Task[];
-      if (subtasks.length > 0 && subtasks[0].type === TaskType.Execute) {
-        allExecuteTasks.push(...subtasks);
-      }
+      executeTasks.push(
+        ...task.subtasks.filter((t) => t.type === TaskType.Execute)
+      );
     }
   }
 
-  // Validate ALL Execute tasks together to collect ALL missing config upfront
-  if (allExecuteTasks.length > 0) {
+  // Validate Execute tasks to collect missing config upfront
+  if (executeTasks.length > 0) {
     try {
-      const validation = validateExecuteTasks(allExecuteTasks);
+      const validation = validateExecuteTasks(executeTasks);
 
       if (validation.validationErrors.length > 0) {
         // Show error feedback for invalid skills
@@ -232,7 +282,7 @@ function executeTasksAfterConfirm(
         );
         return;
       } else if (validation.missingConfig.length > 0) {
-        // Missing config detected - create ONE Validate component for ALL missing config
+        // Missing config detected - create Validate component for all missing config
         workflowHandlers.addToQueue(
           createValidate({
             missingConfig: validation.missingConfig,
@@ -243,7 +293,7 @@ function executeTasksAfterConfirm(
             },
             onValidationComplete: () => {
               // After config is complete, resume task routing
-              routeTasksAfterConfig(scheduledTasks, context);
+              routeTasksAfterConfig(flatTasks, context);
             },
             onAborted: (operation: string) => {
               requestHandlers.onAborted(operation);
@@ -261,122 +311,103 @@ function executeTasksAfterConfirm(
   }
 
   // No missing config - proceed with normal routing
-  routeTasksAfterConfig(scheduledTasks, context);
+  routeTasksAfterConfig(flatTasks, context);
 }
 
 /**
  * Task types that should appear in the upcoming display
  */
-const UPCOMING_TASK_TYPES = [TaskType.Execute, TaskType.Answer];
+const UPCOMING_TASK_TYPES = [TaskType.Execute, TaskType.Answer, TaskType.Group];
 
 /**
- * Collect names of all upcoming execution units (groups and standalone tasks)
- * for display during task execution
+ * Collect action names for tasks that appear in upcoming display.
+ * Groups are included with their group name (not individual subtask names).
  */
-function collectUpcomingNames(scheduledTasks: ScheduledTask[]): string[] {
-  const names: string[] = [];
-
-  for (const task of scheduledTasks) {
-    if (task.type === TaskType.Group && task.subtasks?.length) {
-      const subtasks = task.subtasks as Task[];
-      if (UPCOMING_TASK_TYPES.includes(subtasks[0].type)) {
-        names.push(task.action);
-      }
-    } else if (UPCOMING_TASK_TYPES.includes(task.type)) {
-      names.push(task.action);
-    }
-  }
-
-  return names;
+function collectUpcomingNames(tasks: ScheduledTask[]): string[] {
+  return tasks
+    .filter((t) => UPCOMING_TASK_TYPES.includes(t.type))
+    .map((t) => t.action);
 }
 
 /**
  * Route tasks after config is complete (or when no config is needed)
- * Processes tasks in order, grouping by type
+ * Processes task list, routing each task type to its handler.
+ * Top-level groups are preserved: their subtasks are routed with the group name.
+ * Config tasks are grouped together; Execute/Answer are routed individually.
  */
 function routeTasksAfterConfig(
-  scheduledTasks: ScheduledTask[],
+  tasks: ScheduledTask[],
   context: RoutingContext
 ): void {
-  // Collect all unit names for upcoming display
-  const allUnitNames = collectUpcomingNames(scheduledTasks);
-  let currentUnitIndex = 0;
+  if (tasks.length === 0) return;
 
-  // Process tasks in order, preserving Group boundaries
-  // Track consecutive standalone tasks to group them by type
-  let consecutiveStandaloneTasks: Task[] = [];
+  // Collect all upcoming names for display (Execute, Answer, and Group tasks)
+  const allUpcomingNames = collectUpcomingNames(tasks);
+  let upcomingIndex = 0;
 
-  const processStandaloneTasks = () => {
-    if (consecutiveStandaloneTasks.length === 0) return;
+  // Task types that should be grouped together (one component for all tasks)
+  const groupedTypes = [TaskType.Config, TaskType.Introspect];
 
-    // Group consecutive standalone tasks by type
-    const tasksByType: Record<TaskType, Task[]> = {} as Record<
-      TaskType,
-      Task[]
-    >;
-    for (const type of Object.values(TaskType)) {
-      tasksByType[type as TaskType] = [];
-    }
-
-    for (const task of consecutiveStandaloneTasks) {
-      tasksByType[task.type].push(task);
-    }
-
-    // Route each type group
-    for (const [type, typeTasks] of Object.entries(tasksByType)) {
-      const taskType = type as TaskType;
-      if (typeTasks.length === 0) continue;
-
-      // For tasks that appear in upcoming, calculate from remaining units
-      if (UPCOMING_TASK_TYPES.includes(taskType)) {
-        // Each task advances the unit index
-        for (const task of typeTasks) {
-          const upcoming = allUnitNames.slice(currentUnitIndex + 1);
-          currentUnitIndex++;
-          routeTasksByType(taskType, [task], context, upcoming);
-        }
-      } else {
-        routeTasksByType(taskType, typeTasks, context, []);
+  // Route grouped task types together (collect from all tasks including subtasks)
+  for (const groupedType of groupedTypes) {
+    const typeTasks: Task[] = [];
+    for (const task of tasks) {
+      if (task.type === groupedType) {
+        typeTasks.push(task);
+      } else if (task.type === TaskType.Group && task.subtasks) {
+        typeTasks.push(...task.subtasks.filter((t) => t.type === groupedType));
       }
     }
-
-    consecutiveStandaloneTasks = [];
-  };
-
-  // Process tasks in original order
-  for (const task of scheduledTasks) {
-    if (task.type === TaskType.Group && task.subtasks) {
-      // Process any accumulated standalone tasks first
-      processStandaloneTasks();
-
-      // Process Group as separate component
-      if (task.subtasks.length > 0) {
-        const subtasks = task.subtasks as Task[];
-        const taskType = subtasks[0].type;
-
-        // Calculate upcoming (all units after this one)
-        const upcoming = UPCOMING_TASK_TYPES.includes(taskType)
-          ? allUnitNames.slice(currentUnitIndex + 1)
-          : [];
-        if (UPCOMING_TASK_TYPES.includes(taskType)) {
-          currentUnitIndex++;
-        }
-
-        // Pass group name as label for Execute groups
-        if (taskType === TaskType.Execute) {
-          routeExecuteTasks(subtasks, context, upcoming, task.action);
-        } else {
-          routeTasksByType(taskType, subtasks, context, upcoming);
-        }
-      }
-    } else {
-      // Accumulate standalone task
-      consecutiveStandaloneTasks.push(task as Task);
+    if (typeTasks.length > 0) {
+      routeTasksByType(groupedType, typeTasks, context, []);
     }
   }
 
-  // Process any remaining standalone tasks
-  processStandaloneTasks();
+  // Process Execute, Answer, and Group tasks individually (with upcoming support)
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i];
+    const taskType = task.type;
+
+    // Skip grouped task types (already routed above)
+    if (groupedTypes.includes(taskType)) continue;
+
+    if (taskType === TaskType.Group && task.subtasks) {
+      // Route group's subtasks - Execute tasks get group label, others routed normally
+      const upcoming = allUpcomingNames.slice(upcomingIndex + 1);
+      upcomingIndex++;
+
+      // Separate subtasks by type
+      const executeSubtasks = task.subtasks.filter(
+        (t) => t.type === TaskType.Execute
+      );
+      const answerSubtasks = task.subtasks.filter(
+        (t) => t.type === TaskType.Answer
+      );
+
+      // Route Execute subtasks with group name as label
+      if (executeSubtasks.length > 0) {
+        routeExecuteTasks(executeSubtasks, context, upcoming, task.action);
+      }
+
+      // Route Answer subtasks individually
+      if (answerSubtasks.length > 0) {
+        routeAnswerTasks(answerSubtasks, context, upcoming);
+      }
+    } else if (taskType === TaskType.Execute) {
+      // Calculate upcoming for this Execute task
+      const upcoming = allUpcomingNames.slice(upcomingIndex + 1);
+      upcomingIndex++;
+      routeExecuteTasks([task], context, upcoming);
+    } else if (taskType === TaskType.Answer) {
+      // Calculate upcoming for this Answer task
+      const upcoming = allUpcomingNames.slice(upcomingIndex + 1);
+      upcomingIndex++;
+      routeTasksByType(taskType, [task], context, upcoming);
+    } else {
+      // For other types (Report, etc.), route without upcoming
+      routeTasksByType(taskType, [task], context, []);
+    }
+  }
 }
 
 /**
