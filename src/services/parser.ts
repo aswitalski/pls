@@ -9,17 +9,24 @@ export interface SkillValidationError {
   error: string;
 }
 
+interface ExtractedSections {
+  name?: string;
+  description?: string;
+  aliases?: string[];
+  config?: ConfigSchema;
+  steps?: string[];
+  execution?: string[];
+}
+
 /**
- * Validate a skill without parsing it fully
+ * Validate extracted sections from a skill
  * Returns validation error if skill is invalid, null if valid
  * Note: Name section is optional - key from filename is used as fallback
  */
-export function validateSkillStructure(
-  content: string,
+function validateSections(
+  sections: ExtractedSections,
   key: string
 ): SkillValidationError | null {
-  const sections = extractSections(content);
-
   // Use key for error reporting if name not present
   const skillName = sections.name || key;
 
@@ -57,6 +64,19 @@ export function validateSkillStructure(
 }
 
 /**
+ * Validate a skill without parsing it fully
+ * Returns validation error if skill is invalid, null if valid
+ * Note: Name section is optional - key from filename is used as fallback
+ */
+export function validateSkillStructure(
+  content: string,
+  key: string
+): SkillValidationError | null {
+  const sections = extractSections(content);
+  return validateSections(sections, key);
+}
+
+/**
  * Convert kebab-case key to Title Case display name
  * Examples: "deploy-app" -> "Deploy App", "build-project-2" -> "Build Project 2"
  */
@@ -90,8 +110,8 @@ export function parseSkillMarkdown(
   // Determine display name: prefer Name section, otherwise derive from key
   const displayName = sections.name || keyToDisplayName(key);
 
-  // Validate the skill (Name is no longer required since we have key)
-  const validationError = validateSkillStructure(content, key);
+  // Validate using already-extracted sections (avoids re-parsing)
+  const validationError = validateSections(sections, key);
 
   // For invalid skills, return minimal definition with error
   if (validationError) {

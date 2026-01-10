@@ -36,7 +36,8 @@ describe('Variant resolution', () => {
       );
 
       // Load deploy skill with two different variant types
-      const skills = loadTestSkills(['deploy-app.skill.md']);
+      const skillNames = ['deploy-app.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -56,7 +57,7 @@ describe('Variant resolution', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -114,10 +115,11 @@ describe('Variant resolution', () => {
       );
 
       // Load both skills - build references navigate
-      const skills = loadTestSkills([
+      const skillNames = [
         'navigate-to-project.skill.md',
         'build-project.skill.md',
-      ]);
+      ];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -136,7 +138,7 @@ describe('Variant resolution', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -222,10 +224,11 @@ describe('Variant resolution', () => {
       );
 
       // Load build skill that only has alpha and beta variants
-      const skills = loadTestSkills([
+      const skillNames = [
         'navigate-to-project.skill.md',
         'build-project.skill.md',
-      ]);
+      ];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -244,7 +247,7 @@ describe('Variant resolution', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();

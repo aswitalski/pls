@@ -39,7 +39,8 @@ describe('Runtime parameter resolution', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['process-data.skill.md']);
+      const skillNames = ['process-data.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -56,7 +57,7 @@ describe('Runtime parameter resolution', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -97,7 +98,8 @@ describe('Runtime parameter resolution', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['process-data.skill.md']);
+      const skillNames = ['process-data.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -114,7 +116,7 @@ describe('Runtime parameter resolution', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -152,7 +154,8 @@ describe('Runtime parameter resolution', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['process-data.skill.md']);
+      const skillNames = ['process-data.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -169,7 +172,7 @@ describe('Runtime parameter resolution', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -218,7 +221,8 @@ describe('Runtime parameter resolution', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['export-report.skill.md']);
+      const skillNames = ['export-report.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -236,7 +240,7 @@ describe('Runtime parameter resolution', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -277,7 +281,8 @@ describe('Runtime parameter resolution', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['process-data.skill.md']);
+      const skillNames = ['process-data.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -295,7 +300,7 @@ describe('Runtime parameter resolution', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -349,7 +354,8 @@ describe('Runtime parameter resolution', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['export-report.skill.md']);
+      const skillNames = ['export-report.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -366,7 +372,7 @@ describe('Runtime parameter resolution', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();

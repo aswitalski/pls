@@ -96,3 +96,14 @@ export interface ConfigValidationResult {
 export type ExecutionLine =
   | { type: 'command'; command: string }
   | { type: 'reference'; skillName: string };
+
+/**
+ * Result of loading skills for prompt construction
+ * Single source of truth for both LLM prompts and debug display
+ */
+export interface SkillsForPrompt {
+  /** Formatted skills section exactly as sent to LLM */
+  formatted: string;
+  /** Parsed definitions for app logic (validation, matching) */
+  definitions: SkillDefinition[];
+}

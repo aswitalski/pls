@@ -34,7 +34,8 @@ describe('Config extraction and validation', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['navigate-to-project.skill.md']);
+      const skillNames = ['navigate-to-project.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -50,7 +51,7 @@ describe('Config extraction and validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -89,7 +90,8 @@ describe('Config extraction and validation', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['deploy-app.skill.md']);
+      const skillNames = ['deploy-app.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -106,7 +108,7 @@ describe('Config extraction and validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -149,10 +151,11 @@ describe('Config extraction and validation', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills([
+      const skillNames = [
         'build-project.skill.md',
         'navigate-to-project.skill.md',
-      ]);
+      ];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -168,7 +171,7 @@ describe('Config extraction and validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -225,10 +228,11 @@ describe('Config extraction and validation', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills([
+      const skillNames = [
         'build-project.skill.md',
         'navigate-to-project.skill.md',
-      ]);
+      ];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -245,7 +249,7 @@ describe('Config extraction and validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -304,7 +308,8 @@ describe('Config extraction and validation', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['list-files.skill.md']);
+      const skillNames = ['list-files.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -320,7 +325,7 @@ describe('Config extraction and validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -368,7 +373,8 @@ describe('Config extraction and validation', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['deploy-app.skill.md']);
+      const skillNames = ['deploy-app.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -384,7 +390,7 @@ describe('Config extraction and validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();

@@ -39,7 +39,8 @@ describe('Task structure validation', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['single-step.skill.md']);
+      const skillNames = ['single-step.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -55,7 +56,7 @@ describe('Task structure validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -94,7 +95,8 @@ describe('Task structure validation', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['multi-step.skill.md']);
+      const skillNames = ['multi-step.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -110,7 +112,7 @@ describe('Task structure validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -163,7 +165,8 @@ describe('Task structure validation', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['release-package.skill.md']);
+      const skillNames = ['release-package.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -180,7 +183,7 @@ describe('Task structure validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -241,7 +244,8 @@ describe('Task structure validation', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['deploy-environment.skill.md']);
+      const skillNames = ['deploy-environment.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -258,7 +262,7 @@ describe('Task structure validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -310,10 +314,8 @@ describe('Task structure validation', () => {
       );
 
       // Use multiple skills to test various task types
-      const skills = loadTestSkills([
-        'multi-step.skill.md',
-        'single-step.skill.md',
-      ]);
+      const skillNames = ['multi-step.skill.md', 'single-step.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -329,7 +331,7 @@ describe('Task structure validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -382,7 +384,8 @@ describe('Task structure validation', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['multi-step.skill.md']);
+      const skillNames = ['multi-step.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -398,7 +401,7 @@ describe('Task structure validation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();

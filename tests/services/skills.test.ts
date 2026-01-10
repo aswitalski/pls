@@ -3,11 +3,13 @@ import { join } from 'path';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  conflictsWithBuiltIn,
   expandSkillReferences,
   formatSkillsForPrompt,
   getReferencedSkills,
   getSkillsDirectory,
   isSkillReference,
+  isValidSkillFilename,
   loadSkills,
   parseSkillReference,
   validateNoCycles,
@@ -46,6 +48,107 @@ describe('Skills service', () => {
       const skillsDir = getSkillsDirectory();
       expect(skillsDir).toContain('.pls');
       expect(skillsDir).toContain('skills');
+    });
+  });
+
+  describe('Validating skill filenames', () => {
+    it('accepts valid kebab-case filenames', () => {
+      expect(isValidSkillFilename('deploy-app.md')).toBe(true);
+      expect(isValidSkillFilename('build-project.md')).toBe(true);
+      expect(isValidSkillFilename('run-tests.md')).toBe(true);
+      expect(isValidSkillFilename('simple.md')).toBe(true);
+    });
+
+    it('accepts filenames with numbers', () => {
+      expect(isValidSkillFilename('build-v2.md')).toBe(true);
+      expect(isValidSkillFilename('project-2.md')).toBe(true);
+      expect(isValidSkillFilename('deploy-app-3.md')).toBe(true);
+    });
+
+    it('accepts uppercase .MD extension', () => {
+      expect(isValidSkillFilename('deploy-app.MD')).toBe(true);
+      expect(isValidSkillFilename('build.MD')).toBe(true);
+    });
+
+    it('rejects filenames with underscores', () => {
+      expect(isValidSkillFilename('deploy_app.md')).toBe(false);
+      expect(isValidSkillFilename('build_project.md')).toBe(false);
+    });
+
+    it('rejects filenames with spaces', () => {
+      expect(isValidSkillFilename('deploy app.md')).toBe(false);
+      expect(isValidSkillFilename('build project.md')).toBe(false);
+    });
+
+    it('rejects camelCase filenames', () => {
+      expect(isValidSkillFilename('deployApp.md')).toBe(false);
+      expect(isValidSkillFilename('buildProject.md')).toBe(false);
+    });
+
+    it('rejects PascalCase filenames', () => {
+      expect(isValidSkillFilename('DeployApp.md')).toBe(false);
+      expect(isValidSkillFilename('BuildProject.md')).toBe(false);
+    });
+
+    it('rejects uppercase filenames', () => {
+      expect(isValidSkillFilename('DEPLOY.md')).toBe(false);
+      expect(isValidSkillFilename('BUILD-APP.md')).toBe(false);
+    });
+
+    it('rejects filenames starting with hyphen', () => {
+      expect(isValidSkillFilename('-deploy.md')).toBe(false);
+      expect(isValidSkillFilename('-build-app.md')).toBe(false);
+    });
+
+    it('rejects filenames ending with hyphen', () => {
+      expect(isValidSkillFilename('deploy-.md')).toBe(false);
+      expect(isValidSkillFilename('build-app-.md')).toBe(false);
+    });
+
+    it('rejects filenames starting with number', () => {
+      expect(isValidSkillFilename('2deploy.md')).toBe(false);
+      expect(isValidSkillFilename('123-build.md')).toBe(false);
+    });
+
+    it('rejects non-markdown extensions', () => {
+      expect(isValidSkillFilename('deploy-app.txt')).toBe(false);
+      expect(isValidSkillFilename('build-project.yaml')).toBe(false);
+      expect(isValidSkillFilename('run-tests.json')).toBe(false);
+    });
+
+    it('rejects filenames with special characters', () => {
+      expect(isValidSkillFilename('deploy@app.md')).toBe(false);
+      expect(isValidSkillFilename('build#project.md')).toBe(false);
+      expect(isValidSkillFilename('run$tests.md')).toBe(false);
+    });
+
+    it('rejects filenames with consecutive hyphens', () => {
+      expect(isValidSkillFilename('deploy--app.md')).toBe(false);
+      expect(isValidSkillFilename('build---project.md')).toBe(false);
+    });
+  });
+
+  describe('Checking for built-in skill conflicts', () => {
+    it('detects conflicts with system skills', () => {
+      expect(conflictsWithBuiltIn('schedule')).toBe(true);
+      expect(conflictsWithBuiltIn('execute')).toBe(true);
+      expect(conflictsWithBuiltIn('answer')).toBe(true);
+      expect(conflictsWithBuiltIn('configure')).toBe(true);
+      expect(conflictsWithBuiltIn('validate')).toBe(true);
+      expect(conflictsWithBuiltIn('introspect')).toBe(true);
+    });
+
+    it('allows non-conflicting skill names', () => {
+      expect(conflictsWithBuiltIn('deploy')).toBe(false);
+      expect(conflictsWithBuiltIn('build')).toBe(false);
+      expect(conflictsWithBuiltIn('test')).toBe(false);
+      expect(conflictsWithBuiltIn('my-skill')).toBe(false);
+    });
+
+    it('is case-sensitive for built-in names', () => {
+      expect(conflictsWithBuiltIn('Schedule')).toBe(false);
+      expect(conflictsWithBuiltIn('EXECUTE')).toBe(false);
+      expect(conflictsWithBuiltIn('Answer')).toBe(false);
     });
   });
 

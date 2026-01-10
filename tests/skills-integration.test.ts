@@ -193,7 +193,7 @@ Build the project with tests
 Skill A
 
 ### Description
-References Skill B
+References Skill B creating a cycle
 
 ### Steps
 - Do something
@@ -206,7 +206,7 @@ References Skill B
 Skill B
 
 ### Description
-References Skill A
+References Skill A completing the cycle
 
 ### Steps
 - Do something
@@ -217,67 +217,6 @@ References Skill A
 
       fs.writeFile(join(skillsDir, 'skill-a.md'), skillA);
       fs.writeFile(join(skillsDir, 'skill-b.md'), skillB);
-
-      const skills = loadSkillDefinitions(fs);
-      const skillLookup = (name: string) =>
-        skills.find((s) => s.name === name) || null;
-
-      const skillADef = skills.find((s) => s.name === 'Skill A');
-
-      expect(skillADef).toBeDefined();
-
-      if (!skillADef) {
-        throw new Error('Skill A not found');
-      }
-
-      expect(() => {
-        expandSkillReferences(skillADef.execution, skillLookup);
-      }).toThrow('Circular skill reference detected');
-    });
-
-    it('detects longer circular reference chains', () => {
-      const skillA = `### Name
-Skill A
-
-### Description
-References Skill B in a longer chain
-
-### Steps
-- Do something
-
-### Execution
-- [ Skill B ]
-`;
-
-      const skillB = `### Name
-Skill B
-
-### Description
-References Skill C in a longer chain
-
-### Steps
-- Do something
-
-### Execution
-- [ Skill C ]
-`;
-
-      const skillC = `### Name
-Skill C
-
-### Description
-References Skill A to complete the cycle
-
-### Steps
-- Do something
-
-### Execution
-- [ Skill A ]
-`;
-
-      fs.writeFile(join(skillsDir, 'skill-a.md'), skillA);
-      fs.writeFile(join(skillsDir, 'skill-b.md'), skillB);
-      fs.writeFile(join(skillsDir, 'skill-c.md'), skillC);
 
       const skills = loadSkillDefinitions(fs);
       const skillLookup = (name: string) =>

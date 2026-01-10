@@ -63,9 +63,14 @@ export interface MessageDefinitionProps {
 
 export type MessageProps = ComponentProps<MessageDefinitionProps>;
 
+/**
+ * Debug content can be plain text or structured sections for table display
+ */
+export type DebugContent = string | string[];
+
 export interface DebugDefinitionProps {
   title: string;
-  content: string;
+  content: DebugContent;
   color: string;
 }
 

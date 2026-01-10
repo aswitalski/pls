@@ -36,10 +36,11 @@ describe('Skill reference expansion', () => {
       );
 
       // Load both skills - build references navigate
-      const skills = loadTestSkills([
+      const skillNames = [
         'navigate-to-project.skill.md',
         'build-project.skill.md',
-      ]);
+      ];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -59,7 +60,7 @@ describe('Skill reference expansion', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -114,10 +115,8 @@ describe('Skill reference expansion', () => {
       );
 
       // Load circular skills - A references B, B references A
-      const skills = loadTestSkills([
-        'circular-a.skill.md',
-        'circular-b.skill.md',
-      ]);
+      const skillNames = ['circular-a.skill.md', 'circular-b.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -133,7 +132,7 @@ describe('Skill reference expansion', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -189,7 +188,8 @@ describe('Skill reference expansion', () => {
       );
 
       // Load self-referencing skill
-      const skills = loadTestSkills(['self-reference.skill.md']);
+      const skillNames = ['self-reference.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -205,7 +205,7 @@ describe('Skill reference expansion', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();

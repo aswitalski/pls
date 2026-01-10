@@ -35,7 +35,8 @@ describe('Basic task scheduling and message variation', () => {
       );
 
       // Load navigation skill
-      const skills = loadTestSkills(['navigate-to-project.skill.md']);
+      const skillNames = ['navigate-to-project.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -54,7 +55,7 @@ describe('Basic task scheduling and message variation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -108,7 +109,8 @@ describe('Basic task scheduling and message variation', () => {
       );
 
       // Load navigation skill with variants
-      const skills = loadTestSkills(['navigate-to-project.skill.md']);
+      const skillNames = ['navigate-to-project.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -127,7 +129,7 @@ describe('Basic task scheduling and message variation', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();

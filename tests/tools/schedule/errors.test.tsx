@@ -136,7 +136,8 @@ describe('Error handling and edge cases', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['navigate-to-project.skill.md']);
+      const skillNames = ['navigate-to-project.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -153,7 +154,7 @@ describe('Error handling and edge cases', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -202,10 +203,11 @@ describe('Error handling and edge cases', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills([
+      const skillNames = [
         'navigate-to-project.skill.md',
         'build-project.skill.md',
-      ]);
+      ];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -223,7 +225,7 @@ describe('Error handling and edge cases', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();

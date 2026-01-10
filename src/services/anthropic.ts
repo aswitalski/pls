@@ -10,7 +10,7 @@ import {
   getConfiguredKeys,
 } from '../configuration/schema.js';
 import { logPrompt, logResponse } from './logger.js';
-import { formatSkillsForPrompt, loadSkillsWithValidation } from './skills.js';
+import { loadSkillsForPrompt } from './skills.js';
 import { toolRegistry } from './registry.js';
 import {
   CommandResultSchema,
@@ -147,41 +147,38 @@ export class AnthropicService implements LLMService {
     // Load tool from registry
     const tool = toolRegistry.getSchema(toolName);
 
-    // Use custom instructions if provided, otherwise load from registry
-    let systemPrompt: string;
+    // Check if this tool uses skills
+    const usesSkills =
+      toolName === 'schedule' ||
+      toolName === 'introspect' ||
+      toolName === 'execute' ||
+      toolName === 'validate';
 
-    if (customInstructions) {
-      // Custom instructions provided (typically for testing)
-      systemPrompt = customInstructions;
-    } else {
-      // Load and build system prompt automatically (production)
-      const instructions = toolRegistry.getInstructions(toolName);
-      systemPrompt = instructions;
+    // Load base instructions and skills
+    const baseInstructions =
+      customInstructions || toolRegistry.getInstructions(toolName);
+    let formattedSkills = '';
+    let skillDefinitions: import('../types/skills.js').SkillDefinition[] = [];
+    let systemPrompt = baseInstructions;
 
-      // Add skills section for applicable tools
-      if (
-        toolName === 'schedule' ||
-        toolName === 'introspect' ||
-        toolName === 'execute' ||
-        toolName === 'validate'
-      ) {
-        const skills = loadSkillsWithValidation();
-        const skillsSection = formatSkillsForPrompt(skills);
-        systemPrompt += skillsSection;
-      }
+    if (!customInstructions && usesSkills) {
+      const skillsResult = loadSkillsForPrompt();
+      formattedSkills = skillsResult.formatted;
+      skillDefinitions = skillsResult.definitions;
+      systemPrompt += formattedSkills;
+    }
 
-      // Add config structure for configure tool only
-      if (toolName === 'configure') {
-        const configStructure = getAvailableConfigStructure();
-        const configuredKeys = getConfiguredKeys();
-        const configSection =
-          '\n## Available Configuration\n\n' +
-          'Config structure (key: description):\n' +
-          JSON.stringify(configStructure, null, 2) +
-          '\n\nConfigured keys (keys that exist in config file):\n' +
-          JSON.stringify(configuredKeys, null, 2);
-        systemPrompt += configSection;
-      }
+    // Add config structure for configure tool only
+    if (!customInstructions && toolName === 'configure') {
+      const configStructure = getAvailableConfigStructure();
+      const configuredKeys = getConfiguredKeys();
+      const configSection =
+        '\n## Available Configuration\n\n' +
+        'Config structure (key: description):\n' +
+        JSON.stringify(configStructure, null, 2) +
+        '\n\nConfigured keys (keys that exist in config file):\n' +
+        JSON.stringify(configuredKeys, null, 2);
+      systemPrompt += configSection;
     }
 
     // Build tools array - add web search for answer tool
@@ -197,7 +194,13 @@ export class AnthropicService implements LLMService {
     const debug: ComponentDefinition[] = [];
 
     // Log prompt at Verbose level
-    const promptDebug = logPrompt(toolName, command, systemPrompt);
+    const promptDebug = logPrompt(
+      toolName,
+      command,
+      baseInstructions,
+      formattedSkills,
+      skillDefinitions
+    );
     if (promptDebug) {
       debug.push(promptDebug);
     }

@@ -47,10 +47,11 @@ describe('Define task flow', () => {
       );
 
       // Load build skill with variants
-      const skills = loadTestSkills([
+      const skillNames = [
         'navigate-to-project.skill.md',
         'build-project.skill.md',
-      ]);
+      ];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -68,7 +69,7 @@ describe('Define task flow', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();

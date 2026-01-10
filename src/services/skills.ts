@@ -2,7 +2,7 @@ import { homedir } from 'os';
 import { join } from 'path';
 
 import { AppError, ErrorCode } from '../types/errors.js';
-import { SkillDefinition } from '../types/skills.js';
+import { SkillDefinition, SkillsForPrompt } from '../types/skills.js';
 
 import { defaultFileSystem, FileSystem } from './filesystem.js';
 import { displayWarning } from './logger.js';
@@ -118,8 +118,50 @@ export function loadSkillDefinitions(
 }
 
 /**
+ * Mark incomplete skill in markdown by appending (INCOMPLETE) to name
+ */
+function markIncompleteSkill(content: string): string {
+  return content.replace(
+    /^(#{1,6}\s+Name\s*\n+)(.+?)(\n|$)/im,
+    `$1$2 (INCOMPLETE)$3`
+  );
+}
+
+/**
+ * Load skills with both formatted prompt section and parsed definitions
+ * Single source of truth for both LLM prompts and debug display
+ * Parses each skill only once for efficiency
+ */
+export function loadSkillsForPrompt(
+  fs: FileSystem = defaultFileSystem
+): SkillsForPrompt {
+  const skills = loadSkills(fs);
+
+  // Parse each skill once and build both outputs
+  const definitions: SkillDefinition[] = [];
+  const markedContent: string[] = [];
+
+  for (const { key, content } of skills) {
+    const parsed = parseSkillMarkdown(key, content);
+    definitions.push(parsed);
+
+    // Mark incomplete skills in markdown for LLM
+    if (parsed.isIncomplete) {
+      markedContent.push(markIncompleteSkill(content));
+    } else {
+      markedContent.push(content);
+    }
+  }
+
+  const formatted = formatSkillsForPrompt(markedContent);
+
+  return { formatted, definitions };
+}
+
+/**
  * Load skills and mark incomplete ones in their markdown
  * Returns array of skill markdown with status markers
+ * Uses loadSkillsForPrompt internally to avoid duplicating logic
  */
 export function loadSkillsWithValidation(
   fs: FileSystem = defaultFileSystem
@@ -129,12 +171,8 @@ export function loadSkillsWithValidation(
   return skills.map(({ key, content }) => {
     const parsed = parseSkillMarkdown(key, content);
 
-    // If skill is incomplete (either validation failed or needs more documentation), append (INCOMPLETE) to the name
     if (parsed.isIncomplete) {
-      return content.replace(
-        /^(#{1,6}\s+Name\s*\n+)(.+?)(\n|$)/im,
-        `$1$2 (INCOMPLETE)$3`
-      );
+      return markIncompleteSkill(content);
     }
 
     return content;
@@ -164,6 +202,7 @@ export function createSkillLookup(
 
 /**
  * Format skills for inclusion in the planning prompt
+ * Skills are joined with double newlines (skill headers provide separation)
  */
 export function formatSkillsForPrompt(skills: string[]): string {
   if (skills.length === 0) {
@@ -187,12 +226,9 @@ brackets for additional information. Use commas instead. For example:
 
 `;
 
-  const separator = '-'.repeat(64);
-  const skillsContent = skills
-    .map((s) => s.trim())
-    .join('\n\n' + separator + '\n\n');
+  const skillsContent = skills.map((s) => s.trim()).join('\n\n');
 
-  return header + separator + '\n\n' + skillsContent;
+  return header + skillsContent;
 }
 
 /**

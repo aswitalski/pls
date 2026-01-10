@@ -35,7 +35,8 @@ describe('Task types', () => {
         config.anthropic.model
       );
 
-      const skills = loadTestSkills(['navigate-to-project.skill.md']);
+      const skillNames = ['navigate-to-project.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -51,7 +52,7 @@ describe('Task types', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
@@ -149,7 +150,8 @@ describe('Task types', () => {
       );
 
       // Only provide navigate skill, not a "validate" skill
-      const skills = loadTestSkills(['navigate-to-project.skill.md']);
+      const skillNames = ['navigate-to-project.skill.md'];
+      const skills = loadTestSkills(skillNames);
       const skillsSection = formatSkillsForPrompt(skills);
 
       const baseInstructions = toolRegistry.getInstructions('schedule');
@@ -165,7 +167,7 @@ describe('Task types', () => {
       );
       const duration = Date.now() - startTime;
 
-      renderCompactPrompt(userCommand, baseInstructions, skills);
+      renderCompactPrompt(userCommand, baseInstructions, skills, skillNames);
       renderResponse(duration, result);
 
       expect(result.message).toBeDefined();
