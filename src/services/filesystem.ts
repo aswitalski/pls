@@ -1,4 +1,5 @@
 import {
+  appendFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -17,6 +18,7 @@ export interface FileSystem {
   exists(path: string): boolean;
   readFile(path: string, encoding: 'utf-8'): string;
   writeFile(path: string, data: string): void;
+  appendFile(path: string, data: string): void;
   readDirectory(path: string): string[];
   createDirectory(path: string, options?: { recursive?: boolean }): void;
   rename(oldPath: string, newPath: string): void;
@@ -37,6 +39,10 @@ export class RealFileSystem implements FileSystem {
 
   writeFile(path: string, data: string): void {
     writeFileSync(path, data, 'utf-8');
+  }
+
+  appendFile(path: string, data: string): void {
+    appendFileSync(path, data, 'utf-8');
   }
 
   readDirectory(path: string): string[] {
@@ -83,6 +89,16 @@ export class MemoryFileSystem implements FileSystem {
       this.createDirectory(dir, { recursive: true });
     }
     this.files.set(path, data);
+  }
+
+  appendFile(path: string, data: string): void {
+    // Auto-create parent directories (consistent with writeFile)
+    const dir = dirname(path);
+    if (dir !== '.' && dir !== path) {
+      this.createDirectory(dir, { recursive: true });
+    }
+    const existing = this.files.get(path) ?? '';
+    this.files.set(path, existing + data);
   }
 
   readDirectory(path: string): string[] {

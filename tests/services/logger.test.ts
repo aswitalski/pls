@@ -18,8 +18,15 @@ import {
   logPrompt,
   logResponse,
   PromptDisplay,
+  resetSessionLog,
   setDebugLevel,
+  setFileSystem,
 } from '../../src/services/logger.js';
+import {
+  defaultFileSystem,
+  FileSystem,
+  MemoryFileSystem,
+} from '../../src/services/filesystem.js';
 import { Palette } from '../../src/services/colors.js';
 
 describe('Logger service', () => {
@@ -33,14 +40,20 @@ describe('Logger service', () => {
     return component.props as DebugDefinitionProps;
   }
 
+  // Use memory filesystem for all tests to avoid real file I/O
+  let memoryFs: MemoryFileSystem;
+
   beforeEach(() => {
-    // Reset to default level before each test
+    memoryFs = new MemoryFileSystem();
+    setFileSystem(memoryFs);
+    resetSessionLog();
     setDebugLevel(DebugLevel.None);
   });
 
   afterEach(() => {
-    // Clean up after each test
     setDebugLevel(DebugLevel.None);
+    resetSessionLog();
+    setFileSystem(defaultFileSystem);
   });
 
   describe('Debug level management', () => {
@@ -113,8 +126,7 @@ Run Tests
         PromptDisplay.LLM
       );
 
-      expect(result).toContain('Tool: schedule');
-      expect(result).toContain('Command: deploy the app');
+      expect(result).toContain('**Tool:** schedule');
       expect(result).toContain('You are a planning assistant.');
       expect(result).toContain('## Available Skills');
       expect(result).toContain('Deploy App');
@@ -316,6 +328,7 @@ Run Tests
       expect(props.color).toBe(Palette.Gray);
       expect(props.content).toContain('Tool: schedule');
       expect(props.content).toContain('Command: test command');
+      expect(props.content).toContain('(no skills)');
     });
 
     it('shows condensed skills summary in debug output', () => {
@@ -481,7 +494,7 @@ Run Tests
       expect(response?.name).toBe(ComponentName.Debug);
     });
 
-    it('suppresses all logging when level is None', () => {
+    it('suppresses UI components when level is None', () => {
       setDebugLevel(DebugLevel.None);
 
       const prompt = logPrompt('schedule', 'cmd', 'instr', '');
@@ -547,18 +560,6 @@ Run Tests
       const props = getDebugProps(result);
       expect(props.content).toContain('"error"');
       expect(props.content).toContain('Rate limit exceeded');
-    });
-
-    it('shows "(no skills)" when no skills are provided', () => {
-      setDebugLevel(DebugLevel.Verbose);
-
-      const result = logPrompt('schedule', 'command', 'instructions', '');
-      const props = getDebugProps(result);
-
-      // Summary mode shows "(no skills)" when no skills provided
-      expect(props.content).toContain('Tool: schedule');
-      expect(props.content).toContain('Command: command');
-      expect(props.content).toContain('(no skills)');
     });
 
     it('logs pipeline with multiple skills and references', () => {
@@ -681,6 +682,233 @@ Run Tests
       setDebugLevel(DebugLevel.Info);
       const warnings = getWarnings();
       expect(warnings).toEqual([]);
+    });
+  });
+
+  describe('File logging', () => {
+    it('does not create log file when debug level is None', () => {
+      setDebugLevel(DebugLevel.None);
+      logPrompt('schedule', 'test command', 'instructions', '');
+
+      const files = memoryFs.getFiles();
+      expect(files.size).toBe(0);
+    });
+
+    it('creates log file when debug level is Info', () => {
+      setDebugLevel(DebugLevel.Info);
+      logPrompt('schedule', 'test command', 'instructions', '');
+
+      const files = memoryFs.getFiles();
+      expect(files.size).toBe(1);
+    });
+
+    it('creates log file when debug level is Verbose', () => {
+      setDebugLevel(DebugLevel.Verbose);
+      logPrompt('schedule', 'test command', 'instructions', '');
+
+      const files = memoryFs.getFiles();
+      expect(files.size).toBe(1);
+    });
+
+    it('creates log file with correct directory structure', () => {
+      setDebugLevel(DebugLevel.Info);
+      logPrompt('schedule', 'test', 'instr', '');
+
+      const files = memoryFs.getFiles();
+      const path = [...files.keys()][0];
+
+      // Path should match: ~/.pls/logs/YYYY-MM-DD/HH:MM:SS.log.md
+      // Time separator is : on Unix, - on Windows
+      expect(path).toMatch(
+        /\.pls\/logs\/\d{4}-\d{2}-\d{2}\/\d{2}[:-]\d{2}[:-]\d{2}\.log\.md$/
+      );
+    });
+
+    it('logs user command in code block format', () => {
+      setDebugLevel(DebugLevel.Info);
+      logPrompt('schedule', 'deploy to production', 'instructions', '');
+
+      const files = memoryFs.getFiles();
+      const content = [...files.values()][0];
+
+      expect(content).toContain('# User Command');
+      expect(content).toContain('```\ndeploy to production\n```');
+    });
+
+    it('logs system prompt section', () => {
+      setDebugLevel(DebugLevel.Info);
+      logPrompt('schedule', 'test', 'You are a planner.', '');
+
+      const files = memoryFs.getFiles();
+      const content = [...files.values()][0];
+
+      expect(content).toContain('# System Prompt');
+      expect(content).toContain('**Tool:** schedule');
+      expect(content).toContain('You are a planner.');
+    });
+
+    it('logs LLM response with JSON in code block', () => {
+      setDebugLevel(DebugLevel.Info);
+      const response = { message: 'Done', tasks: [{ action: 'test' }] };
+      logResponse('schedule', response, 150);
+
+      const files = memoryFs.getFiles();
+      const content = [...files.values()][0];
+
+      expect(content).toContain('# LLM Response');
+      expect(content).toContain('**Tool:** schedule');
+      expect(content).toContain('```json');
+      expect(content).toContain('"message": "Done"');
+      expect(content).toContain('```');
+    });
+
+    it('appends multiple entries to same log file', () => {
+      setDebugLevel(DebugLevel.Info);
+      logPrompt('schedule', 'first command', 'instructions', '');
+      logResponse('schedule', { message: 'response' }, 100);
+
+      const files = memoryFs.getFiles();
+      expect(files.size).toBe(1);
+
+      const content = [...files.values()][0];
+      expect(content).toContain('# User Command');
+      expect(content).toContain('# System Prompt');
+      expect(content).toContain('# LLM Response');
+    });
+
+    it('creates unique filename with -a suffix when file exists', () => {
+      setDebugLevel(DebugLevel.Info);
+
+      // First session creates initial file
+      logPrompt('schedule', 'first', 'instr', '');
+      const firstPath = [...memoryFs.getFiles().keys()][0];
+
+      // Reset session to simulate new run
+      resetSessionLog();
+
+      // Second session should create file with -a suffix
+      logPrompt('schedule', 'second', 'instr', '');
+
+      const files = memoryFs.getFiles();
+      expect(files.size).toBe(2);
+
+      const paths = [...files.keys()];
+      const secondPath = paths.find((p) => p !== firstPath);
+      expect(secondPath).toMatch(/-a\.log\.md$/);
+    });
+
+    it('creates unique filename with -b suffix when -a exists', () => {
+      setDebugLevel(DebugLevel.Info);
+
+      // Create first file
+      logPrompt('schedule', 'first', 'instr', '');
+      resetSessionLog();
+
+      // Create second file (-a)
+      logPrompt('schedule', 'second', 'instr', '');
+      resetSessionLog();
+
+      // Create third file (-b)
+      logPrompt('schedule', 'third', 'instr', '');
+
+      const files = memoryFs.getFiles();
+      expect(files.size).toBe(3);
+
+      const paths = [...files.keys()];
+      expect(paths.some((p) => p.endsWith('-b.log.md'))).toBe(true);
+    });
+
+    it('preserves log content across multiple prompts and responses', () => {
+      setDebugLevel(DebugLevel.Info);
+
+      logPrompt('schedule', 'plan task', 'planner instructions', '');
+      logResponse('schedule', { message: 'planned', tasks: [] }, 100);
+      logPrompt('execute', 'run task', 'executor instructions', '');
+      logResponse('execute', { output: 'success' }, 50);
+
+      const content = [...memoryFs.getFiles().values()][0];
+
+      // All entries should be present
+      expect(content).toContain('plan task');
+      expect(content).toContain('"message": "planned"');
+      expect(content).toContain('run task');
+      expect(content).toContain('"output": "success"');
+    });
+
+    it('uses timestamp fallback when all letter suffixes exhausted', () => {
+      setDebugLevel(DebugLevel.Info);
+
+      // Create first session to get the base path
+      logPrompt('schedule', 'initial', 'instr', '');
+      const basePath = [...memoryFs.getFiles().keys()][0];
+      resetSessionLog();
+
+      // Pre-create files for all letter suffixes (a-z) to force fallback
+      const ext = '.log.md';
+      const baseWithoutExt = basePath.slice(0, -ext.length);
+      for (let i = 0; i < 26; i++) {
+        const suffix = String.fromCharCode(97 + i); // a-z
+        memoryFs.writeFile(`${baseWithoutExt}-${suffix}${ext}`, '');
+      }
+
+      // Next session should use millisecond fallback (or fresh timestamp if
+      // second boundary crossed)
+      logPrompt('schedule', 'fallback', 'instr', '');
+
+      const files = memoryFs.getFiles();
+      const paths = [...files.keys()];
+
+      // Should have: base file + 26 letter files + 1 new file = 28
+      expect(files.size).toBe(28);
+
+      // Find the new file (not base, not letter-suffixed)
+      const letterSuffixPattern = /-[a-z]\.log\.md$/;
+      const newFile = paths.find(
+        (p) => p !== basePath && !letterSuffixPattern.test(p)
+      );
+      expect(newFile).toBeDefined();
+
+      // New file is either milliseconds fallback (same second) or fresh
+      // timestamp (crossed second boundary) - both are valid
+      const msPattern = /-\d{3}\.log\.md$/;
+      const freshTimestampPattern = /\d{2}[:-]\d{2}[:-]\d{2}\.log\.md$/;
+      expect(
+        msPattern.test(newFile!) || freshTimestampPattern.test(newFile!)
+      ).toBe(true);
+    });
+
+    it('gracefully handles file system errors', () => {
+      const failingFs: FileSystem = {
+        exists: () => false,
+        readFile: () => {
+          throw new Error('Read failed');
+        },
+        writeFile: () => {
+          throw new Error('Write failed');
+        },
+        appendFile: () => {
+          throw new Error('Append failed');
+        },
+        readDirectory: () => [],
+        createDirectory: () => {
+          throw new Error('Mkdir failed');
+        },
+        rename: () => {
+          throw new Error('Rename failed');
+        },
+        remove: () => {
+          throw new Error('Remove failed');
+        },
+      };
+
+      setFileSystem(failingFs);
+      setDebugLevel(DebugLevel.Info);
+
+      // Should not throw - logging degrades gracefully
+      expect(() => {
+        logPrompt('schedule', 'test', 'instructions', '');
+        logResponse('schedule', { message: 'test' }, 100);
+      }).not.toThrow();
     });
   });
 });
