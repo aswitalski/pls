@@ -53,7 +53,7 @@ describe('Refinement service', () => {
       expect(firstCall.name).toBe(ComponentName.Refinement);
     });
 
-    it('calls LLM with formatted refined command', async () => {
+    it('calls LLM with YAML formatted refined command', async () => {
       const selectedTasks = [
         { action: 'Deploy to Dev', type: TaskType.Execute, config: [] },
         { action: 'Run tests', type: TaskType.Execute, config: [] },
@@ -87,9 +87,9 @@ describe('Refinement service', () => {
         requestHandlers
       );
 
-      // Should call processWithTool with formatted command (preserving case)
+      // Should call processWithTool with YAML formatted tasks
       expect(mockProcessWithTool).toHaveBeenCalledWith(
-        'Deploy to Dev (shell execution), Run tests (shell execution)',
+        'deploy to Dev\n\nmetadata:\n  type: execute\n\nrun tests\n\nmetadata:\n  type: execute',
         'schedule'
       );
     });
@@ -122,14 +122,14 @@ describe('Refinement service', () => {
         requestHandlers
       );
 
-      // Should replace commas with dashes (preserving case)
+      // Should replace commas with dashes in YAML format
       expect(mockProcessWithTool).toHaveBeenCalledWith(
-        'Deploy to Dev - Alpha (shell execution)',
+        'deploy to Dev - Alpha\n\nmetadata:\n  type: execute',
         'schedule'
       );
     });
 
-    it('uses shell execution format for group tasks', async () => {
+    it('includes type for group tasks', async () => {
       const selectedTasks = [
         { action: 'Deploy application', type: TaskType.Group, config: [] },
       ];
@@ -157,9 +157,9 @@ describe('Refinement service', () => {
         requestHandlers
       );
 
-      // Should use shell execution format for group tasks (preserving case)
+      // Should include type in YAML format for group tasks
       expect(mockProcessWithTool).toHaveBeenCalledWith(
-        'Deploy application (shell execution)',
+        'deploy application\n\nmetadata:\n  type: group',
         'schedule'
       );
     });
@@ -167,7 +167,7 @@ describe('Refinement service', () => {
     it('preserves case in file paths and URLs', async () => {
       const selectedTasks = [
         {
-          action: 'process /Users/Dev/MyProject/Data.csv in batch mode',
+          action: 'Process /Users/Dev/MyProject/Data.csv in batch mode',
           type: TaskType.Execute,
           config: [],
         },
@@ -199,9 +199,9 @@ describe('Refinement service', () => {
         requestHandlers
       );
 
-      // Should preserve exact case in paths (lowercase command, mixed case path)
+      // Should lowercase only first letter, preserving case in paths
       expect(mockProcessWithTool).toHaveBeenCalledWith(
-        'process /Users/Dev/MyProject/Data.csv in batch mode (shell execution)',
+        'process /Users/Dev/MyProject/Data.csv in batch mode\n\nmetadata:\n  type: execute',
         'schedule'
       );
     });

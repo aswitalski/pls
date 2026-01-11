@@ -8,8 +8,9 @@ import {
   RequestHandlers,
   WorkflowHandlers,
 } from '../types/handlers.js';
-import { Task, TaskType } from '../types/types.js';
+import { Task } from '../types/types.js';
 
+import { formatTaskAsYaml } from '../execution/processing.js';
 import { LLMService } from './anthropic.js';
 import { createCommand, createRefinement } from './components.js';
 import { formatErrorMessage, getRefiningMessage } from './messages.js';
@@ -47,18 +48,15 @@ export async function handleRefinement<TState extends BaseState = BaseState>(
   workflowHandlers.addToQueue(refinementDef);
 
   try {
-    // Build refined command from selected tasks
+    // Build refined command with action line followed by YAML metadata
     const refinedCommand = selectedTasks
       .map((task) => {
+        // Replace commas with dashes for cleaner LLM prompt formatting
         const action = task.action.replace(/,/g, ' -');
-        const type = task.type;
-        // For execute/group tasks, use generic hint - let LLM decide based on skill
-        if (type === TaskType.Execute || type === TaskType.Group) {
-          return `${action} (shell execution)`;
-        }
-        return `${action} (type: ${type})`;
+        const metadata = { ...task.params, type: task.type };
+        return formatTaskAsYaml(action, metadata);
       })
-      .join(', ');
+      .join('\n\n');
 
     // Call LLM to refine plan with selected tasks
     const refinedResult = await service.processWithTool(
