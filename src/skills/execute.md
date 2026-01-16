@@ -151,6 +151,28 @@ steps 1 and 3 (with step 2 skipped), use Execution lines 1 and 3
 which Execution line to use - always match by original position, never
 by sequential task index.
 
+### Expanding Skill References in Execution Lines
+
+Execution lines may contain **skill references** in the format
+`[ Skill Name ]`. These are references to other skills that must be
+expanded to actual commands before execution.
+
+**Format**: `[ Skill Name ]` with spaces inside the brackets
+
+**How to expand**:
+1. When an Execution line contains `[ Skill Name ]`, look up that skill
+   in the "Available Skills" section
+2. Get the referenced skill's Execution command
+3. Replace the `[ Skill Name ]` reference with the actual command
+
+**IMPORTANT**: Skill references are the ONLY exception to the verbatim
+execution rule below. You MUST expand them - never output `[ ... ]`
+syntax in the final command.
+
+**Note**: Use the `skill:` field from task metadata to find the skill
+definition. If that skill's Execution line contains `[ Other Skill ]`,
+look up "Other Skill" and replace the reference with its command.
+
 **CRITICAL - VERBATIM EXECUTION**: Run shell commands EXACTLY as written in
 the ### Execution section. Do NOT:
 - Modify the command string in any way
