@@ -6,7 +6,6 @@ import { ExecutionStatus } from '../../services/shell.js';
 
 const MAX_LINES = 8;
 const MAX_WIDTH = 75;
-const SHORT_OUTPUT_THRESHOLD = 4;
 const MINIMAL_INFO_THRESHOLD = 2;
 
 export interface OutputProps {
@@ -20,7 +19,6 @@ interface OutputDisplayConfig {
   stdoutLines: string[];
   stderrLines: string[];
   showStdout: boolean;
-  wrapMode: 'wrap' | 'truncate-end';
   stdoutColor: string;
   stderrColor: string;
 }
@@ -61,11 +59,6 @@ export function computeDisplayConfig(
   const showStdout =
     hasStdout && (!hasStderr || stderrLines.length <= MINIMAL_INFO_THRESHOLD);
 
-  // Use word wrapping for short outputs to show more detail
-  const totalLines = stdoutLines.length + stderrLines.length;
-  const wrapMode =
-    totalLines <= SHORT_OUTPUT_THRESHOLD ? 'wrap' : 'truncate-end';
-
   // Darker colors for finished tasks
   const baseColor = isFinished ? Palette.DarkGray : Palette.Gray;
   const stderrColor =
@@ -75,7 +68,6 @@ export function computeDisplayConfig(
     stdoutLines,
     stderrLines,
     showStdout,
-    wrapMode,
     stdoutColor: baseColor,
     stderrColor,
   };
@@ -91,25 +83,19 @@ export function Output({ stdout, stderr, status, isFinished }: OutputProps) {
 
   if (!config) return null;
 
-  const {
-    stdoutLines,
-    stderrLines,
-    showStdout,
-    wrapMode,
-    stdoutColor,
-    stderrColor,
-  } = config;
+  const { stdoutLines, stderrLines, showStdout, stdoutColor, stderrColor } =
+    config;
 
   return (
     <Box marginTop={1} marginLeft={5} flexDirection="column" width={MAX_WIDTH}>
       {showStdout &&
         stdoutLines.map((line, index) => (
-          <Text key={`out-${index}`} color={stdoutColor} wrap={wrapMode}>
+          <Text key={`out-${index}`} color={stdoutColor} wrap="wrap">
             {line}
           </Text>
         ))}
       {stderrLines.map((line, index) => (
-        <Text key={`err-${index}`} color={stderrColor} wrap={wrapMode}>
+        <Text key={`err-${index}`} color={stderrColor} wrap="wrap">
           {line}
         </Text>
       ))}

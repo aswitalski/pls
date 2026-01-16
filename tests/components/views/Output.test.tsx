@@ -318,25 +318,7 @@ describe('Output component', () => {
   });
 
   describe('Word wrapping behavior', () => {
-    it('uses wrap mode for 4 lines or fewer', () => {
-      const stdout = 'Line 1\nLine 2\nLine 3\nLine 4';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr=""
-          status={ExecutionStatus.Success}
-          isFinished={false}
-        />
-      );
-
-      // All lines should be present (wrap mode preserves content)
-      expect(lastFrame()).toContain('Line 1');
-      expect(lastFrame()).toContain('Line 2');
-      expect(lastFrame()).toContain('Line 3');
-      expect(lastFrame()).toContain('Line 4');
-    });
-
-    it('uses truncate mode for more than 4 lines', () => {
+    it('always uses wrap mode to show complete output', () => {
       const lines = Array.from({ length: 6 }, (_, i) => `Line ${i + 1}`);
       const stdout = lines.join('\n');
       const { lastFrame } = render(
@@ -348,7 +330,7 @@ describe('Output component', () => {
         />
       );
 
-      // All 6 lines should still be present (within 8 line limit)
+      // All lines should be present (wrap mode preserves content)
       lines.forEach((line) => {
         expect(lastFrame()).toContain(line);
       });
