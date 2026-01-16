@@ -7,7 +7,11 @@ import { render } from 'ink';
 
 import { DebugLevel } from './configuration/types.js';
 
+import { preventPerformanceBufferOverflow } from './services/performance.js';
+
 import { Main } from './Main.js';
+
+preventPerformanceBufferOverflow();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
