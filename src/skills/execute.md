@@ -100,13 +100,27 @@ position.
 
 ### How to Generate Commands from Skills
 
+**CRITICAL - ONE TASK = ONE COMMAND**: Each input task maps to exactly
+ONE command in your response. The task's action tells you WHICH specific
+step from the skill to use. Do NOT expand an entire skill workflow for
+a single task - only generate the command for that specific step.
+
 1. **Identify skill tasks**: Check if tasks have params.skill
 2. **Find the skill**: Look up the skill in "Available Skills" section
    below (REQUIRED - must exist)
-3. **Match tasks to Execution**: Each task action came from a Steps line;
-   use the corresponding Execution line for the command
-4. **Substitute parameters**: Replace {PARAM} placeholders with actual
+3. **Match task action to skill step**: The task action describes which
+   step from the skill's Steps section this task represents. Find the
+   matching step by semantic meaning (e.g., "Export results" matches
+   "Export the results to {FORMAT}", NOT all three steps of the skill)
+4. **Use corresponding Execution line**: Once you identify which step
+   the task represents, use ONLY that step's corresponding Execution line
+5. **Substitute parameters**: Replace {PARAM} placeholders with actual
    values from task params
+
+**IMPORTANT**: If the schedule contains separate tasks for different
+steps of the same skill (e.g., one task for fetching data, another for
+exporting), each task produces its own single command. Do NOT combine
+them or add steps that weren't scheduled.
 
 ### Example Skill
 
@@ -393,6 +407,41 @@ commands:
     command: "df -h"
 ```
 
+### Example 8: Partial skill execution (specific steps only)
+
+When the schedule breaks a multi-step skill into separate tasks, each
+task produces exactly ONE command for its specific step:
+
+Skill "Prepare Report" has 3 steps:
+- Steps: Fetch source data | Transform data | Export results
+- Execution: curl {url} | python3 process.py | cat output.csv
+
+Tasks (schedule requested only steps 1 and 3, skipping transform):
+- { action: "Fetch source data", params: { skill: "Prepare Report" } }
+- { action: "Export results", params: { skill: "Prepare Report" } }
+
+Response (2 tasks = 2 commands, NOT 3):
+```
+message: "Prepare report:"
+summary: "Report prepared"
+commands:
+  - description: "Fetch source data"
+    command: "curl {url}"
+  - description: "Export results"
+    command: "cat output.csv"
+```
+
+**WRONG** response (adding unscheduled transform step):
+```
+commands:
+  - description: "Fetch source data"
+    command: "curl {url}"
+  - description: "Transform data"       ← NOT IN SCHEDULE - DO NOT ADD
+    command: "python3 process.py"
+  - description: "Export results"
+    command: "cat output.csv"
+```
+
 ## Handling Complex Operations
 
 For complex multi-step operations:
@@ -442,6 +491,10 @@ Example:
 - **CRITICAL: Assume what commands to run when skill is missing**
 - **CRITICAL: Replace unknown placeholders with `<UNKNOWN>` - this breaks
   shell syntax**
+- **CRITICAL: Add steps that weren't in the scheduled tasks** - if the
+  schedule has 2 tasks, you MUST return exactly 2 commands
+- **CRITICAL: Expand entire skill workflows** when only specific steps
+  were scheduled - match task actions to individual skill steps
 
 **DO:**
 - Match commands precisely to task descriptions
@@ -456,6 +509,10 @@ Example:
   commands**
 - Always use skill's Execution section when params.skill is present
 - Replace all {PARAM} placeholders with values from task params
+- **CRITICAL: Count input tasks and ensure output has same count** -
+  N tasks in = N commands out, no exceptions
+- **CRITICAL: Match each task action to its specific skill step** -
+  use only that step's Execution line for the command
 
 ## Final Validation
 

@@ -207,11 +207,11 @@ export function Execute({
           return;
         }
 
-        // Create task data from commands
+        // Create task data from commands - use descriptions from execute response
         const tasks = result.commands.map(
-          (cmd, index) =>
+          (cmd) =>
             ({
-              label: inputTasks[index]?.action ?? cmd.description,
+              label: cmd.description,
               command: cmd,
               status: ExecutionStatus.Pending,
               elapsed: 0,
