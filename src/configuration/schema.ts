@@ -50,6 +50,12 @@ const coreConfigSchema: Record<string, ConfigDefinition> = {
     default: DebugLevel.None,
     description: 'Debug mode',
   },
+  'settings.memory': {
+    type: ConfigDefinitionType.Number,
+    required: false,
+    default: 1024,
+    description: 'Child process memory limit (MB)',
+  },
 };
 
 /**

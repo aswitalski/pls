@@ -173,11 +173,15 @@ export function formatErrorMessage(error: unknown): string {
 }
 
 /**
- * Returns an execution error message with varied phrasing.
- * Error details are shown in the task output, so this is just a summary.
- * Randomly selects from variations to sound natural.
+ * Returns an execution error message.
+ * If a specific error is provided, returns it directly.
+ * Otherwise, returns a generic failure message with varied phrasing.
  */
-export function getExecutionErrorMessage(_error: string): string {
+export function getExecutionErrorMessage(error?: string): string {
+  if (error) {
+    return error;
+  }
+
   const messages = [
     'The execution failed.',
     'Execution has failed.',

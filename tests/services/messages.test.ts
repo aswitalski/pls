@@ -225,7 +225,7 @@ describe('Message functions', () => {
   });
 
   describe('getExecutionErrorMessage', () => {
-    const expectedMessages = [
+    const genericMessages = [
       'The execution failed.',
       'Execution has failed.',
       'The execution was not successful.',
@@ -233,31 +233,28 @@ describe('Message functions', () => {
       'The execution encountered an error.',
     ];
 
-    it('returns one of the expected generic messages', () => {
-      const message = getExecutionErrorMessage('any error');
-      expect(expectedMessages).toContain(message);
+    it('returns the provided error message directly', () => {
+      const message = getExecutionErrorMessage('Memory limit exceeded');
+      expect(message).toBe('Memory limit exceeded');
     });
 
-    it('returns a message ending with a period', () => {
-      const message = getExecutionErrorMessage('test error');
-      expect(message).toMatch(/\.$/);
+    it('returns generic message when no error provided', () => {
+      const message = getExecutionErrorMessage();
+      expect(genericMessages).toContain(message);
     });
 
-    it('varies messages across multiple calls', () => {
+    it('returns generic message when empty string provided', () => {
+      const message = getExecutionErrorMessage('');
+      expect(genericMessages).toContain(message);
+    });
+
+    it('varies generic messages across multiple calls', () => {
       const messages = new Set<string>();
       for (let i = 0; i < 50; i++) {
-        const message = getExecutionErrorMessage('test');
+        const message = getExecutionErrorMessage();
         messages.add(message);
       }
       expect(messages.size).toBeGreaterThan(1);
-    });
-
-    it('ignores the error parameter (details shown in task output)', () => {
-      const message1 = getExecutionErrorMessage('error 1');
-      const message2 = getExecutionErrorMessage('error 2');
-      // Both should be valid messages regardless of input
-      expect(expectedMessages).toContain(message1);
-      expect(expectedMessages).toContain(message2);
     });
   });
 

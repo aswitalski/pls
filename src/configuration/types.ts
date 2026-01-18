@@ -23,6 +23,7 @@ export type AnthropicConfig = {
 
 export type SettingsConfig = {
   debug?: DebugLevel;
+  memory?: number;
 };
 
 export interface Config {

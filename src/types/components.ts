@@ -10,8 +10,8 @@ import {
 } from './handlers.js';
 import { ConfigRequirement } from './skills.js';
 
-import { ExecuteCommand, LLMService } from '../services/anthropic.js';
-import { ExecutionStatus } from '../services/shell.js';
+import { LLMService } from '../services/anthropic.js';
+import { ExecuteCommand, ExecutionStatus } from '../services/shell.js';
 
 import { ConfigStep } from '../components/controllers/Config.js';
 

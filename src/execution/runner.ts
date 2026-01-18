@@ -1,6 +1,6 @@
-import { ExecuteCommand } from '../services/anthropic.js';
 import {
   CommandOutput,
+  ExecuteCommand,
   ExecutionResult,
   ExecutionStatus,
   executeCommand,
@@ -125,7 +125,7 @@ export async function executeTask(
       callbacks.onComplete(elapsed, output);
       return { status: ExecutionStatus.Success, elapsed, output };
     } else {
-      const errorMsg = result.errors || result.error || 'Command failed';
+      const errorMsg = result.error || result.errors || 'Command failed';
       error = errorMsg;
       const output = createOutput();
       callbacks.onUpdate(output);

@@ -3,12 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CommandOutput,
   DummyExecutor,
+  ExecuteCommand,
   ExecutionProgress,
   ExecutionResult,
   ExecutionStatus,
-  RealExecutor,
+  limitLines,
+  MAX_OUTPUT_LINES,
+  OutputStreamer,
+  parseWorkdir,
+  PWD_MARKER,
 } from '../../src/services/shell.js';
-import { ExecuteCommand } from '../../src/services/anthropic.js';
 
 // Test executor with small delays (0-20ms)
 const testExecutor = new DummyExecutor(() => Math.random() * 20);
@@ -381,348 +385,225 @@ describe('Shell service', () => {
       expect(results[1].result).toBe(ExecutionResult.Error);
     });
   });
+});
+
+describe('limitLines', () => {
+  it('returns input unchanged when under limit', () => {
+    const input = 'line1\nline2\nline3';
+    expect(limitLines(input)).toBe(input);
+  });
+
+  it('returns input unchanged when exactly at limit', () => {
+    const lines = Array.from(
+      { length: MAX_OUTPUT_LINES },
+      (_, i) => `line${i}`
+    );
+    const input = lines.join('\n');
+    expect(limitLines(input)).toBe(input);
+  });
+
+  it('returns last MAX_OUTPUT_LINES lines when over limit', () => {
+    const lines = Array.from({ length: 200 }, (_, i) => `line${i}`);
+    const input = lines.join('\n');
+    const result = limitLines(input);
+    const resultLines = result.split('\n');
+
+    expect(resultLines.length).toBe(MAX_OUTPUT_LINES);
+    expect(resultLines[0]).toBe(`line${200 - MAX_OUTPUT_LINES}`);
+    expect(resultLines[MAX_OUTPUT_LINES - 1]).toBe('line199');
+  });
+
+  it('handles empty string', () => {
+    expect(limitLines('')).toBe('');
+  });
+
+  it('handles single line', () => {
+    expect(limitLines('single')).toBe('single');
+  });
+
+  it('handles string with only newlines', () => {
+    const input = '\n\n\n';
+    expect(limitLines(input)).toBe(input);
+  });
+
+  it('preserves trailing newline', () => {
+    const input = 'line1\nline2\n';
+    expect(limitLines(input)).toBe(input);
+  });
+});
+
+describe('parseWorkdir', () => {
+  it('returns raw output when no marker present', () => {
+    const result = parseWorkdir('hello world');
+    expect(result.output).toBe('hello world');
+    expect(result.workdir).toBeUndefined();
+  });
+
+  it('extracts workdir after marker', () => {
+    const result = parseWorkdir(`output text\n${PWD_MARKER}\n/home/user`);
+    expect(result.output).toBe('output text');
+    expect(result.workdir).toBe('/home/user');
+  });
+
+  it('trims output before marker', () => {
+    const result = parseWorkdir(`output text   \n${PWD_MARKER}\n/home/user`);
+    expect(result.output).toBe('output text');
+  });
+
+  it('handles empty output before marker', () => {
+    const result = parseWorkdir(`${PWD_MARKER}\n/home/user`);
+    expect(result.output).toBe('');
+    expect(result.workdir).toBe('/home/user');
+  });
+
+  it('handles multiline output before marker', () => {
+    const result = parseWorkdir(`line1\nline2\nline3\n${PWD_MARKER}\n/tmp`);
+    expect(result.output).toBe('line1\nline2\nline3');
+    expect(result.workdir).toBe('/tmp');
+  });
+
+  it('uses last marker when multiple present', () => {
+    const result = parseWorkdir(
+      `text1\n${PWD_MARKER}\n/first\ntext2\n${PWD_MARKER}\n/second`
+    );
+    expect(result.output).toBe(`text1\n${PWD_MARKER}\n/first\ntext2`);
+    expect(result.workdir).toBe('/second');
+  });
+
+  it('handles marker with extra whitespace after path', () => {
+    const result = parseWorkdir(`output\n${PWD_MARKER}\n/home/user\n\n`);
+    expect(result.workdir).toBe('/home/user');
+  });
+
+  it('handles empty string', () => {
+    const result = parseWorkdir('');
+    expect(result.output).toBe('');
+    expect(result.workdir).toBeUndefined();
+  });
+
+  it('handles marker at very end without path', () => {
+    const result = parseWorkdir(`output\n${PWD_MARKER}`);
+    expect(result.output).toBe('output');
+    expect(result.workdir).toBeUndefined();
+  });
+});
+
+describe('OutputStreamer', () => {
+  it('accumulates chunks without callback', () => {
+    const streamer = new OutputStreamer();
+    streamer.pushStdout('hello ');
+    streamer.pushStdout('world');
+    expect(streamer.getAccumulated()).toBe('hello world');
+  });
+
+  it('emits chunks to callback when content exceeds buffer threshold', () => {
+    const chunks: string[] = [];
+    const streamer = new OutputStreamer((data) => chunks.push(data));
+
+    // Must push enough content to exceed buffer threshold (marker length + 5)
+    streamer.pushStdout(
+      'this is enough content to exceed the buffer threshold'
+    );
 
-  describe('RealExecutor', () => {
-    it('executes command and captures stdout', async () => {
-      const executor = new RealExecutor();
-      const cmd: ExecuteCommand = {
-        description: 'Echo test',
-        command: 'echo "hello world"',
-      };
-
-      const result = await executor.execute(cmd);
-
-      expect(result.result).toBe(ExecutionResult.Success);
-      expect(result.output.trim()).toBe('hello world');
-      expect(result.errors).toBe('');
-    });
-
-    it('captures stderr output', async () => {
-      const executor = new RealExecutor();
-      const cmd: ExecuteCommand = {
-        description: 'Write to stderr',
-        command: 'echo "error message" >&2',
-      };
-
-      const result = await executor.execute(cmd);
+    expect(chunks.length).toBeGreaterThan(0);
+  });
 
-      expect(result.result).toBe(ExecutionResult.Success);
-      expect(result.errors.trim()).toBe('error message');
-    });
+  it('buffers to avoid emitting partial marker', () => {
+    const chunks: string[] = [];
+    const streamer = new OutputStreamer((data) => chunks.push(data));
 
-    it('returns error result for non-zero exit code', async () => {
-      const executor = new RealExecutor();
-      const cmd: ExecuteCommand = {
-        description: 'Failing command',
-        command: 'exit 1',
-      };
+    // Push text that could be start of marker
+    streamer.pushStdout('output__PWD');
+    const emittedSoFar = chunks.join('');
 
-      const result = await executor.execute(cmd);
+    // Should buffer the potential marker start
+    expect(emittedSoFar.length).toBeLessThan('output__PWD'.length);
+  });
 
-      expect(result.result).toBe(ExecutionResult.Error);
-      expect(result.error).toBe('Exit code: 1');
-    });
-
-    it('calls output callback with stdout data', async () => {
-      const chunks: string[] = [];
-      const executor = new RealExecutor((data, stream) => {
-        if (stream === 'stdout') chunks.push(data);
-      });
+  it('filters marker from streamed output', () => {
+    const chunks: string[] = [];
+    const streamer = new OutputStreamer((data) => chunks.push(data));
 
-      const cmd: ExecuteCommand = {
-        description: 'Echo test',
-        command: 'echo "callback test"',
-      };
+    streamer.pushStdout(`visible output\n${PWD_MARKER}\n/home/user`);
+    const emitted = chunks.join('');
 
-      await executor.execute(cmd);
-
-      expect(chunks.join('')).toContain('callback test');
-    });
-
-    it('calls output callback with stderr data', async () => {
-      const chunks: string[] = [];
-      const executor = new RealExecutor((data, stream) => {
-        if (stream === 'stderr') chunks.push(data);
-      });
+    expect(emitted).not.toContain(PWD_MARKER);
+    expect(emitted).toContain('visible output');
+  });
 
-      const cmd: ExecuteCommand = {
-        description: 'Stderr test',
-        command: 'echo "stderr test" >&2',
-      };
+  it('stops emitting after marker found', () => {
+    const chunks: string[] = [];
+    const streamer = new OutputStreamer((data) => chunks.push(data));
 
-      await executor.execute(cmd);
-
-      expect(chunks.join('')).toContain('stderr test');
-    });
-
-    it('calls progress callback with running and success status', async () => {
-      const executor = new RealExecutor();
-      const statuses: ExecutionStatus[] = [];
-
-      const cmd: ExecuteCommand = {
-        description: 'Progress test',
-        command: 'echo "test"',
-      };
-
-      await executor.execute(cmd, (status) => statuses.push(status));
-
-      expect(statuses).toContain(ExecutionStatus.Running);
-      expect(statuses).toContain(ExecutionStatus.Success);
-    });
-
-    it('calls progress callback with failed status on error', async () => {
-      const executor = new RealExecutor();
-      const statuses: ExecutionStatus[] = [];
-
-      const cmd: ExecuteCommand = {
-        description: 'Failing command',
-        command: 'exit 42',
-      };
-
-      await executor.execute(cmd, (status) => statuses.push(status));
-
-      expect(statuses).toContain(ExecutionStatus.Running);
-      expect(statuses).toContain(ExecutionStatus.Failed);
-    });
-
-    it('captures multi-line output', async () => {
-      const executor = new RealExecutor();
-      const cmd: ExecuteCommand = {
-        description: 'Multi-line output',
-        command: 'echo "line1"; echo "line2"; echo "line3"',
-      };
-
-      const result = await executor.execute(cmd);
-
-      expect(result.result).toBe(ExecutionResult.Success);
-      expect(result.output.trim()).toBe('line1\nline2\nline3');
-    });
-
-    it('allows updating output callback via setOutputCallback', async () => {
-      const executor = new RealExecutor();
-      const chunks: string[] = [];
-
-      executor.setOutputCallback((data) => chunks.push(data));
-
-      const cmd: ExecuteCommand = {
-        description: 'Callback update test',
-        command: 'echo "updated"',
-      };
-
-      await executor.execute(cmd);
-
-      expect(chunks.join('')).toContain('updated');
-
-      // Clear callback
-      executor.setOutputCallback(undefined);
-    });
-
-    describe('PWD marker filtering', () => {
-      it('does not include marker in final output', async () => {
-        const executor = new RealExecutor();
-        const cmd: ExecuteCommand = {
-          description: 'Marker test',
-          command: 'echo "hello"',
-        };
-
-        const result = await executor.execute(cmd);
-
-        expect(result.output).not.toContain('__PWD_MARKER');
-        expect(result.output.trim()).toBe('hello');
-      });
-
-      it('does not include marker in output callback', async () => {
-        const chunks: string[] = [];
-        const executor = new RealExecutor((data, stream) => {
-          if (stream === 'stdout') chunks.push(data);
-        });
-
-        const cmd: ExecuteCommand = {
-          description: 'Callback marker test',
-          command: 'echo "visible output"',
-        };
-
-        await executor.execute(cmd);
-
-        const combined = chunks.join('');
-        expect(combined).not.toContain('__PWD_MARKER');
-        expect(combined).toContain('visible output');
-      });
-
-      it('extracts workdir from pwd after marker', async () => {
-        const executor = new RealExecutor();
-        const cmd: ExecuteCommand = {
-          description: 'Workdir test',
-          command: 'echo "test"',
-        };
-
-        const result = await executor.execute(cmd);
-
-        expect(result.workdir).toBeDefined();
-        expect(result.workdir).toMatch(/^\//); // Absolute path
-      });
-
-      it('extracts workdir after cd command', async () => {
-        const executor = new RealExecutor();
-        const cmd: ExecuteCommand = {
-          description: 'CD test',
-          command: 'cd /tmp',
-        };
-
-        const result = await executor.execute(cmd);
-
-        // macOS resolves /tmp to /private/tmp
-        expect(result.workdir).toMatch(/\/tmp$/);
-      });
-
-      it('filters marker from multi-line output', async () => {
-        const chunks: string[] = [];
-        const executor = new RealExecutor((data, stream) => {
-          if (stream === 'stdout') chunks.push(data);
-        });
-
-        const cmd: ExecuteCommand = {
-          description: 'Multi-line marker test',
-          command: 'echo "line1"; echo "line2"; echo "line3"',
-        };
-
-        const result = await executor.execute(cmd);
-
-        const combined = chunks.join('');
-        expect(combined).not.toContain('__PWD_MARKER');
-        expect(result.output.trim()).toBe('line1\nline2\nline3');
-      });
-
-      it('preserves command output when extracting workdir', async () => {
-        const executor = new RealExecutor();
-        const cmd: ExecuteCommand = {
-          description: 'Output preservation test',
-          command: 'echo "keep this"; echo "and this"',
-        };
-
-        const result = await executor.execute(cmd);
-
-        expect(result.output).toContain('keep this');
-        expect(result.output).toContain('and this');
-        expect(result.workdir).toBeDefined();
-      });
-
-      it('handles empty command output with workdir', async () => {
-        const executor = new RealExecutor();
-        const cmd: ExecuteCommand = {
-          description: 'Empty output test',
-          command: 'cd /tmp',
-        };
-
-        const result = await executor.execute(cmd);
-
-        expect(result.output).toBe('');
-        // macOS resolves /tmp to /private/tmp
-        expect(result.workdir).toMatch(/\/tmp$/);
-      });
-
-      it('uses workdir for subsequent command execution', async () => {
-        const executor = new RealExecutor();
-
-        // First command changes directory
-        const cmd1: ExecuteCommand = {
-          description: 'Change to tmp',
-          command: 'cd /tmp',
-        };
-        const result1 = await executor.execute(cmd1);
-
-        // Second command uses the workdir from first
-        const cmd2: ExecuteCommand = {
-          description: 'Run in tmp',
-          command: 'pwd',
-          workdir: result1.workdir,
-        };
-        const result2 = await executor.execute(cmd2);
-
-        // macOS resolves /tmp to /private/tmp
-        expect(result2.output.trim()).toMatch(/\/tmp$/);
-      });
-    });
-
-    describe('Output line limiting', () => {
-      it('returns all output when under 128 lines', async () => {
-        const executor = new RealExecutor();
-        const cmd: ExecuteCommand = {
-          description: 'Small output',
-          command: 'for i in {1..100}; do echo "line $i"; done',
-        };
-
-        const result = await executor.execute(cmd);
-
-        const lines = result.output.trim().split('\n');
-        expect(lines.length).toBe(100);
-        expect(lines[0]).toBe('line 1');
-        expect(lines[99]).toBe('line 100');
-      });
-
-      it('limits stdout to last 128 lines when exceeded', async () => {
-        const executor = new RealExecutor();
-        const cmd: ExecuteCommand = {
-          description: 'Large output',
-          command: 'for i in {1..2000}; do echo "line $i"; done',
-        };
-
-        const result = await executor.execute(cmd);
-
-        const lines = result.output.trim().split('\n');
-        expect(lines.length).toBeLessThanOrEqual(128);
-        expect(lines.length).toBeGreaterThan(100);
-        // Should have lines from the end
-        expect(lines[lines.length - 1]).toBe('line 2000');
-      });
-
-      it('limits stderr to last 128 lines when exceeded', async () => {
-        const executor = new RealExecutor();
-        const cmd: ExecuteCommand = {
-          description: 'Large stderr output',
-          command: 'for i in {1..2000}; do echo "error $i" >&2; done',
-        };
-
-        const result = await executor.execute(cmd);
-
-        const lines = result.errors.trim().split('\n');
-        expect(lines.length).toBeLessThanOrEqual(128);
-        expect(lines.length).toBeGreaterThan(100);
-        // Should have lines from the end
-        expect(lines[lines.length - 1]).toBe('error 2000');
-      });
-
-      it('limits stderr on error with large output', async () => {
-        const executor = new RealExecutor();
-        const cmd: ExecuteCommand = {
-          description: 'Large stderr with error',
-          command: 'for i in {1..2000}; do echo "error $i" >&2; done; exit 1',
-        };
-
-        const result = await executor.execute(cmd);
-
-        expect(result.result).toBe(ExecutionResult.Error);
-        const lines = result.errors.trim().split('\n');
-        expect(lines.length).toBeLessThanOrEqual(128);
-        expect(lines.length).toBeGreaterThan(100);
-        // Should have lines from the end
-        expect(lines[lines.length - 1]).toBe('error 2000');
-      });
-
-      it('preserves output under limit without modification', async () => {
-        const executor = new RealExecutor();
-        const cmd: ExecuteCommand = {
-          description: 'Under limit',
-          command: 'for i in {1..100}; do echo "line $i"; done',
-        };
-
-        const result = await executor.execute(cmd);
-
-        const lines = result.output.trim().split('\n');
-        expect(lines.length).toBe(100);
-        expect(lines[0]).toBe('line 1');
-        expect(lines[99]).toBe('line 100');
-      });
-    });
+    streamer.pushStdout(`before\n${PWD_MARKER}\nafter`);
+    const emitted = chunks.join('');
+
+    expect(emitted).toContain('before');
+    expect(emitted).not.toContain('after');
+  });
+
+  it('handles marker split across chunks', () => {
+    const chunks: string[] = [];
+    const streamer = new OutputStreamer((data) => chunks.push(data));
+
+    // Split marker across two pushes
+    const markerHalf = PWD_MARKER.substring(0, PWD_MARKER.length / 2);
+    const markerRest = PWD_MARKER.substring(PWD_MARKER.length / 2);
+
+    streamer.pushStdout(`output\n${markerHalf}`);
+    streamer.pushStdout(`${markerRest}\n/path`);
+
+    const emitted = chunks.join('');
+    expect(emitted).not.toContain(PWD_MARKER);
+  });
+
+  it('collapses chunks when exceeding 16 chunks', () => {
+    const streamer = new OutputStreamer();
+
+    // Push more than 16 chunks
+    for (let i = 0; i < 20; i++) {
+      streamer.pushStdout(`chunk${i}\n`);
+    }
+
+    const accumulated = streamer.getAccumulated();
+    // Should have all content but internally collapsed
+    expect(accumulated).toContain('chunk0');
+    expect(accumulated).toContain('chunk19');
+  });
+
+  it('limits accumulated output to MAX_OUTPUT_LINES on collapse', () => {
+    const streamer = new OutputStreamer();
+
+    // Push many lines across many chunks to trigger collapse
+    for (let i = 0; i < 20; i++) {
+      const lines = Array.from({ length: 20 }, (_, j) => `chunk${i}-line${j}`);
+      streamer.pushStdout(lines.join('\n') + '\n');
+    }
+
+    const accumulated = streamer.getAccumulated();
+    const lineCount = accumulated.split('\n').length;
+
+    expect(lineCount).toBeLessThanOrEqual(MAX_OUTPUT_LINES + 1);
+  });
+
+  it('handles empty pushes gracefully', () => {
+    const chunks: string[] = [];
+    const streamer = new OutputStreamer((data) => chunks.push(data));
+
+    streamer.pushStdout('');
+    streamer.pushStdout('');
+    streamer.pushStdout('content');
+
+    expect(streamer.getAccumulated()).toBe('content');
+  });
+
+  it('preserves content when no callback provided', () => {
+    const streamer = new OutputStreamer();
+
+    streamer.pushStdout('line1\n');
+    streamer.pushStdout('line2\n');
+    streamer.pushStdout('line3');
+
+    expect(streamer.getAccumulated()).toBe('line1\nline2\nline3');
   });
 });

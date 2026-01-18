@@ -1,6 +1,18 @@
 import { spawn } from 'child_process';
 
-import { ExecuteCommand } from './anthropic.js';
+import {
+  killGracefully,
+  MemoryLimitExceeded,
+  MemoryMonitor,
+} from './monitor.js';
+
+export interface ExecuteCommand {
+  description: string;
+  command: string;
+  workdir?: string;
+  timeout?: number;
+  memoryLimit?: number;
+}
 
 export enum ExecutionStatus {
   Pending = 'pending',
@@ -118,13 +130,13 @@ export type OutputCallback = (
 ) => void;
 
 // Marker for extracting pwd from command output
-const PWD_MARKER = '__PWD_MARKER_7x9k2m__';
-const MAX_OUTPUT_LINES = 128;
+export const PWD_MARKER = '__PWD_MARKER_7x9k2m__';
+export const MAX_OUTPUT_LINES = 128;
 
 /**
  * Limit output to last MAX_OUTPUT_LINES lines.
  */
-function limitLines(output: string): string {
+export function limitLines(output: string): string {
   const lines = output.split('\n');
   return lines.slice(-MAX_OUTPUT_LINES).join('\n');
 }
@@ -133,7 +145,10 @@ function limitLines(output: string): string {
  * Parse stdout to extract workdir and clean output.
  * Returns the cleaned output and the extracted workdir.
  */
-function parseWorkdir(rawOutput: string): { output: string; workdir?: string } {
+export function parseWorkdir(rawOutput: string): {
+  output: string;
+  workdir?: string;
+} {
   const markerIndex = rawOutput.lastIndexOf(PWD_MARKER);
   if (markerIndex === -1) {
     return { output: rawOutput };
@@ -151,7 +166,7 @@ function parseWorkdir(rawOutput: string): { output: string; workdir?: string } {
  * Manages streaming output while filtering out the PWD marker.
  * Buffers output to avoid emitting partial markers to the callback.
  */
-class OutputStreamer {
+export class OutputStreamer {
   private chunks: string[] = [];
   private emittedLength = 0;
   private callback?: OutputCallback;
@@ -267,18 +282,24 @@ export class RealExecutor implements Executor {
       }
 
       // Handle timeout if specified
-      const SIGKILL_GRACE_PERIOD = 3000;
       let timeoutId: NodeJS.Timeout | undefined;
       let killTimeoutId: NodeJS.Timeout | undefined;
 
       if (cmd.timeout && cmd.timeout > 0) {
         timeoutId = setTimeout(() => {
-          child.kill('SIGTERM');
-          // Escalate to SIGKILL if process doesn't terminate
-          killTimeoutId = setTimeout(() => {
-            child.kill('SIGKILL');
-          }, SIGKILL_GRACE_PERIOD);
+          killTimeoutId = killGracefully(child);
         }, cmd.timeout);
+      }
+
+      // Handle memory limit monitoring
+      let memoryMonitor: MemoryMonitor | undefined;
+      let memoryInfo: MemoryLimitExceeded | undefined;
+
+      if (cmd.memoryLimit) {
+        memoryMonitor = new MemoryMonitor(child, cmd.memoryLimit, (info) => {
+          memoryInfo = info;
+        });
+        memoryMonitor.start();
       }
 
       // Use OutputStreamer for buffered stdout streaming
@@ -306,6 +327,7 @@ export class RealExecutor implements Executor {
       child.on('error', (error: Error) => {
         if (timeoutId) clearTimeout(timeoutId);
         if (killTimeoutId) clearTimeout(killTimeoutId);
+        memoryMonitor?.stop();
 
         const commandResult: CommandOutput = {
           description: cmd.description,
@@ -320,14 +342,27 @@ export class RealExecutor implements Executor {
         resolve(commandResult);
       });
 
-      child.on('close', (code: number | null) => {
+      child.on('exit', (code: number | null) => {
         if (timeoutId) clearTimeout(timeoutId);
         if (killTimeoutId) clearTimeout(killTimeoutId);
+        memoryMonitor?.stop();
 
-        const success = code === 0;
         const { output, workdir } = parseWorkdir(
           stdoutStreamer.getAccumulated()
         );
+
+        // Check if terminated due to memory limit
+        const killedByMemoryLimit = memoryMonitor?.wasKilledByMemoryLimit();
+        const success = code === 0 && !killedByMemoryLimit;
+
+        let errorMessage: string | undefined;
+        if (killedByMemoryLimit && memoryInfo) {
+          errorMessage =
+            `Process exceeded ${memoryInfo.limit} MB memory limit, ` +
+            `${memoryInfo.used} MB was used.`;
+        } else if (!success) {
+          errorMessage = `Exit code: ${code}`;
+        }
 
         const commandResult: CommandOutput = {
           description: cmd.description,
@@ -335,7 +370,7 @@ export class RealExecutor implements Executor {
           output,
           errors: limitLines(stderr.join('')),
           result: success ? ExecutionResult.Success : ExecutionResult.Error,
-          error: success ? undefined : `Exit code: ${code}`,
+          error: errorMessage,
           workdir,
         };
 

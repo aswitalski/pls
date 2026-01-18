@@ -16,13 +16,9 @@ import {
   CommandResultSchema,
   IntrospectResultSchema,
 } from '../types/schemas.js';
+import type { ExecuteCommand } from './shell.js';
 
-export interface ExecuteCommand {
-  description: string;
-  command: string;
-  workdir?: string;
-  timeout?: number;
-}
+export type { ExecuteCommand } from './shell.js';
 
 export interface CommandResult {
   message: string;

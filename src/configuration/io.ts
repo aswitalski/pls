@@ -144,3 +144,14 @@ export function loadDebugSetting(
     return DebugLevel.None;
   }
 }
+
+const DEFAULT_MEMORY_LIMIT = 1024;
+
+export function loadMemorySetting(fs: FileSystem = defaultFileSystem): number {
+  try {
+    const config = loadConfig(fs);
+    return config.settings?.memory ?? DEFAULT_MEMORY_LIMIT;
+  } catch {
+    return DEFAULT_MEMORY_LIMIT;
+  }
+}

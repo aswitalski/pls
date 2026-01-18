@@ -16,10 +16,10 @@ import { ComponentName } from '../src/types/types.js';
 
 import type {
   CommandResult,
-  ExecuteCommand,
   IntrospectResult,
   LLMService,
 } from '../src/services/anthropic.js';
+import type { ExecuteCommand } from '../src/services/shell.js';
 
 /**
  * Test input key constants for stdin.write()

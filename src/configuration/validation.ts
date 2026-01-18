@@ -55,6 +55,12 @@ export function validateConfig(parsed: unknown): Config {
         validatedConfig.settings.debug = settings.debug as DebugLevel;
       }
     }
+
+    if ('memory' in settings) {
+      if (typeof settings.memory === 'number' && settings.memory > 0) {
+        validatedConfig.settings.memory = settings.memory;
+      }
+    }
   }
 
   return validatedConfig;

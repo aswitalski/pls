@@ -9,6 +9,7 @@ import {
   configExists,
   loadConfig,
   loadDebugSetting,
+  loadMemorySetting,
   mergeConfig,
   saveAnthropicConfig,
   saveConfig,
@@ -326,6 +327,91 @@ config:
     });
   });
 
+  describe('Memory setting', () => {
+    it('returns default 1024 when no config exists', () => {
+      expect(loadMemorySetting(fs)).toBe(1024);
+    });
+
+    it('returns default 1024 when config exists but no memory setting', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      expect(loadMemorySetting(fs)).toBe(1024);
+    });
+
+    it('saves memory setting to settings section', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      saveConfig('settings', { memory: 512 }, fs);
+
+      const config = loadConfig(fs);
+      expect(config.settings?.memory).toBe(512);
+    });
+
+    it('loads saved memory setting', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      saveConfig('settings', { memory: 2048 }, fs);
+      expect(loadMemorySetting(fs)).toBe(2048);
+    });
+
+    it('preserves anthropic config when saving memory setting', () => {
+      saveAnthropicConfig(
+        {
+          key: 'sk-ant-test',
+          model: AnthropicModel.Sonnet,
+        },
+        fs
+      );
+      saveConfig('settings', { memory: 512 }, fs);
+
+      const config = loadConfig(fs);
+      expect(config.anthropic.key).toBe('sk-ant-test');
+      expect(config.anthropic.model).toBe(AnthropicModel.Sonnet);
+      expect(config.settings?.memory).toBe(512);
+    });
+
+    it('preserves debug setting when saving memory setting', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      saveDebugSetting(DebugLevel.Info, fs);
+      saveConfig('settings', { memory: 768 }, fs);
+
+      const config = loadConfig(fs);
+      expect(config.settings?.debug).toBe(DebugLevel.Info);
+      expect(config.settings?.memory).toBe(768);
+    });
+
+    it('preserves memory setting when saving debug setting', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      saveConfig('settings', { memory: 512 }, fs);
+      saveDebugSetting(DebugLevel.Verbose, fs);
+
+      const config = loadConfig(fs);
+      expect(config.settings?.memory).toBe(512);
+      expect(config.settings?.debug).toBe(DebugLevel.Verbose);
+    });
+
+    it('ignores invalid memory values (non-positive)', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      saveConfig('settings', { memory: 0 }, fs);
+
+      const config = loadConfig(fs);
+      expect(config.settings?.memory).toBeUndefined();
+    });
+
+    it('ignores invalid memory values (negative)', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      saveConfig('settings', { memory: -100 }, fs);
+
+      const config = loadConfig(fs);
+      expect(config.settings?.memory).toBeUndefined();
+    });
+
+    it('ignores invalid memory values (non-number)', () => {
+      saveAnthropicConfig({ key: 'sk-ant-test' }, fs);
+      saveConfig('settings', { memory: 'large' }, fs);
+
+      const config = loadConfig(fs);
+      expect(config.settings?.memory).toBeUndefined();
+    });
+  });
+
   describe('CONFIG tool support', () => {
     describe('Config schema', () => {
       it('returns schema with core config keys', () => {
@@ -340,6 +426,10 @@ config:
 
         expect(schema['settings.debug']).toBeDefined();
         expect(schema['settings.debug'].type).toBe('enum');
+
+        expect(schema['settings.memory']).toBeDefined();
+        expect(schema['settings.memory'].type).toBe('number');
+        expect(schema['settings.memory'].required).toBe(false);
       });
 
       it('includes descriptions for all keys', () => {

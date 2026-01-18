@@ -2,8 +2,7 @@ import { Box } from 'ink';
 
 import { loadDebugSetting } from '../../configuration/io.js';
 import { DebugLevel } from '../../configuration/types.js';
-import { ExecuteCommand } from '../../services/anthropic.js';
-import { ExecutionStatus } from '../../services/shell.js';
+import { ExecuteCommand, ExecutionStatus } from '../../services/shell.js';
 import { TaskOutput } from '../../types/components.js';
 
 import { Output } from './Output.js';

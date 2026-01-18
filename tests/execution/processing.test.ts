@@ -1,9 +1,24 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   fixEscapedQuotes,
   formatTaskAsYaml,
+  processTasks,
 } from '../../src/execution/processing.js';
+import { TaskType } from '../../src/types/types.js';
+import { createMockAnthropicService } from '../test-utils.js';
+
+// Mock the configuration module
+vi.mock('../../src/configuration/io.js', () => ({
+  loadMemorySetting: vi.fn(() => 1024),
+}));
+
+// Mock the loader module
+vi.mock('../../src/services/loader.js', () => ({
+  loadUserConfig: vi.fn(() => ({})),
+}));
+
+import { loadMemorySetting } from '../../src/configuration/io.js';
 
 describe('Processing', () => {
   describe('fixEscapedQuotes', () => {
@@ -135,6 +150,92 @@ describe('Processing', () => {
     it('does not indent action when indent parameter provided', () => {
       const result = formatTaskAsYaml('Run tests', undefined, '  ');
       expect(result).toBe('run tests');
+    });
+  });
+
+  describe('processTasks', () => {
+    beforeEach(() => {
+      vi.mocked(loadMemorySetting).mockReturnValue(1024);
+    });
+
+    it('injects memory limit into commands from config', async () => {
+      const mockService = createMockAnthropicService({
+        message: 'Executing task',
+        commands: [
+          { description: 'List files', command: 'ls -la' },
+          { description: 'Show date', command: 'date' },
+        ],
+      });
+
+      const tasks = [{ action: 'list files', type: TaskType.Execute }];
+      const result = await processTasks(tasks, mockService);
+
+      expect(result.commands).toHaveLength(2);
+      expect(result.commands[0].memoryLimit).toBe(1024);
+      expect(result.commands[1].memoryLimit).toBe(1024);
+    });
+
+    it('uses custom memory limit from config', async () => {
+      vi.mocked(loadMemorySetting).mockReturnValue(512);
+
+      const mockService = createMockAnthropicService({
+        message: 'Executing task',
+        commands: [{ description: 'Run build', command: 'npm run build' }],
+      });
+
+      const tasks = [{ action: 'build project', type: TaskType.Execute }];
+      const result = await processTasks(tasks, mockService);
+
+      expect(result.commands).toHaveLength(1);
+      expect(result.commands[0].memoryLimit).toBe(512);
+    });
+
+    it('handles empty commands array', async () => {
+      const mockService = createMockAnthropicService({
+        message: 'No commands needed',
+        commands: [],
+      });
+
+      const tasks = [{ action: 'check status', type: TaskType.Execute }];
+      const result = await processTasks(tasks, mockService);
+
+      expect(result.commands).toHaveLength(0);
+    });
+
+    it('handles undefined commands', async () => {
+      const mockService = createMockAnthropicService({
+        message: 'Answer only',
+      });
+
+      const tasks = [{ action: 'explain something', type: TaskType.Execute }];
+      const result = await processTasks(tasks, mockService);
+
+      expect(result.commands).toHaveLength(0);
+    });
+
+    it('preserves other command properties while adding memory', async () => {
+      const mockService = createMockAnthropicService({
+        message: 'Executing task',
+        commands: [
+          {
+            description: 'Run tests',
+            command: 'npm test',
+            workdir: '/project',
+            timeout: 30000,
+          },
+        ],
+      });
+
+      const tasks = [{ action: 'run tests', type: TaskType.Execute }];
+      const result = await processTasks(tasks, mockService);
+
+      expect(result.commands[0]).toEqual({
+        description: 'Run tests',
+        command: 'npm test',
+        workdir: '/project',
+        timeout: 30000,
+        memoryLimit: 1024,
+      });
     });
   });
 });

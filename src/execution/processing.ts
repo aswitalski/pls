@@ -2,6 +2,7 @@ import { stringify } from 'yaml';
 
 import { Task } from '../types/types.js';
 
+import { loadMemorySetting } from '../configuration/io.js';
 import { LLMService } from '../services/anthropic.js';
 import { loadUserConfig } from '../services/loader.js';
 import { replacePlaceholders } from '../services/resolver.js';
@@ -71,6 +72,7 @@ export async function processTasks(
 ): Promise<TaskProcessingResult> {
   // Load user config for placeholder resolution
   const userConfig = loadUserConfig();
+  const memoryLimitMB = loadMemorySetting();
 
   // Resolve placeholders in task actions
   const resolvedTasks = tasks.map((task) => ({
@@ -82,13 +84,17 @@ export async function processTasks(
   // Call execute tool to get commands
   const result = await service.processWithTool(taskDescriptions, 'execute');
 
-  // Resolve placeholders in command strings
+  // Resolve placeholders in command strings and inject memory limit
   const resolvedCommands = (result.commands || []).map((cmd) => {
     // Fix escaped quotes lost in JSON parsing
     const fixed = fixEscapedQuotes(cmd.command);
     const resolved = replacePlaceholders(fixed, userConfig);
     validatePlaceholderResolution(resolved);
-    return { ...cmd, command: resolved };
+    return {
+      ...cmd,
+      command: resolved,
+      memoryLimit: memoryLimitMB,
+    };
   });
 
   return {

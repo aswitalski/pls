@@ -1,5 +1,5 @@
 import { ExecuteState, TaskData, TaskOutput } from '../types/components.js';
-import { ExecuteCommand } from '../services/anthropic.js';
+import { ExecuteCommand } from '../services/shell.js';
 import { ComponentDefinition } from '../types/components.js';
 
 export enum ExecuteActionType {

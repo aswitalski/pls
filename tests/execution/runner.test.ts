@@ -21,6 +21,7 @@ let executeCommandResolver:
       errors: string;
       result: ExecutionResult;
       workdir?: string;
+      error?: string;
     }) => void)
   | undefined;
 
@@ -157,5 +158,55 @@ describe('Execution runner', () => {
       lastUpdate
     );
     expect(result.status).toBe(ExecutionStatus.Failed);
+  });
+
+  it('prioritizes result.error over result.errors for error message', async () => {
+    const callbacks = createMockCallbacks();
+    const taskPromise = executeTask(
+      { description: 'Test', command: 'memory fail' },
+      0,
+      callbacks
+    );
+
+    executeCommandResolver?.({
+      description: 'Test',
+      command: 'memory fail',
+      output: '',
+      errors: 'some stderr output',
+      result: ExecutionResult.Error,
+      error: 'Process exceeded 100 MB memory limit, 120 MB was used.',
+    });
+
+    await taskPromise;
+
+    // Should use result.error (specific message) not result.errors (stderr)
+    expect(callbacks.onError).toHaveBeenCalledWith(
+      'Process exceeded 100 MB memory limit, 120 MB was used.',
+      expect.any(Object)
+    );
+  });
+
+  it('falls back to result.errors when result.error is undefined', async () => {
+    const callbacks = createMockCallbacks();
+    const taskPromise = executeTask(
+      { description: 'Test', command: 'stderr fail' },
+      0,
+      callbacks
+    );
+
+    executeCommandResolver?.({
+      description: 'Test',
+      command: 'stderr fail',
+      output: '',
+      errors: 'command not found',
+      result: ExecutionResult.Error,
+    });
+
+    await taskPromise;
+
+    expect(callbacks.onError).toHaveBeenCalledWith(
+      'command not found',
+      expect.any(Object)
+    );
   });
 });
