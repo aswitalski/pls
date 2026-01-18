@@ -24,7 +24,9 @@ interface OutputDisplayConfig {
 }
 
 /**
- * Get the last N lines from text, filtering out empty/whitespace-only lines
+ * Get the last N lines from text, filtering out empty/whitespace-only lines.
+ * Handles carriage returns used in progress output by keeping only the
+ * content after the last \r in each line.
  */
 export function getLastLines(
   text: string,
@@ -33,6 +35,11 @@ export function getLastLines(
   const lines = text
     .trim()
     .split(/\r?\n/)
+    .map((line) => {
+      // Handle carriage returns: keep only content after the last \r
+      const lastCR = line.lastIndexOf('\r');
+      return lastCR >= 0 ? line.slice(lastCR + 1) : line;
+    })
     .filter((line) => line.trim().length > 0);
   return lines.length <= maxLines ? lines : lines.slice(-maxLines);
 }
