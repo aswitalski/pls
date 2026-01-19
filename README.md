@@ -31,7 +31,7 @@ Here's what I can help with:
   - Configure - manage and configure system settings
   - Answer - respond to questions and provide information
   - Execute - run shell commands and process operations
-  ```
+```
 
 Skills are custom workflows you can define to teach `pls` about your specific
 projects and commands. Once defined, you can use them naturally:
@@ -87,16 +87,47 @@ commands your environment requires.
 
 ## Configuration
 
-Your configuration is stored in `~/.plsrc` as a YAML file. Supported settings:
+Your configuration is stored in `~/.plsrc` as a YAML file:
 
-- `anthropic.key` - Your API key
-- `anthropic.model` - The model to use
+```yaml
+# Mandatory
+anthropic:
+  key: sk-ant-...
+  model: claude-...
+
+# Optional
+settings:
+  memory: 1024 # Child process memory limit (MB)
+  debug: none # none | info | verbose
+
+# Custom
+project:
+  path: ~/projects/app
+```
+
+Skills can define their own configuration properties via a `Config` section. When
+a skill requires config values that don't exist, `pls` prompts you to provide
+them before execution. See [Skills](#skills) for details.
+
+## Reference
+
+### Debug Mode
+Press `Shift+Tab` during execution to cycle through debug levels
+(none → info → verbose).
+Logs are saved to `~/.pls/logs/` when debug is `info` or `verbose`.
+
+### Data Locations
+```
+~/.plsrc              # Configuration
+~/.pls/skills/        # Custom skills
+~/.pls/logs/          # Debug logs
+```
 
 ## Skills
 
 Skills let you teach `pls` about your project-specific workflows. Create
-markdown files in `~/.pls/skills/` to define custom operations that `pls` can
-understand and execute.
+markdown files in `~/.pls/skills/` to define custom operations that
+`pls` can understand and execute.
 
 For complete documentation, see [docs/SKILLS.md](./docs/SKILLS.md).
 
