@@ -8,7 +8,7 @@ by the pls (prompt-language-shell) command-line concierge.
 1. [Initial Configuration Flow](#initial-configuration-flow)
 2. [Command Execution Flow](#command-execution-flow)
 3. [Scheduling Flow](#scheduling-flow)
-4. [Schedule Selection and Refinement Flow](#schedule-selection-and-refinement-flow)
+4. [Selection and Refinement Flow](#schedule-selection-and-refinement-flow)
 5. [Task Execution Flows](#task-execution-flows)
 6. [Configuration Validation Flow](#configuration-validation-flow)
 7. [Skills System Flow](#skills-system-flow)
@@ -129,7 +129,7 @@ flowchart TD
 2. LLM analyzes request type:
    - **Introspection request** → Create task with type "introspect"
    - **Information request** → Create task with type "answer"
-   - **Configuration request** → Create task with type "config"
+   - **Configuration request** → Create task with type "configure"
    - **Skill-based request** → Match to available skills
    - **Ambiguous request** → Create task with type "define"
    - **Unmatched request** → Create task with type "ignore"
@@ -151,7 +151,7 @@ flowchart TD
 
     Analyze -->|Introspection| CreateIntrospect[Create introspect task]
     Analyze -->|Information| CreateAnswer[Create answer task]
-    Analyze -->|Configuration| CreateConfig[Create config task]
+    Analyze -->|Configuration| CreateConfig[Create configure task]
     Analyze -->|Skill match| CheckSkill{Skill requires<br/>parameters?}
     Analyze -->|Ambiguous| CreateDefine[Create define task]
     Analyze -->|No match| CreateIgnore[Create ignore task]
@@ -178,7 +178,7 @@ flowchart TD
 
 **Task Types:**
 
-- `config` - Configuration changes, settings updates
+- `configure` - Configuration changes, settings updates
 - `schedule` - Planning or breaking down tasks
 - `execute` - Shell commands, running programs, processing operations
 - `answer` - Answering questions, providing information
@@ -192,13 +192,13 @@ flowchart TD
 
 **CONFIGURE Tool Delegation:**
 
-When the SCHEDULE tool returns tasks that are all of type `configure`, the Command
-component automatically delegates to the CONFIGURE tool for refined configuration
-key extraction. This two-phase approach ensures specific, contextual config
-prompts:
+When the SCHEDULE tool returns tasks that are all of type `configure`, the
+Command component automatically delegates to the CONFIGURE tool for refined
+configuration key extraction. This two-phase approach ensures specific,
+contextual config prompts:
 
-1. **Phase 1 (SCHEDULE):** Identifies request as configuration-related and returns
-   generic config tasks
+1. **Phase 1 (SCHEDULE):** Identifies request as configuration-related and
+   returns generic config tasks
 2. **Phase 2 (CONFIGURE):** Takes the config query (from first task's params or
    defaults to 'app') and returns specific config keys with validation rules
 
@@ -206,18 +206,24 @@ prompts:
 
 ```
 User request: "configure my API settings"
-SCHEDULE returns: [{ type: "configure", params: { query: "api" } }]
+SCHEDULE returns: [{
+  type: "configure",
+  params: { query: "api" }
+}]
 CONFIGURE delegation: processWithTool("api", "configure")
-CONFIGURE returns: [{ type: "configure", params: { keys: ["api.endpoint", "api.key"] } }]
+CONFIGURE returns: [{
+  type: "configure",
+  params: { keys: ["api.endpoint", "api.key"] }
+}]
 ```
 
-This delegation happens transparently in the Command component before the schedule
-is shown to the user, ensuring they see the final, specific configuration
-requirements rather than generic placeholders.
+This delegation happens transparently in the Command component before the
+schedule is shown to the user, ensuring they see the final, specific
+configuration requirements rather than generic placeholders.
 
 ---
 
-## Schedule Selection and Refinement Flow
+## Selection and Refinement Flow
 
 **Trigger:** Schedule contains one or more DEFINE tasks
 
@@ -271,41 +277,42 @@ flowchart TD
 
 ### Overview
 
-After schedule confirmation, tasks are routed to appropriate handlers based on type.
+After schedule confirmation, tasks are routed to appropriate handlers based on
+type.
 
 **Routing Logic:**
 
 1. Confirm component completes
-2. Execution handler analyzes task types:
-   - All introspect → Introspection flow
-   - All answer → Answer flow
-   - All config → Config flow
-   - All execute → Execute flow (with optional validation)
-   - Mixed types → Error (not supported)
-3. Route to appropriate handler
+2. Execution handler routes tasks by type:
+   - Configure tasks → Config component (grouped)
+   - Introspect tasks → Introspection component (grouped)
+   - Answer tasks → Answer component (one per question)
+   - Execute tasks → Execute component (with optional validation)
+   - Group tasks → Subtasks routed to appropriate handlers
+3. Mixed task types are supported (each type routed separately)
 
 ```mermaid
 flowchart TD
-    Start([Confirm component completes]) --> AnalyzeTypes{Analyze<br/>task types}
+    Start([Confirm component completes]) --> RouteTypes{Route by<br/>task type}
 
-    AnalyzeTypes -->|All introspect| IntrospectFlow[Introspection Flow]
-    AnalyzeTypes -->|All answer| AnswerFlow[Answer Flow]
-    AnalyzeTypes -->|All config| ConfigFlow[Config Flow]
-    AnalyzeTypes -->|All execute| ExecuteFlow[Execute Flow]
-    AnalyzeTypes -->|Mixed types| ShowError[Show error:<br/>Mixed types not supported]
+    RouteTypes -->|configure| ConfigFlow[Config Flow]
+    RouteTypes -->|introspect| IntrospectFlow[Introspection Flow]
+    RouteTypes -->|answer| AnswerFlow[Answer Flow]
+    RouteTypes -->|execute| ExecuteFlow[Execute Flow]
+    RouteTypes -->|group| GroupFlow[Route subtasks]
+
+    GroupFlow --> RouteTypes
 
     IntrospectFlow --> Exit1[Exit]
     AnswerFlow --> Exit2[Exit]
     ConfigFlow --> Exit3[Exit]
     ExecuteFlow --> Exit4[Exit]
-    ShowError --> ExitErr[Exit code 1]
 
     style Start fill:#e1f5ff
     style Exit1 fill:#e1ffe1
     style Exit2 fill:#e1ffe1
     style Exit3 fill:#e1ffe1
     style Exit4 fill:#e1ffe1
-    style ExitErr fill:#ffe1e1
 ```
 
 ---
@@ -319,7 +326,7 @@ flowchart TD
 1. Create Introspect component
 2. Component calls LLM with INTROSPECT tool
 3. LLM analyzes available capabilities:
-   - Built-in capabilities (introspect, answer, config, execute)
+   - Built-in capabilities (introspect, answer, configure, execute)
    - User-defined skills from ~/.pls/skills/
 4. LLM generates:
    - Introductory message
@@ -334,7 +341,7 @@ flowchart TD
     CreateComp --> CallLLM[Call LLM with INTROSPECT tool]
     CallLLM --> Analyze[LLM analyzes capabilities]
 
-    Analyze --> BuiltIn[Built-in capabilities:<br/>introspect, answer,<br/>config, execute]
+    Analyze --> BuiltIn[Built-in capabilities:<br/>introspect, answer,<br/>configure, execute]
     Analyze --> Skills[User skills from<br/>~/.pls/skills/]
 
     BuiltIn --> Generate
@@ -381,7 +388,7 @@ flowchart TD
 
 ### Config Flow
 
-**Trigger:** All tasks have type "config"
+**Trigger:** All tasks have type "configure"
 
 **Flow:**
 
@@ -733,10 +740,10 @@ flowchart TD
 
 All flows use a queue-based execution model with four states:
 
-- **Queued:** Pending component definitions waiting in queue
+- **Awaiting:** Pending component definitions waiting in queue
 - **Active:** Currently executing component (first item in queue)
 - **Pending:** Parked component awaiting subsequent interaction
-- **Timeline:** Completed component definitions (visible history)
+- **Done:** Completed component definitions (visible history)
 
 **Component States:**
 
@@ -897,7 +904,7 @@ flowchart TD
 
     TypeCheck -->|introspect| Introspect[Introspection Flow]
     TypeCheck -->|answer| Answer[Answer Flow]
-    TypeCheck -->|config| ConfigExec[Config Flow]
+    TypeCheck -->|configure| ConfigExec[Config Flow]
     TypeCheck -->|execute| ExecuteCheck{Config<br/>missing?}
 
     ExecuteCheck -->|Yes| ConfigVal[Configuration<br/>Validation Flow]
@@ -935,7 +942,7 @@ The pls concierge supports these core workflows:
 2. **Command Execution** - Natural language to structured tasks
 3. **Planning** - LLM-based request interpretation and task generation
 4. **Plan Selection** - Interactive disambiguation for ambiguous requests
-5. **Task Execution** - Type-specific handlers (introspect, answer, config,
+5. **Task Execution** - Type-specific handlers (introspect, answer, configure,
    execute)
 6. **Configuration Validation** - Automatic detection and prompting for missing
    config
