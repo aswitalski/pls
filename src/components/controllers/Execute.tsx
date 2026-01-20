@@ -76,7 +76,7 @@ export function Execute({
   const workdirRef = useRef<string | undefined>(undefined);
 
   // Ref to collect live output during execution (dispatched every second)
-  const outputRef = useRef<TaskOutput>({ stdout: '', stderr: '' });
+  const outputRef = useRef<TaskOutput>({ chunks: [] });
 
   // Ref to track if current task execution is cancelled
   const cancelledRef = useRef(false);
@@ -108,8 +108,7 @@ export function Execute({
           index: currentTaskIndex,
           elapsed,
           output: {
-            stdout: outputRef.current.stdout,
-            stderr: outputRef.current.stderr,
+            chunks: outputRef.current.chunks,
           },
         },
       });
@@ -132,8 +131,7 @@ export function Execute({
           ...task,
           status: ExecutionStatus.Aborted,
           output: {
-            stdout: outputRef.current.stdout,
-            stderr: outputRef.current.stderr,
+            chunks: outputRef.current.chunks,
           },
         };
       } else if (task.status === ExecutionStatus.Pending) {
@@ -293,7 +291,7 @@ export function Execute({
     });
 
     // Reset output ref for new task
-    outputRef.current = { stdout: '', stderr: '' };
+    outputRef.current = { chunks: [] };
 
     // Merge workdir into command
     const command = workdirRef.current
@@ -303,7 +301,7 @@ export function Execute({
     void executeTask(command, currentTaskIndex, {
       onUpdate: (output) => {
         if (!cancelledRef.current) {
-          outputRef.current = { stdout: output.stdout, stderr: output.stderr };
+          outputRef.current = { chunks: output.chunks };
         }
       },
       onComplete: (elapsed, execOutput) => {
@@ -319,8 +317,7 @@ export function Execute({
             ? {
                 ...task,
                 output: {
-                  stdout: execOutput.stdout,
-                  stderr: execOutput.stderr,
+                  chunks: execOutput.chunks,
                 },
               }
             : task
@@ -352,8 +349,7 @@ export function Execute({
             ? {
                 ...task,
                 output: {
-                  stdout: execOutput.stdout,
-                  stderr: execOutput.stderr,
+                  chunks: execOutput.chunks,
                 },
                 error: execOutput.error || undefined,
               }

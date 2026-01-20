@@ -210,9 +210,14 @@ export interface AnswerState extends BaseState {
   cancelled?: boolean;
 }
 
+export interface OutputChunk {
+  text: string;
+  timestamp: number;
+  source: 'stdout' | 'stderr';
+}
+
 export interface TaskOutput {
-  stdout: string;
-  stderr: string;
+  chunks: OutputChunk[];
 }
 
 export interface TaskData {

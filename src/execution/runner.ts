@@ -8,23 +8,23 @@ import {
 } from '../services/shell.js';
 import { calculateElapsed } from '../services/utils.js';
 
-// Maximum number of output lines to keep in memory
-const MAX_OUTPUT_LINES = 128;
+// Maximum number of output chunks to keep in memory
+const MAX_OUTPUT_CHUNKS = 256;
 
 /**
- * Limit output to last MAX_OUTPUT_LINES lines to prevent memory exhaustion
+ * A chunk of output with metadata for ordering and source tracking
  */
-function limitLines(output: string): string {
-  const lines = output.split('\n');
-  return lines.slice(-MAX_OUTPUT_LINES).join('\n');
+export interface OutputChunk {
+  text: string;
+  timestamp: number;
+  source: 'stdout' | 'stderr';
 }
 
 /**
  * Output collected during task execution
  */
 export interface ExecutionOutput {
-  stdout: string;
-  stderr: string;
+  chunks: OutputChunk[];
   error: string;
   workdir?: string;
 }
@@ -57,26 +57,25 @@ export async function executeTask(
   callbacks: TaskExecutionCallbacks
 ): Promise<TaskExecutionResult> {
   const startTime = Date.now();
-  let stdout = '';
-  let stderr = '';
+  let chunks: OutputChunk[] = [];
   let error = '';
   let workdir: string | undefined;
 
   // Helper to create current output snapshot
   const createOutput = (): ExecutionOutput => ({
-    stdout,
-    stderr,
+    chunks,
     error,
     workdir,
   });
 
-  // Throttle updates to avoid excessive re-renders (100ms minimum interval)
+  // Throttle updates to avoid excessive re-renders (80ms minimum interval)
   let lastUpdateTime = 0;
   let pendingTimeout: ReturnType<typeof setTimeout> | undefined;
+  const THROTTLE_INTERVAL = 80;
 
   const throttledUpdate = () => {
     const now = Date.now();
-    if (now - lastUpdateTime >= 100) {
+    if (now - lastUpdateTime >= THROTTLE_INTERVAL) {
       lastUpdateTime = now;
       callbacks.onUpdate(createOutput());
     } else if (!pendingTimeout) {
@@ -86,17 +85,21 @@ export async function executeTask(
           lastUpdateTime = Date.now();
           callbacks.onUpdate(createOutput());
         },
-        100 - (now - lastUpdateTime)
+        THROTTLE_INTERVAL - (now - lastUpdateTime)
       );
     }
   };
 
-  // Set up output streaming callback
+  // Set up output streaming callback - store chunks with timestamps
   setOutputCallback((data, stream) => {
-    if (stream === 'stdout') {
-      stdout = limitLines(stdout + data);
-    } else {
-      stderr = limitLines(stderr + data);
+    chunks.push({
+      text: data,
+      timestamp: Date.now(),
+      source: stream,
+    });
+    // Limit chunks to prevent memory exhaustion
+    if (chunks.length > MAX_OUTPUT_CHUNKS) {
+      chunks = chunks.slice(-MAX_OUTPUT_CHUNKS);
     }
     throttledUpdate();
   });
@@ -113,11 +116,25 @@ export async function executeTask(
     clearTimeout(pendingTimeout);
 
     const elapsed = calculateElapsed(startTime);
+    const now = Date.now();
 
-    // Update final output from result
-    stdout = result.output;
-    stderr = result.errors;
+    // Update workdir from result
     workdir = result.workdir;
+
+    // Add final output/errors as chunks only if not already captured during streaming
+    const hasStreamedStdout = chunks.some((c) => c.source === 'stdout');
+    const hasStreamedStderr = chunks.some((c) => c.source === 'stderr');
+
+    if (result.output && result.output.trim() && !hasStreamedStdout) {
+      chunks.push({ text: result.output, timestamp: now, source: 'stdout' });
+    }
+    if (result.errors && result.errors.trim() && !hasStreamedStderr) {
+      chunks.push({
+        text: result.errors,
+        timestamp: now + 1,
+        source: 'stderr',
+      });
+    }
 
     if (result.result === ExecutionResult.Success) {
       const output = createOutput();
@@ -151,5 +168,5 @@ export async function executeTask(
  * Create an empty execution output
  */
 export function createEmptyOutput(): ExecutionOutput {
-  return { stdout: '', stderr: '', error: '' };
+  return { chunks: [], error: '' };
 }

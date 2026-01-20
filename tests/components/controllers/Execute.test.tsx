@@ -587,7 +587,12 @@ describe('Execute component', () => {
           const calls = vi.mocked(onCompleted).mock.calls;
           const lastCall = calls[calls.length - 1];
           expect(lastCall).toBeDefined();
-          expect(lastCall[0].tasks[0].output?.stderr).toBe(errorMessage);
+          // Check that chunks contain the error message
+          const chunks = lastCall[0].tasks[0].output?.chunks ?? [];
+          const combinedText = chunks
+            .map((c: { text: string }) => c.text)
+            .join('');
+          expect(combinedText).toContain(errorMessage);
           expect(lastCall[0].completionMessage).toBeNull();
         },
         { timeout: 500 }

@@ -25,7 +25,15 @@ describe('TaskView component', () => {
       command: { description: 'Run test', command: 'npm test' },
       status: ExecutionStatus.Success,
       elapsed: 100,
-      output: { stdout: 'Test output line', stderr: '' },
+      output: {
+        chunks: [
+          {
+            text: 'Test output line',
+            timestamp: Date.now(),
+            source: 'stdout' as const,
+          },
+        ],
+      },
       isFinished: true,
     };
 

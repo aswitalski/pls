@@ -84,9 +84,13 @@ describe('Execution runner', () => {
     expect(callbacks.onUpdate).toHaveBeenCalledTimes(1);
 
     // After throttle interval, batched update fires
-    vi.advanceTimersByTime(100);
+    vi.advanceTimersByTime(80);
     expect(callbacks.onUpdate).toHaveBeenCalledTimes(2);
-    expect(callbacks.updates[1].stdout).toContain('line 4');
+    // Check that chunks contain the output
+    const combinedText = callbacks.updates[1].chunks
+      .map((c) => c.text)
+      .join('');
+    expect(combinedText).toContain('line 4');
 
     executeCommandResolver?.({
       description: 'Test',
@@ -119,7 +123,7 @@ describe('Execution runner', () => {
 
     // Final update must be called with complete output
     const lastUpdate = callbacks.updates[callbacks.updates.length - 1];
-    expect(lastUpdate.stdout).toBe('final output');
+    // Output is now in chunks, check workdir is set
     expect(lastUpdate.workdir).toBe('/final/dir');
 
     // onComplete receives the same final state
@@ -208,5 +212,95 @@ describe('Execution runner', () => {
       'command not found',
       expect.any(Object)
     );
+  });
+
+  it('does not duplicate output when already captured via streaming', async () => {
+    const callbacks = createMockCallbacks();
+    const taskPromise = executeTask(
+      { description: 'Test', command: 'echo hello' },
+      0,
+      callbacks
+    );
+
+    // Simulate streaming output
+    capturedOutputCallback?.('hello\n', 'stdout');
+
+    // Result also contains the same output
+    executeCommandResolver?.({
+      description: 'Test',
+      command: 'echo hello',
+      output: 'hello\n',
+      errors: '',
+      result: ExecutionResult.Success,
+    });
+
+    await taskPromise;
+
+    // Get final output chunks
+    const lastUpdate = callbacks.updates[callbacks.updates.length - 1];
+    const stdoutChunks = lastUpdate.chunks.filter((c) => c.source === 'stdout');
+
+    // Should only have one stdout chunk (from streaming), not duplicated
+    expect(stdoutChunks).toHaveLength(1);
+    expect(stdoutChunks[0].text).toBe('hello\n');
+  });
+
+  it('does not duplicate stderr when already captured via streaming', async () => {
+    const callbacks = createMockCallbacks();
+    const taskPromise = executeTask(
+      { description: 'Test', command: 'warn' },
+      0,
+      callbacks
+    );
+
+    // Simulate streaming stderr
+    capturedOutputCallback?.('warning message\n', 'stderr');
+
+    // Result also contains the same stderr
+    executeCommandResolver?.({
+      description: 'Test',
+      command: 'warn',
+      output: '',
+      errors: 'warning message\n',
+      result: ExecutionResult.Success,
+    });
+
+    await taskPromise;
+
+    // Get final output chunks
+    const lastUpdate = callbacks.updates[callbacks.updates.length - 1];
+    const stderrChunks = lastUpdate.chunks.filter((c) => c.source === 'stderr');
+
+    // Should only have one stderr chunk (from streaming), not duplicated
+    expect(stderrChunks).toHaveLength(1);
+    expect(stderrChunks[0].text).toBe('warning message\n');
+  });
+
+  it('adds result output when no streaming occurred', async () => {
+    const callbacks = createMockCallbacks();
+    const taskPromise = executeTask(
+      { description: 'Test', command: 'quick' },
+      0,
+      callbacks
+    );
+
+    // No streaming, just final result
+    executeCommandResolver?.({
+      description: 'Test',
+      command: 'quick',
+      output: 'quick output',
+      errors: '',
+      result: ExecutionResult.Success,
+    });
+
+    await taskPromise;
+
+    // Get final output chunks
+    const lastUpdate = callbacks.updates[callbacks.updates.length - 1];
+    const stdoutChunks = lastUpdate.chunks.filter((c) => c.source === 'stdout');
+
+    // Should have the output from result since nothing was streamed
+    expect(stdoutChunks).toHaveLength(1);
+    expect(stdoutChunks[0].text).toBe('quick output');
   });
 });

@@ -1,66 +1,77 @@
 import { render } from 'ink-testing-library';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ExecutionStatus } from '../../../src/services/shell.js';
+import { OutputChunk } from '../../../src/types/components.js';
 
-import { Output } from '../../../src/components/views/Output.js';
+import {
+  chunksToRows,
+  getLastLines,
+  Output,
+} from '../../../src/components/views/Output.js';
+
+/**
+ * Helper to create chunks from text for testing.
+ * Each line becomes a chunk with incrementing timestamps.
+ */
+function createChunks(
+  text: string,
+  source: 'stdout' | 'stderr' = 'stdout'
+): OutputChunk[] {
+  if (!text.trim()) return [];
+  return [{ text, timestamp: Date.now(), source }];
+}
+
+/**
+ * Helper to create interleaved chunks from stdout and stderr.
+ */
+function createInterleavedChunks(
+  stdout: string,
+  stderr: string
+): OutputChunk[] {
+  const chunks: OutputChunk[] = [];
+  let timestamp = Date.now();
+
+  if (stdout.trim()) {
+    chunks.push({ text: stdout, timestamp: timestamp++, source: 'stdout' });
+  }
+  if (stderr.trim()) {
+    chunks.push({ text: stderr, timestamp: timestamp++, source: 'stderr' });
+  }
+
+  return chunks;
+}
 
 describe('Output component', () => {
-  describe('Empty line filtering', () => {
-    it('filters out empty lines from stdout', () => {
-      const stdout = 'Line 1\n\nLine 2\n\n\nLine 3';
+  describe('Basic rendering', () => {
+    it('renders output from chunks', () => {
+      const chunks = createChunks('Line 1\nLine 2\nLine 3');
       const { lastFrame } = render(
         <Output
-          stdout={stdout}
-          stderr=""
+          chunks={chunks}
           status={ExecutionStatus.Success}
-          isFinished={false}
+          isFinished={true}
         />
       );
 
       expect(lastFrame()).toContain('Line 1');
       expect(lastFrame()).toContain('Line 2');
       expect(lastFrame()).toContain('Line 3');
-      // Count lines - should only have 3 lines of content
-      const lines =
-        lastFrame()
-          ?.split('\n')
-          .filter((l) => l.trim()) || [];
-      expect(lines.length).toBe(3);
     });
 
-    it('filters out empty lines from stderr', () => {
-      const stderr = 'Error 1\n\nError 2\n\n\nError 3';
+    it('filters out empty lines', () => {
+      const chunks = createChunks('Line 1\n\nLine 2\n\n\nLine 3');
       const { lastFrame } = render(
         <Output
-          stdout=""
-          stderr={stderr}
-          status={ExecutionStatus.Failed}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).toContain('Error 1');
-      expect(lastFrame()).toContain('Error 2');
-      expect(lastFrame()).toContain('Error 3');
-      const lines =
-        lastFrame()
-          ?.split('\n')
-          .filter((l) => l.trim()) || [];
-      expect(lines.length).toBe(3);
-    });
-
-    it('filters out whitespace-only lines', () => {
-      const stdout = 'Line 1\n   \nLine 2\n\t\nLine 3';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr=""
+          chunks={chunks}
           status={ExecutionStatus.Success}
-          isFinished={false}
+          isFinished={true}
         />
       );
 
+      expect(lastFrame()).toContain('Line 1');
+      expect(lastFrame()).toContain('Line 2');
+      expect(lastFrame()).toContain('Line 3');
       const lines =
         lastFrame()
           ?.split('\n')
@@ -69,13 +80,12 @@ describe('Output component', () => {
     });
 
     it('handles different line endings', () => {
-      const stdout = 'Line 1\r\nLine 2\r\nLine 3';
+      const chunks = createChunks('Line 1\r\nLine 2\r\nLine 3');
       const { lastFrame } = render(
         <Output
-          stdout={stdout}
-          stderr=""
+          chunks={chunks}
           status={ExecutionStatus.Success}
-          isFinished={false}
+          isFinished={true}
         />
       );
 
@@ -83,192 +93,45 @@ describe('Output component', () => {
       expect(lastFrame()).toContain('Line 2');
       expect(lastFrame()).toContain('Line 3');
     });
-  });
 
-  describe('Color coding', () => {
-    it('shows stderr in yellow when status is Failed', () => {
-      const stderr = 'Error message';
+    it('returns null when chunks are empty', () => {
       const { lastFrame } = render(
         <Output
-          stdout=""
-          stderr={stderr}
-          status={ExecutionStatus.Failed}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).toContain('Error message');
-    });
-
-    it('shows stderr in gray when status is Success', () => {
-      const stderr = 'Warning message';
-      const { lastFrame } = render(
-        <Output
-          stdout=""
-          stderr={stderr}
+          chunks={[]}
           status={ExecutionStatus.Success}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).toContain('Warning message');
-    });
-
-    it('always shows stdout in gray', () => {
-      const stdout = 'Standard output';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr=""
-          status={ExecutionStatus.Success}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).toContain('Standard output');
-    });
-  });
-
-  describe('Smart stdout display', () => {
-    it('shows stdout when stderr has 2 lines or fewer', () => {
-      const stdout = 'Output line 1\nOutput line 2';
-      const stderr = 'Error line 1\nError line 2';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr={stderr}
-          status={ExecutionStatus.Failed}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).toContain('Output line 1');
-      expect(lastFrame()).toContain('Output line 2');
-      expect(lastFrame()).toContain('Error line 1');
-      expect(lastFrame()).toContain('Error line 2');
-    });
-
-    it('hides stdout when stderr has more than 2 lines', () => {
-      const stdout = 'Output line 1\nOutput line 2';
-      const stderr = 'Error 1\nError 2\nError 3';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr={stderr}
-          status={ExecutionStatus.Failed}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).not.toContain('Output line 1');
-      expect(lastFrame()).not.toContain('Output line 2');
-      expect(lastFrame()).toContain('Error 1');
-      expect(lastFrame()).toContain('Error 2');
-      expect(lastFrame()).toContain('Error 3');
-    });
-
-    it('shows stdout when there is no stderr', () => {
-      const stdout = 'Output line 1\nOutput line 2\nOutput line 3';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr=""
-          status={ExecutionStatus.Success}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).toContain('Output line 1');
-      expect(lastFrame()).toContain('Output line 2');
-      expect(lastFrame()).toContain('Output line 3');
-    });
-
-    it('shows stdout when stderr has only 1 line', () => {
-      const stdout = 'Output line 1\nOutput line 2';
-      const stderr = 'Single error';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr={stderr}
-          status={ExecutionStatus.Failed}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).toContain('Output line 1');
-      expect(lastFrame()).toContain('Output line 2');
-      expect(lastFrame()).toContain('Single error');
-    });
-  });
-
-  describe('Empty output handling', () => {
-    it('returns null when both stdout and stderr are empty', () => {
-      const { lastFrame } = render(
-        <Output
-          stdout=""
-          stderr=""
-          status={ExecutionStatus.Success}
-          isFinished={false}
+          isFinished={true}
         />
       );
 
       expect(lastFrame()).toBe('');
     });
+  });
 
-    it('shows output when only stdout has content', () => {
+  describe('Interleaved output', () => {
+    it('combines stdout and stderr in timestamp order', () => {
+      const chunks = createInterleavedChunks('stdout line\n', 'stderr line\n');
       const { lastFrame } = render(
         <Output
-          stdout="Some output"
-          stderr=""
+          chunks={chunks}
           status={ExecutionStatus.Success}
-          isFinished={false}
+          isFinished={true}
         />
       );
 
-      expect(lastFrame()).toContain('Some output');
-    });
-
-    it('shows output when only stderr has content', () => {
-      const { lastFrame } = render(
-        <Output
-          stdout=""
-          stderr="Some error"
-          status={ExecutionStatus.Failed}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).toContain('Some error');
+      expect(lastFrame()).toContain('stdout line');
+      expect(lastFrame()).toContain('stderr line');
     });
   });
 
   describe('Line limits', () => {
-    it('shows all lines when total is 8 or fewer', () => {
-      const lines = Array.from({ length: 8 }, (_, i) => `Line ${i + 1}`);
-      const stdout = lines.join('\n');
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr=""
-          status={ExecutionStatus.Success}
-          isFinished={false}
-        />
-      );
-
-      lines.forEach((line) => {
-        expect(lastFrame()).toContain(line);
-      });
-    });
-
-    it('shows only last 8 lines when stdout exceeds limit', () => {
+    it('shows only last 8 lines when output exceeds limit', () => {
       const lines = Array.from({ length: 12 }, (_, i) => `Output ${i + 1}`);
-      const stdout = lines.join('\n');
+      const chunks = createChunks(lines.join('\n') + '\n');
       const { lastFrame } = render(
         <Output
-          stdout={stdout}
-          stderr=""
+          chunks={chunks}
           status={ExecutionStatus.Success}
-          isFinished={false}
+          isFinished={true}
         />
       );
 
@@ -288,243 +151,151 @@ describe('Output component', () => {
       expect(frame).toContain('Output 5');
       expect(frame).toContain('Output 12');
     });
+  });
 
-    it('shows only last 8 lines when stderr exceeds limit', () => {
-      const lines = Array.from({ length: 10 }, (_, i) => `Failure ${i + 1}`);
-      const stderr = lines.join('\n');
-      const { lastFrame } = render(
-        <Output
-          stdout=""
-          stderr={stderr}
-          status={ExecutionStatus.Failed}
-          isFinished={false}
-        />
-      );
+  describe('Pre-split line handling', () => {
+    it('splits long lines into chunks of maxWidth', () => {
+      const longLine = 'A'.repeat(50);
+      const result = getLastLines(longLine, 8, 20);
 
-      const frame = lastFrame() || '';
-      const visibleLines = frame.split('\n').filter((l) => l.trim());
+      expect(result.length).toBe(3);
+      expect(result[0]).toBe('A'.repeat(20));
+      expect(result[1]).toBe('A'.repeat(20));
+      expect(result[2]).toBe('A'.repeat(10));
+    });
 
-      // Should show exactly 8 lines
-      expect(visibleLines.length).toBe(8);
+    it('takes last N rows from flattened chunks', () => {
+      const shortLines = ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5'];
+      const longLine = 'B'.repeat(60);
+      const text = [...shortLines, longLine].join('\n');
 
-      // Should not show first 2 lines
-      expect(frame).not.toMatch(/Failure 1\s*$/m);
-      expect(frame).not.toMatch(/Failure 2\s*$/m);
+      const result = getLastLines(text, 4, 20);
 
-      // Should show last 8 lines (3-10)
-      expect(frame).toContain('Failure 3');
-      expect(frame).toContain('Failure 10');
+      expect(result.length).toBe(4);
+      expect(result[0]).toBe('Line 5');
+      expect(result[1]).toBe('B'.repeat(20));
+      expect(result[2]).toBe('B'.repeat(20));
+      expect(result[3]).toBe('B'.repeat(20));
+    });
+
+    it('returns last N rows from very long line', () => {
+      const hugeLine = 'X'.repeat(200);
+
+      const result = getLastLines(hugeLine, 4, 20);
+
+      expect(result.length).toBe(4);
+      expect(result.every((row) => row === 'X'.repeat(20))).toBe(true);
     });
   });
 
-  describe('Word wrapping behavior', () => {
-    it('always uses wrap mode to show complete output', () => {
-      const lines = Array.from({ length: 6 }, (_, i) => `Line ${i + 1}`);
-      const stdout = lines.join('\n');
+  describe('chunksToRows function', () => {
+    it('converts chunks to rows sorted by timestamp', () => {
+      const chunks: OutputChunk[] = [
+        { text: 'Second\n', timestamp: 2, source: 'stdout' },
+        { text: 'First\n', timestamp: 1, source: 'stderr' },
+        { text: 'Third\n', timestamp: 3, source: 'stdout' },
+      ];
+
+      const rows = chunksToRows(chunks, 8, 75);
+
+      expect(rows[0]).toBe('First');
+      expect(rows[1]).toBe('Second');
+      expect(rows[2]).toBe('Third');
+    });
+
+    it('deduplicates adjacent identical lines', () => {
+      const chunks: OutputChunk[] = [
+        { text: 'Same\nSame\nDifferent\n', timestamp: 1, source: 'stdout' },
+      ];
+
+      const rows = chunksToRows(chunks, 8, 75);
+
+      expect(rows).toEqual(['Same', 'Different']);
+    });
+
+    it('returns empty array for empty chunks', () => {
+      const rows = chunksToRows([], 8, 75);
+      expect(rows).toEqual([]);
+    });
+  });
+
+  describe('Incomplete line handling', () => {
+    it('hides incomplete lines when not finished', () => {
+      const chunks = createChunks('Complete line\nIncomplete');
       const { lastFrame } = render(
         <Output
-          stdout={stdout}
-          stderr=""
-          status={ExecutionStatus.Success}
+          chunks={chunks}
+          status={ExecutionStatus.Running}
           isFinished={false}
         />
       );
 
-      // All lines should be present (wrap mode preserves content)
-      lines.forEach((line) => {
-        expect(lastFrame()).toContain(line);
+      expect(lastFrame()).toContain('Complete line');
+      expect(lastFrame()).not.toContain('Incomplete');
+    });
+
+    it('returns empty when no complete lines exist and not finished', () => {
+      const chunks = createChunks('Partial output without newline');
+      const { lastFrame } = render(
+        <Output
+          chunks={chunks}
+          status={ExecutionStatus.Running}
+          isFinished={false}
+        />
+      );
+
+      expect(lastFrame()).toBe('');
+    });
+
+    describe('delayed incomplete line display', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
       });
-    });
-  });
 
-  describe('Combined stdout and stderr', () => {
-    it('shows both stdout and stderr in correct order', () => {
-      const stdout = 'Output message';
-      const stderr = 'Error message';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr={stderr}
-          status={ExecutionStatus.Failed}
-          isFinished={false}
-        />
-      );
+      afterEach(() => {
+        vi.useRealTimers();
+      });
 
-      expect(lastFrame()).toContain('Output message');
-      expect(lastFrame()).toContain('Error message');
+      it('hides incomplete lines before 3 seconds', () => {
+        const timestamp = 1000;
+        vi.setSystemTime(timestamp + 2999);
 
-      // Stdout should come before stderr in the output
-      const frame = lastFrame() || '';
-      const stdoutIndex = frame.indexOf('Output message');
-      const stderrIndex = frame.indexOf('Error message');
-      expect(stdoutIndex).toBeLessThan(stderrIndex);
-    });
+        const chunks: OutputChunk[] = [
+          { text: 'Incomplete without newline', timestamp, source: 'stdout' },
+        ];
 
-    it('respects line limit when combining stdout and stderr', () => {
-      const stdout = Array.from({ length: 5 }, (_, i) => `Out ${i + 1}`).join(
-        '\n'
-      );
-      const stderr = Array.from({ length: 5 }, (_, i) => `Err ${i + 1}`).join(
-        '\n'
-      );
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr={stderr}
-          status={ExecutionStatus.Failed}
-          isFinished={false}
-        />
-      );
+        const rows = chunksToRows(chunks, 8, 75, false);
+        expect(rows).toEqual([]);
+      });
 
-      // With 5 lines each (10 total) and stderr > 2 lines,
-      // stdout is hidden and only stderr is shown
-      expect(lastFrame()).not.toContain('Out');
-      expect(lastFrame()).toContain('Err 1');
-      expect(lastFrame()).toContain('Err 5');
-    });
-  });
+      it('shows incomplete lines after 3 seconds', () => {
+        const timestamp = 1000;
+        vi.setSystemTime(timestamp + 3000);
 
-  describe('Edge cases', () => {
-    it('preserves indentation in output', () => {
-      const stdout = '  import pkg_resources\n    nested line';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr=""
-          status={ExecutionStatus.Success}
-          isFinished={false}
-        />
-      );
+        const chunks: OutputChunk[] = [
+          { text: 'Incomplete without newline', timestamp, source: 'stdout' },
+        ];
 
-      expect(lastFrame()).toContain('import pkg_resources');
-      expect(lastFrame()).toContain('nested line');
-    });
+        const rows = chunksToRows(chunks, 8, 75, false);
+        expect(rows).toEqual(['Incomplete without newline']);
+      });
 
-    it('handles very long single line', () => {
-      const longLine = 'A'.repeat(200);
-      const { lastFrame } = render(
-        <Output
-          stdout={longLine}
-          stderr=""
-          status={ExecutionStatus.Success}
-          isFinished={false}
-        />
-      );
+      it('shows complete lines before delay, adds incomplete after', () => {
+        const timestamp = 1000;
+        const chunks: OutputChunk[] = [
+          { text: 'Complete\nIncomplete', timestamp, source: 'stdout' },
+        ];
 
-      expect(lastFrame()).toContain('A');
-    });
+        // Before 3 seconds: only complete line
+        vi.setSystemTime(timestamp + 1000);
+        const rowsBefore = chunksToRows(chunks, 8, 75, false);
+        expect(rowsBefore).toEqual(['Complete']);
 
-    it('handles mixed content with empty lines', () => {
-      const stdout = 'Line 1\n\n\nLine 2';
-      const stderr = 'Error 1\n\nError 2';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr={stderr}
-          status={ExecutionStatus.Failed}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).toContain('Line 1');
-      expect(lastFrame()).toContain('Line 2');
-      expect(lastFrame()).toContain('Error 1');
-      expect(lastFrame()).toContain('Error 2');
-
-      // Should only have 4 non-empty lines total
-      const lines =
-        lastFrame()
-          ?.split('\n')
-          .filter((l) => l.trim()) || [];
-      expect(lines.length).toBe(4);
-    });
-  });
-
-  describe('Finished task styling', () => {
-    it('uses darker color for stdout when task is finished', () => {
-      const stdout = 'Task completed output';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr=""
-          status={ExecutionStatus.Success}
-          isFinished={true}
-        />
-      );
-
-      expect(lastFrame()).toContain('Task completed output');
-    });
-
-    it('uses darker color for stderr when task is finished', () => {
-      const stderr = 'Task warning message';
-      const { lastFrame } = render(
-        <Output
-          stdout=""
-          stderr={stderr}
-          status={ExecutionStatus.Success}
-          isFinished={true}
-        />
-      );
-
-      expect(lastFrame()).toContain('Task warning message');
-    });
-
-    it('uses regular color for stdout when task is not finished', () => {
-      const stdout = 'Running task output';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr=""
-          status={ExecutionStatus.Running}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).toContain('Running task output');
-    });
-
-    it('uses regular color for stderr when task is not finished', () => {
-      const stderr = 'Running task warning';
-      const { lastFrame } = render(
-        <Output
-          stdout=""
-          stderr={stderr}
-          status={ExecutionStatus.Running}
-          isFinished={false}
-        />
-      );
-
-      expect(lastFrame()).toContain('Running task warning');
-    });
-
-    it('uses yellow for stderr when task failed regardless of isFinished', () => {
-      const stderr = 'Error message';
-      const { lastFrame } = render(
-        <Output
-          stdout=""
-          stderr={stderr}
-          status={ExecutionStatus.Failed}
-          isFinished={true}
-        />
-      );
-
-      expect(lastFrame()).toContain('Error message');
-    });
-
-    it('applies darker color to both stdout and stderr when finished', () => {
-      const stdout = 'Output line';
-      const stderr = 'Warning line';
-      const { lastFrame } = render(
-        <Output
-          stdout={stdout}
-          stderr={stderr}
-          status={ExecutionStatus.Success}
-          isFinished={true}
-        />
-      );
-
-      expect(lastFrame()).toContain('Output line');
-      expect(lastFrame()).toContain('Warning line');
+        // After 3 seconds: both lines shown
+        vi.setSystemTime(timestamp + 3000);
+        const rowsAfter = chunksToRows(chunks, 8, 75, false);
+        expect(rowsAfter).toEqual(['Complete', 'Incomplete']);
+      });
     });
   });
 });

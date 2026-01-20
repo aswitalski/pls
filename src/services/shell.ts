@@ -185,8 +185,10 @@ export class OutputStreamer {
     // Collapse when we have too many chunks to prevent memory growth
     if (this.chunks.length > 16) {
       const accumulated = this.chunks.join('');
-      this.chunks = [limitLines(accumulated)];
-      this.emittedLength = 0;
+      const limited = limitLines(accumulated);
+      this.chunks = [limited];
+      // Mark all collapsed content as emitted to prevent re-emission
+      this.emittedLength = limited.length;
     }
 
     if (!this.callback) return;

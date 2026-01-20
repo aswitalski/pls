@@ -20,7 +20,7 @@ export interface TaskViewProps {
 
 /**
  * Pure display component for a task.
- * Combines SubtaskView (label/command/status) with Output (stdout/stderr).
+ * Combines SubtaskView (label/command/status) with Output (chunks).
  * Output is shown during active execution, or in timeline only with debug mode.
  */
 export function TaskView({
@@ -32,8 +32,7 @@ export function TaskView({
   isFinished,
   isActive = false,
 }: TaskViewProps) {
-  const stdout = output?.stdout ?? '';
-  const stderr = output?.stderr ?? '';
+  const chunks = output?.chunks ?? [];
 
   // Show output during active execution, or in timeline only with debug enabled
   const showOutput = isActive || loadDebugSetting() !== DebugLevel.None;
@@ -47,13 +46,7 @@ export function TaskView({
         elapsed={elapsed}
       />
       {showOutput && (
-        <Output
-          key={`${stdout.length}-${stderr.length}`}
-          stdout={stdout}
-          stderr={stderr}
-          isFinished={isFinished}
-          status={status}
-        />
+        <Output chunks={chunks} isFinished={isFinished} status={status} />
       )}
     </Box>
   );
