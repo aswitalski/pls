@@ -1,43 +1,40 @@
 # Tests
 
-This directory contains unit and integration tests for the `pls` command-line tool.
+Unit and integration tests for the `pls` command-line tool.
 
-## Quality Checks
+## Structure
 
-To verify code quality, run these commands in sequence:
-
-```bash
-npm run build   # TypeScript compilation
-npm run format  # Code formatting
-npm run lint    # Code quality
-npm test        # Test suite
+```
+tests/
+├── components/          # UI component tests
+│   ├── controllers/     # Component controller logic
+│   └── views/           # Component rendering
+├── configuration/       # Config system tests
+├── execution/           # Task execution tests
+├── flows/               # End-to-end workflow tests
+├── integration/         # System integration tests
+├── services/            # Service layer tests
+├── types/               # Type validation tests
+├── fixtures/            # Test data
+├── shell/               # Shell execution tests (excluded)
+├── tools/               # LLM tool tests (excluded)
+├── test-utils.ts        # Shared utilities
+├── Main.test.tsx        # Main component tests
+└── README.md
 ```
 
-Additional test commands:
+## Commands
 
 ```bash
-npm run test:watch  # Watch mode (auto-rerun on changes)
-npm test -- --coverage  # With coverage report
+npm test              # Run all tests (excludes shell/ and tools/)
+npm run test:watch    # Watch mode
+npm run test:llm      # Run LLM-dependent tests (requires API key)
+npm run test:shell    # Run shell execution tests
 ```
 
-## Testing Approach
+## Excluded Tests
 
-**Unit Tests**: Test individual functions and classes in isolation with mocked dependencies.
+Some tests are excluded from the default test run:
 
-**Integration Tests**: Test component interactions using mock implementations.
-
-**Key Principles**:
-
-- Interface-based design enables easy mocking
-- Dependency injection for testability
-- Type-safe mocks implement proper interfaces
-- No real API calls in tests
-
-## Adding Tests
-
-When adding new features:
-
-1. Write tests for new functionality
-2. Mock external dependencies properly
-3. Test both success and error paths
-4. Verify all quality checks pass
+- `tests/tools/` - Requires live Anthropic API calls
+- `tests/shell/` - Requires real shell execution

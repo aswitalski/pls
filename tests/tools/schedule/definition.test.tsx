@@ -161,16 +161,31 @@ describe('Define task flow', () => {
         onCompleted: vi.fn(),
       };
 
+      // Load test skills and create enhanced instructions
+      const skillNames = [
+        'navigate-to-project.skill.md',
+        'build-project.skill.md',
+      ];
+      const skills = loadTestSkills(skillNames);
+      const skillsSection = formatSkillsForPrompt(skills);
+      const baseInstructions = toolRegistry.getInstructions('schedule');
+      const enhancedInstructions = baseInstructions + skillsSection;
+
+      // Create service wrapper that injects skills into processWithTool
       const config = loadConfig();
-      const service = new AnthropicService(
+      const realService = new AnthropicService(
         config.anthropic.key,
         config.anthropic.model
       );
+      const serviceWithSkills = {
+        processWithTool: (command: string, toolName: string) =>
+          realService.processWithTool(command, toolName, enhancedInstructions),
+      };
 
-      // Call handleRefinement with selected tasks
+      // Call handleRefinement with service that has skills context
       await handleRefinement(
         selectedTasks,
-        service,
+        serviceWithSkills as unknown as typeof realService,
         'build',
         lifecycleHandlers,
         workflowHandlers,

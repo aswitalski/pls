@@ -2,15 +2,15 @@ import { homedir } from 'os';
 import { join } from 'path';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { MemoryFileSystem } from '../src/services/filesystem.js';
-import { validateExecuteTasks } from '../src/services/validator.js';
+import { MemoryFileSystem } from '../../src/services/filesystem.js';
+import { validateExecuteTasks } from '../../src/services/validator.js';
 import {
   expandSkillReferences,
   getSkillsDirectory,
   loadSkillDefinitions,
   loadSkillsWithValidation,
-} from '../src/services/skills.js';
-import { Task, TaskType } from '../src/types/types.js';
+} from '../../src/services/skills.js';
+import { Task, TaskType } from '../../src/types/types.js';
 
 describe('Skills integration - real-life scenarios', () => {
   let fs: MemoryFileSystem;
