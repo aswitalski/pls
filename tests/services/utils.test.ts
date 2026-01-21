@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDuration } from '../../src/services/utils.js';
+import { formatDuration, formatMemory } from '../../src/services/utils.js';
 
 describe('Formatting duration', () => {
   it('formats seconds only for durations under 60 seconds', () => {
@@ -47,5 +47,20 @@ describe('Formatting duration', () => {
     expect(formatDuration(90061000)).toBe('25 hours 1 minute 1 second');
     expect(formatDuration(86400000)).toBe('24 hours');
     expect(formatDuration(86461000)).toBe('24 hours 1 minute 1 second');
+  });
+});
+
+describe('Formatting memory', () => {
+  it('formats values under 1024 MB as MB', () => {
+    expect(formatMemory(1)).toBe('1 MB');
+    expect(formatMemory(512)).toBe('512 MB');
+    expect(formatMemory(1023)).toBe('1023 MB');
+  });
+
+  it('formats values at or above 1024 MB as GB', () => {
+    expect(formatMemory(1024)).toBe('1.0 GB');
+    expect(formatMemory(2048)).toBe('2.0 GB');
+    expect(formatMemory(1536)).toBe('1.5 GB');
+    expect(formatMemory(4096)).toBe('4.0 GB');
   });
 });

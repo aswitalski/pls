@@ -13,6 +13,7 @@ export interface TaskViewProps {
   command: ExecuteCommand;
   status: ExecutionStatus;
   elapsed?: number;
+  currentMemory?: number;
   output: TaskOutput | null;
   isFinished: boolean;
   isActive?: boolean;
@@ -28,6 +29,7 @@ export function TaskView({
   command,
   status,
   elapsed,
+  currentMemory,
   output,
   isFinished,
   isActive = false,
@@ -44,6 +46,7 @@ export function TaskView({
         command={command}
         status={status}
         elapsed={elapsed}
+        currentMemory={currentMemory}
       />
       {showOutput && (
         <Output chunks={chunks} isFinished={isFinished} status={status} />

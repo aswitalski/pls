@@ -76,7 +76,10 @@ export function Execute({
   const workdirRef = useRef<string | undefined>(undefined);
 
   // Ref to collect live output during execution (dispatched every second)
-  const outputRef = useRef<TaskOutput>({ chunks: [] });
+  const outputRef = useRef<TaskOutput>({
+    chunks: [],
+    currentMemory: undefined,
+  });
 
   // Ref to track if current task execution is cancelled
   const cancelledRef = useRef(false);
@@ -109,6 +112,7 @@ export function Execute({
           elapsed,
           output: {
             chunks: outputRef.current.chunks,
+            currentMemory: outputRef.current.currentMemory,
           },
         },
       });
@@ -291,7 +295,7 @@ export function Execute({
     });
 
     // Reset output ref for new task
-    outputRef.current = { chunks: [] };
+    outputRef.current = { chunks: [], currentMemory: undefined };
 
     // Merge workdir into command
     const command = workdirRef.current
@@ -301,7 +305,10 @@ export function Execute({
     void executeTask(command, currentTaskIndex, {
       onUpdate: (output) => {
         if (!cancelledRef.current) {
-          outputRef.current = { chunks: output.chunks };
+          outputRef.current = {
+            chunks: output.chunks,
+            currentMemory: output.currentMemory,
+          };
         }
       },
       onComplete: (elapsed, execOutput) => {

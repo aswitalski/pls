@@ -1,9 +1,16 @@
 import React from 'react';
 import { render } from 'ink-testing-library';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DebugLevel } from '../../../src/configuration/types.js';
 import { ExecutionStatus } from '../../../src/services/shell.js';
 
+// Mock the debug setting loader
+vi.mock('../../../src/configuration/io.js', () => ({
+  loadDebugSetting: vi.fn(),
+}));
+
+import { loadDebugSetting } from '../../../src/configuration/io.js';
 import { SubtaskView } from '../../../src/components/views/Subtask.js';
 
 describe('SubtaskView component', () => {
@@ -11,6 +18,11 @@ describe('SubtaskView component', () => {
     description: 'Run tests',
     command: 'npm test',
   };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(loadDebugSetting).mockReturnValue(DebugLevel.None);
+  });
 
   describe('Status rendering', () => {
     it('renders pending status with dash icon', () => {
@@ -273,6 +285,126 @@ describe('SubtaskView component', () => {
       const frame = lastFrame();
       // Just verify it renders without spinner
       expect(frame).toContain('Build project');
+    });
+  });
+
+  describe('Current memory display', () => {
+    it('shows memory in verbose mode for running tasks', () => {
+      vi.mocked(loadDebugSetting).mockReturnValue(DebugLevel.Verbose);
+
+      const { lastFrame } = render(
+        <SubtaskView
+          label="Build project"
+          command={mockCommand}
+          status={ExecutionStatus.Running}
+          elapsed={2000}
+          currentMemory={256}
+        />
+      );
+
+      const frame = lastFrame();
+      expect(frame).toContain('256 MB');
+    });
+
+    it('shows memory in GB for large values', () => {
+      vi.mocked(loadDebugSetting).mockReturnValue(DebugLevel.Verbose);
+
+      const { lastFrame } = render(
+        <SubtaskView
+          label="Build project"
+          command={mockCommand}
+          status={ExecutionStatus.Running}
+          elapsed={2000}
+          currentMemory={2048}
+        />
+      );
+
+      const frame = lastFrame();
+      expect(frame).toContain('2.0 GB');
+    });
+
+    it('does not show memory in info debug mode', () => {
+      vi.mocked(loadDebugSetting).mockReturnValue(DebugLevel.Info);
+
+      const { lastFrame } = render(
+        <SubtaskView
+          label="Build project"
+          command={mockCommand}
+          status={ExecutionStatus.Running}
+          elapsed={2000}
+          currentMemory={256}
+        />
+      );
+
+      const frame = lastFrame();
+      expect(frame).not.toContain('256 MB');
+    });
+
+    it('does not show memory in none debug mode', () => {
+      vi.mocked(loadDebugSetting).mockReturnValue(DebugLevel.None);
+
+      const { lastFrame } = render(
+        <SubtaskView
+          label="Build project"
+          command={mockCommand}
+          status={ExecutionStatus.Running}
+          elapsed={2000}
+          currentMemory={256}
+        />
+      );
+
+      const frame = lastFrame();
+      expect(frame).not.toContain('256 MB');
+    });
+
+    it('does not show memory for finished tasks', () => {
+      vi.mocked(loadDebugSetting).mockReturnValue(DebugLevel.Verbose);
+
+      const { lastFrame } = render(
+        <SubtaskView
+          label="Build project"
+          command={mockCommand}
+          status={ExecutionStatus.Success}
+          elapsed={2000}
+          currentMemory={256}
+        />
+      );
+
+      const frame = lastFrame();
+      expect(frame).not.toContain('256 MB');
+    });
+
+    it('does not show memory for pending tasks', () => {
+      vi.mocked(loadDebugSetting).mockReturnValue(DebugLevel.Verbose);
+
+      const { lastFrame } = render(
+        <SubtaskView
+          label="Build project"
+          command={mockCommand}
+          status={ExecutionStatus.Pending}
+          currentMemory={256}
+        />
+      );
+
+      const frame = lastFrame();
+      expect(frame).not.toContain('256 MB');
+    });
+
+    it('does not show memory when currentMemory is undefined', () => {
+      vi.mocked(loadDebugSetting).mockReturnValue(DebugLevel.Verbose);
+
+      const { lastFrame } = render(
+        <SubtaskView
+          label="Build project"
+          command={mockCommand}
+          status={ExecutionStatus.Running}
+          elapsed={2000}
+        />
+      );
+
+      const frame = lastFrame();
+      expect(frame).not.toContain('MB');
+      expect(frame).not.toContain('GB');
     });
   });
 });

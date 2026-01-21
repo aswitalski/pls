@@ -129,6 +129,11 @@ export type OutputCallback = (
   stream: 'stdout' | 'stderr'
 ) => void;
 
+/**
+ * Callback for receiving memory updates during execution
+ */
+export type MemoryCallback = (memoryMB: number) => void;
+
 // Marker for extracting pwd from command output
 export const PWD_MARKER = '__PWD_MARKER_7x9k2m__';
 export const MAX_OUTPUT_LINES = 128;
@@ -235,6 +240,7 @@ export class OutputStreamer {
  */
 export class RealExecutor implements Executor {
   private outputCallback?: OutputCallback;
+  private memoryCallback?: MemoryCallback;
 
   constructor(outputCallback?: OutputCallback) {
     this.outputCallback = outputCallback;
@@ -245,6 +251,13 @@ export class RealExecutor implements Executor {
    */
   setOutputCallback(callback: OutputCallback | undefined): void {
     this.outputCallback = callback;
+  }
+
+  /**
+   * Set or update the memory callback
+   */
+  setMemoryCallback(callback: MemoryCallback | undefined): void {
+    this.memoryCallback = callback;
   }
 
   execute(
@@ -298,9 +311,15 @@ export class RealExecutor implements Executor {
       let memoryInfo: MemoryLimitExceeded | undefined;
 
       if (cmd.memoryLimit) {
-        memoryMonitor = new MemoryMonitor(child, cmd.memoryLimit, (info) => {
-          memoryInfo = info;
-        });
+        memoryMonitor = new MemoryMonitor(
+          child,
+          cmd.memoryLimit,
+          (info) => {
+            memoryInfo = info;
+          },
+          undefined,
+          this.memoryCallback
+        );
         memoryMonitor.start();
       }
 
@@ -396,6 +415,13 @@ const executor: Executor = realExecutor;
  */
 export function setOutputCallback(callback: OutputCallback | undefined): void {
   realExecutor.setOutputCallback(callback);
+}
+
+/**
+ * Set a callback to receive memory updates during execution
+ */
+export function setMemoryCallback(callback: MemoryCallback | undefined): void {
+  realExecutor.setMemoryCallback(callback);
 }
 
 /**

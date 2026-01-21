@@ -218,6 +218,7 @@ export interface OutputChunk {
 
 export interface TaskOutput {
   chunks: OutputChunk[];
+  currentMemory?: number;
 }
 
 export interface TaskData {
@@ -228,6 +229,7 @@ export interface TaskData {
   output: TaskOutput | null;
   startTime?: number;
   error?: string;
+  currentMemory?: number;
 }
 
 export interface ExecuteDefinitionProps {

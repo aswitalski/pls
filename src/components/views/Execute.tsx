@@ -137,6 +137,7 @@ export const ExecuteView = ({
                 command={task.command}
                 status={task.status}
                 elapsed={task.elapsed}
+                currentMemory={task.output?.currentMemory}
                 output={task.output}
                 isFinished={isTaskFinished(task)}
                 isActive={isActive}

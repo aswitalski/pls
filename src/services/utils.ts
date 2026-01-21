@@ -33,6 +33,18 @@ export function formatDuration(ms: number): string {
 }
 
 /**
+ * Formats memory in megabytes to a human-readable string.
+ * Uses MB for values under 1024 MB, GB for larger values.
+ */
+export function formatMemory(mb: number): string {
+  if (mb >= 1024) {
+    const gb = mb / 1024;
+    return `${gb.toFixed(1)} GB`;
+  }
+  return `${mb} MB`;
+}
+
+/**
  * Recursively extracts all leaf tasks from a hierarchical task structure.
  * Leaf tasks are tasks without subtasks.
  */

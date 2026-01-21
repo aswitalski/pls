@@ -4,6 +4,7 @@ import {
   ExecutionResult,
   ExecutionStatus,
   executeCommand,
+  setMemoryCallback,
   setOutputCallback,
 } from '../services/shell.js';
 import { calculateElapsed } from '../services/utils.js';
@@ -27,6 +28,7 @@ export interface ExecutionOutput {
   chunks: OutputChunk[];
   error: string;
   workdir?: string;
+  currentMemory?: number;
 }
 
 /**
@@ -60,12 +62,14 @@ export async function executeTask(
   let chunks: OutputChunk[] = [];
   let error = '';
   let workdir: string | undefined;
+  let currentMemory: number | undefined;
 
   // Helper to create current output snapshot
   const createOutput = (): ExecutionOutput => ({
     chunks,
     error,
     workdir,
+    currentMemory,
   });
 
   // Throttle updates to avoid excessive re-renders (80ms minimum interval)
@@ -104,6 +108,12 @@ export async function executeTask(
     throttledUpdate();
   });
 
+  // Set up memory callback to track current memory
+  setMemoryCallback((memoryMB) => {
+    currentMemory = memoryMB;
+    throttledUpdate();
+  });
+
   try {
     const result: CommandOutput = await executeCommand(
       command,
@@ -111,8 +121,9 @@ export async function executeTask(
       index
     );
 
-    // Clear callback and pending timeout
+    // Clear callbacks and pending timeout
     setOutputCallback(undefined);
+    setMemoryCallback(undefined);
     clearTimeout(pendingTimeout);
 
     const elapsed = calculateElapsed(startTime);
@@ -150,8 +161,9 @@ export async function executeTask(
       return { status: ExecutionStatus.Failed, elapsed, output };
     }
   } catch (err) {
-    // Clear callback and pending timeout
+    // Clear callbacks and pending timeout
     setOutputCallback(undefined);
+    setMemoryCallback(undefined);
     clearTimeout(pendingTimeout);
 
     const elapsed = calculateElapsed(startTime);

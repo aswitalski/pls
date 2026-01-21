@@ -9,7 +9,7 @@ export interface MemoryLimitExceeded {
 }
 
 // Memory monitoring constants
-const MEMORY_CHECK_INTERVAL = 1000;
+const MEMORY_CHECK_INTERVAL = 250;
 const DEFAULT_PAGE_SIZE = 4096;
 
 export const SIGKILL_GRACE_PERIOD = 3000;
@@ -209,19 +209,23 @@ export class MemoryMonitor {
   private memoryLimit: number;
   private limitBytes: number;
   private onExceeded?: (info: MemoryLimitExceeded) => void;
+  private onMemoryUpdate?: (memoryMB: number) => void;
   private state: MonitorState = MonitorState.Idle;
   private getMemoryFn: GetProcessMemoryFn;
+  private currentMemoryMB = 0;
 
   constructor(
     child: ChildProcess,
     memoryLimitMB: number,
     onExceeded?: (info: MemoryLimitExceeded) => void,
-    getMemoryFn?: GetProcessMemoryFn
+    getMemoryFn?: GetProcessMemoryFn,
+    onMemoryUpdate?: (memoryMB: number) => void
   ) {
     this.child = child;
     this.memoryLimit = memoryLimitMB;
     this.limitBytes = memoryLimitMB * 1024 * 1024;
     this.onExceeded = onExceeded;
+    this.onMemoryUpdate = onMemoryUpdate;
 
     // Always monitor full process tree by default
     this.getMemoryFn = getMemoryFn ?? getProcessTreeMemoryBytes;
@@ -230,11 +234,12 @@ export class MemoryMonitor {
   /**
    * Start monitoring the child process memory.
    * Uses async self-scheduling loop instead of setInterval for non-blocking.
+   * Performs an immediate check, then polls at regular intervals.
    */
   start(): void {
     if (!this.child.pid) return;
     this.state = MonitorState.Running;
-    this.scheduleNextCheck();
+    void this.checkMemory();
   }
 
   /**
@@ -265,6 +270,12 @@ export class MemoryMonitor {
 
     // Re-check after async operation - state may have changed
     if (this.state !== MonitorState.Running) return; // eslint-disable-line @typescript-eslint/no-unnecessary-condition
+
+    // Track current memory
+    if (memoryBytes !== undefined) {
+      this.currentMemoryMB = Math.ceil(memoryBytes / 1024 / 1024);
+      this.onMemoryUpdate?.(this.currentMemoryMB);
+    }
 
     if (memoryBytes !== undefined && memoryBytes >= this.limitBytes) {
       this.terminateProcess(memoryBytes);
@@ -323,5 +334,13 @@ export class MemoryMonitor {
    */
   wasKilledByMemoryLimit(): boolean {
     return this.state === MonitorState.Killed;
+  }
+
+  /**
+   * Get current memory in MB.
+   * Returns 0 if no memory has been recorded yet.
+   */
+  getCurrentMemoryMB(): number {
+    return this.currentMemoryMB;
   }
 }

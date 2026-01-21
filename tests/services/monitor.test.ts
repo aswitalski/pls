@@ -66,15 +66,18 @@ describe('MemoryMonitor', () => {
     expect(killMock).not.toHaveBeenCalled();
   });
 
-  it('start schedules first check after interval', async () => {
+  it('start checks immediately then polls after interval', async () => {
     const { child } = createMockChild(12345);
     const mockGetMemory = vi.fn().mockResolvedValue(1 * 1024 * 1024);
     const monitor = new MemoryMonitor(child, 100, undefined, mockGetMemory);
 
     monitor.start();
-    expect(mockGetMemory).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(1050);
-    expect(mockGetMemory).toHaveBeenCalled();
+    // First check happens immediately
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockGetMemory).toHaveBeenCalledTimes(1);
+    // Second check after 250ms interval
+    await vi.advanceTimersByTimeAsync(250);
+    expect(mockGetMemory).toHaveBeenCalledTimes(2);
     monitor.stop();
   });
 
