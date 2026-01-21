@@ -7,25 +7,10 @@ stored in `~/.pls/skills/` and loaded dynamically at runtime.
 ### Skill File Format
 
 Each skill is a markdown file containing structured sections that define its
-behavior. Skills have four required sections (Name, Description, Steps,
-Execution) and two optional sections (Aliases, Config).
+behavior. Skills have three required sections (Description, Steps, Execution)
+and three optional sections (Name, Aliases, Config).
 
 #### Required Sections
-
-##### Name
-
-Unique identifier for the skill used throughout the system.
-
-**Purpose**:
-- Serves as the skill's canonical name
-- Used in skill references: `[Skill Name]`
-- Must match exactly when cross-referencing between skills
-
-**Example**:
-```markdown
-### Name
-Build Project
-```
 
 ##### Description
 
@@ -40,9 +25,9 @@ Explains what the skill does and provides guidance for matching user requests.
 **Example**:
 ```markdown
 ### Description
-Build a project in different configurations. Supports dev (debug build with
-source maps) and prod (optimized build) configurations. The generation script
-is only needed for major changes.
+Backup files to remote storage. Supports local (quick sync to NAS) and cloud
+(encrypted upload to S3) destinations. The encryption step is only needed for
+cloud backups.
 ```
 
 ##### Steps
@@ -58,10 +43,10 @@ Human-readable description of the workflow.
 **Example**:
 ```markdown
 ### Steps
-- Navigate to the project directory
-- Install dependencies if needed
-- Run the build script
-- Generate build artifacts
+- Scan source directory for changes
+- Compress modified files
+- Transfer to destination
+- Verify backup integrity
 ```
 
 ##### Execution
@@ -77,19 +62,36 @@ Actual commands that implement the workflow.
 **Command Syntaxes**:
 
 1. **Direct commands**: `python3 ./script.py --flag`
-2. **Labeled commands**: `Run: npm install`
-3. **Skill references**: `[Other Skill Name]`
+2. **Labeled commands**: `Run: rsync -avz`
+3. **Skill references**: `[ Other Skill Name ]`
 
 **Example**:
 ```markdown
 ### Execution
-- cd ~/projects/myapp
-- npm install
-- npm run build
-- cp -r dist/ builds/
+- find ~/documents -newer .last-backup
+- tar -czf backup.tar.gz ~/documents
+- rsync -avz backup.tar.gz remote:/backups/
+- sha256sum -c backup.tar.gz.sha256
 ```
 
 #### Optional Sections
+
+##### Name
+
+Display name for the skill. If omitted, derived from the filename.
+
+**Purpose**:
+- Provides a human-readable name for the skill
+- Used in skill references: `[ Skill Name ]`
+- Must match exactly when cross-referencing between skills
+- If not provided, the filename is converted to Title Case (e.g., `deploy-app.md`
+  becomes "Deploy App")
+
+**Example**:
+```markdown
+### Name
+Backup Files
+```
 
 ##### Aliases
 
@@ -104,10 +106,10 @@ Natural language triggers that help match user requests to this skill.
 **Example**:
 ```markdown
 ### Aliases
-- build for production
-- compile the project
-- build from source
-- generate and build
+- backup my files
+- create a backup
+- archive to cloud
+- save files to remote
 ```
 
 ##### Config
@@ -118,28 +120,28 @@ Configuration schema defining required properties.
 - YAML structure specifying configuration requirements
 - Properties are typed: `string`, `boolean`, or `number`
 - Supports nested structures using indentation
-- Creates config paths like `product.dev.path`
+- Creates config paths like `server.staging.host`
 - Values stored in `~/.plsrc`
 - User will be prompted for missing values before execution
 
 **Example**:
 ```yaml
 ### Config
-product:
-  dev:
-    path: string
+server:
+  staging:
+    host: string
     enabled: boolean
   prod:
-    path: string
-build:
-  parallel: boolean
+    host: string
+backup:
+  compress: boolean
   threads: number
 ```
 
 This creates the following config properties:
-- `product.dev.path` and `product.prod.path` (paths)
-- `product.dev.enabled` (true/false)
-- `build.parallel` (true/false) and `build.threads` (number)
+- `server.staging.host` and `server.prod.host` (hostnames)
+- `server.staging.enabled` (true/false)
+- `backup.compress` (true/false) and `backup.threads` (number)
 
 ### Advanced Features
 
@@ -149,7 +151,7 @@ Placeholders reference configuration values and support two formats:
 
 ##### Strict Placeholders
 
-Format: `{product.dev.path}` (all lowercase path components)
+Format: `{server.staging.host}` (all lowercase path components)
 
 **Behavior**:
 - References a specific value from `~/.plsrc`
@@ -158,42 +160,43 @@ Format: `{product.dev.path}` (all lowercase path components)
 **Example**:
 ```markdown
 ### Execution
-- cd {product.dev.path}
-- make build
+- ssh {server.staging.host}
+- ./run-checks.sh
 ```
 
 ##### Variant Placeholders
 
-Format: `{product.VARIANT.path}` (uppercase VARIANT keyword)
+Format: `{server.ENV.host}` (uppercase ENV keyword)
 
 **Behavior**:
-- Matches user requests ("build dev", "build prod") to the appropriate variant
+- Matches user requests ("deploy staging", "deploy prod") to the appropriate
+  variant
 - Looks up the corresponding config value
 - Use when skill supports multiple variants
 
 **Example**:
 ```markdown
 ### Config
-product:
-  dev:
-    path: string
+server:
+  staging:
+    host: string
   prod:
-    path: string
+    host: string
 
 ### Execution
-- cd {product.VARIANT.path}
-- make build
+- ssh {server.ENV.host}
+- ./run-checks.sh
 ```
 
-When user says "build dev", `pls` matches "dev" to the `dev` variant and uses
-the value from `product.dev.path` in the config.
+When user says "deploy staging", `pls` matches "staging" to the `staging`
+variant and uses the value from `server.staging.host` in the config.
 
 #### Skill Composition
 
 Skills can reference other skills to build complex workflows from simple
 building blocks.
 
-**Reference Format**: `[Skill Name]` in Execution section
+**Reference Format**: `[ Skill Name ]` in Execution section
 
 **How it works**:
 - Skill references are expanded automatically during planning
@@ -203,43 +206,43 @@ building blocks.
 
 **Example**:
 
-**Skill: Navigate To Product**
+**Skill: Connect To Server**
 ```markdown
 ### Name
-Navigate To Product
+Connect To Server
 
 ### Config
-product:
-  dev:
-    path: string
+server:
+  staging:
+    host: string
   prod:
-    path: string
+    host: string
 
 ### Steps
-- Change to product directory
+- Establish SSH connection
 
 ### Execution
-- cd {product.VARIANT.path}
+- ssh {server.ENV.host}
 ```
 
-**Skill: Build Product**
+**Skill: Run Migration**
 ```markdown
 ### Name
-Build Product
+Run Migration
 
 ### Steps
-- Navigate to product
-- Compile source
+- Connect to target server
+- Execute migration script
 
 ### Execution
-- [Navigate To Product]
-- make build
+- [ Connect To Server ]
+- ./migrate.sh --apply
 ```
 
-**Expanded Execution** (when user runs "build dev"):
+**Expanded Execution** (when user runs "migrate staging"):
 ```
-- cd /path/to/dev    # Expanded from [Navigate To Product]
-- make build
+- ssh staging.example.com    # Expanded from [ Connect To Server ]
+- ./migrate.sh --apply
 ```
 
 #### Configuration Management
@@ -254,16 +257,16 @@ Configuration values are stored in `~/.plsrc` and checked before execution.
 
 **Example**:
 
-When user runs `pls build dev`:
+When user runs `pls migrate staging`:
 
-1. `pls` matches user's request to the "Build Product" skill
-2. Recognizes "dev" as the variant to use
-3. Expands the `[Navigate To Product]` reference
-4. Checks if `product.dev.path` exists in `~/.plsrc`
-5. If missing, prompts user: "Product Dev path"
-6. User enters: `/data/projects/dev` (saved to `~/.plsrc`)
-7. Executes: `cd /data/projects/dev`
-8. Executes: `make build`
+1. `pls` matches user's request to the "Run Migration" skill
+2. Recognizes "staging" as the variant to use
+3. Expands the `[ Connect To Server ]` reference
+4. Checks if `server.staging.host` exists in `~/.plsrc`
+5. If missing, prompts user: "Server Staging host"
+6. User enters: `staging.example.com` (saved to `~/.plsrc`)
+7. Executes: `ssh staging.example.com`
+8. Executes: `./migrate.sh --apply`
 
 ### Section Relationships
 
@@ -286,7 +289,7 @@ Config and Execution work together:
 #### Name ↔ Execution References
 
 Skills compose through Name references:
-- Reference other skills using: `[Skill Name]`
+- Reference other skills using: `[ Skill Name ]`
 - Referenced skills are included during planning
 - Circular references (A calls B, B calls A) are prevented
 - Config from referenced skills is included automatically
@@ -295,40 +298,40 @@ Skills compose through Name references:
 
 ```markdown
 ### Name
-Deploy Application
+Sync Database
 
 ### Description
-Deploy application to different environments. Supports dev and prod
-environments. The build step is skipped if artifacts already exist.
+Synchronize database between environments. Supports staging and prod
+environments. The backup step is skipped if recent backup exists.
 
 ### Aliases
-- deploy to production
-- deploy to dev
-- push to prod
+- sync database to staging
+- sync db to prod
+- replicate database
 
 ### Config
-app:
-  dev:
-    path: string
-    url: string
+database:
+  staging:
+    host: string
+    port: number
   prod:
-    path: string
-    url: string
-deployment:
+    host: string
+    port: number
+sync:
   timeout: number
-  parallel: boolean
+  compress: boolean
 
 ### Steps
-- Navigate to application directory
-- Build application if needed
-- Run deployment script
-- Verify deployment succeeded
+- Connect to source database
+- Create backup snapshot
+- Transfer data to target
+- Verify sync completed
 
 ### Execution
-- cd {app.VARIANT.path}
-- npm run build:VARIANT
-- ./deploy.sh {app.VARIANT.url} --timeout={deployment.timeout}
-- curl -f {app.VARIANT.url}/health || exit 1
+- pg_dump -h {database.ENV.host} -p {database.ENV.port} > backup.sql
+- gzip backup.sql
+- psql -h {database.ENV.host} -f backup.sql.gz
+- ./verify-sync.sh {database.ENV.host} --timeout={sync.timeout}
 ```
 
 ### Built-in Capabilities
@@ -337,10 +340,10 @@ The `pls` concierge includes six built-in capabilities that handle core
 operations:
 
 - **Answer** - Answer questions and provide information
-- **Config** - Manage configuration properties interactively
+- **Configure** - Manage configuration properties interactively
 - **Execute** - Run shell commands and process operations
 - **Introspect** - List available capabilities and user skills
-- **Plan** - Break down requests into actionable execution steps
+- **Schedule** - Break down requests into actionable execution steps
 - **Validate** - Validate execution plans before running them
 
 These capabilities are always available and work alongside user-defined skills.
@@ -350,8 +353,8 @@ These capabilities are always available and work alongside user-defined skills.
 To create a skill:
 
 1. Create a markdown file in `~/.pls/skills/`
-2. Add required sections: Name, Description, Steps, Execution
-3. Add optional sections as needed: Aliases, Config
+2. Add required sections: Description, Steps, Execution
+3. Add optional sections as needed: Name, Aliases, Config
 4. Test the skill by using natural language that matches the Description or
    Aliases
 
