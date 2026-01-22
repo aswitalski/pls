@@ -21,6 +21,7 @@ import {
 import { ensureMinimumTime } from '../../services/timing.js';
 
 import { ValidateView } from '../views/Validate.js';
+import { ConfigStep } from './Config.js';
 
 export { ValidateView, ValidateViewProps } from '../views/Validate.js';
 
@@ -149,15 +150,14 @@ export function Validate({
           });
 
           // Override descriptions with LLM-generated ones
-          if ('props' in configDef && 'steps' in configDef.props) {
-            configDef.props.steps = configDef.props.steps.map(
-              (step, index) => ({
-                ...step,
-                description:
-                  withDescriptions[index].description ||
-                  withDescriptions[index].path,
-              })
-            );
+          const configProps = configDef.props as { steps?: ConfigStep[] };
+          if (configProps.steps) {
+            configProps.steps = configProps.steps.map((step, index) => ({
+              ...step,
+              description:
+                withDescriptions[index].description ||
+                withDescriptions[index].path,
+            }));
           }
 
           workflowHandlers.addToQueue(configDef);

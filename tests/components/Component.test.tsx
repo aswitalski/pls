@@ -1,8 +1,10 @@
+import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
   ComponentStatus,
   ComponentDefinition,
+  ManagedComponentDefinition,
 } from '../../src/types/components.js';
 import {
   App,
@@ -16,8 +18,12 @@ import { DebugLevel } from '../../src/configuration/types.js';
 import {
   SimpleComponent,
   ControllerComponent,
+  ViewComponent,
 } from '../../src/components/Component.js';
-import { StepType } from '../../src/components/controllers/Config.js';
+import {
+  StepType,
+  ConfigStep,
+} from '../../src/components/controllers/Config.js';
 
 import {
   createLifecycleHandlers,
@@ -374,6 +380,133 @@ describe('Component', () => {
     results.forEach((result) => {
       expect(result).toBeDefined();
       expect(result.type).toBeDefined();
+    });
+  });
+
+  describe('ViewComponent', () => {
+    describe('Config timeline rendering', () => {
+      it('uses state.steps when props.steps is empty (query-resolved config)', () => {
+        // This tests the bug fix where query-resolved configs weren't showing
+        // in the timeline because ViewComponent only read props.steps
+        const resolvedSteps: ConfigStep[] = [
+          {
+            description: 'API Key',
+            key: 'api.key',
+            type: StepType.Text,
+            value: null,
+            validate: () => true,
+          },
+        ];
+
+        const def: ManagedComponentDefinition = {
+          id: 'test-config-query',
+          name: ComponentName.Config,
+          status: ComponentStatus.Done,
+          state: {
+            values: { 'api.key': 'test-key-value' },
+            completedStep: 1,
+            selectedIndex: 0,
+            steps: resolvedSteps, // Steps from query resolution
+          },
+          props: {
+            // No steps in props - they were resolved via query
+            steps: undefined,
+            query: 'api settings',
+            onFinished: () => {},
+            onAborted: () => {},
+          },
+        };
+
+        const { lastFrame } = render(<ViewComponent def={def} />);
+
+        const output = lastFrame();
+        // Should display the config entry from state.steps
+        expect(output).toContain('API Key');
+        expect(output).toContain('test-key-value');
+      });
+
+      it('falls back to props.steps when state.steps is undefined', () => {
+        const propSteps: ConfigStep[] = [
+          {
+            description: 'Username',
+            key: 'user.name',
+            type: StepType.Text,
+            value: 'default',
+            validate: () => true,
+          },
+        ];
+
+        const def: ManagedComponentDefinition = {
+          id: 'test-config-props',
+          name: ComponentName.Config,
+          status: ComponentStatus.Done,
+          state: {
+            values: { 'user.name': 'entered-username' },
+            completedStep: 1,
+            selectedIndex: 0,
+            // No steps in state - using direct steps
+          },
+          props: {
+            steps: propSteps,
+            onFinished: () => {},
+            onAborted: () => {},
+          },
+        };
+
+        const { lastFrame } = render(<ViewComponent def={def} />);
+
+        const output = lastFrame();
+        // Should display config entry from props.steps
+        expect(output).toContain('Username');
+        expect(output).toContain('entered-username');
+      });
+
+      it('prefers state.steps over props.steps when both exist', () => {
+        const propSteps: ConfigStep[] = [
+          {
+            description: 'From Props',
+            key: 'from.props',
+            type: StepType.Text,
+            value: null,
+            validate: () => true,
+          },
+        ];
+
+        const stateSteps: ConfigStep[] = [
+          {
+            description: 'From State',
+            key: 'from.state',
+            type: StepType.Text,
+            value: null,
+            validate: () => true,
+          },
+        ];
+
+        const def: ManagedComponentDefinition = {
+          id: 'test-config-both',
+          name: ComponentName.Config,
+          status: ComponentStatus.Done,
+          state: {
+            values: { 'from.state': 'state-value' },
+            completedStep: 1,
+            selectedIndex: 0,
+            steps: stateSteps,
+          },
+          props: {
+            steps: propSteps,
+            onFinished: () => {},
+            onAborted: () => {},
+          },
+        };
+
+        const { lastFrame } = render(<ViewComponent def={def} />);
+
+        const output = lastFrame();
+        // Should use state.steps, not props.steps
+        expect(output).toContain('From State');
+        expect(output).toContain('state-value');
+        expect(output).not.toContain('From Props');
+      });
     });
   });
 });

@@ -61,35 +61,14 @@ export function Command({
       const startTime = Date.now();
 
       try {
-        let result = await svc.processWithTool(command, 'schedule');
-
-        // Save schedule debug output before potentially delegating
-        const scheduleDebug = result.debug || [];
-
-        // If all tasks are configure type, delegate to CONFIGURE tool
-        const allConfig =
-          result.tasks.length > 0 &&
-          result.tasks.every((task) => task.type === TaskType.Config);
-
-        if (allConfig) {
-          // Extract query from first config task params, default to 'app'
-          const query =
-            (result.tasks[0].params?.query as string | undefined) || 'app';
-          // Call CONFIGURE tool to get specific config keys
-          result = await svc.processWithTool(query, 'configure');
-        }
+        const result = await svc.processWithTool(command, 'schedule');
 
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 
         if (mounted) {
           // Add debug components to timeline if present
-          // If we delegated to configure, include both schedule and configure debug
-          // If not, only include schedule debug (result.debug is same as scheduleDebug)
-          const debugComponents = allConfig
-            ? [...scheduleDebug, ...(result.debug || [])]
-            : scheduleDebug;
-          if (debugComponents.length > 0) {
-            workflowHandlers.addToTimeline(...debugComponents);
+          if (result.debug?.length) {
+            workflowHandlers.addToTimeline(...result.debug);
           }
 
           // Update local state

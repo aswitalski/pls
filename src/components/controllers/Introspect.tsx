@@ -97,11 +97,10 @@ export function Introspect({
           };
           requestHandlers.onCompleted(finalState);
 
-          // Add Report component to queue
-          workflowHandlers.addToQueue(createReport({ message, capabilities }));
-
-          // Signal completion
-          lifecycleHandlers.completeActive();
+          // Signal completion and add Report to timeline (not queue, to preserve order)
+          lifecycleHandlers.completeActive(
+            createReport({ message, capabilities })
+          );
         }
       } catch (err) {
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);

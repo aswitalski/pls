@@ -106,7 +106,9 @@ export type RefinementProps = ComponentProps<RefinementDefinitionProps> & {
 export interface ConfigDefinitionProps<
   T extends Record<string, string> = Record<string, string>,
 > {
-  steps: ConfigStep[];
+  steps?: ConfigStep[];
+  query?: string;
+  service?: LLMService;
   onFinished?: (config: T) => void;
   onAborted?: (operation: string) => void;
 }
@@ -122,6 +124,7 @@ export interface ConfigState extends BaseState {
   values: Record<string, string>;
   completedStep: number;
   selectedIndex: number;
+  steps?: ConfigStep[];
 }
 
 export interface ConfirmDefinitionProps {

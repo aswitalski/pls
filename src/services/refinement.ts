@@ -1,8 +1,4 @@
-import {
-  BaseState,
-  ComponentDefinition,
-  ComponentStatus,
-} from '../types/components.js';
+import { BaseState, ComponentDefinition } from '../types/components.js';
 import {
   LifecycleHandlers,
   RequestHandlers,
@@ -12,7 +8,7 @@ import { Task } from '../types/types.js';
 
 import { formatTaskAsYaml } from '../execution/processing.js';
 import { LLMService } from './anthropic.js';
-import { createCommand, createRefinement } from './components.js';
+import { createRefinement } from './components.js';
 import { formatErrorMessage, getRefiningMessage } from './messages.js';
 import { routeTasksWithConfirm } from './router.js';
 
@@ -28,15 +24,6 @@ export async function handleRefinement<TState extends BaseState = BaseState>(
   workflowHandlers: WorkflowHandlers<ComponentDefinition>,
   requestHandlers: RequestHandlers<TState>
 ): Promise<void> {
-  // Display the resolved command (from user's selection)
-  // The first task's action contains the full resolved command
-  const resolvedCommand = selectedTasks[0]?.action || originalCommand;
-  const commandDisplay = createCommand(
-    { command: resolvedCommand, service, onAborted: requestHandlers.onAborted },
-    ComponentStatus.Done
-  );
-  workflowHandlers.addToTimeline(commandDisplay);
-
   // Create and add refinement component to queue
   const refinementDef = createRefinement({
     text: getRefiningMessage(),

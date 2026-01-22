@@ -401,54 +401,6 @@ describe('Refinement service', () => {
       expect(lifecycleHandlers.completeActive).toHaveBeenCalledTimes(1);
     });
 
-    it('adds Command component to timeline showing resolved command', async () => {
-      const selectedTasks = [
-        {
-          action: 'process /Users/Dev/MyProject/Data.csv in batch mode',
-          type: TaskType.Execute,
-          config: [],
-        },
-      ];
-      const mockService = {
-        processWithTool: vi.fn().mockResolvedValue({
-          message: 'Refined plan',
-          tasks: [
-            {
-              action: 'process /Users/Dev/MyProject/Data.csv',
-              type: TaskType.Execute,
-              config: [],
-            },
-          ],
-        }),
-      } as unknown as LLMService;
-
-      const lifecycleHandlers = createLifecycleHandlers();
-      const workflowHandlers = createWorkflowHandlers();
-      const requestHandlers = createRequestHandlers();
-
-      await handleRefinement(
-        selectedTasks,
-        mockService,
-        'process file',
-        lifecycleHandlers,
-        workflowHandlers,
-        requestHandlers
-      );
-
-      // Should add Command component to timeline
-      expect(workflowHandlers.addToTimeline).toHaveBeenCalled();
-      const timelineCall = vi.mocked(workflowHandlers.addToTimeline).mock
-        .calls[0][0] as ComponentDefinition;
-      expect(timelineCall.name).toBe(ComponentName.Command);
-
-      // Verify the command preserves case from the selected task action
-      if (timelineCall.name === ComponentName.Command) {
-        expect(timelineCall.props.command).toBe(
-          'process /Users/Dev/MyProject/Data.csv in batch mode'
-        );
-      }
-    });
-
     it('calls onAborted when refinement is aborted', async () => {
       const selectedTasks = [
         { action: 'Deploy', type: TaskType.Execute, config: [] },

@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ComponentName,
   FeedbackType,
-  Task,
   TaskType,
 } from '../../src/types/types.js';
 import {
@@ -17,8 +16,10 @@ import {
 
 import { LLMService } from '../../src/services/anthropic.js';
 import {
+  extractTaskGroups,
   flattenTasks,
   getOperationName,
+  getRoutingCategory,
   routeTasksWithConfirm,
 } from '../../src/services/router.js';
 import { saveConfigLabels } from '../../src/configuration/labels.js';
@@ -294,6 +295,172 @@ describe('Task Router', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].action).toBe('Leaf');
+    });
+  });
+
+  describe('getRoutingCategory', () => {
+    it('returns "config" for Config tasks', () => {
+      const task = { action: 'Set API key', type: TaskType.Config, config: [] };
+      expect(getRoutingCategory(task)).toBe('config');
+    });
+
+    it('returns "execute" for Execute tasks', () => {
+      const task = {
+        action: 'npm install',
+        type: TaskType.Execute,
+        config: [],
+      };
+      expect(getRoutingCategory(task)).toBe('execute');
+    });
+
+    it('returns "answer" for Answer tasks', () => {
+      const task = { action: 'Explain TDD', type: TaskType.Answer, config: [] };
+      expect(getRoutingCategory(task)).toBe('answer');
+    });
+
+    it('returns "introspect" for Introspect tasks', () => {
+      const task = {
+        action: 'List skills',
+        type: TaskType.Introspect,
+        config: [],
+      };
+      expect(getRoutingCategory(task)).toBe('introspect');
+    });
+
+    it('returns "execute" for Group with only Execute subtasks', () => {
+      const task = {
+        action: 'Build steps',
+        type: TaskType.Group,
+        subtasks: [
+          { action: 'Step 1', type: TaskType.Execute, config: [] },
+          { action: 'Step 2', type: TaskType.Execute, config: [] },
+        ],
+        config: [],
+      };
+      expect(getRoutingCategory(task)).toBe('execute');
+    });
+
+    it('returns "mixed:{action}" for Group with mixed subtask types', () => {
+      const task = {
+        action: 'Setup workflow',
+        type: TaskType.Group,
+        subtasks: [
+          { action: 'Configure', type: TaskType.Config, config: [] },
+          { action: 'Execute', type: TaskType.Execute, config: [] },
+        ],
+        config: [],
+      };
+      expect(getRoutingCategory(task)).toBe('mixed:Setup workflow');
+    });
+
+    it('returns "group" for Group with no subtasks', () => {
+      const task = {
+        action: 'Empty group',
+        type: TaskType.Group,
+        subtasks: [],
+        config: [],
+      };
+      expect(getRoutingCategory(task)).toBe('group');
+    });
+  });
+
+  describe('extractTaskGroups', () => {
+    it('groups consecutive Execute tasks together', () => {
+      const tasks = [
+        { action: 'Task A', type: TaskType.Execute, config: [] },
+        { action: 'Task B', type: TaskType.Execute, config: [] },
+      ];
+
+      const groups = extractTaskGroups(tasks);
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].tasks).toHaveLength(2);
+      expect(groups[0].name).toBe('Task A');
+    });
+
+    it('groups consecutive Answer tasks together', () => {
+      const tasks = [
+        { action: 'Q1', type: TaskType.Answer, config: [] },
+        { action: 'Q2', type: TaskType.Answer, config: [] },
+      ];
+
+      const groups = extractTaskGroups(tasks);
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].tasks).toHaveLength(2);
+    });
+
+    it('creates new group when category changes', () => {
+      const tasks = [
+        { action: 'Execute', type: TaskType.Execute, config: [] },
+        { action: 'Config', type: TaskType.Config, config: [] },
+        { action: 'Answer', type: TaskType.Answer, config: [] },
+      ];
+
+      const groups = extractTaskGroups(tasks);
+
+      expect(groups).toHaveLength(3);
+      expect(groups[0].tasks[0].type).toBe(TaskType.Execute);
+      expect(groups[1].tasks[0].type).toBe(TaskType.Config);
+      expect(groups[2].tasks[0].type).toBe(TaskType.Answer);
+    });
+
+    it('isolates explicit Group tasks into separate TaskGroups', () => {
+      const tasks = [
+        { action: 'Execute A', type: TaskType.Execute, config: [] },
+        {
+          action: 'Group B',
+          type: TaskType.Group,
+          subtasks: [{ action: 'Sub 1', type: TaskType.Execute, config: [] }],
+          config: [],
+        },
+        { action: 'Execute C', type: TaskType.Execute, config: [] },
+      ];
+
+      const groups = extractTaskGroups(tasks);
+
+      expect(groups).toHaveLength(3);
+      expect(groups[0].tasks[0].action).toBe('Execute A');
+      expect(groups[1].tasks[0].action).toBe('Group B');
+      expect(groups[2].tasks[0].action).toBe('Execute C');
+    });
+
+    it('skips empty Group tasks', () => {
+      const tasks = [
+        { action: 'Execute', type: TaskType.Execute, config: [] },
+        {
+          action: 'Empty Group',
+          type: TaskType.Group,
+          subtasks: [],
+          config: [],
+        },
+        { action: 'Execute 2', type: TaskType.Execute, config: [] },
+      ];
+
+      const groups = extractTaskGroups(tasks);
+
+      // Empty group is skipped, consecutive Executes merge
+      expect(groups).toHaveLength(1);
+      expect(groups[0].tasks).toHaveLength(2);
+    });
+
+    it('preserves task order within groups', () => {
+      const tasks = [
+        { action: 'First', type: TaskType.Execute, config: [] },
+        { action: 'Second', type: TaskType.Execute, config: [] },
+        { action: 'Third', type: TaskType.Execute, config: [] },
+      ];
+
+      const groups = extractTaskGroups(tasks);
+
+      expect(groups[0].tasks[0].action).toBe('First');
+      expect(groups[0].tasks[1].action).toBe('Second');
+      expect(groups[0].tasks[2].action).toBe('Third');
+    });
+
+    it('returns empty array for empty input', () => {
+      const groups = extractTaskGroups([]);
+      expect(groups).toHaveLength(0);
     });
   });
 
@@ -682,15 +849,19 @@ describe('Task Router', () => {
         confirmDef.props.onConfirmed();
       }
 
-      // Should add Introspect to queue
-      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
-      const introspectDef = (
+      // Each task routes to its own Introspect component (no batching)
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(4);
+      const introspectDef1 = (
         workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls[2][0] as ComponentDefinition;
-      expect(introspectDef.name).toBe(ComponentName.Introspect);
-      if (introspectDef.name === ComponentName.Introspect) {
-        expect(introspectDef.props.tasks).toEqual(tasks);
-        expect(introspectDef.props.service).toBe(service);
+      const introspectDef2 = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[3][0] as ComponentDefinition;
+      expect(introspectDef1.name).toBe(ComponentName.Introspect);
+      expect(introspectDef2.name).toBe(ComponentName.Introspect);
+      if (introspectDef1.name === ComponentName.Introspect) {
+        expect(introspectDef1.props.tasks).toEqual([tasks[0]]);
+        expect(introspectDef1.props.service).toBe(service);
       }
     });
 
@@ -1473,16 +1644,19 @@ describe('Task Router', () => {
         confirmDef.props.onConfirmed();
       }
 
-      // Should add Config component to queue
-      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
-      const configDef = (
+      // Each Config task routes to its own Config component (no batching)
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(4);
+      const configDef1 = (
         workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls[2][0] as ComponentDefinition;
-      expect(configDef.name).toBe(ComponentName.Config);
-      if (configDef.name === ComponentName.Config) {
-        // Should have steps for both config keys
-        expect(configDef.props.steps).toBeDefined();
-        expect(configDef.props.steps.length).toBe(2);
+      const configDef2 = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[3][0] as ComponentDefinition;
+      expect(configDef1.name).toBe(ComponentName.Config);
+      expect(configDef2.name).toBe(ComponentName.Config);
+      if (configDef1.name === ComponentName.Config) {
+        expect(configDef1.props.steps).toBeDefined();
+        expect(configDef1.props.steps!.length).toBe(1);
       }
     });
 
@@ -1537,9 +1711,12 @@ describe('Task Router', () => {
         confirmDef.props.onConfirmed();
       }
 
-      // Verify saveConfigLabels was called with task descriptions
+      // Each Config task routes separately, so saveConfigLabels called twice
+      expect(saveConfigLabels).toHaveBeenCalledTimes(2);
       expect(saveConfigLabels).toHaveBeenCalledWith({
         'project.alpha.path': 'Project Alpha repository path',
+      });
+      expect(saveConfigLabels).toHaveBeenCalledWith({
         'project.beta.path': 'Project Beta repository path',
       });
     });
@@ -1796,63 +1973,6 @@ describe('Task Router', () => {
       );
     });
 
-    it('routes Group tasks as single Execute component with label', () => {
-      const tasks = [
-        {
-          action: 'Complete workflow',
-          type: TaskType.Group,
-          subtasks: [
-            { action: 'Step 1', type: TaskType.Execute, config: [] },
-            { action: 'Step 2', type: TaskType.Execute, config: [] },
-            { action: 'Step 3', type: TaskType.Execute, config: [] },
-          ],
-        },
-      ];
-      const lifecycleHandlers = createLifecycleHandlers();
-      const workflowHandlers = createWorkflowHandlers();
-      const requestHandlers = createRequestHandlers();
-      const service = {} as LLMService;
-
-      routeTasksWithConfirm(
-        tasks,
-        'Workflow',
-        service,
-        'complete workflow',
-        lifecycleHandlers,
-        workflowHandlers,
-        requestHandlers,
-        false
-      );
-
-      // Simulate Plan and Confirm completing
-      const scheduleDef = (
-        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
-      ).mock.calls[0][0] as ComponentDefinition;
-      if (scheduleDef.name === ComponentName.Schedule) {
-        void scheduleDef.props.onSelectionConfirmed?.(tasks);
-      }
-
-      const confirmDef = (
-        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
-      ).mock.calls[1][0] as ComponentDefinition;
-      if (confirmDef.name === ComponentName.Confirm) {
-        confirmDef.props.onConfirmed();
-      }
-
-      // Group becomes ONE Execute component with group name as label
-      const executeComponents = (
-        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
-      ).mock.calls
-        .slice(2)
-        .map((call) => call[0] as ComponentDefinition)
-        .filter((def) => def.name === ComponentName.Execute);
-
-      expect(executeComponents).toHaveLength(1);
-      const executeProps = executeComponents[0].props;
-      expect(executeProps.label).toBe('Complete workflow');
-      expect(executeProps.tasks).toHaveLength(3);
-    });
-
     it('handles multiple Groups with different subtask types', () => {
       const tasks = [
         {
@@ -1925,7 +2045,7 @@ describe('Task Router', () => {
       );
     });
 
-    it('creates one Execute component per Group with group name as label', () => {
+    it('batches Execute subtasks per Group with group labels', () => {
       const tasks = [
         {
           action: 'Deploy frontend',
@@ -1993,7 +2113,7 @@ describe('Task Router', () => {
         confirmDef.props.onConfirmed();
       }
 
-      // Each group becomes ONE Execute component with its tasks
+      // Execute subtasks batched per Group - 2 Execute components
       const executeComponents = (
         workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls
@@ -2001,14 +2121,14 @@ describe('Task Router', () => {
         .map((call) => call[0] as ComponentDefinition)
         .filter((def) => def.name === ComponentName.Execute);
 
-      // 2 groups = 2 Execute components
+      // 2 groups = 2 Execute components (subtasks batched within each)
       expect(executeComponents).toHaveLength(2);
 
-      // Verify labels are group names
-      const labels = executeComponents.map((c) => c.props.label);
-      expect(labels).toEqual(['Deploy frontend', 'Deploy backend']);
+      // First Execute has frontend label, second has backend label
+      expect(executeComponents[0].props.label).toBe('Deploy frontend');
+      expect(executeComponents[1].props.label).toBe('Deploy backend');
 
-      // Verify each has 3 tasks
+      // Each Execute has 3 tasks (all subtasks batched together)
       expect(executeComponents[0].props.tasks).toHaveLength(3);
       expect(executeComponents[1].props.tasks).toHaveLength(3);
     });
@@ -2080,10 +2200,10 @@ describe('Task Router', () => {
         .slice(2) // Skip Schedule and Confirm
         .map((call) => call[0] as ComponentDefinition);
 
-      // Groups preserved: Answer, Execute (frontend), Execute (backend), Answer
+      // Subtasks batched per Group: Answer, Execute (frontend), Execute (backend), Answer
       expect(components).toHaveLength(4);
 
-      // Verify order is preserved: Answer, Execute, Execute, Answer
+      // Verify order is preserved
       expect(components[0].name).toBe(ComponentName.Answer);
       expect(components[1].name).toBe(ComponentName.Execute);
       expect(components[2].name).toBe(ComponentName.Execute);
@@ -2104,6 +2224,14 @@ describe('Task Router', () => {
       expect((components[2].props as ExecuteDefinitionProps).label).toBe(
         'Deploy backend'
       );
+
+      // Verify Execute components have batched subtasks
+      expect(
+        (components[1].props as ExecuteDefinitionProps).tasks
+      ).toHaveLength(2);
+      expect(
+        (components[2].props as ExecuteDefinitionProps).tasks
+      ).toHaveLength(2);
     });
 
     it('groups flattened tasks by type and routes each group', () => {
@@ -2379,7 +2507,7 @@ describe('Task Router', () => {
       expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
     });
 
-    it('filters Ignore tasks early from Groups', () => {
+    it('shows Ignore tasks in Schedule but filters them from execution', () => {
       // Create tasks with Ignore type at top level
       const tasksWithIgnore = [
         { action: 'Execute 1', type: TaskType.Execute, config: [] },
@@ -2401,20 +2529,251 @@ describe('Task Router', () => {
         false
       );
 
-      // Should filter out Ignore task before creating Plan
-      // Plan should only contain Execute tasks
+      // Schedule should show ALL tasks including Ignore for display
       const scheduleDef = (
         workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
       ).mock.calls[0][0] as ComponentDefinition;
       expect(scheduleDef.name).toBe(ComponentName.Schedule);
 
-      // Verify filtered tasks only contain Execute tasks
+      // Verify Schedule displays all tasks including Ignore
       const scheduleTasks = (scheduleDef.props as ScheduleDefinitionProps)
         .tasks;
-      expect(scheduleTasks.length).toBe(2);
-      scheduleTasks.forEach((task: Task) => {
-        expect(task.type).toBe(TaskType.Execute);
-      });
+      expect(scheduleTasks.length).toBe(3);
+      expect(scheduleTasks[1].type).toBe(TaskType.Ignore);
+    });
+
+    it('isolates Introspect tasks before Execute tasks', () => {
+      // Bug fix test: "pls introspect and test memory" should work
+      const tasks = [
+        { action: 'List capabilities', type: TaskType.Introspect, config: [] },
+        { action: 'Test memory', type: TaskType.Execute, config: [] },
+      ];
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
+
+      routeTasksWithConfirm(
+        tasks,
+        'Introspect and test',
+        service,
+        'introspect and test memory',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Simulate Schedule and Confirm completing
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Get all routed components
+      const components = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls
+        .slice(2)
+        .map((call) => call[0] as ComponentDefinition);
+
+      // Should have both Introspect and Execute components
+      expect(components).toHaveLength(2);
+      expect(components[0].name).toBe(ComponentName.Introspect);
+      expect(components[1].name).toBe(ComponentName.Execute);
+    });
+
+    it('isolates Config tasks before Execute tasks', () => {
+      // Bug fix test: "pls config and test memory" should work
+      const tasks = [
+        {
+          action: 'Set API key',
+          type: TaskType.Config,
+          params: { key: 'api.key' },
+          config: [],
+        },
+        { action: 'Test memory', type: TaskType.Execute, config: [] },
+      ];
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
+
+      routeTasksWithConfirm(
+        tasks,
+        'Config and test',
+        service,
+        'config and test memory',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Simulate Schedule and Confirm completing
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Get all routed components
+      const components = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls
+        .slice(2)
+        .map((call) => call[0] as ComponentDefinition);
+
+      // Should have both Config and Execute components
+      expect(components).toHaveLength(2);
+      expect(components[0].name).toBe(ComponentName.Config);
+      expect(components[1].name).toBe(ComponentName.Execute);
+    });
+
+    it('keeps each explicit Group isolated even when consecutive', () => {
+      // Two Execute Groups should NOT be merged into one TaskGroup
+      const tasks = [
+        {
+          action: 'Deploy Alpha',
+          type: TaskType.Group,
+          subtasks: [
+            { action: 'Build Alpha', type: TaskType.Execute, config: [] },
+          ],
+        },
+        {
+          action: 'Deploy Beta',
+          type: TaskType.Group,
+          subtasks: [
+            { action: 'Build Beta', type: TaskType.Execute, config: [] },
+          ],
+        },
+      ];
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
+
+      routeTasksWithConfirm(
+        tasks,
+        'Deploy both',
+        service,
+        'deploy alpha and beta',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Simulate Schedule and Confirm completing
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Get Execute components
+      const executeComponents = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls
+        .slice(2)
+        .map((call) => call[0] as ComponentDefinition)
+        .filter((def) => def.name === ComponentName.Execute);
+
+      // Should be 2 separate Execute components (not merged into 1)
+      expect(executeComponents).toHaveLength(2);
+
+      // Each with its own label
+      expect(executeComponents[0].props.label).toBe('Deploy Alpha');
+      expect(executeComponents[1].props.label).toBe('Deploy Beta');
+
+      // Each with its own tasks
+      expect(executeComponents[0].props.tasks).toHaveLength(1);
+      expect(executeComponents[1].props.tasks).toHaveLength(1);
+    });
+
+    it('isolates Groups from standalone Execute tasks', () => {
+      const tasks = [
+        {
+          action: 'Deploy project',
+          type: TaskType.Group,
+          subtasks: [
+            { action: 'Build project', type: TaskType.Execute, config: [] },
+          ],
+        },
+        { action: 'Run tests', type: TaskType.Execute, config: [] },
+      ];
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+      const service = {} as LLMService;
+
+      routeTasksWithConfirm(
+        tasks,
+        'Deploy and test',
+        service,
+        'deploy project and run tests',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Simulate Schedule and Confirm completing
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Get Execute components
+      const executeComponents = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls
+        .slice(2)
+        .map((call) => call[0] as ComponentDefinition)
+        .filter((def) => def.name === ComponentName.Execute);
+
+      // Should be 2 separate Execute components
+      expect(executeComponents).toHaveLength(2);
+
+      // First is the Group with label
+      expect(executeComponents[0].props.label).toBe('Deploy project');
+
+      // Second is standalone (no label)
+      expect(executeComponents[1].props.label).toBeUndefined();
     });
   });
 
@@ -2688,7 +3047,7 @@ describe('Task Router', () => {
       expect(lastProps.upcoming).toEqual([]);
     });
 
-    it('does not include non-Execute/Answer tasks in upcoming', () => {
+    it('includes all task types in upcoming display', () => {
       const tasks = [
         { action: 'Install deps', type: TaskType.Execute, config: [] },
         { action: 'List skills', type: TaskType.Introspect, config: [] },
@@ -2733,9 +3092,9 @@ describe('Task Router', () => {
         .map((call) => call[0] as ComponentDefinition)
         .filter((def) => def.name === ComponentName.Execute);
 
-      // First Execute should only see 'Run tests' (not Introspect)
+      // First Execute sees all remaining tasks including Introspect
       const firstProps = executeComponents[0].props;
-      expect(firstProps.upcoming).toEqual(['Run tests']);
+      expect(firstProps.upcoming).toEqual(['List skills', 'Run tests']);
 
       // Second Execute should have empty upcoming
       const secondProps = executeComponents[1].props;

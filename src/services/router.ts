@@ -31,6 +31,21 @@ import {
 import { validateExecuteTasks } from './validator.js';
 
 /**
+ * Task Routing Architecture
+ *
+ * Flow: Command -> SCHEDULE -> routeTasksWithConfirm() -> extractTaskGroups()
+ *       -> routeAllGroups() -> routeGroupTasks() -> Workflow queue
+ *
+ * Key Concepts:
+ * - TaskGroup: Logical grouping for sequential processing
+ * - Routing Category: Determines which tasks can be grouped together
+ * - Two-Phase Routing: Config/Introspect first, then Execute/Answer
+ *
+ * Isolation Principle: Explicit Group tasks always become their own
+ * TaskGroup, preventing cross-contamination between user-defined groups.
+ */
+
+/**
  * Flatten inner task structure completely - removes all nested groups.
  * Used internally to flatten subtasks within a top-level group.
  */
@@ -148,13 +163,13 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
 ): void {
   if (tasks.length === 0) return;
 
-  // Filter out ignore and discard tasks early
-  const validTasks = tasks.filter(
+  // Check executable tasks (ignore/discard are shown but not executed)
+  const executableTasks = tasks.filter(
     (task) => task.type !== TaskType.Ignore && task.type !== TaskType.Discard
   );
 
-  // Check if no valid tasks remain after filtering
-  if (validTasks.length === 0) {
+  // Check if no executable tasks remain after filtering
+  if (executableTasks.length === 0) {
     // Use action from first ignore task if available, otherwise generic message
     const ignoreTask = tasks.find((task) => task.type === TaskType.Ignore);
     const message = ignoreTask?.action
@@ -166,7 +181,7 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
     return;
   }
 
-  const operation = getOperationName(validTasks);
+  const operation = getOperationName(executableTasks);
 
   // Create routing context for downstream functions
   const context: RoutingContext = {
@@ -179,16 +194,18 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
   if (hasDefineTask) {
     // Has DEFINE tasks - add Schedule to queue for user selection
     // Refinement flow will call this function again with refined tasks
-    const scheduleDefinition = createSchedule({ message, tasks: validTasks });
+    // Show all tasks (including ignore) for display
+    const scheduleDefinition = createSchedule({ message, tasks });
     workflowHandlers.addToQueue(scheduleDefinition);
   } else {
     // No DEFINE tasks - Schedule auto-completes and adds Confirm to queue
     // When Schedule activates, Command moves to timeline
     // When Schedule completes, it moves to pending
     // When Confirm activates, Schedule stays pending (visible for context)
+    // Show all tasks (including ignore) for display
     const scheduleDefinition = createSchedule({
       message,
-      tasks: validTasks,
+      tasks,
       onSelectionConfirmed: () => {
         // Schedule completed - add Confirm to queue
         const confirmDefinition = createConfirm({
@@ -196,7 +213,8 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
           onConfirmed: () => {
             // User confirmed - complete both Confirm and Schedule, then route
             lifecycleHandlers.completeActiveAndPending();
-            executeTasksAfterConfirm(validTasks, context);
+            // Only execute non-ignore/non-discard tasks
+            executeTasksAfterConfirm(executableTasks, context);
           },
           onCancelled: () => {
             // User cancelled - complete both Confirm and Schedule, then show cancellation
@@ -315,25 +333,216 @@ function executeTasksAfterConfirm(
 }
 
 /**
- * Task types that should appear in the upcoming display
- */
-const UPCOMING_TASK_TYPES = [TaskType.Execute, TaskType.Answer, TaskType.Group];
-
-/**
- * Collect action names for tasks that appear in upcoming display.
- * Groups are included with their group name (not individual subtask names).
+ * Collect action names for upcoming display.
+ * All task types are shown so users see the full queue of work ahead.
  */
 function collectUpcomingNames(tasks: ScheduledTask[]): string[] {
-  return tasks
-    .filter((t) => UPCOMING_TASK_TYPES.includes(t.type))
-    .map((t) => t.action);
+  return tasks.map((t) => t.action);
+}
+
+/**
+ * Represents a logical task group for sequential processing
+ */
+export interface TaskGroup {
+  name: string;
+  tasks: ScheduledTask[];
+}
+
+/**
+ * Get the routing category for a task type.
+ * Tasks in the same category can be grouped together.
+ * Config and Introspect are special categories that should be isolated.
+ */
+export function getRoutingCategory(task: ScheduledTask): string {
+  // Groups with subtasks get their own category (based on subtask types)
+  if (
+    task.type === TaskType.Group &&
+    task.subtasks &&
+    task.subtasks.length > 0
+  ) {
+    // Check what types of subtasks this group has
+    const hasConfig = task.subtasks.some((t) => t.type === TaskType.Config);
+    const hasIntrospect = task.subtasks.some(
+      (t) => t.type === TaskType.Introspect
+    );
+    const hasExecute = task.subtasks.some((t) => t.type === TaskType.Execute);
+    const hasAnswer = task.subtasks.some((t) => t.type === TaskType.Answer);
+
+    // Mixed types get unique category to ensure isolation
+    const typeCount =
+      (hasConfig ? 1 : 0) +
+      (hasIntrospect ? 1 : 0) +
+      (hasExecute ? 1 : 0) +
+      (hasAnswer ? 1 : 0);
+    if (typeCount > 1) {
+      return `mixed:${task.action}`;
+    }
+
+    // Single type groups use that type's category
+    if (hasConfig) return 'config';
+    if (hasIntrospect) return 'introspect';
+    if (hasExecute) return 'execute';
+    if (hasAnswer) return 'answer';
+    return 'group';
+  }
+
+  // Standalone tasks use their type as category
+  switch (task.type) {
+    case TaskType.Config:
+      return 'config';
+    case TaskType.Introspect:
+      return 'introspect';
+    case TaskType.Execute:
+      return 'execute';
+    case TaskType.Answer:
+      return 'answer';
+    default:
+      return task.type;
+  }
+}
+
+/**
+ * Extract logical task groups from a flat task list.
+ * Each explicit Group (TaskType.Group) becomes its own TaskGroup for isolation.
+ * Consecutive standalone tasks of the same routing category are grouped together.
+ */
+export function extractTaskGroups(tasks: ScheduledTask[]): TaskGroup[] {
+  const groups: TaskGroup[] = [];
+  let currentGroup: TaskGroup | null = null;
+  let currentCategory: string | null = null;
+
+  for (const task of tasks) {
+    // Skip empty groups
+    if (
+      task.type === TaskType.Group &&
+      (!task.subtasks || task.subtasks.length === 0)
+    ) {
+      continue;
+    }
+
+    // Explicit Groups always become their own TaskGroup for isolation
+    if (task.type === TaskType.Group) {
+      // Save current group if exists
+      if (currentGroup !== null) {
+        groups.push(currentGroup);
+        currentGroup = null;
+        currentCategory = null;
+      }
+      // Create standalone TaskGroup for this Group
+      groups.push({
+        name: task.action,
+        tasks: [task],
+      });
+      continue;
+    }
+
+    const category = getRoutingCategory(task);
+
+    // Start new group when category changes (or first task)
+    if (currentGroup === null || category !== currentCategory) {
+      if (currentGroup !== null) {
+        groups.push(currentGroup);
+      }
+      currentGroup = {
+        name: task.action,
+        tasks: [task],
+      };
+      currentCategory = category;
+    } else {
+      // Same category - add to current group
+      currentGroup.tasks.push(task);
+    }
+  }
+
+  // Don't forget the last group
+  if (currentGroup !== null) {
+    groups.push(currentGroup);
+  }
+
+  return groups;
+}
+
+/**
+ * Route all groups in order, calculating correct upcoming for each.
+ * Groups are processed sequentially by the Workflow's queue mechanism.
+ */
+function routeAllGroups(groups: TaskGroup[], context: RoutingContext): void {
+  for (let i = 0; i < groups.length; i++) {
+    const group = groups[i];
+
+    // Calculate upcoming from LATER groups (not current group)
+    const laterGroups = groups.slice(i + 1);
+    const laterUpcoming = laterGroups.flatMap((g) =>
+      collectUpcomingNames(g.tasks)
+    );
+
+    // Route this group's tasks with upcoming from later groups
+    routeGroupTasks(group, context, laterUpcoming);
+  }
+}
+
+/**
+ * Route all tasks within a single group in the order received from LLM.
+ * Standalone tasks become individual components.
+ * Group subtasks are batched by type (Execute subtasks together, etc.).
+ */
+function routeGroupTasks(
+  group: TaskGroup,
+  context: RoutingContext,
+  groupUpcoming: string[]
+): void {
+  const tasks = group.tasks;
+  const withinGroupUpcoming = collectUpcomingNames(tasks);
+
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i];
+    const taskType = task.type;
+
+    // Calculate upcoming: remaining tasks in this group + tasks from later groups
+    const remainingInGroup = withinGroupUpcoming.slice(i + 1);
+    const taskUpcoming = [...remainingInGroup, ...groupUpcoming];
+
+    // Handle Group tasks with subtasks - batch subtasks by type
+    if (taskType === TaskType.Group && task.subtasks) {
+      // Batch Execute subtasks together (sent to LLM as single request)
+      const executeSubtasks = task.subtasks.filter(
+        (t) => t.type === TaskType.Execute
+      );
+      if (executeSubtasks.length > 0) {
+        routeExecuteTasks(executeSubtasks, context, taskUpcoming, task.action);
+      }
+
+      // Route Answer subtasks (each becomes its own component)
+      const answerSubtasks = task.subtasks.filter(
+        (t) => t.type === TaskType.Answer
+      );
+      if (answerSubtasks.length > 0) {
+        routeAnswerTasks(answerSubtasks, context, taskUpcoming);
+      }
+
+      // Route other subtask types individually
+      for (const subtask of task.subtasks) {
+        if (
+          subtask.type !== TaskType.Execute &&
+          subtask.type !== TaskType.Answer
+        ) {
+          routeTasksByType(subtask.type, [subtask], context, taskUpcoming);
+        }
+      }
+    } else if (taskType === TaskType.Execute) {
+      routeExecuteTasks([task], context, taskUpcoming);
+    } else if (taskType === TaskType.Answer) {
+      routeAnswerTasks([task], context, taskUpcoming);
+    } else {
+      routeTasksByType(taskType, [task], context, taskUpcoming);
+    }
+  }
 }
 
 /**
  * Route tasks after config is complete (or when no config is needed)
- * Processes task list, routing each task type to its handler.
- * Top-level groups are preserved: their subtasks are routed with the group name.
- * Config tasks are grouped together; Execute/Answer are routed individually.
+ * Processes task groups in order - groups with different task types are
+ * kept separate to ensure proper lifecycle handling.
  */
 function routeTasksAfterConfig(
   tasks: ScheduledTask[],
@@ -341,73 +550,12 @@ function routeTasksAfterConfig(
 ): void {
   if (tasks.length === 0) return;
 
-  // Collect all upcoming names for display (Execute, Answer, and Group tasks)
-  const allUpcomingNames = collectUpcomingNames(tasks);
-  let upcomingIndex = 0;
+  // Extract logical task groups
+  const groups = extractTaskGroups(tasks);
+  if (groups.length === 0) return;
 
-  // Task types that should be grouped together (one component for all tasks)
-  const groupedTypes = [TaskType.Config, TaskType.Introspect];
-
-  // Route grouped task types together (collect from all tasks including subtasks)
-  for (const groupedType of groupedTypes) {
-    const typeTasks: Task[] = [];
-    for (const task of tasks) {
-      if (task.type === groupedType) {
-        typeTasks.push(task);
-      } else if (task.type === TaskType.Group && task.subtasks) {
-        typeTasks.push(...task.subtasks.filter((t) => t.type === groupedType));
-      }
-    }
-    if (typeTasks.length > 0) {
-      routeTasksByType(groupedType, typeTasks, context, []);
-    }
-  }
-
-  // Process Execute, Answer, and Group tasks individually (with upcoming support)
-  for (let i = 0; i < tasks.length; i++) {
-    const task = tasks[i];
-    const taskType = task.type;
-
-    // Skip grouped task types (already routed above)
-    if (groupedTypes.includes(taskType)) continue;
-
-    if (taskType === TaskType.Group && task.subtasks) {
-      // Route group's subtasks - Execute tasks get group label, others routed normally
-      const upcoming = allUpcomingNames.slice(upcomingIndex + 1);
-      upcomingIndex++;
-
-      // Separate subtasks by type
-      const executeSubtasks = task.subtasks.filter(
-        (t) => t.type === TaskType.Execute
-      );
-      const answerSubtasks = task.subtasks.filter(
-        (t) => t.type === TaskType.Answer
-      );
-
-      // Route Execute subtasks with group name as label
-      if (executeSubtasks.length > 0) {
-        routeExecuteTasks(executeSubtasks, context, upcoming, task.action);
-      }
-
-      // Route Answer subtasks individually
-      if (answerSubtasks.length > 0) {
-        routeAnswerTasks(answerSubtasks, context, upcoming);
-      }
-    } else if (taskType === TaskType.Execute) {
-      // Calculate upcoming for this Execute task
-      const upcoming = allUpcomingNames.slice(upcomingIndex + 1);
-      upcomingIndex++;
-      routeExecuteTasks([task], context, upcoming);
-    } else if (taskType === TaskType.Answer) {
-      // Calculate upcoming for this Answer task
-      const upcoming = allUpcomingNames.slice(upcomingIndex + 1);
-      upcomingIndex++;
-      routeTasksByType(taskType, [task], context, upcoming);
-    } else {
-      // For other types (Report, etc.), route without upcoming
-      routeTasksByType(taskType, [task], context, []);
-    }
-  }
+  // Route all groups in order
+  routeAllGroups(groups, context);
 }
 
 /**
@@ -447,59 +595,71 @@ function routeIntrospectTasks(
 }
 
 /**
- * Route Config tasks - extracts keys, caches labels, creates Config component
+ * Route Config tasks - extracts keys or uses query, creates Config component
  */
 function routeConfigTasks(
   tasks: Task[],
   context: RoutingContext,
   _upcoming: string[]
 ): void {
+  // Extract specific keys from task params
   const configKeys = tasks
     .map((task) => task.params?.key as string | undefined)
     .filter((key): key is string => key !== undefined);
 
-  // Extract and cache labels from task descriptions
-  // Only cache labels for dynamically discovered keys (not in schema)
-  const schema = getConfigSchema();
-  const labels: Record<string, string> = {};
-  for (const task of tasks) {
-    const key = task.params?.key as string | undefined;
-    if (key && task.action && !(key in schema)) {
-      labels[key] = task.action;
+  // Handler for saving config values
+  const onFinished = (config: Record<string, string>) => {
+    try {
+      const configBySection = unflattenConfig(config);
+      for (const [section, sectionConfig] of Object.entries(configBySection)) {
+        saveConfig(section, sectionConfig);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to save configuration';
+      throw new Error(errorMessage);
+    }
+  };
+
+  const onAborted = (operation: string) => {
+    context.requestHandlers.onAborted(operation);
+  };
+
+  if (configKeys.length > 0) {
+    // Has specific keys - create steps directly
+    const schema = getConfigSchema();
+    const labels: Record<string, string> = {};
+    for (const task of tasks) {
+      const key = task.params?.key as string | undefined;
+      if (key && task.action && !(key in schema)) {
+        labels[key] = task.action;
+      }
+    }
+    if (Object.keys(labels).length > 0) {
+      saveConfigLabels(labels);
+    }
+
+    context.workflowHandlers.addToQueue(
+      createConfig({
+        steps: createConfigStepsFromSchema(configKeys),
+        onFinished,
+        onAborted,
+      })
+    );
+  } else {
+    // No keys - use query (Config will resolve via CONFIGURE tool)
+    const query = tasks[0]?.params?.query as string | undefined;
+    if (query) {
+      context.workflowHandlers.addToQueue(
+        createConfig({
+          query,
+          service: context.service,
+          onFinished,
+          onAborted,
+        })
+      );
     }
   }
-  if (Object.keys(labels).length > 0) {
-    saveConfigLabels(labels);
-  }
-
-  context.workflowHandlers.addToQueue(
-    createConfig({
-      steps: createConfigStepsFromSchema(configKeys),
-      onFinished: (config: Record<string, string>) => {
-        // Save config - Config component will handle completion and feedback
-        try {
-          // Convert flat dotted keys to nested structure grouped by section
-          const configBySection = unflattenConfig(config);
-
-          // Save each section
-          for (const [section, sectionConfig] of Object.entries(
-            configBySection
-          )) {
-            saveConfig(section, sectionConfig);
-          }
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : 'Failed to save configuration';
-          throw new Error(errorMessage);
-        }
-      },
-      onAborted: (operation: string) => {
-        context.requestHandlers.onAborted(operation);
-      },
-    })
-  );
 }
 
 /**

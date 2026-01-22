@@ -12,6 +12,7 @@ export interface ConfigState {
   values: Record<string, string>;
   completedStep: number;
   selectedIndex: number;
+  steps?: ConfigStep[];
 }
 
 /**

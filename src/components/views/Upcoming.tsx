@@ -52,9 +52,10 @@ export const Upcoming = ({
         const isLast = index === items.length - 1;
         const symbol = isLast ? BRANCH_LAST : BRANCH_MIDDLE;
         return (
-          <Box key={index} marginLeft={1}>
+          <Box key={index} marginLeft={1} gap={1}>
+            <Text color={Palette.DarkGray}>{symbol}</Text>
             <Text color={Palette.DarkGray} strikethrough={strikethrough}>
-              {symbol} {name}
+              {name}
             </Text>
           </Box>
         );

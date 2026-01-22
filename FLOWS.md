@@ -278,28 +278,50 @@ flowchart TD
 ### Overview
 
 After schedule confirmation, tasks are routed to appropriate handlers based on
-type.
+type using a TaskGroup-based architecture.
+
+**Routing Architecture:**
+
+Tasks are organized into logical TaskGroups before routing:
+
+1. **TaskGroup**: A logical grouping for sequential processing
+2. **Routing Category**: Determines which tasks can be grouped together
+   - `config` - Configuration tasks
+   - `introspect` - Introspection tasks
+   - `execute` - Execution tasks
+   - `answer` - Answer tasks
+   - `mixed:{action}` - Groups with mixed subtask types
+3. **Isolation Principle**: Explicit Group tasks (TaskType.Group) always become
+   their own TaskGroup, preventing cross-contamination between user-defined
+   groups
 
 **Routing Logic:**
 
 1. Confirm component completes
-2. Execution handler routes tasks by type:
-   - Configure tasks → Config component (grouped)
-   - Introspect tasks → Introspection component (grouped)
+2. Tasks extracted into TaskGroups:
+   - Consecutive standalone tasks of same category → grouped together
+   - Explicit Group tasks → isolated into separate TaskGroup
+   - Mixed type groups → unique category ensures isolation
+3. TaskGroups processed sequentially:
+   - Configure tasks → Config component
+   - Introspect tasks → Introspection component
    - Answer tasks → Answer component (one per question)
    - Execute tasks → Execute component (with optional validation)
-   - Group tasks → Subtasks routed to appropriate handlers
-3. Mixed task types are supported (each type routed separately)
+   - Group subtasks → Routed individually with group name as label
 
 ```mermaid
 flowchart TD
-    Start([Confirm component completes]) --> RouteTypes{Route by<br/>task type}
+    Start([Confirm component completes]) --> Extract[Extract TaskGroups<br/>by routing category]
+
+    Extract --> ProcessGroups{Process<br/>TaskGroups}
+
+    ProcessGroups --> RouteTypes{Route by<br/>task type}
 
     RouteTypes -->|configure| ConfigFlow[Config Flow]
     RouteTypes -->|introspect| IntrospectFlow[Introspection Flow]
     RouteTypes -->|answer| AnswerFlow[Answer Flow]
     RouteTypes -->|execute| ExecuteFlow[Execute Flow]
-    RouteTypes -->|group| GroupFlow[Route subtasks]
+    RouteTypes -->|group| GroupFlow[Route subtasks<br/>with group label]
 
     GroupFlow --> RouteTypes
 
@@ -309,6 +331,7 @@ flowchart TD
     ExecuteFlow --> Exit4[Exit]
 
     style Start fill:#e1f5ff
+    style Extract fill:#fff5e1
     style Exit1 fill:#e1ffe1
     style Exit2 fill:#e1ffe1
     style Exit3 fill:#e1ffe1

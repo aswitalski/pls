@@ -3,6 +3,7 @@ import { render } from 'ink-testing-library';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ComponentStatus, ConfigState } from '../../../src/types/components.js';
+import { TaskType } from '../../../src/types/types.js';
 
 import { AnthropicModel } from '../../../src/configuration/types.js';
 
@@ -17,6 +18,7 @@ import {
   Keys,
   createRequestHandlers,
   createLifecycleHandlers,
+  createMockAnthropicService,
 } from '../../test-utils.js';
 
 describe('Config component interaction flows', () => {
@@ -702,11 +704,14 @@ describe('Config component interaction flows', () => {
         'onFinished',
         'completeActive',
       ]);
-      expect(stateHandlers.onCompleted).toHaveBeenCalledWith({
-        values: { 'settings.debug': 'true' },
-        completedStep: 1,
-        selectedIndex: 0,
-      });
+      expect(stateHandlers.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          values: { 'settings.debug': 'true' },
+          completedStep: 1,
+          selectedIndex: 0,
+          steps,
+        })
+      );
     });
 
     it('completion success: calls handlers.completeActive with success feedback', () => {
@@ -880,6 +885,333 @@ describe('Config component interaction flows', () => {
       // Should show 'yes' (the changed value), not 'no' (the default)
       expect(output).toContain('yes');
       expect(output).not.toContain('no');
+    });
+  });
+
+  describe('Query-based configuration', () => {
+    it('shows loading indicator while resolving query', async () => {
+      // Create a service that delays resolution
+      let resolvePromise: () => void;
+      const pendingPromise = new Promise<void>((resolve) => {
+        resolvePromise = resolve;
+      });
+
+      const service = {
+        processWithTool: vi.fn(() =>
+          pendingPromise.then(() => ({
+            message: '',
+            tasks: [
+              {
+                action: 'API Key',
+                type: TaskType.Config,
+                params: { key: 'api.key' },
+              },
+            ],
+          }))
+        ),
+      };
+
+      const { lastFrame } = render(
+        <Config
+          query="api settings"
+          service={
+            service as unknown as ReturnType<typeof createMockAnthropicService>
+          }
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Should show loading indicator
+      expect(lastFrame()).toContain('Resolving configuration...');
+
+      // Cleanup
+      resolvePromise!();
+    });
+
+    it('calls CONFIGURE tool with query when no steps provided', async () => {
+      const processWithToolSpy = vi.fn().mockResolvedValue({
+        message: '',
+        tasks: [
+          {
+            action: 'Enter your API key',
+            type: TaskType.Config,
+            params: { key: 'api.key' },
+          },
+        ],
+      });
+
+      const service = {
+        processWithTool: processWithToolSpy,
+      } as unknown as ReturnType<typeof createMockAnthropicService>;
+
+      render(
+        <Config
+          query="api settings"
+          service={service}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Wait for async resolution
+      await vi.waitFor(() => {
+        expect(processWithToolSpy).toHaveBeenCalledWith(
+          'api settings',
+          'configure'
+        );
+      });
+    });
+
+    it('resolves query to config steps via CONFIGURE tool', async () => {
+      const service = createMockAnthropicService({
+        tasks: [
+          {
+            action: 'Enter your API key',
+            type: TaskType.Config,
+            params: { key: 'api.key' },
+          },
+          {
+            action: 'Choose model',
+            type: TaskType.Config,
+            params: { key: 'api.model' },
+          },
+        ],
+      });
+
+      const { lastFrame } = render(
+        <Config
+          query="api settings"
+          service={service}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Wait for resolution and step rendering
+      await vi.waitFor(() => {
+        const output = lastFrame();
+        expect(output).toContain('Enter your API key');
+      });
+    });
+
+    it('handles error when no config tasks match query', async () => {
+      const lifecycleHandlers = createLifecycleHandlers({
+        completeActive: vi.fn(),
+      });
+
+      const service = createMockAnthropicService({
+        tasks: [], // No config tasks returned
+      });
+
+      render(
+        <Config
+          query="unknown setting"
+          service={service}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={lifecycleHandlers}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Wait for error handling
+      await vi.waitFor(() => {
+        expect(lifecycleHandlers.completeActive).toHaveBeenCalledWith(
+          expect.objectContaining({
+            props: expect.objectContaining({
+              message: 'No configuration settings matched your query.',
+            }),
+          })
+        );
+      });
+    });
+
+    it('includes resolved steps in state on abort', async () => {
+      // Test that steps are preserved in state even when aborting
+      // This verifies the bug fix where query-resolved steps weren't saved
+      const stateHandlers = createRequestHandlers<ConfigState>({
+        onCompleted: vi.fn(),
+      });
+      const onAborted = vi.fn();
+
+      const service = createMockAnthropicService({
+        tasks: [
+          {
+            action: 'Enable feature',
+            type: TaskType.Config,
+            params: { key: 'feature.enabled' },
+          },
+        ],
+      });
+
+      const { stdin, lastFrame } = render(
+        <Config
+          query="feature settings"
+          service={service}
+          requestHandlers={stateHandlers}
+          lifecycleHandlers={createLifecycleHandlers()}
+          onAborted={onAborted}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Wait for resolution
+      await vi.waitFor(() => {
+        expect(lastFrame()).toContain('Enable feature');
+      });
+
+      // Abort the config (Escape key)
+      stdin.write(Keys.Escape);
+
+      // Verify steps are included in state on abort
+      await vi.waitFor(() => {
+        expect(stateHandlers.onCompleted).toHaveBeenCalledWith(
+          expect.objectContaining({
+            steps: expect.arrayContaining([
+              expect.objectContaining({
+                key: 'enabled',
+              }),
+            ]),
+          })
+        );
+      });
+    });
+
+    it('skips query resolution when steps are provided', () => {
+      const processWithToolSpy = vi.fn();
+      const service = {
+        processWithTool: processWithToolSpy,
+      } as unknown as ReturnType<typeof createMockAnthropicService>;
+
+      const steps: ConfigStep[] = [
+        {
+          description: 'API Key',
+          key: 'apiKey',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+      ];
+
+      render(
+        <Config
+          steps={steps}
+          query="should be ignored"
+          service={service}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Should not call service when steps are provided
+      expect(processWithToolSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Timeline rendering with state steps', () => {
+    it('displays config entries from state.steps in timeline', () => {
+      // This tests the bug fix where query-resolved configs weren't showing
+      // in the timeline because ViewComponent only read props.steps
+
+      const resolvedSteps: ConfigStep[] = [
+        {
+          description: 'API Key',
+          key: 'api.key',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+        {
+          description: 'Model Selection',
+          key: 'api.model',
+          type: StepType.Text,
+          value: 'haiku',
+          validate: () => true,
+        },
+      ];
+
+      const { lastFrame } = render(
+        <ConfigView
+          steps={resolvedSteps}
+          state={{
+            values: {
+              'api.key': 'sk-test-key-123',
+              'api.model': 'sonnet',
+            },
+            completedStep: 2,
+            selectedIndex: 0,
+            steps: resolvedSteps,
+          }}
+          status={ComponentStatus.Done}
+        />
+      );
+
+      const output = lastFrame();
+      // Should display both configured values
+      expect(output).toContain('API Key');
+      expect(output).toContain('sk-test-key-123');
+      expect(output).toContain('Model Selection');
+      expect(output).toContain('sonnet');
+    });
+
+    it('shows all completed steps when config is done', () => {
+      const steps: ConfigStep[] = [
+        {
+          description: 'Username',
+          key: 'user.name',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+        {
+          description: 'Email',
+          key: 'user.email',
+          type: StepType.Text,
+          value: null,
+          validate: () => true,
+        },
+        {
+          description: 'Notifications',
+          key: 'user.notifications',
+          type: StepType.Selection,
+          options: [
+            { label: 'enabled', value: 'true' },
+            { label: 'disabled', value: 'false' },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+      ];
+
+      const { lastFrame } = render(
+        <ConfigView
+          steps={steps}
+          state={{
+            values: {
+              'user.name': 'testuser',
+              'user.email': 'test@example.com',
+              'user.notifications': 'true',
+            },
+            completedStep: 3,
+            selectedIndex: 0,
+            steps,
+          }}
+          status={ComponentStatus.Done}
+        />
+      );
+
+      const output = lastFrame();
+      // All three completed entries should be visible
+      expect(output).toContain('Username');
+      expect(output).toContain('testuser');
+      expect(output).toContain('Email');
+      expect(output).toContain('test@example.com');
+      expect(output).toContain('Notifications');
+      expect(output).toContain('enabled');
     });
   });
 });

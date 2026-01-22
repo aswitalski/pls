@@ -96,12 +96,14 @@ export const ControllerComponent = memo(function ControllerComponent({
   switch (def.name) {
     case ComponentName.Config: {
       const {
-        props: { steps, onFinished, onAborted },
+        props: { steps, query, service, onFinished, onAborted },
         status,
       } = def;
       return (
         <Config
           steps={steps}
+          query={query}
+          service={service}
           onFinished={onFinished}
           onAborted={onAborted}
           requestHandlers={requestHandlers}
@@ -298,10 +300,12 @@ export const ViewComponent = memo(function ViewComponent({
 
     case ComponentName.Config: {
       const {
-        props: { steps },
+        props: { steps: propSteps = [] },
         state,
         status,
       } = def;
+      // Use resolved steps from state if available (for query-based configs)
+      const steps = state.steps ?? propSteps;
       return <ConfigView steps={steps} state={state} status={status} />;
     }
 
@@ -397,6 +401,7 @@ export const ViewComponent = memo(function ViewComponent({
       } = def;
       return <RefinementView text={text} status={status} />;
     }
+
     default:
       throw new Error(
         `Unknown managed component: ${(def as ManagedComponentDefinition).name}`

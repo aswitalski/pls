@@ -54,8 +54,8 @@ vi.mock('../../src/services/process.js', async () => {
   };
 });
 
-const ShortWait = 50;
-const WorkflowWait = 100;
+const ShortWait = 100;
+const WorkflowWait = 150;
 
 describe('Error handling flow', () => {
   const mockApp: App = {
