@@ -45,8 +45,6 @@ export function SubtaskView({
 
   // Apply strikethrough for cancelled and aborted tasks
   const shouldStrikethrough = isCancelled || isAborted;
-  const formatText = (text: string) =>
-    shouldStrikethrough ? text.split('').join('\u0336') + '\u0336' : text;
 
   // Show memory in verbose mode while running
   const showMemory = isVerbose && isRunning && currentMemory !== undefined;
@@ -58,10 +56,8 @@ export function SubtaskView({
     <Box flexDirection="column">
       <Box paddingLeft={2} gap={1}>
         <Text color={colors.icon}>{STATUS_ICONS[status]}</Text>
-        <Text color={colors.description}>
-          {shouldStrikethrough
-            ? formatText(label || command.description)
-            : label || command.description}
+        <Text color={colors.description} strikethrough={shouldStrikethrough}>
+          {label || command.description}
         </Text>
         {showTimeInfo && (
           <Text color={Palette.DarkGray}>({formatDuration(elapsed)})</Text>
