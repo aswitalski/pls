@@ -10,6 +10,7 @@ import { ComponentStatus } from '../../../src/types/components.js';
 import { Palette } from '../../../src/services/colors.js';
 import {
   formatPromptContent,
+  formatSkillsContext,
   PromptDisplay,
 } from '../../../src/services/logger.js';
 import { parseSkillMarkdown } from '../../../src/services/parser.js';
@@ -73,7 +74,7 @@ export function renderCompactPrompt(
     basePrompt,
     formattedSkills,
     PromptDisplay.Summary,
-    definitions
+    formatSkillsContext(definitions)
   );
 
   const box = render(

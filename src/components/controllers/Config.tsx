@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 
-import { ComponentStatus, ConfigProps } from '../../types/components.js';
+import {
+  ComponentDefinition,
+  ComponentStatus,
+  ConfigProps,
+} from '../../types/components.js';
 import { FeedbackType, TaskType } from '../../types/types.js';
 
 import { createFeedback } from '../../services/components.js';
@@ -22,13 +26,18 @@ export {
   StepType,
 } from '../views/Config.js';
 
+interface ResolveResult {
+  steps: ConfigStep[];
+  debug: ComponentDefinition[];
+}
+
 /**
  * Resolve query to config steps via CONFIGURE tool
  */
 async function resolveQueryToSteps(
   query: string,
   service: NonNullable<ConfigProps['service']>
-): Promise<ConfigStep[]> {
+): Promise<ResolveResult> {
   const result = await service.processWithTool(query, 'configure');
 
   const configTasks = result.tasks.filter(
@@ -53,10 +62,13 @@ async function resolveQueryToSteps(
   }
 
   const steps = createConfigStepsFromSchema(keys);
-  return steps.map((step, i) => ({
-    ...step,
-    description: labels[keys[i]] || step.description,
-  }));
+  return {
+    steps: steps.map((step, i) => ({
+      ...step,
+      description: labels[keys[i]] || step.description,
+    })),
+    debug: result.debug || [],
+  };
 }
 
 /**
@@ -73,6 +85,7 @@ export function Config<
     debug = DebugLevel.None,
     requestHandlers,
     lifecycleHandlers,
+    workflowHandlers,
     onFinished,
     onAborted,
   } = props;
@@ -107,12 +120,17 @@ export function Config<
     if (!isActive || !query || !service || initialSteps?.length) return;
 
     resolveQueryToSteps(query, service)
-      .then((resolvedSteps) => {
-        setSteps(resolvedSteps);
+      .then((result) => {
+        // Add debug components to timeline if present
+        if (result.debug.length) {
+          workflowHandlers.addToTimeline(...result.debug);
+        }
+
+        setSteps(result.steps);
         setResolving(false);
         // Initialize values for resolved steps
         const initial: Record<string, string> = {};
-        resolvedSteps.forEach((stepConfig) => {
+        result.steps.forEach((stepConfig) => {
           const configKey = stepConfig.path || stepConfig.key;
           switch (stepConfig.type) {
             case StepType.Text:
@@ -137,7 +155,14 @@ export function Config<
           })
         );
       });
-  }, [isActive, query, service, initialSteps, lifecycleHandlers]);
+  }, [
+    isActive,
+    query,
+    service,
+    initialSteps,
+    lifecycleHandlers,
+    workflowHandlers,
+  ]);
 
   // Update inputValue when step changes
   useEffect(() => {

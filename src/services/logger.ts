@@ -286,7 +286,7 @@ function formatSkillsForDisplay(formattedSkills: string): string {
  *
  * - LLM: Returns header + base instructions + formatted skills (as sent to LLM)
  * - Skills: Returns header + skills with visual separators (no base instructions)
- * - Summary: Returns header + skill summaries (Name, Steps, Execution)
+ * - Summary: Returns header + context (caller-provided summary)
  */
 export function formatPromptContent(
   toolName: string,
@@ -294,7 +294,7 @@ export function formatPromptContent(
   baseInstructions: string,
   formattedSkills: string,
   mode: PromptDisplay,
-  definitions?: SkillDefinition[]
+  context?: string
 ): string {
   switch (mode) {
     case PromptDisplay.LLM: {
@@ -310,12 +310,51 @@ export function formatPromptContent(
 
     case PromptDisplay.Summary: {
       const header = `\nTool: ${toolName}\nCommand: ${command}`;
-      const summary = definitions
-        ? formatSkillsSummary(definitions)
-        : '(no skills)';
-      return joinWithSeparators([header, summary]);
+      return context
+        ? joinWithSeparators([header, context])
+        : joinWithSeparators([header]);
     }
   }
+}
+
+/**
+ * Context for tools that have no skills or custom context
+ */
+export const NO_SKILLS_CONTEXT = '(no skills)';
+
+/**
+ * Format skill definitions as context for debug display
+ * Returns NO_SKILLS_CONTEXT when definitions array is empty
+ */
+export function formatSkillsContext(definitions: SkillDefinition[]): string {
+  if (definitions.length === 0) {
+    return NO_SKILLS_CONTEXT;
+  }
+  return formatSkillsSummary(definitions);
+}
+
+/**
+ * Format config structure as context for debug display
+ */
+export function formatConfigContext(
+  structure: Record<string, unknown>,
+  configuredKeys: string[]
+): string {
+  const structureYaml = Object.entries(structure)
+    .map(([key, desc]) => `${key}: ${String(desc)}`)
+    .join('\n');
+
+  const keysSection =
+    configuredKeys.length > 0
+      ? configuredKeys.map((k) => `- ${k}`).join('\n')
+      : '(none)';
+
+  return (
+    '## Config Structure\n\n' +
+    structureYaml +
+    '\n\n## Configured Keys\n\n' +
+    keysSection
+  );
 }
 
 /**
@@ -326,14 +365,14 @@ export function formatPromptContent(
  * @param command - User command being processed
  * @param baseInstructions - Base tool instructions (without skills)
  * @param formattedSkills - Formatted skills section (as sent to LLM)
- * @param definitions - Parsed skill definitions for summary display
+ * @param context - Context summary to display in debug output
  */
 export function logPrompt(
   toolName: string,
   command: string,
   baseInstructions: string,
   formattedSkills: string,
-  definitions: SkillDefinition[] = []
+  context?: string
 ): ComponentDefinition | null {
   // Write to file at Info or Verbose level (full LLM format)
   if (currentDebugLevel !== DebugLevel.None) {
@@ -359,7 +398,7 @@ export function logPrompt(
     baseInstructions,
     formattedSkills,
     PromptDisplay.Summary,
-    definitions
+    context
   );
 
   // Calculate stats for the full prompt

@@ -11,12 +11,14 @@ import { DebugLevel } from '../../src/configuration/types.js';
 import {
   displayWarning,
   formatPromptContent,
+  formatSkillsContext,
   formatSkillsSummary,
   getDebugLevel,
   getWarnings,
   initializeLogger,
   logPrompt,
   logResponse,
+  NO_SKILLS_CONTEXT,
   PromptDisplay,
   resetSessionLog,
   setDebugLevel,
@@ -183,7 +185,7 @@ Run Tests
         baseInstructions,
         formattedSkills,
         PromptDisplay.Summary,
-        definitions
+        formatSkillsContext(definitions)
       );
 
       expect(result).toContain('Tool: schedule');
@@ -197,21 +199,45 @@ Run Tests
       expect(result).toContain('- npm run build');
     });
 
-    it.each([PromptDisplay.Skills, PromptDisplay.Summary])(
-      'shows "(no skills)" in %s mode when no skills provided',
-      (mode) => {
-        const result = formatPromptContent(
-          'schedule',
-          'list files',
-          'instructions',
-          '',
-          mode
-        );
+    it('shows "(no skills)" in Skills mode when no skills provided', () => {
+      const result = formatPromptContent(
+        'schedule',
+        'list files',
+        'instructions',
+        '',
+        PromptDisplay.Skills
+      );
 
-        expect(result).toContain('Tool: schedule');
-        expect(result).toContain('(no skills)');
-      }
-    );
+      expect(result).toContain('Tool: schedule');
+      expect(result).toContain('(no skills)');
+    });
+
+    it('shows "(no skills)" in Summary mode when NO_SKILLS_CONTEXT provided', () => {
+      const result = formatPromptContent(
+        'schedule',
+        'list files',
+        'instructions',
+        '',
+        PromptDisplay.Summary,
+        NO_SKILLS_CONTEXT
+      );
+
+      expect(result).toContain('Tool: schedule');
+      expect(result).toContain('(no skills)');
+    });
+
+    it('shows only header in Summary mode when no context provided', () => {
+      const result = formatPromptContent(
+        'schedule',
+        'list files',
+        'instructions',
+        '',
+        PromptDisplay.Summary
+      );
+
+      expect(result).toContain('Tool: schedule');
+      expect(result).not.toContain('(no skills)');
+    });
   });
 
   describe('Formatting skills summary', () => {
@@ -318,7 +344,13 @@ Run Tests
 
     it('creates debug component when debug level is Verbose', () => {
       setDebugLevel(DebugLevel.Verbose);
-      const result = logPrompt('schedule', 'test command', 'instructions', '');
+      const result = logPrompt(
+        'schedule',
+        'test command',
+        'instructions',
+        '',
+        NO_SKILLS_CONTEXT
+      );
 
       expect(result).not.toBeNull();
       expect(result?.name).toBe(ComponentName.Debug);
@@ -349,7 +381,7 @@ Run Tests
         'build',
         'base instructions',
         '',
-        definitions
+        formatSkillsContext(definitions)
       );
       const props = getDebugProps(result);
 
@@ -593,7 +625,7 @@ Run Tests
         'deploy to production',
         'You are a task scheduler.',
         '',
-        definitions
+        formatSkillsContext(definitions)
       );
       const props = getDebugProps(result);
 

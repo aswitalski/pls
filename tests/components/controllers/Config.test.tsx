@@ -18,6 +18,7 @@ import {
   Keys,
   createRequestHandlers,
   createLifecycleHandlers,
+  createWorkflowHandlers,
   createMockAnthropicService,
 } from '../../test-utils.js';
 
@@ -42,6 +43,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -65,6 +67,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -90,6 +93,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -129,6 +133,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -166,6 +171,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -200,6 +206,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -227,6 +234,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -250,6 +258,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -275,6 +284,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -312,6 +322,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -340,6 +351,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -367,6 +379,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -400,6 +413,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -424,6 +438,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -456,6 +471,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -486,6 +502,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -517,6 +534,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={lifecycleHandlers}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -552,6 +570,7 @@ describe('Config component interaction flows', () => {
           status={ComponentStatus.Active}
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -692,6 +711,7 @@ describe('Config component interaction flows', () => {
           lifecycleHandlers={lifecycleHandlers}
           onFinished={onFinished}
           status={ComponentStatus.Active}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -756,6 +776,7 @@ describe('Config component interaction flows', () => {
           requestHandlers={stateHandlers}
           lifecycleHandlers={lifecycleHandlers}
           status={ComponentStatus.Active}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -805,6 +826,7 @@ describe('Config component interaction flows', () => {
           requestHandlers={stateHandlers}
           lifecycleHandlers={lifecycleHandlers}
           status={ComponentStatus.Active}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -920,6 +942,7 @@ describe('Config component interaction flows', () => {
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
           status={ComponentStatus.Active}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -953,6 +976,7 @@ describe('Config component interaction flows', () => {
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
           status={ComponentStatus.Active}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -988,6 +1012,7 @@ describe('Config component interaction flows', () => {
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
           status={ComponentStatus.Active}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -1014,6 +1039,7 @@ describe('Config component interaction flows', () => {
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={lifecycleHandlers}
           status={ComponentStatus.Active}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 
@@ -1053,6 +1079,7 @@ describe('Config component interaction flows', () => {
           service={service}
           requestHandlers={stateHandlers}
           lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
           onAborted={onAborted}
           status={ComponentStatus.Active}
         />
@@ -1104,6 +1131,7 @@ describe('Config component interaction flows', () => {
           requestHandlers={createRequestHandlers<ConfigState>()}
           lifecycleHandlers={createLifecycleHandlers()}
           status={ComponentStatus.Active}
+          workflowHandlers={createWorkflowHandlers()}
         />
       );
 

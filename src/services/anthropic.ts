@@ -9,7 +9,12 @@ import {
   getAvailableConfigStructure,
   getConfiguredKeys,
 } from '../configuration/schema.js';
-import { logPrompt, logResponse } from './logger.js';
+import {
+  formatConfigContext,
+  formatSkillsContext,
+  logPrompt,
+  logResponse,
+} from './logger.js';
 import { loadSkillsForPrompt } from './skills.js';
 import { toolRegistry } from './registry.js';
 import {
@@ -154,14 +159,14 @@ export class AnthropicService implements LLMService {
     const baseInstructions =
       customInstructions || toolRegistry.getInstructions(toolName);
     let formattedSkills = '';
-    let skillDefinitions: import('../types/skills.js').SkillDefinition[] = [];
     let systemPrompt = baseInstructions;
+    let context: string | undefined;
 
     if (!customInstructions && usesSkills) {
       const skillsResult = loadSkillsForPrompt();
       formattedSkills = skillsResult.formatted;
-      skillDefinitions = skillsResult.definitions;
       systemPrompt += formattedSkills;
+      context = formatSkillsContext(skillsResult.definitions);
     }
 
     // Add config structure for configure tool only
@@ -175,6 +180,7 @@ export class AnthropicService implements LLMService {
         '\n\nConfigured keys (keys that exist in config file):\n' +
         JSON.stringify(configuredKeys, null, 2);
       systemPrompt += configSection;
+      context = formatConfigContext(configStructure, configuredKeys);
     }
 
     // Build tools array - add web search for answer tool
@@ -195,7 +201,7 @@ export class AnthropicService implements LLMService {
       command,
       baseInstructions,
       formattedSkills,
-      skillDefinitions
+      context
     );
     if (promptDebug) {
       debug.push(promptDebug);

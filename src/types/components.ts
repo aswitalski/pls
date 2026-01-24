@@ -118,6 +118,7 @@ export type ConfigProps<
 > = ComponentProps<ConfigDefinitionProps<T>> & {
   requestHandlers: RequestHandlers<ConfigState>;
   lifecycleHandlers: LifecycleHandlers<ComponentDefinition>;
+  workflowHandlers: WorkflowHandlers<ComponentDefinition>;
 };
 
 export interface ConfigState extends BaseState {

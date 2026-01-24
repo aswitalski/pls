@@ -108,6 +108,7 @@ export const ControllerComponent = memo(function ControllerComponent({
           onAborted={onAborted}
           requestHandlers={requestHandlers}
           lifecycleHandlers={lifecycleHandlers}
+          workflowHandlers={workflowHandlers}
           status={status}
           debug={debug}
         />
