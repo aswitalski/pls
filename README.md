@@ -2,9 +2,6 @@
 
 Your personal command-line concierge. Ask politely, and it gets things done.
 
-> **Note:** This project is in early preview. Features and APIs will change.
-> See [roadmap](#roadmap).
-
 ## Installation
 
 ```bash
@@ -37,24 +34,23 @@ Skills are custom workflows you can define to teach `pls` about your specific
 projects and commands. Once defined, you can use them naturally:
 
 ```
-$ pls build project
+$ pls convert video.mp4
 
 Here's my plan.
 
-  - Navigate to project directory
-  - Compile source code
+  - Compress video.mp4 with H.264 codec
 ```
 
 You can provide multiple requests at once:
 
 ```
-$ pls install deps, run tests and build
+$ pls backup photos, compress and upload
 
 Here's what I'll do.
 
-  - Install dependencies
-  - Run tests
-  - Build the project
+  - Copy photos to backup folder
+  - Create zip archive
+  - Upload to cloud storage
 ```
 
 When `pls` needs clarification, it will present options to choose from:
@@ -138,60 +134,121 @@ Each skill file uses a simple markdown format:
 - **Name**: What you call this workflow (e.g., "Build Project")
 - **Description**: What it does and any variants or options
 - **Steps**: What needs to happen, in order
-- **Execution** (optional): The actual shell commands to run
+- **Execution**: The actual shell commands to run
 
 ### Example
 
-Here's a skill that builds different project variants:
+Here's a skill for building a product from source:
 
 ```markdown
 ### Name
-Build Project
+Build Product
 
 ### Description
-Build a project in different configurations:
-- dev (debug build with source maps)
-- prod (optimized build)
-- test (with test coverage)
+Build a product from source. Handles the full compilation pipeline.
+
+The company maintains two product lines:
+- Stable: the flagship product
+- Beta: the experimental product
+
+If the user says "just compile" or "recompile", dependency installation and
+tests MUST be skipped. Tests MUST also be skipped if the user says "without
+tests". Deployment MUST only run if the user explicitly asks. Compile and
+package steps are MANDATORY.
 
 ### Steps
 - Navigate to the project directory
-- Install dependencies if needed
-- Run the {ENV} build script
-- Generate build artifacts
+- Install build dependencies
+- Run the test suite
+- Compile source code
+- Package build artifacts
+- Deploy to server
 
 ### Execution
-- cd ~/projects/next
-- npm install
-- npm run build:{ENV}
-- cp -r dist/ builds/{ENV}/
+- [ Navigate To Project ]
+- ./configure && make deps
+- make test
+- make build
+- make package
+- ./scripts/deploy.sh
 ```
 
-With this skill defined, you can use natural language like:
+The `[ Navigate To Project ]` reference invokes another skill by name. When `pls`
+plans this workflow, it expands the reference inline, inserting that skill's
+execution steps at this position. This lets you compose complex workflows from
+simpler, reusable skills. Here's what that skill might look like:
+
+```markdown
+### Name
+Navigate To Project
+
+### Description
+The company maintains two product lines:
+- Stable: the flagship product
+- Beta: the experimental product
+
+### Aliases
+- go to project
+- navigate to repo
+
+### Config
+project:
+  stable:
+    path: string
+  beta:
+    path: string
+
+### Steps
+- Navigate to project directory
+
+### Execution
+- cd {project.PRODUCT.path}
 ```
-$ pls build project for production
-$ pls build dev environment
-$ pls build with testing enabled
-```
-The `{ENV}` placeholder gets replaced with the variant you specify.
-Instead of remembering the exact commands and paths for each environment, just
-tell `pls` what you want in plain English. The Execution section ensures the right commands run every time.
 
-### Keep It Short
+The `{project.PRODUCT.path}` placeholder uses config values from `~/.plsrc`. The
+PRODUCT is matched from user intent (e.g., "build stable" resolves to
+`project.stable.path`).
 
-Skills also work with concise commands. Once you've taught `pls` about your
-workflow, you can use minimal phrasing:
+The Description tells `pls` when to skip optional steps. This lets you say:
 
 ```
-$ pls build prod
-$ pls build dev
-$ pls build test
+$ pls build stable
+
+  - Navigate to the Stable directory
+  - Install build dependencies
+  - Run the test suite
+  - Compile source code
+  - Package build artifacts
 ```
 
-## Roadmap
+Here "stable" matches the PRODUCT, so `pls` looks up `project.stable.path` in your
+config. All steps run except deploy (not requested). When iterating quickly:
 
-- **0.9** - Learn skill, codebase refinement, complex dependency handling
-- **1.0** - Production release
+```
+$ pls just recompile experimental
+
+  - Navigate to the Beta directory
+  - Compile source code
+  - Package build artifacts
+```
+
+Now "experimental" resolves to `project.beta.path`. And when you're ready to ship:
+
+```
+$ pls build and deploy main
+
+  - Navigate to the Stable directory
+  - Install build dependencies
+  - Run the test suite
+  - Compile source code
+  - Package build artifacts
+  - Deploy to server
+```
+
+The same skill handles all cases based on your intent, something an alias or
+script can't do. Skills are fully dynamic: you can add new variants, change step
+conditions, or introduce new options anytime by editing the markdown file - no
+code changes required.
 
 ## Development
 
