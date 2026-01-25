@@ -129,6 +129,13 @@ Before creating tasks, evaluate the request type:
      capabilities", "show skills"
    - Example: "flex" → introspect type
 
+   **CRITICAL - Introspection is ALWAYS a single task:**
+   - Introspection requests MUST result in exactly ONE introspect leaf task
+   - NEVER create multiple introspect tasks for a single request
+   - NEVER nest introspect tasks within groups
+   - NEVER break down capabilities into separate introspect tasks
+   - The single introspect task will list ALL capabilities
+
 2. **Information requests** (questions) - Use question keywords:
    - "explain", "describe", "tell me", "what is", "how does", "find",
      "search"
