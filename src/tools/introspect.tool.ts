@@ -15,7 +15,7 @@ export const introspectTool: Tool = {
       capabilities: {
         type: 'array',
         description:
-          'Array of capabilities and skills. Include system capabilities (Introspect, Configure, Answer, Learn, Execute) with origin "system", meta workflow capabilities (Schedule, Validate, Report) with origin "meta", and user-provided skills from the Available Skills section with origin "user".',
+          'Array of capabilities and skills. Include system capabilities (Introspect, Configure, Answer, Learn, Execute) with origin "system", meta workflow capabilities (Schedule, Validate) with origin "meta", and user-provided skills from the Available Skills section with origin "user".',
         items: {
           type: 'object',
           properties: {
@@ -33,7 +33,7 @@ export const introspectTool: Tool = {
               type: 'string',
               enum: ['system', 'user', 'meta'],
               description:
-                'Origin of the capability. Use "system" for system capabilities (Introspect, Configure, Answer, Learn, Execute), "meta" for meta workflow capabilities (Schedule, Validate, Report), and "user" for user-provided skills.',
+                'Origin of the capability. Use "system" for system capabilities (Introspect, Configure, Answer, Learn, Execute), "meta" for meta workflow capabilities (Schedule, Validate), and "user" for user-provided skills.',
             },
             isIncomplete: {
               type: 'boolean',

@@ -71,7 +71,7 @@ NON-NEGOTIABLE and applies to EVERY response.
 
 **DO NOT:**
 - Reorder capabilities based on alphabetical sorting
-- Put Schedule or Report first (this is WRONG)
+- Put Schedule first (this is WRONG)
 - Rearrange based on perceived importance
 - Deviate from this order for any reason
 
@@ -87,15 +87,14 @@ These MUST appear FIRST, in this EXACT sequence:
 4. **Learn**
 5. **Execute**
 
-### Position 6-8: meta workflow capabilities (origin: "meta")
+### Position 6-7: meta workflow capabilities (origin: "meta")
 
 These MUST appear AFTER Execute and BEFORE user-provided skills:
 
 6. **Schedule**
 7. **Validate**
-8. **Report**
 
-### Position 9+: user-provided skills (origin: "user")
+### Position 8+: user-provided skills (origin: "user")
 
 If skills are provided in the "Available Skills" section below, include
 them in the response. For each skill:
@@ -132,8 +131,7 @@ Create capability objects for each capability. Each object should have:
 - **origin**: The origin type of the capability
   - Use "system" for system capabilities: Introspect, Configure, Answer,
     Learn, Execute
-  - Use "meta" for meta workflow capabilities: Schedule, Validate,
-    Report
+  - Use "meta" for meta workflow capabilities: Schedule, Validate
   - Use "user" for all user-provided skills
 
 - **isIncomplete**: Optional boolean flag
@@ -162,8 +160,8 @@ Examples:
 When user asks "list your skills", create an introductory message like
 "here are my capabilities:" followed by capability objects for system
 capabilities (Introspect, Configure, Answer, Learn, Execute with origin
-"system"), then meta workflow capabilities (Schedule, Validate, Report
-with origin "meta").
+"system"), then meta workflow capabilities (Schedule, Validate with
+origin "meta").
 
 ### Example 2: Filtered Skills
 
@@ -178,7 +176,7 @@ When user asks "what can you do" and user-provided skills like "process
 data" and "backup files" exist, create an introductory message like "i can
 help with these operations:" followed by all system capabilities
 (Introspect, Configure, Answer, Learn, Execute with origin "system"),
-meta capabilities (Schedule, Validate, Report with origin "meta"), plus
+meta capabilities (Schedule, Validate with origin "meta"), plus
 the user-provided skills with origin "user".
 
 ## Final Validation
