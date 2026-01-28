@@ -279,6 +279,53 @@ export interface ValidateState extends BaseState {
   validated: boolean;
 }
 
+export interface LearnStepPair {
+  description: string;
+  executionType: 'command' | 'reference';
+  execution: string;
+}
+
+export enum LearnPhase {
+  Name = 'name',
+  Description = 'description',
+  Aliases = 'aliases',
+  AliasMore = 'alias_more',
+  Config = 'config',
+  ConfigMore = 'config_more',
+  StepDescription = 'step_description',
+  StepExecutionType = 'step_execution_type',
+  StepExecutionValue = 'step_execution_value',
+  StepMore = 'step_more',
+  Review = 'review',
+}
+
+export interface LearnDefinitionProps {
+  suggestedName?: string;
+  onFinished?: (skillKey: string) => void;
+  onAborted?: (operation: string) => void;
+}
+
+export type LearnProps = ComponentProps<LearnDefinitionProps> & {
+  requestHandlers: RequestHandlers<LearnState>;
+  lifecycleHandlers: LifecycleHandlers<ComponentDefinition>;
+  workflowHandlers: WorkflowHandlers<ComponentDefinition>;
+};
+
+export interface LearnState extends BaseState {
+  name: string | null;
+  description: string | null;
+  aliases: string[];
+  configEntries: string[];
+  stepPairs: LearnStepPair[];
+  currentPhase: LearnPhase;
+  inputValue: string;
+  selectedIndex: number;
+  error: string | null;
+  availableSkills: string[];
+  pendingStepDescription: string | null;
+  pendingExecutionType: 'command' | 'reference' | null;
+}
+
 // Generic base definitions with shared properties
 
 // For components that render immediately (no lifecycle management)
@@ -368,6 +415,11 @@ type ValidateDefinition = ManagedDefinition<
   ValidateDefinitionProps,
   ValidateState
 >;
+type LearnDefinition = ManagedDefinition<
+  ComponentName.Learn,
+  LearnDefinitionProps,
+  LearnState
+>;
 
 // Union of all simple component definitions
 export type SimpleComponentDefinition =
@@ -387,7 +439,8 @@ export type ManagedComponentDefinition =
   | IntrospectDefinition
   | AnswerDefinition
   | ExecuteDefinition
-  | ValidateDefinition;
+  | ValidateDefinition
+  | LearnDefinition;
 
 // Discriminated union of all component definitions
 export type ComponentDefinition =

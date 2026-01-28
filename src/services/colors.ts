@@ -134,6 +134,10 @@ const taskColors: Record<
     description: Colors.Label.Default,
     type: Colors.Type.Group,
   },
+  [TaskType.Learn]: {
+    description: Colors.Label.Default,
+    type: Palette.LightGreen,
+  },
 } as const;
 
 /**
@@ -246,6 +250,7 @@ const verboseTaskTypeLabels: Record<TaskType, string> = {
   [TaskType.Execute]: 'execute command',
   [TaskType.Answer]: 'answer question',
   [TaskType.Introspect]: 'introspect capabilities',
+  [TaskType.Learn]: 'learn skill',
   [TaskType.Report]: 'report results',
   [TaskType.Define]: 'define options',
   [TaskType.Ignore]: 'ignore request',

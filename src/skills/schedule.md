@@ -76,6 +76,7 @@ Every task MUST have a type field. Use the appropriate type:
 - `execute` - Shell commands, running programs (ONLY if skill exists)
 - `answer` - Answering questions, explaining concepts
 - `introspect` - Listing capabilities when user asks what you can do
+- `learn` - Creating a new skill (guided walkthrough for skill creation)
 - `report` - Generating summaries, displaying results
 - `define` - Presenting options when a matching skill needs variant
   selection
@@ -136,12 +137,43 @@ Before creating tasks, evaluate the request type:
    - NEVER break down capabilities into separate introspect tasks
    - The single introspect task will list ALL capabilities
 
-2. **Information requests** (questions) - Use question keywords:
+2. **Skill creation requests** - User wants to create/teach a new skill:
+   - "learn", "teach", "create skill", "new skill", "add skill",
+     "define skill", "make skill"
+   - Example: "learn" → learn type
+   - Example: "teach me to build" → learn type
+   - Example: "create a new skill" → learn type
+
+   **CRITICAL - Learn is ALWAYS a single task:**
+   - Learn requests MUST result in exactly ONE learn leaf task
+   - NEVER create multiple learn tasks for a single request
+   - NEVER nest learn tasks within groups
+   - The learn task launches a guided walkthrough for skill creation
+
+   **Learn task action format**: The action MUST explicitly mention
+   learning a new skill/capability. Use the user's original phrasing:
+   - "learn to build docker images" → action: "Learn to build docker images"
+   - "teach me to deploy" → action: "Learn to deploy"
+   - "create a new skill" → action: "Learn a new skill"
+   - "learn" → action: "Learn a new skill"
+
+   **Skill name extraction**: If the user's request includes a skill
+   topic (after "learn", "teach", "create skill", etc.), extract it and
+   include as `params.suggestedName`. Convert to imperative mood (command
+   form) with title case. Convert gerunds (-ing) to base verb form:
+   - "learn refining prompts" → params: { suggestedName: "Refine Prompts" }
+   - "learn building apps" → params: { suggestedName: "Build Apps" }
+   - "teach me to deploy" → params: { suggestedName: "Deploy" }
+   - "learn how to do stuff" → params: { suggestedName: "Do Stuff" }
+   - "create a deploy script skill" → params: { suggestedName: "Deploy Script" }
+   - "learn" (no topic) → no params needed
+
+3. **Information requests** (questions) - Use question keywords:
    - "explain", "describe", "tell me", "what is", "how does", "find",
      "search"
    - Example: "explain docker" → answer type
 
-3. **Action requests** (commands) - Must match skills in "Available
+4. **Action requests** (commands) - Must match skills in "Available
    Skills" section:
    - Check if action verb matches ANY skill in "Available Skills"
      section
@@ -158,7 +190,7 @@ Before creating tasks, evaluate the request type:
    - Example: "build" with no matching skill in "Available Skills" →
      action "Ignore unknown 'build' request"
 
-4. **Vague/ambiguous requests** without clear verb:
+5. **Vague/ambiguous requests** without clear verb:
    - Phrases like "do something", "handle it" → ignore type
    - Action format: "Ignore unknown 'X' request" where X is the phrase
 

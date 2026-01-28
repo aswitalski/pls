@@ -3,15 +3,20 @@ import { join } from 'path';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  configEntriesToYaml,
   conflictsWithBuiltIn,
   expandSkillReferences,
   formatSkillsForPrompt,
+  generateSkillMarkdown,
+  getAvailableSkillNames,
   getReferencedSkills,
   getSkillsDirectory,
+  isSkillNameAvailable,
   isSkillReference,
   isValidSkillFilename,
   loadSkills,
   parseSkillReference,
+  saveSkill,
   validateNoCycles,
 } from '../../src/services/skills.js';
 import { MemoryFileSystem } from '../../src/services/filesystem.js';
@@ -611,5 +616,283 @@ describe('Validating no cycles', () => {
     const lookup = createTestLookup(skills);
 
     expect(validateNoCycles(['[ A ]', '[ B ]'], lookup)).toBe(true);
+  });
+});
+
+describe('Converting config entries to YAML', () => {
+  it('converts single dot-notation entry', () => {
+    const yaml = configEntriesToYaml(['pdf.dir: string']);
+    expect(yaml).toBe('pdf:\n  dir: string\n');
+  });
+
+  it('converts deeply nested entry', () => {
+    const yaml = configEntriesToYaml(['pdf.base.dir: string']);
+    expect(yaml).toBe('pdf:\n  base:\n    dir: string\n');
+  });
+
+  it('merges entries sharing a common prefix', () => {
+    const yaml = configEntriesToYaml([
+      'server.url: string',
+      'server.port: number',
+    ]);
+    expect(yaml).toBe('server:\n  url: string\n  port: number\n');
+  });
+
+  it('handles multiple top-level keys', () => {
+    const yaml = configEntriesToYaml([
+      'server.host: string',
+      'backup.path: string',
+    ]);
+    expect(yaml).toContain('server:\n  host: string');
+    expect(yaml).toContain('backup:\n  path: string');
+  });
+
+  it('handles flat single-segment entry', () => {
+    const yaml = configEntriesToYaml(['enabled: boolean']);
+    expect(yaml).toBe('enabled: boolean\n');
+  });
+});
+
+describe('Checking skill name availability', () => {
+  let fs: MemoryFileSystem;
+  let skillsDir: string;
+
+  beforeEach(() => {
+    fs = new MemoryFileSystem();
+    const plsDir = join(homedir(), '.pls');
+    skillsDir = join(plsDir, 'skills');
+    fs.createDirectory(skillsDir, { recursive: true });
+  });
+
+  it('returns available for a new skill name', () => {
+    const result = isSkillNameAvailable('Deploy App', fs);
+    expect(result.available).toBe(true);
+  });
+
+  it('rejects built-in skill names', () => {
+    const result = isSkillNameAvailable('schedule', fs);
+    expect(result.available).toBe(false);
+    expect(result.reason).toContain('built-in');
+  });
+
+  it('rejects when file already exists', () => {
+    fs.writeFile(join(skillsDir, 'deploy-app.md'), 'existing skill');
+    const result = isSkillNameAvailable('Deploy App', fs);
+    expect(result.available).toBe(false);
+    expect(result.reason).toContain('already exists');
+  });
+
+  it('rejects empty name', () => {
+    const result = isSkillNameAvailable('', fs);
+    expect(result.available).toBe(false);
+  });
+});
+
+describe('Generating skill markdown', () => {
+  it('generates markdown with name and description', () => {
+    const markdown = generateSkillMarkdown(
+      'Deploy App',
+      'Deploy the application to production',
+      [],
+      [],
+      [
+        {
+          description: 'Run deploy',
+          executionType: 'command',
+          execution: 'npm run deploy',
+        },
+      ]
+    );
+
+    expect(markdown).toContain('### Name\nDeploy App');
+    expect(markdown).toContain(
+      '### Description\nDeploy the application to production'
+    );
+    expect(markdown).toContain('### Steps\n- Run deploy');
+    expect(markdown).toContain('### Execution\n- npm run deploy');
+  });
+
+  it('includes aliases when provided', () => {
+    const markdown = generateSkillMarkdown(
+      'Build',
+      'Build the project for release',
+      ['build it', 'compile project'],
+      [],
+      [
+        {
+          description: 'Compile',
+          executionType: 'command',
+          execution: 'make build',
+        },
+      ]
+    );
+
+    expect(markdown).toContain('### Aliases');
+    expect(markdown).toContain('- build it');
+    expect(markdown).toContain('- compile project');
+  });
+
+  it('omits aliases section when empty', () => {
+    const markdown = generateSkillMarkdown(
+      'Test',
+      'Run the test suite for validation',
+      [],
+      [],
+      [
+        {
+          description: 'Run tests',
+          executionType: 'command',
+          execution: 'npm test',
+        },
+      ]
+    );
+
+    expect(markdown).not.toContain('### Aliases');
+  });
+
+  it('includes config entries when provided', () => {
+    const markdown = generateSkillMarkdown(
+      'Deploy',
+      'Deploy to the target environment',
+      [],
+      ['server.url: string', 'server.port: number'],
+      [
+        {
+          description: 'Upload',
+          executionType: 'command',
+          execution: 'scp dist/ server:/',
+        },
+      ]
+    );
+
+    expect(markdown).toContain('### Config');
+    expect(markdown).toContain('server:\n  url: string\n  port: number');
+  });
+
+  it('formats skill references with bracket syntax', () => {
+    const markdown = generateSkillMarkdown(
+      'Full Deploy',
+      'Build and deploy the application',
+      [],
+      [],
+      [
+        {
+          description: 'Build first',
+          executionType: 'reference',
+          execution: 'Build App',
+        },
+        {
+          description: 'Then deploy',
+          executionType: 'command',
+          execution: 'deploy.sh',
+        },
+      ]
+    );
+
+    expect(markdown).toContain('- [ Build App ]');
+    expect(markdown).toContain('- deploy.sh');
+  });
+
+  it('generates multiple steps and execution lines', () => {
+    const markdown = generateSkillMarkdown(
+      'CI Pipeline',
+      'Run the full continuous integration pipeline',
+      [],
+      [],
+      [
+        {
+          description: 'Install deps',
+          executionType: 'command',
+          execution: 'npm install',
+        },
+        {
+          description: 'Run tests',
+          executionType: 'command',
+          execution: 'npm test',
+        },
+        {
+          description: 'Build',
+          executionType: 'command',
+          execution: 'npm run build',
+        },
+      ]
+    );
+
+    expect(markdown).toContain(
+      '### Steps\n- Install deps\n- Run tests\n- Build'
+    );
+    expect(markdown).toContain(
+      '### Execution\n- npm install\n- npm test\n- npm run build'
+    );
+  });
+});
+
+describe('Saving skills', () => {
+  let fs: MemoryFileSystem;
+
+  beforeEach(() => {
+    fs = new MemoryFileSystem();
+  });
+
+  it('saves skill to the correct file path', () => {
+    const skillsDir = join(homedir(), '.pls', 'skills');
+    fs.createDirectory(skillsDir, { recursive: true });
+
+    saveSkill('deploy-app', '### Name\nDeploy App', fs);
+
+    const filePath = join(skillsDir, 'deploy-app.md');
+    const content = fs.readFile(filePath, 'utf-8');
+    expect(content).toBe('### Name\nDeploy App');
+  });
+
+  it('creates skills directory if it does not exist', () => {
+    saveSkill('new-skill', '### Name\nNew Skill', fs);
+
+    const skillsDir = join(homedir(), '.pls', 'skills');
+    expect(fs.exists(skillsDir)).toBe(true);
+  });
+});
+
+describe('Getting available skill names', () => {
+  let fs: MemoryFileSystem;
+  let skillsDir: string;
+
+  beforeEach(() => {
+    fs = new MemoryFileSystem();
+    const plsDir = join(homedir(), '.pls');
+    skillsDir = join(plsDir, 'skills');
+    fs.createDirectory(skillsDir, { recursive: true });
+  });
+
+  it('returns empty array when no skills exist', () => {
+    const names = getAvailableSkillNames(fs);
+    expect(names).toEqual([]);
+  });
+
+  it('returns names of valid skills', () => {
+    const validSkill = `### Name
+Build App
+
+### Description
+Build the application
+
+### Steps
+- Compile source
+
+### Execution
+- make build`;
+
+    fs.writeFile(join(skillsDir, 'build-app.md'), validSkill);
+    const names = getAvailableSkillNames(fs);
+    expect(names).toContain('Build App');
+  });
+
+  it('excludes incomplete skills', () => {
+    const incompleteSkill = `### Name
+Broken Skill`;
+
+    fs.writeFile(join(skillsDir, 'broken-skill.md'), incompleteSkill);
+    const names = getAvailableSkillNames(fs);
+    expect(names).toEqual([]);
   });
 });

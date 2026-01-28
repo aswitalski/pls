@@ -20,6 +20,7 @@ import {
   createExecute,
   createFeedback,
   createIntrospect,
+  createLearn,
   createSchedule,
   createValidate,
 } from './components.js';
@@ -396,6 +397,8 @@ export function getRoutingCategory(task: ScheduledTask): string {
       return 'execute';
     case TaskType.Answer:
       return 'answer';
+    case TaskType.Learn:
+      return 'learn';
     default:
       return task.type;
   }
@@ -677,6 +680,19 @@ function routeExecuteTasks(
 }
 
 /**
+ * Route Learn tasks - creates Learn component for skill creation walkthrough
+ */
+function routeLearnTasks(
+  tasks: Task[],
+  context: RoutingContext,
+  _upcoming: string[]
+): void {
+  // Extract suggested name from first task's params if provided
+  const suggestedName = tasks[0]?.params?.suggestedName as string | undefined;
+  context.workflowHandlers.addToQueue(createLearn({ suggestedName }));
+}
+
+/**
  * Registry mapping task types to their route handlers
  */
 const taskRouteHandlers: Partial<Record<TaskType, TaskRouteHandler>> = {
@@ -684,6 +700,7 @@ const taskRouteHandlers: Partial<Record<TaskType, TaskRouteHandler>> = {
   [TaskType.Introspect]: routeIntrospectTasks,
   [TaskType.Config]: routeConfigTasks,
   [TaskType.Execute]: routeExecuteTasks,
+  [TaskType.Learn]: routeLearnTasks,
 };
 
 /**

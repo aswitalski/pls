@@ -1,6 +1,8 @@
 import { homedir } from 'os';
 import { join } from 'path';
+import YAML from 'yaml';
 
+import { LearnStepPair } from '../types/components.js';
 import { AppError, ErrorCode } from '../types/errors.js';
 import { SkillDefinition, SkillsForPrompt } from '../types/skills.js';
 
@@ -365,4 +367,139 @@ export function validateNoCycles(
     }
     throw error;
   }
+}
+
+/**
+ * Check if a skill name is available (not conflicting with existing files
+ * or built-in skills)
+ */
+export function isSkillNameAvailable(
+  name: string,
+  fs: FileSystem = defaultFileSystem
+): { available: boolean; reason?: string } {
+  const key = displayNameToKey(name);
+
+  if (!key) {
+    return { available: false, reason: 'Skill name is required' };
+  }
+
+  if (conflictsWithBuiltIn(key)) {
+    return { available: false, reason: 'Name conflicts with a built-in skill' };
+  }
+
+  const skillsDir = getSkillsDirectory();
+  const filePath = join(skillsDir, `${key}.md`);
+
+  if (fs.exists(filePath)) {
+    return {
+      available: false,
+      reason: 'A skill with this name already exists',
+    };
+  }
+
+  return { available: true };
+}
+
+/**
+ * Convert dot-notation config entries to nested YAML format.
+ * Input: ["pdf.base.dir: string", "pdf.base.format: string"]
+ * Output: "pdf:\n  base:\n    dir: string\n    format: string\n"
+ */
+export function configEntriesToYaml(entries: string[]): string {
+  const root: Record<string, unknown> = {};
+
+  for (const entry of entries) {
+    const colonIndex = entry.lastIndexOf(':');
+    if (colonIndex === -1) continue;
+
+    const path = entry.slice(0, colonIndex).trim();
+    const type = entry.slice(colonIndex + 1).trim();
+    const parts = path.split('.');
+
+    let current: Record<string, unknown> = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i];
+      if (!(part in current) || typeof current[part] !== 'object') {
+        current[part] = {};
+      }
+      current = current[part] as Record<string, unknown>;
+    }
+    current[parts[parts.length - 1]] = type;
+  }
+
+  return YAML.stringify(root, { indent: 2 });
+}
+
+/**
+ * Generate skill markdown from collected data
+ */
+export function generateSkillMarkdown(
+  name: string,
+  description: string,
+  aliases: string[],
+  configEntries: string[],
+  stepPairs: LearnStepPair[]
+): string {
+  let markdown = `### Name\n${name}\n\n`;
+  markdown += `### Description\n${description}\n\n`;
+
+  if (aliases.length > 0) {
+    markdown += `### Aliases\n`;
+    for (const alias of aliases) {
+      markdown += `- ${alias}\n`;
+    }
+    markdown += '\n';
+  }
+
+  if (configEntries.length > 0) {
+    markdown += `### Config\n`;
+    markdown += configEntriesToYaml(configEntries);
+    markdown += '\n';
+  }
+
+  markdown += `### Steps\n`;
+  for (const pair of stepPairs) {
+    markdown += `- ${pair.description}\n`;
+  }
+  markdown += '\n';
+
+  markdown += `### Execution\n`;
+  for (const pair of stepPairs) {
+    if (pair.executionType === 'reference') {
+      markdown += `- [ ${pair.execution} ]\n`;
+    } else {
+      markdown += `- ${pair.execution}\n`;
+    }
+  }
+
+  return markdown;
+}
+
+/**
+ * Save skill to file (creates directory if needed)
+ */
+export function saveSkill(
+  key: string,
+  content: string,
+  fs: FileSystem = defaultFileSystem
+): void {
+  const skillsDir = getSkillsDirectory();
+
+  // Create directory if it doesn't exist
+  if (!fs.exists(skillsDir)) {
+    fs.createDirectory(skillsDir, { recursive: true });
+  }
+
+  const filePath = join(skillsDir, `${key}.md`);
+  fs.writeFile(filePath, content);
+}
+
+/**
+ * Get list of available skill names for reference selection
+ */
+export function getAvailableSkillNames(
+  fs: FileSystem = defaultFileSystem
+): string[] {
+  const definitions = loadSkillDefinitions(fs);
+  return definitions.filter((def) => def.isValid).map((def) => def.name);
 }

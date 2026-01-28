@@ -13,6 +13,7 @@ export const TaskTypeSchema = z.enum([
   TaskType.Execute,
   TaskType.Answer,
   TaskType.Introspect,
+  TaskType.Learn,
   TaskType.Report,
   TaskType.Define,
   TaskType.Ignore,

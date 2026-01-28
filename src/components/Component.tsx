@@ -27,6 +27,7 @@ import {
 } from './controllers/Execute.js';
 import { Feedback } from './views/Feedback.js';
 import { Introspect, IntrospectView } from './controllers/Introspect.js';
+import { Learn, LearnView } from './controllers/Learn.js';
 import { Message } from './views/Message.js';
 import { Refinement, RefinementView } from './controllers/Refinement.js';
 import { Report } from './views/Report.js';
@@ -266,6 +267,24 @@ export const ControllerComponent = memo(function ControllerComponent({
       );
     }
 
+    case ComponentName.Learn: {
+      const {
+        props: { suggestedName, onFinished, onAborted },
+        status,
+      } = def;
+      return (
+        <Learn
+          suggestedName={suggestedName}
+          onFinished={onFinished}
+          onAborted={onAborted}
+          requestHandlers={requestHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          workflowHandlers={workflowHandlers}
+          status={status}
+        />
+      );
+    }
+
     default:
       throw new Error(
         `Unknown managed component: ${(def as ManagedComponentDefinition).name}`
@@ -403,6 +422,18 @@ export const ViewComponent = memo(function ViewComponent({
       return <RefinementView text={text} status={status} />;
     }
 
+    case ComponentName.Learn: {
+      const { state, status } = def;
+      return (
+        <LearnView
+          state={state}
+          status={status}
+          onInputChange={() => {}}
+          onInputSubmit={() => {}}
+        />
+      );
+    }
+
     default:
       throw new Error(
         `Unknown managed component: ${(def as ManagedComponentDefinition).name}`
@@ -439,6 +470,7 @@ export const TimelineComponent = ({
     case ComponentName.Execute:
     case ComponentName.Answer:
     case ComponentName.Introspect:
+    case ComponentName.Learn:
       return <ViewComponent def={def as ManagedComponentDefinition} />;
 
     default:

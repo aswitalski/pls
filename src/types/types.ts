@@ -23,6 +23,7 @@ export enum ComponentName {
   Answer = 'answer',
   Execute = 'execute',
   Validate = 'validate',
+  Learn = 'learn',
 }
 
 export enum TaskType {
@@ -37,6 +38,7 @@ export enum TaskType {
   Select = 'select',
   Discard = 'discard',
   Group = 'group',
+  Learn = 'learn',
 }
 
 export enum Origin {

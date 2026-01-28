@@ -17,6 +17,9 @@ import {
   ExecuteState,
   IntrospectDefinitionProps,
   IntrospectState,
+  LearnDefinitionProps,
+  LearnPhase,
+  LearnState,
   RefinementDefinitionProps,
   ScheduleDefinitionProps,
   ScheduleState,
@@ -113,6 +116,21 @@ const InitialValidateState: ValidateState = {
   completionMessage: null,
   configRequirements: [],
   validated: false,
+};
+
+const InitialLearnState: LearnState = {
+  name: null,
+  description: null,
+  aliases: [],
+  configEntries: [],
+  stepPairs: [],
+  currentPhase: LearnPhase.Name,
+  inputValue: '',
+  selectedIndex: 0,
+  error: null,
+  availableSkills: [],
+  pendingStepDescription: null,
+  pendingExecutionType: null,
 };
 
 /**
@@ -278,3 +296,12 @@ export const createValidate = (
     InitialValidateState,
     status
   );
+
+/**
+ * Create a learn component that guides users through skill creation
+ */
+export const createLearn = (
+  props: LearnDefinitionProps,
+  status?: ComponentStatus
+) =>
+  createManagedComponent(ComponentName.Learn, props, InitialLearnState, status);

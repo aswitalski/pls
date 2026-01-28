@@ -12,8 +12,9 @@ by the pls (prompt-language-shell) command-line concierge.
 5. [Task Execution Flows](#task-execution-flows)
 6. [Configuration Validation Flow](#configuration-validation-flow)
 7. [Skills System Flow](#skills-system-flow)
-8. [Error Handling Flow](#error-handling-flow)
-9. [Abort and Cancellation Flow](#abort-and-cancellation-flow)
+8. [Skill Creation Flow](#skill-creation-flow)
+9. [Error Handling Flow](#error-handling-flow)
+10. [Abort and Cancellation Flow](#abort-and-cancellation-flow)
 
 ---
 
@@ -675,6 +676,96 @@ flowchart TD
 
 ---
 
+## Skill Creation Flow
+
+**Trigger:** User runs `pls learn`, `pls teach`, or `pls create skill`
+
+**Purpose:** Guide users through creating new skills interactively
+
+**Flow:**
+
+1. LLM recognizes skill creation request and creates `learn` task
+2. Schedule displays the task and user confirms
+3. Learn component activated with guided walkthrough:
+   - **Name phase**: Collect skill name, validate uniqueness
+   - **Description phase**: Collect description (min 20 chars)
+   - **Aliases phase**: Optionally add example commands
+   - **Config phase**: Optionally define configuration properties
+     (dot-notation entries converted to nested YAML in output)
+   - **Steps phase**: Define step pairs (description + execution)
+     - For each step: enter description
+     - Choose execution type: shell command or skill reference
+     - If shell command: enter the command
+     - If skill reference: select from available skills
+     - Option to add more steps
+   - **Review phase**: Preview generated markdown, confirm to save
+4. Skill saved to `~/.pls/skills/<name>.md`
+5. Info feedback displayed
+
+```mermaid
+flowchart TD
+    Start([pls learn]) --> Schedule[LLM creates learn task]
+    Schedule --> Confirm[User confirms]
+    Confirm --> LearnWizard[Learn component activates]
+
+    LearnWizard --> Name[Name phase]
+    Name --> ValidateName{Name valid<br/>and unique?}
+    ValidateName -->|No| Name
+    ValidateName -->|Yes| Description[Description phase]
+
+    Description --> ValidateDesc{Min 20<br/>chars?}
+    ValidateDesc -->|No| Description
+    ValidateDesc -->|Yes| Aliases[Aliases phase]
+
+    Aliases --> Config[Config phase]
+    Config --> StepDesc[Step description]
+
+    StepDesc --> ExecType{Execution<br/>type?}
+    ExecType -->|Shell command| EnterCmd[Enter command]
+    ExecType -->|Skill reference| SelectSkill[Select skill]
+
+    EnterCmd --> MoreSteps{Add another<br/>step?}
+    SelectSkill --> MoreSteps
+
+    MoreSteps -->|Yes| StepDesc
+    MoreSteps -->|No| Review[Review phase]
+
+    Review --> SaveConfirm{Save skill?}
+    SaveConfirm -->|Yes| SaveFile[Save to ~/.pls/skills/]
+    SaveConfirm -->|No| Cancel[Show cancellation]
+
+    SaveFile --> Success[Show info feedback]
+    Success --> Exit[Exit]
+    Cancel --> Exit
+
+    style Start fill:#e1f5ff
+    style Exit fill:#e1ffe1
+    style Cancel fill:#ffe1e1
+```
+
+**File Naming:**
+
+- Display name "Do Stuff" → key `do-stuff` → file `do-stuff.md`
+- Validates against existing files and built-in skill names
+
+**Validation:**
+
+| Phase | Validation |
+|-------|-----------|
+| Name | Non-empty, unique (no existing file or built-in conflict) |
+| Description | Minimum 20 characters |
+| Step description | Non-empty |
+| Step command | Non-empty (for shell commands) |
+
+**Skill Reference Format:**
+
+When referencing existing skills, execution lines use bracket notation:
+```
+- [ Navigate To Project ]
+```
+
+---
+
 ## Error Handling Flow
 
 **Trigger:** Error occurs during any operation
@@ -966,12 +1057,13 @@ The pls concierge supports these core workflows:
 3. **Planning** - LLM-based request interpretation and task generation
 4. **Plan Selection** - Interactive disambiguation for ambiguous requests
 5. **Task Execution** - Type-specific handlers (introspect, answer, configure,
-   execute)
+   execute, learn)
 6. **Configuration Validation** - Automatic detection and prompting for missing
    config
 7. **Skills System** - User-defined workflows with parameter resolution
-8. **Error Handling** - User-friendly errors with appropriate exit codes
-9. **Abort/Cancellation** - Clean termination at any interaction point
+8. **Skill Creation** - Guided walkthrough for creating new skills
+9. **Error Handling** - User-friendly errors with appropriate exit codes
+10. **Abort/Cancellation** - Clean termination at any interaction point
 
 All flows follow a queue-based component lifecycle, maintaining a visible
 timeline of completed interactions while processing the current component.

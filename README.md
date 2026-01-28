@@ -125,6 +125,46 @@ Skills let you teach `pls` about your project-specific workflows. Create
 markdown files in `~/.pls/skills/` to define custom operations that
 `pls` can understand and execute.
 
+### Creating Skills
+
+The easiest way to create a new skill is with the guided walkthrough:
+
+```
+$ pls learn
+
+Creating a new skill...
+
+Skill name (e.g., "Deploy Project"):
+> Build Frontend
+
+Description (min 20 characters):
+> Build the frontend application using npm
+
+Step 1 - What does this step do?
+> Install dependencies
+
+How should this step be executed?
+> shell command
+
+Enter the shell command:
+> npm install
+
+Add another step?
+> yes
+
+...
+```
+
+The walkthrough guides you through defining:
+- **Name**: A unique name for the skill
+- **Description**: What the skill does (min 20 characters)
+- **Aliases**: Example commands that invoke the skill (optional)
+- **Config**: Configuration properties needed (optional)
+- **Steps**: Each step with either a shell command or reference to another skill
+
+Skills are saved to `~/.pls/skills/` as markdown files. File names use
+kebab-case (e.g., "Build Frontend" becomes `build-frontend.md`).
+
 For complete documentation, see [docs/SKILLS.md](./docs/SKILLS.md).
 
 ### Structure
