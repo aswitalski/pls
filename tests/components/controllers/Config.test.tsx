@@ -910,6 +910,142 @@ describe('Config component interaction flows', () => {
     });
   });
 
+  describe('Selection defaultIndex highlighting', () => {
+    it('highlights option at defaultIndex on initial render', () => {
+      const onFinished = vi.fn();
+      const steps: ConfigStep[] = [
+        {
+          description: 'Debug mode',
+          key: 'debug',
+          path: 'settings.debug',
+          type: StepType.Selection,
+          options: [
+            { label: 'none', value: 'none' },
+            { label: 'info', value: 'info' },
+            { label: 'verbose', value: 'verbose' },
+          ],
+          defaultIndex: 1,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config
+          steps={steps}
+          onFinished={onFinished}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+        />
+      );
+
+      // Press enter without tabbing — should submit 'info' (defaultIndex 1)
+      stdin.write(Keys.Enter);
+
+      expect(onFinished).toHaveBeenCalledWith({
+        'settings.debug': 'info',
+      });
+    });
+
+    it('submits correct value when defaultIndex is non-zero', () => {
+      const onFinished = vi.fn();
+      const steps: ConfigStep[] = [
+        {
+          description: 'Debug mode',
+          key: 'debug',
+          path: 'settings.debug',
+          type: StepType.Selection,
+          options: [
+            { label: 'none', value: 'none' },
+            { label: 'info', value: 'info' },
+            { label: 'verbose', value: 'verbose' },
+          ],
+          defaultIndex: 2,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config
+          steps={steps}
+          onFinished={onFinished}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+        />
+      );
+
+      // Press enter without tabbing — should submit 'verbose'
+      stdin.write(Keys.Enter);
+
+      expect(onFinished).toHaveBeenCalledWith({
+        'settings.debug': 'verbose',
+      });
+    });
+
+    it('highlights correct option for second selection step', async () => {
+      const onFinished = vi.fn();
+      const steps: ConfigStep[] = [
+        {
+          description: 'First',
+          key: 'first',
+          path: 'section.first',
+          type: StepType.Selection,
+          options: [
+            { label: 'Option A', value: 'a' },
+            { label: 'Option B', value: 'b' },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+        {
+          description: 'Second',
+          key: 'second',
+          path: 'section.second',
+          type: StepType.Selection,
+          options: [
+            { label: 'Option X', value: 'x' },
+            { label: 'Option Y', value: 'y' },
+            { label: 'Option Z', value: 'z' },
+          ],
+          defaultIndex: 2,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin, lastFrame } = render(
+        <Config
+          steps={steps}
+          onFinished={onFinished}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+        />
+      );
+
+      // Submit first step with default
+      stdin.write(Keys.Enter);
+
+      // Wait for second step to render
+      await vi.waitFor(() => {
+        expect(lastFrame()).toContain('Option X');
+      });
+
+      // Submit second step with default (should be Option Z)
+      stdin.write(Keys.Enter);
+
+      await vi.waitFor(() => {
+        expect(onFinished).toHaveBeenCalledWith({
+          'section.first': 'a',
+          'section.second': 'z',
+        });
+      });
+    });
+  });
+
   describe('Query-based configuration', () => {
     it('shows loading indicator while resolving query', async () => {
       // Create a service that delays resolution

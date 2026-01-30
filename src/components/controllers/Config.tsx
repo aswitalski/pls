@@ -113,7 +113,11 @@ export function Config<
     return initial;
   });
   const [inputValue, setInputValue] = useState('');
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(() => {
+    if (!initialSteps?.length) return 0;
+    const first = initialSteps[0];
+    return first.type === StepType.Selection ? first.defaultIndex : 0;
+  });
 
   // Resolve query to steps
   useEffect(() => {
@@ -164,12 +168,15 @@ export function Config<
     workflowHandlers,
   ]);
 
-  // Update inputValue when step changes
+  // Update inputValue and selectedIndex when step changes
   useEffect(() => {
     if (isActive && step < steps.length) {
       const stepConfig = steps[step];
       const configKey = stepConfig.path || stepConfig.key;
       setInputValue(values[configKey] || '');
+      if (stepConfig.type === StepType.Selection) {
+        setSelectedIndex(stepConfig.defaultIndex);
+      }
     }
   }, [step, isActive, steps, values]);
 
@@ -288,14 +295,7 @@ export function Config<
       }
       setStep(steps.length);
     } else {
-      const nextStep = step + 1;
-      setStep(nextStep);
-      if (
-        nextStep < steps.length &&
-        steps[nextStep].type === StepType.Selection
-      ) {
-        setSelectedIndex(steps[nextStep].defaultIndex);
-      }
+      setStep(step + 1);
     }
   };
 
