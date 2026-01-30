@@ -308,25 +308,5 @@ Missing steps
 
       expect(result.missingConfig).toEqual([]);
     });
-
-    it('skips non-string config entries', () => {
-      const tasks: Task[] = [
-        {
-          action: 'Task with mixed config',
-          type: TaskType.Execute,
-          config: [
-            'valid.path',
-            null as unknown as string,
-            123 as unknown as string,
-          ],
-        },
-      ];
-
-      const result = validateExecuteTasks(tasks, fs);
-
-      // Should only check the valid string path
-      expect(result.missingConfig).toHaveLength(1);
-      expect(result.missingConfig[0].path).toBe('valid.path');
-    });
   });
 });

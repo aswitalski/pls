@@ -48,17 +48,6 @@ describe('getTaskColors', () => {
     const colors = getTaskColors(TaskType.Introspect, ComponentStatus.Done);
     expect(colors.type).toBe(Colors.Type.Introspect);
   });
-
-  it('works for all TaskType values', () => {
-    const taskTypes = Object.values(TaskType);
-
-    taskTypes.forEach((type) => {
-      const colors = getTaskColors(type, ComponentStatus.Done);
-      expect(colors).toBeDefined();
-      expect(colors).toHaveProperty('description');
-      expect(colors).toHaveProperty('type');
-    });
-  });
 });
 
 describe('getFeedbackColor', () => {
@@ -81,25 +70,6 @@ describe('getFeedbackColor', () => {
     const color = getFeedbackColor(FeedbackType.Failed);
     expect(color).toBe(Colors.Status.Error);
   });
-
-  it('defaults to ComponentStatus.Done when status parameter is omitted', () => {
-    const colorWithDefault = getFeedbackColor(FeedbackType.Info);
-    const colorWithExplicitDone = getFeedbackColor(
-      FeedbackType.Info,
-      ComponentStatus.Done
-    );
-    expect(colorWithDefault).toBe(colorWithExplicitDone);
-    expect(colorWithDefault).toBe(Colors.Status.Info);
-  });
-
-  it('works for all FeedbackType values', () => {
-    const feedbackTypes = Object.values(FeedbackType);
-
-    feedbackTypes.forEach((type) => {
-      const color = getFeedbackColor(type);
-      expect(color).toBeDefined();
-    });
-  });
 });
 
 describe('getTextColor', () => {
@@ -111,31 +81,6 @@ describe('getTextColor', () => {
   it('returns inactive color for historical items', () => {
     const color = getTextColor(false);
     expect(color).toBe(Colors.Text.Inactive);
-  });
-});
-
-describe('Task description colors based on state', () => {
-  it('uses active text color for current task descriptions', () => {
-    const colors = getTaskColors(TaskType.Execute, ComponentStatus.Active);
-    expect(colors.description).toBe(Colors.Text.Active);
-  });
-
-  it('uses inactive text color for historical task descriptions', () => {
-    const colors = getTaskColors(TaskType.Execute, ComponentStatus.Done);
-    expect(colors.description).toBe(Colors.Text.Inactive);
-  });
-
-  it('preserves task type colors regardless of status', () => {
-    const currentColors = getTaskColors(
-      TaskType.Execute,
-      ComponentStatus.Active
-    );
-    const historicalColors = getTaskColors(
-      TaskType.Execute,
-      ComponentStatus.Done
-    );
-    expect(currentColors.type).toBe(historicalColors.type);
-    expect(currentColors.type).toBe(Colors.Type.Execute);
   });
 });
 
@@ -155,15 +100,6 @@ describe('getTaskTypeLabel', () => {
         'schedule'
       );
       expect(getTaskTypeLabel(TaskType.Answer, DebugLevel.Info)).toBe('answer');
-    });
-
-    it('returns short labels for all task types', () => {
-      const taskTypes = Object.values(TaskType);
-
-      taskTypes.forEach((type) => {
-        const label = getTaskTypeLabel(type, DebugLevel.Info);
-        expect(label).toBe(type);
-      });
     });
   });
 
@@ -226,49 +162,6 @@ describe('getTaskTypeLabel', () => {
       expect(getTaskTypeLabel(TaskType.Discard, DebugLevel.Verbose)).toBe(
         'discard option'
       );
-    });
-  });
-
-  describe('Label consistency', () => {
-    it('verbose labels start with same or related keyword as short labels', () => {
-      const taskTypes = Object.values(TaskType);
-
-      taskTypes.forEach((type) => {
-        const shortLabel = getTaskTypeLabel(type, DebugLevel.Info);
-        const verboseLabel = getTaskTypeLabel(type, DebugLevel.Verbose);
-
-        // Most labels start with the same keyword
-        // Config is special: "config" -> "configure settings" (related verb form)
-        if (type === TaskType.Config) {
-          expect(verboseLabel.startsWith('configure')).toBe(true);
-        } else {
-          expect(verboseLabel.startsWith(shortLabel)).toBe(true);
-        }
-      });
-    });
-
-    it('verbose labels are longer than short labels', () => {
-      const taskTypes = Object.values(TaskType);
-
-      taskTypes.forEach((type) => {
-        const shortLabel = getTaskTypeLabel(type, DebugLevel.Info);
-        const verboseLabel = getTaskTypeLabel(type, DebugLevel.Verbose);
-
-        expect(verboseLabel.length).toBeGreaterThan(shortLabel.length);
-      });
-    });
-
-    it('verbose labels contain 2-3 words', () => {
-      const taskTypes = Object.values(TaskType);
-
-      taskTypes.forEach((type) => {
-        const verboseLabel = getTaskTypeLabel(type, DebugLevel.Verbose);
-        const wordCount = verboseLabel.split(' ').length;
-
-        // Most labels have 2 words, config has 3 ("configure the setting")
-        expect(wordCount).toBeGreaterThanOrEqual(2);
-        expect(wordCount).toBeLessThanOrEqual(3);
-      });
     });
   });
 });

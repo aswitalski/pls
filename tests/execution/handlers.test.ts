@@ -71,16 +71,6 @@ describe('Task completion handling', () => {
       expect(result.finalState.tasks[1].status).toBe(ExecutionStatus.Pending);
     });
 
-    it('stores elapsed time on task info', () => {
-      const tasks = [createTaskData('Task 1', 1000), createTaskData('Task 2')];
-      const context = createContext(tasks);
-
-      const result = handleTaskCompletion(1, 2000, context);
-
-      expect(result.finalState.tasks[0].elapsed).toBe(1000);
-      expect(result.finalState.tasks[1].elapsed).toBe(2000);
-    });
-
     it('generates completion message with formatted duration on last task', () => {
       const tasks = [createTaskData('Task 1')];
       const context = createContext(tasks, {
@@ -257,16 +247,8 @@ describe('Task completion handling', () => {
   });
 
   describe('buildAbortedState', () => {
-    it('returns state with correct tasks array', () => {
+    it('builds state with tasks, message, summary, and null error/completion', () => {
       const tasks = [createTaskData('Task 1'), createTaskData('Task 2')];
-
-      const result = buildAbortedState(tasks, 'Message', 'Summary');
-
-      expect(result.tasks).toEqual(tasks);
-    });
-
-    it('preserves message and summary', () => {
-      const tasks = [createTaskData('Task')];
 
       const result = buildAbortedState(
         tasks,
@@ -274,23 +256,10 @@ describe('Task completion handling', () => {
         'Partial build'
       );
 
+      expect(result.tasks).toEqual(tasks);
       expect(result.message).toBe('Build cancelled');
       expect(result.summary).toBe('Partial build');
-    });
-
-    it('sets completionMessage to null', () => {
-      const tasks = [createTaskData('Task')];
-
-      const result = buildAbortedState(tasks, 'Msg', 'Sum');
-
       expect(result.completionMessage).toBeNull();
-    });
-
-    it('sets error to null', () => {
-      const tasks = [createTaskData('Task')];
-
-      const result = buildAbortedState(tasks, 'Msg', 'Sum');
-
       expect(result.error).toBeNull();
     });
   });

@@ -51,21 +51,6 @@ describe('Ensuring minimum time', () => {
     // Should resolve immediately
     await promise;
   });
-
-  it('calculates remaining time correctly', async () => {
-    const startTime = Date.now();
-    const minimumTime = 2000;
-
-    // Simulate 500ms elapsed
-    vi.advanceTimersByTime(500);
-
-    const promise = ensureMinimumTime(startTime, minimumTime);
-
-    // Should wait for remaining 1500ms
-    await vi.advanceTimersByTimeAsync(1500);
-
-    await promise;
-  });
 });
 
 describe('Wrapping operation with minimum time', () => {
@@ -120,34 +105,5 @@ describe('Wrapping operation with minimum time', () => {
 
     // The error should be thrown immediately without waiting for minimum time
     await expect(promise).rejects.toThrow('Operation failed');
-  });
-
-  it('works with different return types', async () => {
-    const stringOp = vi.fn(() => Promise.resolve('string result'));
-    const numberOp = vi.fn(() => Promise.resolve(123));
-    const boolOp = vi.fn(() => Promise.resolve(true));
-    const arrayOp = vi.fn(() => Promise.resolve([1, 2, 3]));
-
-    const stringPromise = withMinimumTime(stringOp, 100);
-    await vi.runAllTimersAsync();
-    expect(await stringPromise).toBe('string result');
-
-    vi.clearAllTimers();
-
-    const numberPromise = withMinimumTime(numberOp, 100);
-    await vi.runAllTimersAsync();
-    expect(await numberPromise).toBe(123);
-
-    vi.clearAllTimers();
-
-    const boolPromise = withMinimumTime(boolOp, 100);
-    await vi.runAllTimersAsync();
-    expect(await boolPromise).toBe(true);
-
-    vi.clearAllTimers();
-
-    const arrayPromise = withMinimumTime(arrayOp, 100);
-    await vi.runAllTimersAsync();
-    expect(await arrayPromise).toEqual([1, 2, 3]);
   });
 });

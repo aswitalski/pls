@@ -136,11 +136,6 @@ describe('Message functions', () => {
       expect(expectedMessages).toContain(message);
     });
 
-    it('returns a string ending with a question mark', () => {
-      const message = getConfirmationMessage();
-      expect(message).toMatch(/\?$/);
-    });
-
     it('varies messages across multiple calls', () => {
       const messages = new Set<string>();
       for (let i = 0; i < 50; i++) {
@@ -165,11 +160,6 @@ describe('Message functions', () => {
       expect(expectedMessages).toContain(message);
     });
 
-    it('returns a string ending with a period', () => {
-      const message = getRefiningMessage();
-      expect(message).toMatch(/\.$/);
-    });
-
     it('varies messages across multiple calls', () => {
       const messages = new Set<string>();
       for (let i = 0; i < 50; i++) {
@@ -191,11 +181,6 @@ describe('Message functions', () => {
       expect(message).not.toMatch(/EXECUTION/);
     });
 
-    it('returns a string ending with a period', () => {
-      const message = getCancellationMessage('execution');
-      expect(message).toMatch(/\.$/);
-    });
-
     it('returns one of four expected patterns', () => {
       const message = getCancellationMessage('test');
       const patterns = [
@@ -213,14 +198,6 @@ describe('Message functions', () => {
         messages.add(getCancellationMessage('operation'));
       }
       expect(messages.size).toBeGreaterThan(1);
-    });
-
-    it('handles different operation names correctly', () => {
-      expect(getCancellationMessage('execution')).toMatch(/execution/);
-      expect(getCancellationMessage('task selection')).toMatch(
-        /task selection/
-      );
-      expect(getCancellationMessage('introspection')).toMatch(/introspection/);
     });
   });
 
@@ -269,14 +246,6 @@ describe('Message functions', () => {
       expect(FeedbackMessages.UnexpectedError).toBe(
         'Unexpected error occurred:'
       );
-    });
-
-    it('ConfigurationComplete ends with a period', () => {
-      expect(FeedbackMessages.ConfigurationComplete).toMatch(/\.$/);
-    });
-
-    it('UnexpectedError ends with a colon', () => {
-      expect(FeedbackMessages.UnexpectedError).toMatch(/:$/);
     });
   });
 

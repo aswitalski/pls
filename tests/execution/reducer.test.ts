@@ -157,20 +157,6 @@ describe('Execution reducer', () => {
 
       expect(result.tasks[0].elapsed).toBe(2500);
     });
-
-    it('stores elapsed time on task info', () => {
-      const state = createBaseState({
-        tasks: [createTaskData('Task', 1000)],
-      });
-      const action: ExecuteAction = {
-        type: ExecuteActionType.TaskComplete,
-        payload: { index: 0, elapsed: 3000 },
-      };
-
-      const result = executeReducer(state, action);
-
-      expect(result.tasks[0].elapsed).toBe(3000);
-    });
   });
 
   describe('ExecutionComplete action', () => {

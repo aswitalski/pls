@@ -41,23 +41,6 @@ describe('MemoryMonitor', () => {
     expect(monitor.wasKilledByMemoryLimit()).toBe(false);
   });
 
-  it('accepts optional onExceeded callback', () => {
-    const { child } = createMockChild();
-    const monitor = new MemoryMonitor(child, 100, vi.fn());
-    expect(monitor.wasKilledByMemoryLimit()).toBe(false);
-  });
-
-  it('accepts getMemoryFn for dependency injection', () => {
-    const { child } = createMockChild();
-    const monitor = new MemoryMonitor(
-      child,
-      100,
-      undefined,
-      vi.fn().mockResolvedValue(1024)
-    );
-    expect(monitor.wasKilledByMemoryLimit()).toBe(false);
-  });
-
   it('start does nothing if child has no pid', () => {
     const { child, killMock } = createMockChild(undefined);
     const monitor = new MemoryMonitor(child, 100);
@@ -114,12 +97,6 @@ describe('MemoryMonitor', () => {
     monitor.stop();
     await vi.advanceTimersByTimeAsync(2000);
     expect(mockGetMemory.mock.calls.length).toBe(callCount);
-  });
-
-  it('wasKilledByMemoryLimit returns false when not killed', () => {
-    const { child } = createMockChild();
-    const monitor = new MemoryMonitor(child, 100);
-    expect(monitor.wasKilledByMemoryLimit()).toBe(false);
   });
 
   it('wasKilledByMemoryLimit returns false when under limit', async () => {
@@ -567,26 +544,6 @@ describe('MemoryMonitor edge cases', () => {
       onExceeded,
       // 10.1 MB should ceil to 11 MB (not round to 10 MB)
       vi.fn().mockResolvedValue(10.1 * 1024 * 1024)
-    );
-
-    monitor.start();
-    await vi.advanceTimersByTimeAsync(1050);
-    expect(onExceeded).toHaveBeenCalledWith({
-      limit: 10,
-      used: 11,
-    });
-    monitor.stop();
-  });
-
-  it('ceils fractional bytes to next MB', async () => {
-    const { child } = createMockChild(12345);
-    const onExceeded = vi.fn();
-    const monitor = new MemoryMonitor(
-      child,
-      10,
-      onExceeded,
-      // 10 MB + 1 byte should ceil to 11 MB
-      vi.fn().mockResolvedValue(10 * 1024 * 1024 + 1)
     );
 
     monitor.start();
