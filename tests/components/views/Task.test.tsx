@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DebugLevel } from '../../../src/configuration/types.js';
 import { ExecutionStatus } from '../../../src/services/shell.js';
+import { OutputSource } from '../../../src/types/components.js';
 
 import { TaskView } from '../../../src/components/views/Task.js';
 
@@ -30,7 +31,7 @@ describe('TaskView component', () => {
           {
             text: 'Test output line',
             timestamp: Date.now(),
-            source: 'stdout' as const,
+            source: OutputSource.Stdout,
           },
         ],
       },

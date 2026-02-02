@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 
 import { Palette } from '../../services/colors.js';
 import { ExecutionStatus } from '../../services/shell.js';
-import { OutputChunk } from '../../types/components.js';
+import { OutputChunk, OutputSource } from '../../types/components.js';
 
 const MAX_LINES = 8;
 const MAX_WIDTH = 75;
@@ -86,15 +86,64 @@ export function chunksToRows(
 ): string[] {
   if (chunks.length === 0) return [];
 
-  // Sort by timestamp and combine text (chunks already contain line endings)
-  const sorted = [...chunks].sort((a, b) => a.timestamp - b.timestamp);
-  let combined = sorted.map((c) => c.text).join('');
+  // Separate output and stdin chunks
+  const outputChunks = chunks
+    .filter((c) => c.source !== OutputSource.Stdin)
+    .sort((a, b) => a.timestamp - b.timestamp);
+  const stdinChunks = chunks
+    .filter((c) => c.source === OutputSource.Stdin)
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  // Build output text and track cumulative positions for each chunk
+  let outputText = '';
+  const chunkEndPositions: { timestamp: number; endPos: number }[] = [];
+  for (const chunk of outputChunks) {
+    outputText += chunk.text;
+    chunkEndPositions.push({
+      timestamp: chunk.timestamp,
+      endPos: outputText.length,
+    });
+  }
+
+  // Insert stdin chunks after the last newline that existed before each stdin's timestamp
+  let combined = outputText;
+  let insertOffset = 0;
+
+  for (const stdin of stdinChunks) {
+    // Find how much output text existed before this stdin's timestamp
+    let textPositionAtStdin = 0;
+    for (const pos of chunkEndPositions) {
+      if (pos.timestamp <= stdin.timestamp) {
+        textPositionAtStdin = pos.endPos;
+      } else {
+        break;
+      }
+    }
+    textPositionAtStdin += insertOffset;
+
+    // Find the last newline in text up to this position
+    const textBeforeStdin = combined.slice(0, textPositionAtStdin);
+    const lastNewline = textBeforeStdin.lastIndexOf('\n');
+
+    // Insert stdin after the last newline (or at start if no newline)
+    const insertPos = lastNewline >= 0 ? lastNewline + 1 : 0;
+
+    // Remove leading \n from stdin if we're already at a line boundary
+    let stdinText = stdin.text;
+    if (lastNewline >= 0 && stdinText.startsWith('\n')) {
+      stdinText = stdinText.slice(1);
+    }
+
+    combined =
+      combined.slice(0, insertPos) + stdinText + combined.slice(insertPos);
+    insertOffset += stdinText.length;
+  }
 
   // When not finished, only show complete lines (strip trailing incomplete line)
   // unless the last chunk is old enough to be shown
-  if (!isFinished && !combined.endsWith('\n')) {
-    const lastChunk = sorted[sorted.length - 1];
-    if (!shouldShowIncompleteLine(lastChunk)) {
+  if (!isFinished && !combined.endsWith('\n') && outputChunks.length > 0) {
+    const lastOutputChunk = outputChunks[outputChunks.length - 1];
+    if (!shouldShowIncompleteLine(lastOutputChunk)) {
       const lastNewline = combined.lastIndexOf('\n');
       if (lastNewline >= 0) {
         combined = combined.slice(0, lastNewline + 1);

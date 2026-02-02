@@ -214,10 +214,16 @@ export interface AnswerState extends BaseState {
   cancelled?: boolean;
 }
 
+export enum OutputSource {
+  Stdout = 'stdout',
+  Stderr = 'stderr',
+  Stdin = 'stdin',
+}
+
 export interface OutputChunk {
   text: string;
   timestamp: number;
-  source: 'stdout' | 'stderr';
+  source: OutputSource;
 }
 
 export interface TaskOutput {

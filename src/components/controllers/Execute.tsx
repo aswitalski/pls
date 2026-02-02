@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import {
   ComponentStatus,
   ExecuteProps,
   ExecuteState,
+  OutputSource,
   TaskData,
   TaskOutput,
 } from '../../types/components.js';
@@ -13,7 +14,11 @@ import {
   formatErrorMessage,
   getExecutionErrorMessage,
 } from '../../services/messages.js';
-import { ExecutionStatus, killCurrentProcess } from '../../services/shell.js';
+import {
+  ExecutionStatus,
+  killCurrentProcess,
+  writeStdin,
+} from '../../services/shell.js';
 import {
   ELAPSED_UPDATE_INTERVAL,
   ensureMinimumTime,
@@ -84,6 +89,9 @@ export function Execute({
   // Ref to track if current task execution is cancelled
   const cancelledRef = useRef(false);
 
+  // Toggle stdin input visibility with Tab key
+  const [showStdinInput, setShowStdinInput] = useState(false);
+
   const { error, tasks, message, hasProcessed, completionMessage, summary } =
     localState;
 
@@ -123,6 +131,13 @@ export function Execute({
     };
   }, [runningTask?.startTime, isExecuting, currentTaskIndex]);
 
+  // Hide stdin input when not executing
+  useEffect(() => {
+    if (!isExecuting) {
+      setShowStdinInput(false);
+    }
+  }, [isExecuting]);
+
   // Handle cancel - kill the running process and update final output
   const handleCancel = useCallback(() => {
     cancelledRef.current = true;
@@ -154,10 +169,24 @@ export function Execute({
     requestHandlers.onAborted('execution');
   }, [message, summary, tasks, requestHandlers]);
 
+  // Handle stdin submission: write the line to the running process
+  const handleStdinSubmit = useCallback((value: string) => {
+    writeStdin(value + '\n');
+    outputRef.current.chunks.push({
+      text: `\n> ${value}\n`,
+      timestamp: Date.now(),
+      source: OutputSource.Stdin,
+    });
+    setShowStdinInput(false);
+  }, []);
+
   useInput(
     (_, key) => {
       if (key.escape && (isLoading || isExecuting)) {
         handleCancel();
+      }
+      if (key.tab && isExecuting) {
+        setShowStdinInput((prev) => !prev);
       }
     },
     { isActive: (isLoading || isExecuting) && isActive }
@@ -297,6 +326,7 @@ export function Execute({
 
     // Reset output ref for new task
     outputRef.current = { chunks: [], currentMemory: undefined };
+    setShowStdinInput(false);
 
     // Merge workdir into command
     const command = workdirRef.current
@@ -306,8 +336,12 @@ export function Execute({
     void executeTask(command, currentTaskIndex, {
       onUpdate: (output) => {
         if (!cancelledRef.current) {
+          // Preserve stdin chunks that were added locally
+          const stdinChunks = outputRef.current.chunks.filter(
+            (c) => c.source === OutputSource.Stdin
+          );
           outputRef.current = {
-            chunks: output.chunks,
+            chunks: [...output.chunks, ...stdinChunks],
             currentMemory: output.currentMemory,
           };
         }
@@ -320,12 +354,17 @@ export function Execute({
           workdirRef.current = execOutput.workdir;
         }
 
+        // Preserve stdin chunks in final output
+        const stdinChunks = outputRef.current.chunks.filter(
+          (c) => c.source === OutputSource.Stdin
+        );
+
         const tasksWithOutput = tasks.map((task, i) =>
           i === currentTaskIndex
             ? {
                 ...task,
                 output: {
-                  chunks: execOutput.chunks,
+                  chunks: [...execOutput.chunks, ...stdinChunks],
                 },
               }
             : task
@@ -352,12 +391,17 @@ export function Execute({
           workdirRef.current = execOutput.workdir;
         }
 
+        // Preserve stdin chunks in final output
+        const stdinChunks = outputRef.current.chunks.filter(
+          (c) => c.source === OutputSource.Stdin
+        );
+
         const tasksWithOutput = tasks.map((task, i) =>
           i === currentTaskIndex
             ? {
                 ...task,
                 output: {
-                  chunks: execOutput.chunks,
+                  chunks: [...execOutput.chunks, ...stdinChunks],
                 },
                 error: execOutput.error || undefined,
               }
@@ -401,6 +445,7 @@ export function Execute({
       showTasks={showTasks}
       upcoming={upcoming}
       label={label}
+      onStdinSubmit={showStdinInput ? handleStdinSubmit : undefined}
     />
   );
 }
