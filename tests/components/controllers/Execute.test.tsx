@@ -54,10 +54,14 @@ vi.mock('../../../src/services/loader.js', () => ({
 }));
 
 // Mock shell service to avoid actual command execution
+const { killCurrentProcessMock } = vi.hoisted(() => ({
+  killCurrentProcessMock: vi.fn(),
+}));
 vi.mock('../../../src/services/shell.js', async () => {
   const actual = await vi.importActual('../../../src/services/shell.js');
   return {
     ...actual,
+    killCurrentProcess: killCurrentProcessMock,
     executeCommand: vi
       .fn()
       .mockImplementation(
@@ -233,6 +237,38 @@ describe('Execute component', () => {
     stdin.write('\x1b'); // Escape key
 
     expect(onAborted).toHaveBeenCalled();
+  });
+
+  it('kills the running process when cancelled', async () => {
+    const service = createMockAnthropicService({
+      message: 'Processing.',
+      commands: [{ description: 'Long task', command: 'sleep 10' }],
+    });
+
+    const tasks = [{ action: 'Run long task', type: TaskType.Execute }];
+
+    const { stdin, lastFrame } = render(
+      <Execute
+        tasks={tasks}
+        service={service}
+        lifecycleHandlers={createLifecycleHandlers()}
+        requestHandlers={createRequestHandlers()}
+        workflowHandlers={createWorkflowHandlers()}
+        status={ComponentStatus.Active}
+      />
+    );
+
+    await vi.waitFor(
+      () => {
+        const frame = lastFrame();
+        return frame?.includes('Long task') || frame?.includes('Processing.');
+      },
+      { timeout: 500 }
+    );
+
+    stdin.write('\x1b');
+
+    expect(killCurrentProcessMock).toHaveBeenCalled();
   });
 
   it('calls onAborted when aborting execution', async () => {

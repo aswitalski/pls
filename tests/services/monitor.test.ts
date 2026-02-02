@@ -394,6 +394,55 @@ describe('killGracefully', () => {
     // Should not throw
     await vi.advanceTimersByTimeAsync(SIGKILL_GRACE_PERIOD + 100);
   });
+
+  it('attempts process group kill before child kill', () => {
+    const { child, killMock } = createMockChild(99999);
+    const processKillSpy = vi
+      .spyOn(process, 'kill')
+      .mockImplementation(() => true);
+
+    killGracefully(child);
+
+    expect(processKillSpy).toHaveBeenCalledWith(-99999, 'SIGTERM');
+    expect(killMock).not.toHaveBeenCalled();
+    processKillSpy.mockRestore();
+  });
+
+  it('falls back to child.kill when process group kill fails', () => {
+    const { child, killMock } = createMockChild(99999);
+    const processKillSpy = vi.spyOn(process, 'kill').mockImplementation(() => {
+      throw new Error('No such process group');
+    });
+
+    killGracefully(child);
+
+    expect(processKillSpy).toHaveBeenCalledWith(-99999, 'SIGTERM');
+    expect(killMock).toHaveBeenCalledWith('SIGTERM');
+    processKillSpy.mockRestore();
+  });
+
+  it('escalates process group SIGKILL after grace period', async () => {
+    const { child, killMock } = createMockChild(99999);
+    const processKillSpy = vi
+      .spyOn(process, 'kill')
+      .mockImplementation(() => true);
+
+    killGracefully(child);
+    await vi.advanceTimersByTimeAsync(SIGKILL_GRACE_PERIOD + 100);
+
+    expect(processKillSpy).toHaveBeenCalledWith(-99999, 'SIGTERM');
+    expect(processKillSpy).toHaveBeenCalledWith(-99999, 'SIGKILL');
+    expect(killMock).not.toHaveBeenCalled();
+    processKillSpy.mockRestore();
+  });
+
+  it('uses child.kill when child has no PID', () => {
+    const { child, killMock } = createMockChild(undefined);
+
+    killGracefully(child);
+
+    expect(killMock).toHaveBeenCalledWith('SIGTERM');
+  });
 });
 
 describe('MemoryMonitor edge cases', () => {

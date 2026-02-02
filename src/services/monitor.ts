@@ -46,21 +46,39 @@ function getPageSize(): number {
 }
 
 /**
+ * Kill a process group by sending a signal to all processes in the group.
+ * Falls back to killing just the child if process group kill fails.
+ */
+function killProcessGroup(child: ChildProcess, signal: NodeJS.Signals): void {
+  const pid = child.pid;
+  if (pid) {
+    try {
+      process.kill(-pid, signal);
+      return;
+    } catch {
+      // Process group kill failed, fall back to direct kill
+    }
+  }
+  try {
+    child.kill(signal);
+  } catch {
+    // Process already terminated
+  }
+}
+
+/**
  * Gracefully terminate a child process with SIGTERM, escalating to SIGKILL
  * after a grace period if the process doesn't terminate.
+ * Kills the entire process group to ensure child processes are terminated.
  * Returns the kill timeout ID for cleanup.
  */
 export function killGracefully(
   child: ChildProcess,
   gracePeriod = SIGKILL_GRACE_PERIOD
 ): NodeJS.Timeout {
-  child.kill('SIGTERM');
+  killProcessGroup(child, 'SIGTERM');
   return setTimeout(() => {
-    try {
-      child.kill('SIGKILL');
-    } catch {
-      // Process already terminated
-    }
+    killProcessGroup(child, 'SIGKILL');
   }, gracePeriod);
 }
 

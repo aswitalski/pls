@@ -13,7 +13,7 @@ import {
   formatErrorMessage,
   getExecutionErrorMessage,
 } from '../../services/messages.js';
-import { ExecutionStatus } from '../../services/shell.js';
+import { ExecutionStatus, killCurrentProcess } from '../../services/shell.js';
 import {
   ELAPSED_UPDATE_INTERVAL,
   ensureMinimumTime,
@@ -123,9 +123,10 @@ export function Execute({
     };
   }, [runningTask?.startTime, isExecuting, currentTaskIndex]);
 
-  // Handle cancel - state already in reducer, just need to update final output
+  // Handle cancel - kill the running process and update final output
   const handleCancel = useCallback(() => {
     cancelledRef.current = true;
+    killCurrentProcess();
     dispatch({ type: ExecuteActionType.CancelExecution });
 
     // Build final state with current output for the running task

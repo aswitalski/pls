@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 
 import {
   killGracefully,
@@ -241,9 +241,20 @@ export class OutputStreamer {
 export class RealExecutor implements Executor {
   private outputCallback?: OutputCallback;
   private memoryCallback?: MemoryCallback;
+  private currentChild?: ChildProcess;
+  private cancelKillTimeoutId?: NodeJS.Timeout;
 
   constructor(outputCallback?: OutputCallback) {
     this.outputCallback = outputCallback;
+  }
+
+  /**
+   * Kill the currently running child process gracefully
+   */
+  killCurrentProcess(): void {
+    if (this.currentChild) {
+      this.cancelKillTimeoutId = killGracefully(this.currentChild);
+    }
   }
 
   /**
@@ -279,7 +290,9 @@ export class RealExecutor implements Executor {
         child = spawn(wrappedCommand, {
           shell: true,
           cwd: cmd.workdir || process.cwd(),
+          detached: true,
         });
+        this.currentChild = child;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to spawn process';
@@ -345,10 +358,19 @@ export class RealExecutor implements Executor {
         this.outputCallback?.(text, 'stderr');
       });
 
-      child.on('error', (error: Error) => {
+      const cleanup = () => {
+        this.currentChild = undefined;
         if (timeoutId) clearTimeout(timeoutId);
         if (killTimeoutId) clearTimeout(killTimeoutId);
+        if (this.cancelKillTimeoutId) {
+          clearTimeout(this.cancelKillTimeoutId);
+          this.cancelKillTimeoutId = undefined;
+        }
         memoryMonitor?.stop();
+      };
+
+      child.on('error', (error: Error) => {
+        cleanup();
 
         const commandResult: CommandOutput = {
           description: cmd.description,
@@ -364,9 +386,7 @@ export class RealExecutor implements Executor {
       });
 
       child.on('exit', (code: number | null) => {
-        if (timeoutId) clearTimeout(timeoutId);
-        if (killTimeoutId) clearTimeout(killTimeoutId);
-        memoryMonitor?.stop();
+        cleanup();
 
         const { output, workdir } = parseWorkdir(
           stdoutStreamer.getAccumulated()
@@ -409,6 +429,13 @@ const realExecutor = new RealExecutor();
 
 // Default executor for production use
 const executor: Executor = realExecutor;
+
+/**
+ * Kill the currently running command process
+ */
+export function killCurrentProcess(): void {
+  realExecutor.killCurrentProcess();
+}
 
 /**
  * Set a callback to receive command output in real-time

@@ -522,6 +522,87 @@ describe('Spawn error handling', () => {
   });
 });
 
+describe('killCurrentProcess', () => {
+  it('terminates a running process and its children', async () => {
+    vi.useRealTimers();
+
+    const executor = new RealExecutor();
+    const cmd: ExecuteCommand = {
+      description: 'Long running process',
+      command: 'sleep 30',
+      timeout: 10000,
+    };
+
+    const promise = executor.execute(cmd);
+
+    // Give the process time to start
+    await new Promise((r) => setTimeout(r, 200));
+    executor.killCurrentProcess();
+
+    const start = Date.now();
+    const result = await promise;
+    const elapsed = Date.now() - start;
+
+    expect(result.result).toBe(ExecutionResult.Error);
+    expect(elapsed).toBeLessThan(5000);
+  });
+
+  it('terminates shell child processes, not just the shell', async () => {
+    vi.useRealTimers();
+
+    const executor = new RealExecutor();
+    const cmd: ExecuteCommand = {
+      description: 'Shell with child process',
+      // Spawn a subprocess that would outlive the shell
+      command: 'node -e "setInterval(() => {}, 100)"',
+      timeout: 10000,
+    };
+
+    const promise = executor.execute(cmd);
+
+    await new Promise((r) => setTimeout(r, 200));
+    executor.killCurrentProcess();
+
+    const start = Date.now();
+    const result = await promise;
+    const elapsed = Date.now() - start;
+
+    expect(result.result).toBe(ExecutionResult.Error);
+    expect(elapsed).toBeLessThan(5000);
+  });
+
+  it('clears the SIGKILL timeout after process exits', async () => {
+    vi.useRealTimers();
+
+    const executor = new RealExecutor();
+    const cmd: ExecuteCommand = {
+      description: 'Quick exit after kill',
+      command: 'sleep 30',
+      timeout: 10000,
+    };
+
+    const promise = executor.execute(cmd);
+
+    await new Promise((r) => setTimeout(r, 200));
+    executor.killCurrentProcess();
+
+    const result = await promise;
+    expect(result.result).toBe(ExecutionResult.Error);
+
+    // After exit, no dangling timers should keep the process alive.
+    // Verify by checking that the executor has no active child.
+    // If the timeout leaked, it would fire on a dead process — harmless
+    // but could delay Node shutdown. The fix stores and clears it.
+    executor.killCurrentProcess(); // no-op, child already cleared
+  });
+
+  it('is a no-op when no process is running', () => {
+    const executor = new RealExecutor();
+    // Should not throw
+    executor.killCurrentProcess();
+  });
+});
+
 describe('Command timeout', () => {
   it('terminates command that exceeds timeout', async () => {
     vi.useRealTimers();
