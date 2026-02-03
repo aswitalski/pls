@@ -603,6 +603,36 @@ describe('killCurrentProcess', () => {
   });
 });
 
+describe('writeStdin', () => {
+  it('delivers data to the child process stdin', async () => {
+    vi.useRealTimers();
+
+    const executor = new RealExecutor();
+    const cmd: ExecuteCommand = {
+      description: 'Read from stdin',
+      command: 'read line && echo "got: $line"',
+      timeout: 5000,
+    };
+
+    const promise = executor.execute(cmd);
+
+    // Give the process time to start and wait for input
+    await new Promise((r) => setTimeout(r, 100));
+    executor.writeStdin('hello\n');
+
+    const result = await promise;
+
+    expect(result.result).toBe(ExecutionResult.Success);
+    expect(result.output).toContain('got: hello');
+  });
+
+  it('is a no-op when no process is running', () => {
+    const executor = new RealExecutor();
+    // Should not throw
+    executor.writeStdin('data');
+  });
+});
+
 describe('Command timeout', () => {
   it('terminates command that exceeds timeout', async () => {
     vi.useRealTimers();

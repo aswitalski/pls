@@ -6,6 +6,7 @@ import { getTextColor, Palette } from '../../services/colors.js';
 import { ExecutionStatus } from '../../services/shell.js';
 
 import { Spinner } from './Spinner.js';
+import { StdinInput } from './StdinInput.js';
 import { TaskView } from './Task.js';
 import { Upcoming, UpcomingStatus } from './Upcoming.js';
 
@@ -52,6 +53,7 @@ export interface ExecuteViewProps {
   showTasks: boolean;
   upcoming?: string[];
   label?: string;
+  onStdinSubmit?: (value: string) => void;
 }
 
 /**
@@ -91,6 +93,7 @@ export const ExecuteView = ({
   showTasks,
   upcoming,
   label,
+  onStdinSubmit,
 }: ExecuteViewProps) => {
   // Return null only when loading completes with no commands
   if (!isActive && tasks.length === 0 && !error) {
@@ -144,6 +147,10 @@ export const ExecuteView = ({
               />
             </Box>
           ))}
+
+          {isExecuting && onStdinSubmit && (
+            <StdinInput isActive={isExecuting} onSubmit={onStdinSubmit} />
+          )}
         </Box>
       )}
 

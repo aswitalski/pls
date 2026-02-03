@@ -1,3 +1,5 @@
+import { OutputChunk, OutputSource } from '../types/components.js';
+
 import {
   CommandOutput,
   ExecuteCommand,
@@ -12,14 +14,7 @@ import { calculateElapsed } from '../services/utils.js';
 // Maximum number of output chunks to keep in memory
 const MAX_OUTPUT_CHUNKS = 256;
 
-/**
- * A chunk of output with metadata for ordering and source tracking
- */
-export interface OutputChunk {
-  text: string;
-  timestamp: number;
-  source: 'stdout' | 'stderr';
-}
+export type { OutputChunk };
 
 /**
  * Output collected during task execution
@@ -99,7 +94,7 @@ export async function executeTask(
     chunks.push({
       text: data,
       timestamp: Date.now(),
-      source: stream,
+      source: stream === 'stdout' ? OutputSource.Stdout : OutputSource.Stderr,
     });
     // Limit chunks to prevent memory exhaustion
     if (chunks.length > MAX_OUTPUT_CHUNKS) {
@@ -133,17 +128,25 @@ export async function executeTask(
     workdir = result.workdir;
 
     // Add final output/errors as chunks only if not already captured during streaming
-    const hasStreamedStdout = chunks.some((c) => c.source === 'stdout');
-    const hasStreamedStderr = chunks.some((c) => c.source === 'stderr');
+    const hasStreamedStdout = chunks.some(
+      (c) => c.source === OutputSource.Stdout
+    );
+    const hasStreamedStderr = chunks.some(
+      (c) => c.source === OutputSource.Stderr
+    );
 
     if (result.output && result.output.trim() && !hasStreamedStdout) {
-      chunks.push({ text: result.output, timestamp: now, source: 'stdout' });
+      chunks.push({
+        text: result.output,
+        timestamp: now,
+        source: OutputSource.Stdout,
+      });
     }
     if (result.errors && result.errors.trim() && !hasStreamedStderr) {
       chunks.push({
         text: result.errors,
         timestamp: now + 1,
-        source: 'stderr',
+        source: OutputSource.Stderr,
       });
     }
 

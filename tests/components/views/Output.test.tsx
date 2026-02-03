@@ -2,7 +2,7 @@ import { render } from 'ink-testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ExecutionStatus } from '../../../src/services/shell.js';
-import { OutputChunk } from '../../../src/types/components.js';
+import { OutputChunk, OutputSource } from '../../../src/types/components.js';
 
 import {
   chunksToRows,
@@ -16,7 +16,7 @@ import {
  */
 function createChunks(
   text: string,
-  source: 'stdout' | 'stderr' = 'stdout'
+  source: OutputSource = OutputSource.Stdout
 ): OutputChunk[] {
   if (!text.trim()) return [];
   return [{ text, timestamp: Date.now(), source }];
@@ -33,10 +33,18 @@ function createInterleavedChunks(
   let timestamp = Date.now();
 
   if (stdout.trim()) {
-    chunks.push({ text: stdout, timestamp: timestamp++, source: 'stdout' });
+    chunks.push({
+      text: stdout,
+      timestamp: timestamp++,
+      source: OutputSource.Stdout,
+    });
   }
   if (stderr.trim()) {
-    chunks.push({ text: stderr, timestamp: timestamp++, source: 'stderr' });
+    chunks.push({
+      text: stderr,
+      timestamp: timestamp++,
+      source: OutputSource.Stderr,
+    });
   }
 
   return chunks;
@@ -191,9 +199,9 @@ describe('Output component', () => {
   describe('chunksToRows function', () => {
     it('converts chunks to rows sorted by timestamp', () => {
       const chunks: OutputChunk[] = [
-        { text: 'Second\n', timestamp: 2, source: 'stdout' },
-        { text: 'First\n', timestamp: 1, source: 'stderr' },
-        { text: 'Third\n', timestamp: 3, source: 'stdout' },
+        { text: 'Second\n', timestamp: 2, source: OutputSource.Stdout },
+        { text: 'First\n', timestamp: 1, source: OutputSource.Stderr },
+        { text: 'Third\n', timestamp: 3, source: OutputSource.Stdout },
       ];
 
       const rows = chunksToRows(chunks, 8, 75);
@@ -205,7 +213,11 @@ describe('Output component', () => {
 
     it('deduplicates adjacent identical lines', () => {
       const chunks: OutputChunk[] = [
-        { text: 'Same\nSame\nDifferent\n', timestamp: 1, source: 'stdout' },
+        {
+          text: 'Same\nSame\nDifferent\n',
+          timestamp: 1,
+          source: OutputSource.Stdout,
+        },
       ];
 
       const rows = chunksToRows(chunks, 8, 75);
@@ -261,7 +273,11 @@ describe('Output component', () => {
         vi.setSystemTime(timestamp + 2999);
 
         const chunks: OutputChunk[] = [
-          { text: 'Incomplete without newline', timestamp, source: 'stdout' },
+          {
+            text: 'Incomplete without newline',
+            timestamp,
+            source: OutputSource.Stdout,
+          },
         ];
 
         const rows = chunksToRows(chunks, 8, 75, false);
@@ -273,7 +289,11 @@ describe('Output component', () => {
         vi.setSystemTime(timestamp + 3000);
 
         const chunks: OutputChunk[] = [
-          { text: 'Incomplete without newline', timestamp, source: 'stdout' },
+          {
+            text: 'Incomplete without newline',
+            timestamp,
+            source: OutputSource.Stdout,
+          },
         ];
 
         const rows = chunksToRows(chunks, 8, 75, false);
@@ -283,7 +303,11 @@ describe('Output component', () => {
       it('shows complete lines before delay, adds incomplete after', () => {
         const timestamp = 1000;
         const chunks: OutputChunk[] = [
-          { text: 'Complete\nIncomplete', timestamp, source: 'stdout' },
+          {
+            text: 'Complete\nIncomplete',
+            timestamp,
+            source: OutputSource.Stdout,
+          },
         ];
 
         // Before 3 seconds: only complete line
@@ -296,6 +320,136 @@ describe('Output component', () => {
         const rowsAfter = chunksToRows(chunks, 8, 75, false);
         expect(rowsAfter).toEqual(['Complete', 'Incomplete']);
       });
+    });
+  });
+
+  describe('Stdin insertion', () => {
+    it('inserts stdin after last complete line during build output', () => {
+      // Simulates: build outputs partial line, user sends stdin, build continues
+      const chunks: OutputChunk[] = [
+        {
+          text: '[1/100] CXX obj/browser/ui/sidebar.o\n[2/100] CXX obj/browser/ui/side',
+          timestamp: 1000,
+          source: OutputSource.Stdout,
+        },
+        {
+          text: '\n> test\n',
+          timestamp: 1500,
+          source: OutputSource.Stdin,
+        },
+        {
+          text: 'bar_button.o\n[3/100] CXX obj/browser/ui/panel.o\n',
+          timestamp: 2000,
+          source: OutputSource.Stdout,
+        },
+      ];
+
+      const rows = chunksToRows(chunks, 8, 75, true);
+
+      // Stdin should appear after line 1, not in the middle of "sidebar_button"
+      expect(rows).toEqual([
+        '[1/100] CXX obj/browser/ui/sidebar.o',
+        '> test',
+        '[2/100] CXX obj/browser/ui/sidebar_button.o',
+        '[3/100] CXX obj/browser/ui/panel.o',
+      ]);
+    });
+
+    it('handles stdin when output arrives in small chunks', () => {
+      // Real scenario: streaming output arrives character by character
+      const chunks: OutputChunk[] = [
+        {
+          text: 'Installing packages',
+          timestamp: 100,
+          source: OutputSource.Stdout,
+        },
+        { text: '...\n', timestamp: 200, source: OutputSource.Stdout },
+        {
+          text: 'npm WARN deprecated\n',
+          timestamp: 300,
+          source: OutputSource.Stdout,
+        },
+        { text: '\n> y\n', timestamp: 350, source: OutputSource.Stdin },
+        {
+          text: 'added 150 packages\n',
+          timestamp: 400,
+          source: OutputSource.Stdout,
+        },
+      ];
+
+      const rows = chunksToRows(chunks, 8, 75, true);
+
+      expect(rows).toEqual([
+        'Installing packages...',
+        'npm WARN deprecated',
+        '> y',
+        'added 150 packages',
+      ]);
+    });
+
+    it('places stdin at start when no complete lines exist yet', () => {
+      const chunks: OutputChunk[] = [
+        { text: 'Loading', timestamp: 100, source: OutputSource.Stdout },
+        { text: '\n> input\n', timestamp: 150, source: OutputSource.Stdin },
+        { text: '...\nDone\n', timestamp: 200, source: OutputSource.Stdout },
+      ];
+
+      const rows = chunksToRows(chunks, 8, 75, true);
+
+      // Stdin should appear at start since no newline existed before it
+      expect(rows).toEqual(['> input', 'Loading...', 'Done']);
+    });
+
+    it('handles multiple stdin entries during execution', () => {
+      const chunks: OutputChunk[] = [
+        {
+          text: 'Step 1 complete\n',
+          timestamp: 100,
+          source: OutputSource.Stdout,
+        },
+        { text: '\n> first\n', timestamp: 150, source: OutputSource.Stdin },
+        {
+          text: 'Step 2 complete\n',
+          timestamp: 200,
+          source: OutputSource.Stdout,
+        },
+        { text: '\n> second\n', timestamp: 250, source: OutputSource.Stdin },
+        {
+          text: 'Step 3 complete\n',
+          timestamp: 300,
+          source: OutputSource.Stdout,
+        },
+      ];
+
+      const rows = chunksToRows(chunks, 8, 75, true);
+
+      expect(rows).toEqual([
+        'Step 1 complete',
+        '> first',
+        'Step 2 complete',
+        '> second',
+        'Step 3 complete',
+      ]);
+    });
+
+    it('preserves stdin position when output has no trailing newline', () => {
+      // Build output often ends mid-line
+      const chunks: OutputChunk[] = [
+        {
+          text: '[50/100] Compiling file.o\n[51/100] Compiling next',
+          timestamp: 100,
+          source: OutputSource.Stdout,
+        },
+        { text: '\n> status\n', timestamp: 150, source: OutputSource.Stdin },
+      ];
+
+      const rows = chunksToRows(chunks, 8, 75, true);
+
+      expect(rows).toEqual([
+        '[50/100] Compiling file.o',
+        '> status',
+        '[51/100] Compiling next',
+      ]);
     });
   });
 });

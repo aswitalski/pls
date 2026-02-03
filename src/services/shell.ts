@@ -258,6 +258,15 @@ export class RealExecutor implements Executor {
   }
 
   /**
+   * Write data to the stdin of the currently running child process
+   */
+  writeStdin(data: string): void {
+    if (this.currentChild?.stdin?.writable) {
+      this.currentChild.stdin.write(data);
+    }
+  }
+
+  /**
    * Set or update the output callback
    */
   setOutputCallback(callback: OutputCallback | undefined): void {
@@ -435,6 +444,13 @@ const executor: Executor = realExecutor;
  */
 export function killCurrentProcess(): void {
   realExecutor.killCurrentProcess();
+}
+
+/**
+ * Write data to the stdin of the currently running command
+ */
+export function writeStdin(data: string): void {
+  realExecutor.writeStdin(data);
 }
 
 /**

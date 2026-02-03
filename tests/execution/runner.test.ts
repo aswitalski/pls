@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ExecutionResult, ExecutionStatus } from '../../src/services/shell.js';
+import { OutputSource } from '../../src/types/components.js';
 
 import type {
   ExecutionOutput,
@@ -238,7 +239,9 @@ describe('Execution runner', () => {
 
     // Get final output chunks
     const lastUpdate = callbacks.updates[callbacks.updates.length - 1];
-    const stdoutChunks = lastUpdate.chunks.filter((c) => c.source === 'stdout');
+    const stdoutChunks = lastUpdate.chunks.filter(
+      (c) => c.source === OutputSource.Stdout
+    );
 
     // Should only have one stdout chunk (from streaming), not duplicated
     expect(stdoutChunks).toHaveLength(1);
@@ -269,7 +272,9 @@ describe('Execution runner', () => {
 
     // Get final output chunks
     const lastUpdate = callbacks.updates[callbacks.updates.length - 1];
-    const stderrChunks = lastUpdate.chunks.filter((c) => c.source === 'stderr');
+    const stderrChunks = lastUpdate.chunks.filter(
+      (c) => c.source === OutputSource.Stderr
+    );
 
     // Should only have one stderr chunk (from streaming), not duplicated
     expect(stderrChunks).toHaveLength(1);
@@ -297,7 +302,9 @@ describe('Execution runner', () => {
 
     // Get final output chunks
     const lastUpdate = callbacks.updates[callbacks.updates.length - 1];
-    const stdoutChunks = lastUpdate.chunks.filter((c) => c.source === 'stdout');
+    const stdoutChunks = lastUpdate.chunks.filter(
+      (c) => c.source === OutputSource.Stdout
+    );
 
     // Should have the output from result since nothing was streamed
     expect(stdoutChunks).toHaveLength(1);
