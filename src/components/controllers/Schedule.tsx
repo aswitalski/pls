@@ -99,7 +99,7 @@ export function Schedule({
         return;
       }
 
-      if (key.downArrow) {
+      if (key.downArrow || key.tab) {
         setHighlightedIndex((prev) => {
           if (prev === null) {
             return 0; // Select first

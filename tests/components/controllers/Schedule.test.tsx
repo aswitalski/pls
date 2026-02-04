@@ -24,7 +24,7 @@ import {
 } from '../../test-utils.js';
 
 // Destructure for readability
-const { ArrowDown, ArrowUp, Enter, Escape } = Keys;
+const { ArrowDown, ArrowUp, Enter, Escape, Tab } = Keys;
 const WaitTime = 32; // Generous wait time ensuring stability across all hardware and load conditions
 
 // Helper to create mock handlers with state tracking
@@ -1755,6 +1755,125 @@ describe('Schedule component', () => {
       );
 
       expect(listItem.description.color).toBe(Palette.SoftWhite);
+    });
+  });
+
+  describe('Tab key navigation', () => {
+    it('Tab key navigates to next option', async () => {
+      const { requestHandlers, lifecycleHandlers } =
+        createScheduleTestHandlers();
+      const onSelectionConfirmed = vi.fn();
+
+      const { stdin, lastFrame } = render(
+        <Schedule
+          message=""
+          tasks={[
+            {
+              action: 'Choose option',
+              type: TaskType.Define,
+              params: {
+                options: createRefinementOptions('First', 'Second', 'Third'),
+              },
+              config: [],
+            },
+          ]}
+          status={ComponentStatus.Active}
+          requestHandlers={requestHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          onSelectionConfirmed={onSelectionConfirmed}
+        />
+      );
+
+      // Tab selects first option
+      stdin.write(Tab);
+      await new Promise((r) => setTimeout(r, WaitTime));
+
+      let output = lastFrame();
+      expect(output).toContain('→');
+      expect(output).toContain('First');
+
+      // Tab again moves to second option
+      stdin.write(Tab);
+      await new Promise((r) => setTimeout(r, WaitTime));
+
+      output = lastFrame();
+      expect(output).toContain('Second');
+    });
+
+    it('Tab key wraps around at end of options', async () => {
+      const { requestHandlers, lifecycleHandlers } =
+        createScheduleTestHandlers();
+      const onSelectionConfirmed = vi.fn();
+
+      const { stdin, lastFrame } = render(
+        <Schedule
+          message=""
+          tasks={[
+            {
+              action: 'Choose option',
+              type: TaskType.Define,
+              params: {
+                options: createRefinementOptions('First', 'Second'),
+              },
+              config: [],
+            },
+          ]}
+          status={ComponentStatus.Active}
+          requestHandlers={requestHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          onSelectionConfirmed={onSelectionConfirmed}
+        />
+      );
+
+      // Tab to first, then second, then wrap to first
+      stdin.write(Tab);
+      await new Promise((r) => setTimeout(r, WaitTime));
+      stdin.write(Tab);
+      await new Promise((r) => setTimeout(r, WaitTime));
+      stdin.write(Tab);
+      await new Promise((r) => setTimeout(r, WaitTime));
+
+      const output = lastFrame();
+      // Should be back at first option
+      expect(output).toContain('First');
+    });
+
+    it('Tab and Enter confirms selection', async () => {
+      const { requestHandlers, lifecycleHandlers } =
+        createScheduleTestHandlers();
+      const onSelectionConfirmed = vi.fn();
+
+      const { stdin } = render(
+        <Schedule
+          message=""
+          tasks={[
+            {
+              action: 'Choose option',
+              type: TaskType.Define,
+              params: {
+                options: createRefinementOptions('First', 'Second'),
+              },
+              config: [],
+            },
+          ]}
+          status={ComponentStatus.Active}
+          requestHandlers={requestHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          onSelectionConfirmed={onSelectionConfirmed}
+        />
+      );
+
+      // Tab to select, then Tab again for second option, Enter to confirm
+      stdin.write(Tab);
+      await new Promise((r) => setTimeout(r, WaitTime));
+      stdin.write(Tab);
+      await new Promise((r) => setTimeout(r, WaitTime));
+      stdin.write(Enter);
+      await new Promise((r) => setTimeout(r, WaitTime));
+
+      expect(onSelectionConfirmed).toHaveBeenCalled();
+      const tasks = onSelectionConfirmed.mock.calls[0][0];
+      expect(tasks[0].action).toBe('second');
     });
   });
 });
