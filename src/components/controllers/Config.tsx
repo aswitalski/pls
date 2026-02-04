@@ -227,10 +227,11 @@ export function Config<
       }
 
       if (currentStepConfig.type === StepType.Selection) {
-        if (key.tab) {
-          setSelectedIndex(
-            (prev) => (prev + 1) % currentStepConfig.options.length
-          );
+        const len = currentStepConfig.options.length;
+        if (key.tab || key.rightArrow) {
+          setSelectedIndex((prev) => (prev + 1) % len);
+        } else if (key.leftArrow) {
+          setSelectedIndex((prev) => (prev - 1 + len) % len);
         } else if (key.return) {
           handleSubmit(currentStepConfig.options[selectedIndex].value);
         }
