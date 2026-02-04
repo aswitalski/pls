@@ -32,7 +32,7 @@ function Header({ app }: { app: App }) {
           {word}
         </Text>
       ))}
-      <Text color={Palette.AshGray}>v{app.version}</Text>
+      <Text color={Palette.SoftWhite}>v{app.version}</Text>
       {app.isDev && <Text color={Palette.Yellow}>dev</Text>}
     </Box>
   );
@@ -48,7 +48,7 @@ function Description({ description }: { description: string }) {
     <>
       {lines.map((line, index) => (
         <Box key={index}>
-          <Text color={Palette.White}>{line}.</Text>
+          <Text color={Palette.SoftWhite}>{line}.</Text>
         </Box>
       ))}
     </>
@@ -58,11 +58,14 @@ function Description({ description }: { description: string }) {
 function Usage() {
   return (
     <Box flexDirection="column" marginTop={1} gap={1}>
-      <Section title="Get started:">
+      <Section title="Show capabilities:">
         <Example>list skills</Example>
       </Section>
       <Section title="Usage:">
         <Example>[describe your request]</Example>
+      </Section>
+      <Section title="Help:">
+        <Example>help</Example>
       </Section>
     </Box>
   );
@@ -71,7 +74,7 @@ function Usage() {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Box flexDirection="column">
-      <Text color={Palette.White}>{title}</Text>
+      <Text color={Palette.SoftWhite}>{title}</Text>
       {children}
     </Box>
   );

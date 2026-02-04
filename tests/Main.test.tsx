@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DebugLevel } from '../src/configuration/types.js';
 import { App } from '../src/types/types.js';
 
+import { LLMService } from '../src/services/anthropic.js';
 import { loadConfig } from '../src/configuration/io.js';
 import { getMissingConfigKeys } from '../src/configuration/schema.js';
 
@@ -514,6 +515,83 @@ describe('Main component queue-based architecture', () => {
       // Cleanup
       exitSpy.mockRestore();
       vi.restoreAllMocks();
+    });
+  });
+
+  describe('Help command', () => {
+    it('shows help screen and exits for "help" command', async () => {
+      const processModule = await import('../src/services/process.js');
+
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      const { lastFrame } = render(<Main app={mockApp} command="help" />);
+
+      await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+      const output = lastFrame();
+      expect(output).toContain("Here's how to ask me:");
+      expect(output).toContain('Keys you might find useful:');
+      expect(output).toContain('Where I keep my settings:');
+      expect(exitSpy).toHaveBeenCalledWith(0);
+
+      exitSpy.mockRestore();
+    });
+
+    it('shows help screen for "--help" flag', async () => {
+      const processModule = await import('../src/services/process.js');
+
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      const { lastFrame } = render(<Main app={mockApp} command="--help" />);
+
+      await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+      const output = lastFrame();
+      expect(output).toContain("Here's how to ask me:");
+
+      exitSpy.mockRestore();
+    });
+
+    it('shows help screen for "-h" flag', async () => {
+      const processModule = await import('../src/services/process.js');
+
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      const { lastFrame } = render(<Main app={mockApp} command="-h" />);
+
+      await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+      const output = lastFrame();
+      expect(output).toContain("Here's how to ask me:");
+
+      exitSpy.mockRestore();
+    });
+
+    it('does not call LLM service for help command', async () => {
+      const processModule = await import('../src/services/process.js');
+
+      const exitSpy = vi
+        .spyOn(processModule, 'exitApp')
+        .mockImplementation(() => {});
+
+      const processWithTool = vi.fn();
+      const mockService: LLMService = { processWithTool };
+
+      render(
+        <Main app={mockApp} command="help" serviceFactory={() => mockService} />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, ShortWait));
+
+      expect(processWithTool).not.toHaveBeenCalled();
+
+      exitSpy.mockRestore();
     });
   });
 });

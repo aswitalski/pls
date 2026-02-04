@@ -19,6 +19,7 @@ import {
   createCommand,
   createConfig,
   createFeedback,
+  createHelp,
   createMessage,
   createWelcome,
 } from './services/components.js';
@@ -26,6 +27,17 @@ import { registerGlobalShortcut } from './services/keyboard.js';
 import { initializeLogger, setDebugLevel } from './services/logger.js';
 
 import { Workflow } from './components/Workflow.js';
+
+/**
+ * Check if command matches help variations (help, --help, -h)
+ */
+function isHelpCommand(cmd: string | null): boolean {
+  if (!cmd) return false;
+  const normalized = cmd.toLowerCase().trim();
+  return (
+    normalized === 'help' || normalized === '--help' || normalized === '-h'
+  );
+}
 
 interface MainProps {
   app: App;
@@ -151,6 +163,9 @@ export const Main = ({
           onAborted: handleConfigAborted,
         }),
       ]);
+    } else if (service && isHelpCommand(command)) {
+      // Help command - show help screen directly (no LLM)
+      setInitialQueue([createHelp({ app })]);
     } else if (service && command) {
       // Valid service exists and command provided - execute command
       setInitialQueue([createCommand({ command, service })]);

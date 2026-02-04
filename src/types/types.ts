@@ -10,6 +10,7 @@ export interface App {
 
 export enum ComponentName {
   Welcome = 'welcome',
+  Help = 'help',
   Config = 'config',
   Message = 'message',
   Debug = 'debug',

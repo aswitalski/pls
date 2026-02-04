@@ -50,6 +50,12 @@ export interface WelcomeDefinitionProps {
 
 export type WelcomeProps = ComponentProps<WelcomeDefinitionProps>;
 
+export interface HelpDefinitionProps {
+  app: App;
+}
+
+export type HelpProps = ComponentProps<HelpDefinitionProps>;
+
 export interface FeedbackDefinitionProps {
   type: FeedbackType;
   message: string;
@@ -360,6 +366,7 @@ type WelcomeDefinition = SimpleDefinition<
   ComponentName.Welcome,
   WelcomeDefinitionProps
 >;
+type HelpDefinition = SimpleDefinition<ComponentName.Help, HelpDefinitionProps>;
 type ConfigDefinition = ManagedDefinition<
   ComponentName.Config,
   ConfigDefinitionProps,
@@ -430,6 +437,7 @@ type LearnDefinition = ManagedDefinition<
 // Union of all simple component definitions
 export type SimpleComponentDefinition =
   | WelcomeDefinition
+  | HelpDefinition
   | FeedbackDefinition
   | MessageDefinition
   | DebugDefinition
