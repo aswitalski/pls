@@ -15,7 +15,7 @@ export const introspectTool: Tool = {
       capabilities: {
         type: 'array',
         description:
-          'Array of capabilities and skills. Include system capabilities (Introspect, Configure, Answer, Learn, Execute) with origin "system", meta workflow capabilities (Schedule, Validate) with origin "meta", and user-provided skills from the Available Skills section with origin "user".',
+          'Array of capabilities and skills. Include system capabilities (Help, Introspect, Configure, Answer, Learn, Execute) with origin "system", meta workflow capabilities (Schedule, Validate) with origin "meta", and user-provided skills from the Available Skills section with origin "user".',
         items: {
           type: 'object',
           properties: {
@@ -27,13 +27,13 @@ export const introspectTool: Tool = {
             description: {
               type: 'string',
               description:
-                'Brief description of what this capability does. Start with lowercase letter, no ending punctuation. Maximum 64 characters. Examples: "run shell commands and operations", "build and deploy to production".',
+                'Brief description of what this capability does. Start with lowercase letter, no ending punctuation. Maximum 64 characters. Examples: "display usage information and shortcuts", "run shell commands and operations", "build and deploy to production".',
             },
             origin: {
               type: 'string',
               enum: ['system', 'user', 'meta'],
               description:
-                'Origin of the capability. Use "system" for system capabilities (Introspect, Configure, Answer, Learn, Execute), "meta" for meta workflow capabilities (Schedule, Validate), and "user" for user-provided skills.',
+                'Origin of the capability. Use "system" for system capabilities (Help, Introspect, Configure, Answer, Learn, Execute), "meta" for meta workflow capabilities (Schedule, Validate), and "user" for user-provided skills.',
             },
             isIncomplete: {
               type: 'boolean',
