@@ -33,6 +33,7 @@ import { Refinement, RefinementView } from './controllers/Refinement.js';
 import { Report } from './views/Report.js';
 import { Schedule, ScheduleView } from './controllers/Schedule.js';
 import { Validate, ValidateView } from './controllers/Validate.js';
+import { Help } from './views/Help.js';
 import { Welcome } from './views/Welcome.js';
 
 interface SimpleComponentProps {
@@ -49,6 +50,11 @@ export const SimpleComponent = memo(function SimpleComponent({
     case ComponentName.Welcome: {
       const { props, status } = def;
       return <Welcome {...props} status={status} />;
+    }
+
+    case ComponentName.Help: {
+      const { props, status } = def;
+      return <Help {...props} status={status} />;
     }
 
     case ComponentName.Feedback: {
@@ -454,6 +460,7 @@ export const TimelineComponent = ({
   switch (def.name) {
     // Simple components render as-is
     case ComponentName.Welcome:
+    case ComponentName.Help:
     case ComponentName.Feedback:
     case ComponentName.Message:
     case ComponentName.Debug:

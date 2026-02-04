@@ -140,6 +140,12 @@ export const createWelcome = (props: { app: App }, status?: ComponentStatus) =>
   createSimpleComponent(ComponentName.Welcome, props, status);
 
 /**
+ * Create a help component that displays usage and configuration information
+ */
+export const createHelp = (props: { app: App }, status?: ComponentStatus) =>
+  createSimpleComponent(ComponentName.Help, props, status);
+
+/**
  * Create a feedback component that displays status messages
  */
 export const createFeedback = (

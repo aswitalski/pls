@@ -77,24 +77,25 @@ NON-NEGOTIABLE and applies to EVERY response.
 
 **CORRECT ORDER - FOLLOW EXACTLY:**
 
-### Position 1-5: system capabilities (origin: "system")
+### Position 1-6: system capabilities (origin: "system")
 
 These MUST appear FIRST, in this EXACT sequence:
 
-1. **Introspect**
-2. **Configure**
-3. **Answer**
-4. **Learn**
-5. **Execute**
+1. **Help**
+2. **Introspect**
+3. **Configure**
+4. **Answer**
+5. **Learn**
+6. **Execute**
 
-### Position 6-7: meta workflow capabilities (origin: "meta")
+### Position 7-8: meta workflow capabilities (origin: "meta")
 
 These MUST appear AFTER Execute and BEFORE user-provided skills:
 
-6. **Schedule**
-7. **Validate**
+7. **Schedule**
+8. **Validate**
 
-### Position 8+: user-provided skills (origin: "user")
+### Position 9+: user-provided skills (origin: "user")
 
 If skills are provided in the "Available Skills" section below, include
 them in the response. For each skill:
@@ -122,6 +123,7 @@ Create capability objects for each capability. Each object should have:
   - Start with lowercase letter, no ending punctuation
   - Focus on clarity and brevity
   - Describe the core purpose in one short phrase
+  - For Help: "display usage information and keyboard shortcuts"
   - For Learn: "learn new skills or capabilities"
   - Examples:
     - "break down requests into actionable steps"
@@ -129,8 +131,8 @@ Create capability objects for each capability. Each object should have:
     - "build and deploy to staging or production"
 
 - **origin**: The origin type of the capability
-  - Use "system" for system capabilities: Introspect, Configure, Answer,
-    Learn, Execute
+  - Use "system" for system capabilities: Help, Introspect, Configure,
+    Answer, Learn, Execute
   - Use "meta" for meta workflow capabilities: Schedule, Validate
   - Use "user" for all user-provided skills
 
@@ -159,9 +161,9 @@ Examples:
 
 When user asks "list your skills", create an introductory message like
 "here are my capabilities:" followed by capability objects for system
-capabilities (Introspect, Configure, Answer, Learn, Execute with origin
-"system"), then meta workflow capabilities (Schedule, Validate with
-origin "meta").
+capabilities (Help, Introspect, Configure, Answer, Learn, Execute with
+origin "system"), then meta workflow capabilities (Schedule, Validate
+with origin "meta").
 
 ### Example 2: Filtered Skills
 
@@ -175,9 +177,9 @@ app skill with origin "user".
 When user asks "what can you do" and user-provided skills like "process
 data" and "backup files" exist, create an introductory message like "i can
 help with these operations:" followed by all system capabilities
-(Introspect, Configure, Answer, Learn, Execute with origin "system"),
-meta capabilities (Schedule, Validate with origin "meta"), plus
-the user-provided skills with origin "user".
+(Help, Introspect, Configure, Answer, Learn, Execute with origin
+"system"), meta capabilities (Schedule, Validate with origin "meta"),
+plus the user-provided skills with origin "user".
 
 ## Final Validation
 
