@@ -54,14 +54,16 @@ vi.mock('../../../src/services/loader.js', () => ({
 }));
 
 // Mock shell service to avoid actual command execution
-const { killCurrentProcessMock } = vi.hoisted(() => ({
+const { killCurrentProcessMock, writeStdinMock } = vi.hoisted(() => ({
   killCurrentProcessMock: vi.fn(),
+  writeStdinMock: vi.fn(),
 }));
 vi.mock('../../../src/services/shell.js', async () => {
   const actual = await vi.importActual('../../../src/services/shell.js');
   return {
     ...actual,
     killCurrentProcess: killCurrentProcessMock,
+    writeStdin: writeStdinMock,
     executeCommand: vi
       .fn()
       .mockImplementation(
@@ -1489,6 +1491,214 @@ describe('Execute component', () => {
       expect(frame).not.toContain('Next:');
       expect(frame).not.toContain('Skipped:');
       expect(frame).not.toContain('Cancelled:');
+    });
+  });
+
+  describe('Stdin input handling', () => {
+    it('shows stdin input when / key pressed during execution', async () => {
+      const { executeCommand } = await import('../../../src/services/shell.js');
+
+      vi.mocked(executeCommand).mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        return {
+          description: 'Long task',
+          command: 'sleep',
+          output: '',
+          errors: '',
+          result: ExecutionResult.Success,
+        };
+      });
+
+      const service = createMockAnthropicService({
+        message: 'Running task.',
+        commands: [{ description: 'Long task', command: 'sleep 10' }],
+      });
+
+      const tasks = [{ action: 'Run long task', type: TaskType.Execute }];
+
+      const { stdin, lastFrame } = render(
+        <Execute
+          tasks={tasks}
+          service={service}
+          lifecycleHandlers={createLifecycleHandlers()}
+          requestHandlers={createRequestHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // Advance timers to let processing complete and execution start
+      await vi.advanceTimersByTimeAsync(100);
+
+      await vi.waitFor(() => lastFrame()?.includes('Long task'), {
+        timeout: 500,
+      });
+
+      stdin.write('/');
+      await vi.advanceTimersByTimeAsync(50);
+
+      expect(lastFrame()).toContain('>');
+    });
+
+    it('/ key does not hide input when already visible', async () => {
+      const { executeCommand } = await import('../../../src/services/shell.js');
+
+      vi.mocked(executeCommand).mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        return {
+          description: 'Task',
+          command: 'cmd',
+          output: '',
+          errors: '',
+          result: ExecutionResult.Success,
+        };
+      });
+
+      const service = createMockAnthropicService({
+        message: 'Running.',
+        commands: [{ description: 'Task', command: 'cmd' }],
+      });
+
+      const { stdin, lastFrame } = render(
+        <Execute
+          tasks={[{ action: 'Task', type: TaskType.Execute }]}
+          service={service}
+          lifecycleHandlers={createLifecycleHandlers()}
+          requestHandlers={createRequestHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.advanceTimersByTimeAsync(100);
+
+      await vi.waitFor(() => lastFrame()?.includes('Task'), { timeout: 500 });
+
+      // Show input
+      stdin.write('/');
+      await vi.advanceTimersByTimeAsync(50);
+      expect(lastFrame()).toContain('>');
+
+      // / should not hide input (allows typing / in text input)
+      stdin.write('/');
+      await vi.advanceTimersByTimeAsync(50);
+      expect(lastFrame()).toContain('>');
+    });
+
+    it('escape hides stdin input when visible', async () => {
+      const { executeCommand } = await import('../../../src/services/shell.js');
+
+      vi.mocked(executeCommand).mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        return {
+          description: 'Task',
+          command: 'cmd',
+          output: '',
+          errors: '',
+          result: ExecutionResult.Success,
+        };
+      });
+
+      const service = createMockAnthropicService({
+        message: 'Running.',
+        commands: [{ description: 'Task', command: 'cmd' }],
+      });
+
+      const onAborted = vi.fn();
+
+      const { stdin, lastFrame } = render(
+        <Execute
+          tasks={[{ action: 'Task', type: TaskType.Execute }]}
+          service={service}
+          lifecycleHandlers={createLifecycleHandlers()}
+          requestHandlers={createRequestHandlers({ onAborted })}
+          workflowHandlers={createWorkflowHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.advanceTimersByTimeAsync(100);
+
+      await vi.waitFor(() => lastFrame()?.includes('Task'), { timeout: 500 });
+
+      // Show input with /
+      stdin.write('/');
+      await vi.waitFor(() => lastFrame()?.includes('>'), { timeout: 200 });
+
+      // Hide input with Escape (should not cancel)
+      stdin.write('\x1b');
+      await vi.waitFor(() => !lastFrame()?.includes('>'), { timeout: 200 });
+
+      expect(lastFrame()).not.toContain('>');
+      expect(onAborted).not.toHaveBeenCalled();
+    });
+
+    it('escape cancels execution when stdin input is hidden', async () => {
+      const { executeCommand } = await import('../../../src/services/shell.js');
+
+      vi.mocked(executeCommand).mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        return {
+          description: 'Task',
+          command: 'cmd',
+          output: '',
+          errors: '',
+          result: ExecutionResult.Success,
+        };
+      });
+
+      const service = createMockAnthropicService({
+        message: 'Running.',
+        commands: [{ description: 'Task', command: 'cmd' }],
+      });
+
+      const onAborted = vi.fn();
+
+      const { stdin, lastFrame } = render(
+        <Execute
+          tasks={[{ action: 'Task', type: TaskType.Execute }]}
+          service={service}
+          lifecycleHandlers={createLifecycleHandlers()}
+          requestHandlers={createRequestHandlers({ onAborted })}
+          workflowHandlers={createWorkflowHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      await vi.advanceTimersByTimeAsync(100);
+
+      await vi.waitFor(() => lastFrame()?.includes('Task'), { timeout: 500 });
+
+      // Cancel with Escape (input not visible)
+      stdin.write('\x1b');
+
+      expect(onAborted).toHaveBeenCalledWith('execution');
+    });
+
+    it('does not show stdin input during loading phase', async () => {
+      const service = createMockAnthropicService({
+        message: 'Running.',
+        commands: [{ description: 'Task', command: 'cmd' }],
+      });
+
+      const { stdin, lastFrame } = render(
+        <Execute
+          tasks={[{ action: 'Task', type: TaskType.Execute }]}
+          service={service}
+          lifecycleHandlers={createLifecycleHandlers()}
+          requestHandlers={createRequestHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+          status={ComponentStatus.Active}
+        />
+      );
+
+      // During loading phase, / should not show input
+      stdin.write('/');
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Should still be in loading, no > prompt
+      expect(lastFrame()).toContain('Preparing');
+      expect(lastFrame()).not.toContain('>');
     });
   });
 });

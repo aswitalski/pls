@@ -89,8 +89,9 @@ export function Execute({
   // Ref to track if current task execution is cancelled
   const cancelledRef = useRef(false);
 
-  // Toggle stdin input visibility with Tab key
+  // Toggle stdin input visibility with / key
   const [showStdinInput, setShowStdinInput] = useState(false);
+  const showStdinInputRef = useRef(false);
 
   const { error, tasks, message, hasProcessed, completionMessage, summary } =
     localState;
@@ -134,6 +135,7 @@ export function Execute({
   // Hide stdin input when not executing
   useEffect(() => {
     if (!isExecuting) {
+      showStdinInputRef.current = false;
       setShowStdinInput(false);
     }
   }, [isExecuting]);
@@ -177,16 +179,23 @@ export function Execute({
       timestamp: Date.now(),
       source: OutputSource.Stdin,
     });
+    showStdinInputRef.current = false;
     setShowStdinInput(false);
   }, []);
 
   useInput(
-    (_, key) => {
+    (input, key) => {
       if (key.escape && (isLoading || isExecuting)) {
-        handleCancel();
+        if (showStdinInputRef.current) {
+          showStdinInputRef.current = false;
+          setShowStdinInput(false);
+        } else {
+          handleCancel();
+        }
       }
-      if (key.tab && isExecuting) {
-        setShowStdinInput((prev) => !prev);
+      if (input === '/' && isExecuting && !showStdinInputRef.current) {
+        showStdinInputRef.current = true;
+        setShowStdinInput(true);
       }
     },
     { isActive: (isLoading || isExecuting) && isActive }
@@ -326,6 +335,7 @@ export function Execute({
 
     // Reset output ref for new task
     outputRef.current = { chunks: [], currentMemory: undefined };
+    showStdinInputRef.current = false;
     setShowStdinInput(false);
 
     // Merge workdir into command
