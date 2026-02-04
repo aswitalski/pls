@@ -14,7 +14,8 @@ import { saveConfigLabels } from '../../configuration/labels.js';
 import { DebugLevel } from '../../configuration/types.js';
 import { useInput } from '../../services/keyboard.js';
 
-import { ConfigStep, ConfigView, StepType } from '../views/Config.js';
+import { ConfigStep, StepType } from '../views/Config.js';
+import { Setting } from './Setting.js';
 import { Spinner } from '../views/Spinner.js';
 
 export {
@@ -25,6 +26,32 @@ export {
   ConfigViewProps,
   StepType,
 } from '../views/Config.js';
+
+type TextConfigStep = ConfigStep & { type: StepType.Text };
+type SelectionConfigStep = ConfigStep & { type: StepType.Selection };
+
+function isTextStep(step: ConfigStep): step is TextConfigStep {
+  return step.type === StepType.Text;
+}
+
+function isSelectionStep(step: ConfigStep): step is SelectionConfigStep {
+  return step.type === StepType.Selection;
+}
+
+function initializeStepValues(steps: ConfigStep[]): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const step of steps) {
+    const configKey = step.path || step.key;
+    if (isTextStep(step)) {
+      if (step.value !== null) {
+        values[configKey] = step.value;
+      }
+    } else if (isSelectionStep(step)) {
+      values[configKey] = step.options[step.defaultIndex].value;
+    }
+  }
+  return values;
+}
 
 interface ResolveResult {
   steps: ConfigStep[];
@@ -93,62 +120,22 @@ export function Config<
 
   const [steps, setSteps] = useState<ConfigStep[]>(initialSteps || []);
   const [resolving, setResolving] = useState(!initialSteps?.length && !!query);
-  const [step, setStep] = useState<number>(0);
-  const [values, setValues] = useState<Record<string, string>>(() => {
-    const initial: Record<string, string> = {};
-    (initialSteps || []).forEach((stepConfig) => {
-      const configKey = stepConfig.path || stepConfig.key;
-      switch (stepConfig.type) {
-        case StepType.Text:
-          if (stepConfig.value !== null) {
-            initial[configKey] = stepConfig.value;
-          }
-          break;
-        case StepType.Selection:
-          initial[configKey] =
-            stepConfig.options[stepConfig.defaultIndex].value;
-          break;
-      }
-    });
-    return initial;
-  });
-  const [inputValue, setInputValue] = useState('');
-  const [selectedIndex, setSelectedIndex] = useState(() => {
-    if (!initialSteps?.length) return 0;
-    const first = initialSteps[0];
-    return first.type === StepType.Selection ? first.defaultIndex : 0;
-  });
+  const [currentStep, setCurrentStep] = useState<number>(0);
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    initializeStepValues(initialSteps || [])
+  );
 
-  // Resolve query to steps
   useEffect(() => {
     if (!isActive || !query || !service || initialSteps?.length) return;
 
     resolveQueryToSteps(query, service)
       .then((result) => {
-        // Add debug components to timeline if present
         if (result.debug.length) {
           workflowHandlers.addToTimeline(...result.debug);
         }
-
         setSteps(result.steps);
         setResolving(false);
-        // Initialize values for resolved steps
-        const initial: Record<string, string> = {};
-        result.steps.forEach((stepConfig) => {
-          const configKey = stepConfig.path || stepConfig.key;
-          switch (stepConfig.type) {
-            case StepType.Text:
-              if (stepConfig.value !== null) {
-                initial[configKey] = stepConfig.value;
-              }
-              break;
-            case StepType.Selection:
-              initial[configKey] =
-                stepConfig.options[stepConfig.defaultIndex].value;
-              break;
-          }
-        });
-        setValues(initial);
+        setValues(initializeStepValues(result.steps));
       })
       .catch((err: unknown) => {
         setResolving(false);
@@ -168,112 +155,46 @@ export function Config<
     workflowHandlers,
   ]);
 
-  // Update inputValue and selectedIndex when step changes
-  useEffect(() => {
-    if (isActive && step < steps.length) {
-      const stepConfig = steps[step];
-      const configKey = stepConfig.path || stepConfig.key;
-      setInputValue(values[configKey] || '');
-      if (stepConfig.type === StepType.Selection) {
-        setSelectedIndex(stepConfig.defaultIndex);
-      }
-    }
-  }, [step, isActive, steps, values]);
+  const handleEscape = () => {
+    requestHandlers.onCompleted({
+      values,
+      completedStep: currentStep,
+      selectedIndex: 0,
+      steps,
+    });
 
-  const normalizeValue = (value: string | null | undefined) => {
-    if (value === null || value === undefined) return '';
-    return value.replace(/\n/g, '').trim();
+    if (onAborted) {
+      onAborted('configuration');
+    } else {
+      lifecycleHandlers.completeActive(
+        createFeedback({
+          type: FeedbackType.Aborted,
+          message: 'Configuration cancelled.',
+        })
+      );
+    }
   };
 
   useInput(
     (_, key) => {
-      if (!isActive || step >= steps.length) return;
-
-      const currentStepConfig = steps[step];
-
+      if (!isActive || currentStep >= steps.length) return;
       if (key.escape) {
-        const configKey = currentStepConfig.path || currentStepConfig.key;
-        let currentValue = '';
-        switch (currentStepConfig.type) {
-          case StepType.Text:
-            currentValue = inputValue || values[configKey] || '';
-            break;
-          case StepType.Selection:
-            currentValue = values[configKey] || '';
-            break;
-        }
-        const finalValues = currentValue
-          ? { ...values, [configKey]: currentValue }
-          : values;
-
-        requestHandlers.onCompleted({
-          values: finalValues,
-          completedStep: step,
-          selectedIndex,
-          steps,
-        });
-
-        if (onAborted) {
-          onAborted('configuration');
-        } else {
-          lifecycleHandlers.completeActive(
-            createFeedback({
-              type: FeedbackType.Aborted,
-              message: 'Configuration cancelled.',
-            })
-          );
-        }
-        return;
-      }
-
-      if (currentStepConfig.type === StepType.Selection) {
-        const len = currentStepConfig.options.length;
-        if (key.tab || key.rightArrow) {
-          setSelectedIndex((prev) => (prev + 1) % len);
-        } else if (key.leftArrow) {
-          setSelectedIndex((prev) => (prev - 1 + len) % len);
-        } else if (key.return) {
-          handleSubmit(currentStepConfig.options[selectedIndex].value);
-        }
+        handleEscape();
       }
     },
     { isActive }
   );
 
-  const handleSubmit = (value: string) => {
-    const currentStepConfig = steps[step];
-    let finalValue = '';
-
-    switch (currentStepConfig.type) {
-      case StepType.Selection:
-        finalValue = value;
-        break;
-      case StepType.Text: {
-        const normalizedInput = normalizeValue(value);
-        if (normalizedInput && currentStepConfig.validate(normalizedInput)) {
-          finalValue = normalizedInput;
-        } else if (
-          currentStepConfig.value &&
-          currentStepConfig.validate(currentStepConfig.value)
-        ) {
-          finalValue = currentStepConfig.value;
-        }
-        break;
-      }
-    }
-
-    if (!finalValue) return;
-
-    const configKey = currentStepConfig.path || currentStepConfig.key;
-    const newValues = { ...values, [configKey]: finalValue };
+  const handleEntrySubmit = (stepConfig: ConfigStep, value: string) => {
+    const configKey = stepConfig.path || stepConfig.key;
+    const newValues = { ...values, [configKey]: value };
     setValues(newValues);
-    setInputValue('');
 
-    if (step === steps.length - 1) {
+    if (currentStep === steps.length - 1) {
       requestHandlers.onCompleted({
         values: newValues,
         completedStep: steps.length,
-        selectedIndex,
+        selectedIndex: 0,
         steps,
       });
 
@@ -294,9 +215,9 @@ export function Config<
           })
         );
       }
-      setStep(steps.length);
+      setCurrentStep(steps.length);
     } else {
-      setStep(step + 1);
+      setCurrentStep(currentStep + 1);
     }
   };
 
@@ -310,13 +231,31 @@ export function Config<
   }
 
   return (
-    <ConfigView
-      steps={steps}
-      state={{ values, completedStep: step, selectedIndex }}
-      status={status}
-      debug={debug}
-      onInputChange={setInputValue}
-      onInputSubmit={handleSubmit}
-    />
+    <Box flexDirection="column" marginLeft={1}>
+      {steps.map((stepConfig, index) => {
+        const isStepActive = index === currentStep && isActive;
+        const isCompleted = index < currentStep;
+        const wasAborted = index === currentStep && !isActive;
+        const shouldShow = isCompleted || isStepActive || wasAborted;
+
+        if (!shouldShow) return null;
+
+        const configKey = stepConfig.path || stepConfig.key;
+
+        return (
+          <Box key={configKey} marginTop={index === 0 ? 0 : 1}>
+            <Setting
+              step={stepConfig}
+              initialValue={values[configKey] || ''}
+              isActive={isStepActive}
+              debug={debug}
+              onSubmit={(value) => {
+                handleEntrySubmit(stepConfig, value);
+              }}
+            />
+          </Box>
+        );
+      })}
+    </Box>
   );
 }
