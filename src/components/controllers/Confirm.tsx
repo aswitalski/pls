@@ -35,7 +35,7 @@ export function Confirm({
         const finalState: ConfirmState = { selectedIndex: 1, confirmed: false };
         requestHandlers.onCompleted(finalState);
         onCancelled();
-      } else if (key.tab) {
+      } else if (key.tab || key.leftArrow || key.rightArrow) {
         // Toggle between Yes (0) and No (1)
         setSelectedIndex((prev) => (prev === 0 ? 1 : 0));
       } else if (key.return) {

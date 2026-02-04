@@ -117,6 +117,26 @@ describe('Confirm component', () => {
       expect(true).toBe(true);
     });
 
+    it('toggles selection with arrow keys', async () => {
+      const onCancelled = vi.fn();
+      const { stdin } = render(
+        <Confirm
+          message="Continue?"
+          onConfirmed={() => {}}
+          onCancelled={onCancelled}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers()}
+        />
+      );
+
+      // Initially "yes" is selected, arrow key toggles to "no"
+      stdin.write(Keys.ArrowLeft);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      stdin.write(Keys.Enter);
+
+      expect(onCancelled).toHaveBeenCalledOnce();
+    });
+
     it('does not respond to input when done', () => {
       const onConfirmed = vi.fn();
       const { stdin } = render(

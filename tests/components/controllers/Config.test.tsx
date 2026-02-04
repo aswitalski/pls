@@ -910,6 +910,46 @@ describe('Config component interaction flows', () => {
     });
   });
 
+  describe('Arrow key navigation', () => {
+    it('Left arrow cycles backward through selection options', async () => {
+      const onFinished = vi.fn();
+      const steps: ConfigStep[] = [
+        {
+          description: 'Model',
+          key: 'model',
+          type: StepType.Selection,
+          options: [
+            { label: 'Haiku', value: 'haiku' },
+            { label: 'Sonnet', value: 'sonnet' },
+            { label: 'Opus', value: 'opus' },
+          ],
+          defaultIndex: 0,
+          validate: () => true,
+        },
+      ];
+
+      const { stdin } = render(
+        <Config
+          steps={steps}
+          onFinished={onFinished}
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<ConfigState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+        />
+      );
+
+      // Left arrow wraps to last option (Opus)
+      stdin.write(Keys.ArrowLeft);
+      await new Promise((r) => setTimeout(r, 50));
+      stdin.write(Keys.Enter);
+
+      expect(onFinished).toHaveBeenCalledWith({
+        model: 'opus',
+      });
+    });
+  });
+
   describe('Selection defaultIndex highlighting', () => {
     it('highlights option at defaultIndex on initial render', () => {
       const onFinished = vi.fn();

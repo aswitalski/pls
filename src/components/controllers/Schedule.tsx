@@ -99,20 +99,16 @@ export function Schedule({
         return;
       }
 
-      if (key.downArrow || key.tab) {
-        setHighlightedIndex((prev) => {
-          if (prev === null) {
-            return 0; // Select first
-          }
-          return (prev + 1) % optionsCount; // Wrap around
-        });
-      } else if (key.upArrow) {
-        setHighlightedIndex((prev) => {
-          if (prev === null) {
-            return optionsCount - 1; // Select last
-          }
-          return (prev - 1 + optionsCount) % optionsCount; // Wrap around
-        });
+      if (key.downArrow || key.rightArrow || key.tab) {
+        setHighlightedIndex((prev) =>
+          prev === null ? 0 : (prev + 1) % optionsCount
+        );
+      } else if (key.upArrow || key.leftArrow) {
+        setHighlightedIndex((prev) =>
+          prev === null
+            ? optionsCount - 1
+            : (prev - 1 + optionsCount) % optionsCount
+        );
       } else if (key.return && highlightedIndex !== null) {
         // Record the selection for this group
         const newCompletedSelections = [...completedSelections];
