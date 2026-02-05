@@ -7,7 +7,7 @@ import { Colors, getTextColor, Palette } from '../../services/colors.js';
 import { UserQuery } from './UserQuery.js';
 
 const OPTIONS = [
-  { label: 'yes', value: 'yes', color: Palette.BrightGreen },
+  { label: 'yes', value: 'yes', color: Palette.Green },
   { label: 'no', value: 'no', color: Colors.Status.Error },
 ];
 

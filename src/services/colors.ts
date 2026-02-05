@@ -16,19 +16,15 @@ export const Palette = {
   Gray: '#888888',
   DarkGray: '#666666',
   CharcoalGray: '#282828',
-  Green: '#5aaa8a',
-  LightGreen: '#65b595',
-  BrightGreen: '#3e9a3e',
+  Green: '#60b090',
   Yellow: '#cccc5c',
   Orange: '#f48c80',
-  MediumOrange: '#d07560',
   WarmOrange: '#ce985e',
   DarkOrange: '#ab5e40',
-  BurntOrange: '#cc7a5c',
+  BurntOrange: '#ce785e',
   Red: '#cc5c5c',
-  Cyan: '#5c9ccc',
+  Cyan: '#5c94c4',
   LightCyan: '#5ccccc',
-  SteelBlue: '#5c8cbc',
   Purple: '#9c5ccc',
 } as const;
 
@@ -49,12 +45,12 @@ export const Colors = {
   Action: {
     Execute: Palette.Green,
     Discard: Palette.DarkOrange,
-    Select: Palette.SteelBlue,
+    Select: Palette.Cyan,
   },
   Status: {
-    Success: Palette.BrightGreen,
+    Success: Palette.Green,
     Error: Palette.Red,
-    Warning: Palette.MediumOrange,
+    Warning: Palette.BurntOrange,
     Info: Palette.Cyan,
   },
   Label: {
@@ -72,7 +68,7 @@ export const Colors = {
     Report: Palette.Orange,
     Define: Palette.Orange,
     Ignore: Palette.BurntOrange,
-    Select: Palette.SteelBlue,
+    Select: Palette.Cyan,
     Discard: Palette.DarkOrange,
     Group: Palette.Yellow,
   },
@@ -136,7 +132,7 @@ const taskColors: Record<
   },
   [TaskType.Learn]: {
     description: Colors.Label.Default,
-    type: Palette.LightGreen,
+    type: Palette.Green,
   },
 } as const;
 
@@ -147,7 +143,7 @@ const feedbackColors: Record<FeedbackType, string | null> = {
   [FeedbackType.Info]: Colors.Status.Info,
   [FeedbackType.Warning]: Palette.WarmOrange,
   [FeedbackType.Succeeded]: Colors.Status.Success,
-  [FeedbackType.Aborted]: Palette.MediumOrange,
+  [FeedbackType.Aborted]: Palette.BurntOrange,
   [FeedbackType.Failed]: Colors.Status.Error,
 } as const;
 
@@ -307,7 +303,7 @@ export function getStatusColors(status: ExecutionStatus) {
       return {
         icon: Palette.Gray,
         description: getTextColor(true),
-        command: Palette.LightGreen,
+        command: Palette.Green,
         symbol: Palette.AshGray,
       };
     case ExecutionStatus.Success:
@@ -326,9 +322,9 @@ export function getStatusColors(status: ExecutionStatus) {
       };
     case ExecutionStatus.Aborted:
       return {
-        icon: Palette.MediumOrange,
+        icon: Palette.BurntOrange,
         description: Palette.Gray,
-        command: Palette.MediumOrange,
+        command: Palette.BurntOrange,
         symbol: Palette.Gray,
       };
     case ExecutionStatus.Cancelled:

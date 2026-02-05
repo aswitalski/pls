@@ -23,7 +23,7 @@ function Header({ app }: { app: App }) {
   return (
     <Box marginBottom={1} gap={1}>
       {words.map((word, index) => (
-        <Text color={Palette.LightGreen} key={index}>
+        <Text color={Palette.Green} key={index}>
           {word}
         </Text>
       ))}
@@ -55,7 +55,7 @@ function Usage() {
     <Box marginTop={1}>
       <Text>
         <Text color={Palette.SoftWhite}>To get started, type: </Text>
-        <Text color={Palette.LightGreen}>pls</Text>
+        <Text color={Palette.Green}>pls</Text>
         <Text color={Palette.Yellow}> help</Text>
       </Text>
     </Box>

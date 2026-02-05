@@ -19,7 +19,7 @@ function Usage() {
   return (
     <Section title="Here's how to ask me:" first>
       <Box marginLeft={2}>
-        <Text color={Palette.LightGreen}>pls </Text>
+        <Text color={Palette.Green}>pls </Text>
         <Text color={Palette.Yellow}>{'<request>'}</Text>
       </Box>
       <Box flexDirection="column" marginLeft={2} marginTop={1}>
@@ -89,12 +89,12 @@ function Configuration() {
           <Item
             label="settings.debug"
             description="none, info, verbose"
-            color={Palette.SteelBlue}
+            color={Palette.Cyan}
           />
           <Item
             label="settings.memory"
             description="process memory limit in MB"
-            color={Palette.SteelBlue}
+            color={Palette.Cyan}
           />
         </Box>
       </Box>
@@ -142,7 +142,7 @@ function Command({ cmd, description }: { cmd: string; description: string }) {
   return (
     <Box gap={2}>
       <Box width={20}>
-        <Text color={Palette.LightGreen}>pls </Text>
+        <Text color={Palette.Green}>pls </Text>
         <Text color={Palette.Yellow}>{cmd}</Text>
       </Box>
       <Text color={Palette.Gray}>{description}</Text>

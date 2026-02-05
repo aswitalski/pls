@@ -119,7 +119,7 @@ function SelectionStep({
         return (
           <Box key={option.label} marginRight={2}>
             <Text
-              color={isSelected && isActive ? Palette.BrightGreen : undefined}
+              color={isSelected && isActive ? Palette.Green : undefined}
               dimColor={!isSelected}
               bold={isSelected}
             >
