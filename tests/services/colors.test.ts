@@ -61,9 +61,9 @@ describe('getFeedbackColor', () => {
     expect(color).toBe(Colors.Status.Success);
   });
 
-  it('returns MediumOrange color for Aborted', () => {
+  it('returns BurntOrange color for Aborted', () => {
     const color = getFeedbackColor(FeedbackType.Aborted);
-    expect(color).toBe(Palette.MediumOrange);
+    expect(color).toBe(Palette.BurntOrange);
   });
 
   it('returns Error color for Failed', () => {
