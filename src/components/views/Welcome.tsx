@@ -1,4 +1,3 @@
-import { ReactNode } from 'react';
 import { Box, Text } from 'ink';
 
 import { WelcomeProps } from '../../types/components.js';
@@ -6,16 +5,12 @@ import { App } from '../../types/types.js';
 
 import { Palette } from '../../services/colors.js';
 
-import { Panel } from './Panel.js';
-
 export function Welcome({ app }: WelcomeProps) {
   return (
-    <Box alignSelf="flex-start">
-      <Panel>
-        <Header app={app} />
-        <Description description={app.description} />
-        <Usage />
-      </Panel>
+    <Box marginLeft={2} flexDirection="column">
+      <Header app={app} />
+      <Description description={app.description} />
+      <Usage />
     </Box>
   );
 }
@@ -28,7 +23,7 @@ function Header({ app }: { app: App }) {
   return (
     <Box marginBottom={1} gap={1}>
       {words.map((word, index) => (
-        <Text color={Palette.BrightGreen} bold key={index}>
+        <Text color={Palette.LightGreen} key={index}>
           {word}
         </Text>
       ))}
@@ -57,37 +52,12 @@ function Description({ description }: { description: string }) {
 
 function Usage() {
   return (
-    <Box flexDirection="column" marginTop={1} gap={1}>
-      <Section title="Show capabilities:">
-        <Example>list skills</Example>
-      </Section>
-      <Section title="Usage:">
-        <Example>[describe your request]</Example>
-      </Section>
-      <Section title="Help:">
-        <Example>help</Example>
-      </Section>
-    </Box>
-  );
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <Box flexDirection="column">
-      <Text color={Palette.SoftWhite}>{title}</Text>
-      {children}
-    </Box>
-  );
-}
-
-function Example({ children }: { children: string }) {
-  return (
-    <Box gap={1}>
-      <Text color={Palette.Gray}>&gt;</Text>
-      <Text color={Palette.BrightGreen} bold>
-        pls
+    <Box marginTop={1}>
+      <Text>
+        <Text color={Palette.SoftWhite}>To get started, type: </Text>
+        <Text color={Palette.LightGreen}>pls</Text>
+        <Text color={Palette.Yellow}> help</Text>
       </Text>
-      <Text color={Palette.Yellow}>{children}</Text>
     </Box>
   );
 }

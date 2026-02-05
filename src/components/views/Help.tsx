@@ -19,10 +19,11 @@ function Usage() {
   return (
     <Section title="Here's how to ask me:" first>
       <Box marginLeft={2}>
-        <Text>pls </Text>
+        <Text color={Palette.LightGreen}>pls </Text>
         <Text color={Palette.Yellow}>{'<request>'}</Text>
       </Box>
       <Box flexDirection="column" marginLeft={2} marginTop={1}>
+        <Command cmd="learn <skill>" description="teach me a new skill" />
         <Command cmd="list skills" description="show available skills" />
         <Command cmd="help" description="show this help screen" />
       </Box>
@@ -140,9 +141,9 @@ function Shortcut({
 function Command({ cmd, description }: { cmd: string; description: string }) {
   return (
     <Box gap={2}>
-      <Box width={18}>
-        <Text color={Palette.SoftWhite}>pls </Text>
-        <Text color={Palette.Green}>{cmd}</Text>
+      <Box width={20}>
+        <Text color={Palette.LightGreen}>pls </Text>
+        <Text color={Palette.Yellow}>{cmd}</Text>
       </Box>
       <Text color={Palette.Gray}>{description}</Text>
     </Box>
