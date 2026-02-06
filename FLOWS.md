@@ -15,6 +15,7 @@ by the pls (prompt-language-shell) command-line concierge.
 8. [Skill Creation Flow](#skill-creation-flow)
 9. [Error Handling Flow](#error-handling-flow)
 10. [Abort and Cancellation Flow](#abort-and-cancellation-flow)
+11. [Flow Interactions](#flow-interactions)
 
 ---
 
@@ -36,14 +37,15 @@ by the pls (prompt-language-shell) command-line concierge.
 5. Configuration is saved to ~/.plsrc
 6. AnthropicService is created with new configuration
 7. Success feedback is displayed
-8. If command was provided, proceed to command execution
-9. Otherwise, exit gracefully
+8. If command is help, show help screen directly (no LLM)
+9. If command was provided, proceed to command execution
+10. Otherwise, exit gracefully
 
 ```mermaid
 flowchart TD
     Start([User runs pls]) --> CheckConfig{Valid config<br/>exists?}
     CheckConfig -->|No| ShowWelcome[Display Welcome]
-    CheckConfig -->|Yes| HasCommand{Command<br/>provided?}
+    CheckConfig -->|Yes| IsHelp{Help<br/>command?}
 
     ShowWelcome --> ShowMessage[Show config required message]
     ShowMessage --> ConfigComp[Display Config component]
@@ -55,8 +57,12 @@ flowchart TD
 
     SaveConfig --> CreateService[Create AnthropicService]
     CreateService --> ShowSuccess[Show success feedback]
-    ShowSuccess --> HasCommand
+    ShowSuccess --> IsHelp
 
+    IsHelp -->|Yes| ShowHelp[Display Help screen]
+    IsHelp -->|No| HasCommand{Command<br/>provided?}
+
+    ShowHelp --> ExitApp
     HasCommand -->|Yes| ExecCmd[Proceed to Command Execution]
     HasCommand -->|No| ExitApp[Exit code 0]
 
@@ -65,6 +71,7 @@ flowchart TD
     style Start fill:#e1f5ff
     style ExitApp fill:#ffe1e1
     style ExecCmd fill:#e1ffe1
+    style ShowHelp fill:#e1ffe1
 ```
 
 ---
@@ -862,7 +869,7 @@ All flows use a queue-based execution model with four states:
 **Component States:**
 
 - **Stateless:** Move to timeline immediately
-  - Welcome, Message, Feedback, Report, Debug
+  - Welcome, Help, Message, Feedback, Report, Debug
 - **Stateful:** Wait for completion before moving to timeline
   - Config, Command, Schedule, Confirm, Introspect, Answer, Execute, Validate,
     Refinement
@@ -910,7 +917,8 @@ flowchart TD
 First-time user experience:
 
 1. No config exists
-2. Show Welcome screen
+2. Show Welcome screen (name, description, "To get started, type:
+   pls help")
 3. Show config required message
 4. Config component collects settings
 5. If command provided, execute it
@@ -930,6 +938,24 @@ flowchart LR
     style Start fill:#e1f5ff
     style Exit fill:#ffe1e1
     style Exec fill:#e1ffe1
+```
+
+### Help Command (no LLM)
+
+Direct help display without LLM involvement:
+
+1. User runs `pls help`, `pls --help`, or `pls -h`
+2. Help screen displayed directly (no LLM call)
+3. Shows usage, keyboard shortcuts, and configuration reference
+4. Application exits
+
+```mermaid
+flowchart LR
+    Start([pls help]) --> Help[Help screen]
+    Help --> Exit[Exit code 0]
+
+    style Start fill:#e1f5ff
+    style Exit fill:#e1ffe1
 ```
 
 ### Command → Schedule → Refinement → Schedule → Confirm → Execute
@@ -998,9 +1024,14 @@ flowchart TD
     Start([User runs pls command]) --> ConfigCheck{Config<br/>exists?}
 
     ConfigCheck -->|No| InitConfig[Initial Configuration Flow]
-    ConfigCheck -->|Yes| CommandFlow[Command Execution Flow]
+    ConfigCheck -->|Yes| IsHelp{Help<br/>command?}
 
-    InitConfig --> CommandFlow
+    InitConfig --> IsHelp
+
+    IsHelp -->|Yes| HelpScreen[Help Screen]
+    IsHelp -->|No| CommandFlow[Command Execution Flow]
+
+    HelpScreen --> Exit
 
     CommandFlow --> PlanFlow[Scheduling Flow]
     PlanFlow --> HasDefine{Has DEFINE<br/>tasks?}
@@ -1053,17 +1084,18 @@ flowchart TD
 The pls concierge supports these core workflows:
 
 1. **Initial Configuration** - First-time setup with Anthropic API
-2. **Command Execution** - Natural language to structured tasks
-3. **Planning** - LLM-based request interpretation and task generation
-4. **Plan Selection** - Interactive disambiguation for ambiguous requests
-5. **Task Execution** - Type-specific handlers (introspect, answer, configure,
-   execute, learn)
-6. **Configuration Validation** - Automatic detection and prompting for missing
-   config
-7. **Skills System** - User-defined workflows with parameter resolution
-8. **Skill Creation** - Guided walkthrough for creating new skills
-9. **Error Handling** - User-friendly errors with appropriate exit codes
-10. **Abort/Cancellation** - Clean termination at any interaction point
+2. **Help** - Direct help screen (no LLM) via `pls help`/`--help`/`-h`
+3. **Command Execution** - Natural language to structured tasks
+4. **Planning** - LLM-based request interpretation and task generation
+5. **Plan Selection** - Interactive disambiguation for ambiguous requests
+6. **Task Execution** - Type-specific handlers (introspect, answer,
+   configure, execute, learn)
+7. **Configuration Validation** - Automatic detection and prompting for
+   missing config
+8. **Skills System** - User-defined workflows with parameter resolution
+9. **Skill Creation** - Guided walkthrough for creating new skills
+10. **Error Handling** - User-friendly errors with appropriate exit codes
+11. **Abort/Cancellation** - Clean termination at any interaction point
 
 All flows follow a queue-based component lifecycle, maintaining a visible
 timeline of completed interactions while processing the current component.

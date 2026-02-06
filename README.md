@@ -24,6 +24,7 @@ $ pls list skills
 
 Here's what I can help with:
 
+  - Help - display usage information and keyboard shortcuts
   - Introspect - list available capabilities and skills
   - Configure - manage and configure system settings
   - Answer - respond to questions and provide information
@@ -65,7 +66,8 @@ Let me clarify.
     - Deploy to production
 ```
 
-Run `pls` without arguments to see the welcome screen.
+Run `pls` without arguments to see the welcome screen, or `pls help` for
+usage information and keyboard shortcuts.
 
 ## How It Works
 
@@ -107,9 +109,21 @@ them before execution. See [Skills](#skills) for details.
 
 ## Reference
 
+### Keyboard Shortcuts
+
+Global:
+- `Shift+Tab` - cycle debug level (none → info → verbose)
+- `Tab` - cycle through options
+- `Up/Down` - select from the list
+- `Enter` - confirm selection
+- `Escape` - cancel operation
+
+During execution:
+- `/` - enter input mode
+- `Enter` - send input to the process
+- `Escape` - dismiss input or cancel execution
+
 ### Debug Mode
-Press `Shift+Tab` during execution to cycle through debug levels
-(none → info → verbose).
 Logs are saved to `~/.pls/logs/` when debug is `info` or `verbose`.
 
 ### Data Locations
