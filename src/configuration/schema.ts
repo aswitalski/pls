@@ -42,6 +42,11 @@ const coreConfigSchema: Record<string, ConfigDefinition> = {
     values: SUPPORTED_MODELS,
     default: AnthropicModel.Haiku,
     description: 'Anthropic model',
+    labels: {
+      [AnthropicModel.Haiku]: 'Haiku 4.5',
+      [AnthropicModel.Sonnet]: 'Sonnet 4.5',
+      [AnthropicModel.Opus]: 'Opus 4.6',
+    },
   },
   'settings.debug': {
     type: ConfigDefinitionType.Enum,

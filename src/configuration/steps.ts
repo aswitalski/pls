@@ -173,7 +173,7 @@ export function createConfigStepsFromSchema(
           path: key,
           type: StepType.Selection,
           options: definition.values.map((value) => ({
-            label: value,
+            label: definition.labels?.[value] ?? value,
             value,
           })),
           defaultIndex: Math.max(0, defaultIndex),

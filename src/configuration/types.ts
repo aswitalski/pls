@@ -3,7 +3,7 @@ import { AppError, ErrorCode } from '../types/errors.js';
 export enum AnthropicModel {
   Sonnet = 'claude-sonnet-4-5',
   Haiku = 'claude-haiku-4-5',
-  Opus = 'claude-opus-4-1',
+  Opus = 'claude-opus-4-6',
 }
 
 export const SUPPORTED_MODELS = Object.values(AnthropicModel);
@@ -63,6 +63,7 @@ export type ConfigDefinition =
       type: ConfigDefinitionType.Enum;
       values: string[];
       default?: string;
+      labels?: Record<string, string>;
     })
   | (BaseConfigDefinition & {
       type: ConfigDefinitionType.Number;
