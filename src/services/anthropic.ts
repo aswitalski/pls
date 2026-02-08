@@ -19,6 +19,7 @@ import { loadSkillsForPrompt } from './skills.js';
 import { toolRegistry } from './registry.js';
 import {
   CommandResultSchema,
+  DiscoverResultSchema,
   IntrospectResultSchema,
 } from '../types/schemas.js';
 import type { ExecuteCommand } from './shell.js';
@@ -41,12 +42,23 @@ export interface IntrospectResult {
   debug?: ComponentDefinition[];
 }
 
+export interface DiscoverResult {
+  message: string;
+  command: ExecuteCommand;
+  debug?: ComponentDefinition[];
+}
+
 export interface LLMService {
   processWithTool(
     command: string,
     toolName: 'introspect',
     instructions?: string
   ): Promise<IntrospectResult>;
+  processWithTool(
+    command: string,
+    toolName: 'discover',
+    instructions?: string
+  ): Promise<DiscoverResult>;
   processWithTool(
     command: string,
     toolName: string,
@@ -137,6 +149,11 @@ export class AnthropicService implements LLMService {
   ): Promise<IntrospectResult>;
   async processWithTool(
     command: string,
+    toolName: 'discover',
+    customInstructions?: string
+  ): Promise<DiscoverResult>;
+  async processWithTool(
+    command: string,
     toolName: string,
     customInstructions?: string
   ): Promise<CommandResult>;
@@ -144,7 +161,7 @@ export class AnthropicService implements LLMService {
     command: string,
     toolName: string,
     customInstructions?: string
-  ): Promise<CommandResult | IntrospectResult> {
+  ): Promise<CommandResult | IntrospectResult | DiscoverResult> {
     // Load tool from registry
     const tool = toolRegistry.getSchema(toolName);
 
@@ -271,6 +288,7 @@ export class AnthropicService implements LLMService {
       question?: string;
       answer?: string;
       commands?: ExecuteCommand[];
+      command?: ExecuteCommand;
       error?: string;
     };
 
@@ -341,6 +359,23 @@ export class AnthropicService implements LLMService {
       }
 
       return validation.data as IntrospectResult;
+    }
+
+    // Handle discover tool response
+    if (toolName === 'discover') {
+      const validation = DiscoverResultSchema.safeParse({
+        message: input.message,
+        command: input.command,
+        debug,
+      });
+
+      if (!validation.success) {
+        throw new Error(
+          `I received an unexpected response while discovering command:\n${formatValidationError(validation.error)}`
+        );
+      }
+
+      return validation.data as DiscoverResult;
     }
 
     // Handle schedule tool responses

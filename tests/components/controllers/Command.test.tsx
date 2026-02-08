@@ -148,6 +148,135 @@ describe('Command component error handling', () => {
     });
   });
 
+  describe('"do" prefix detection', () => {
+    it('formats command with discover metadata when "do" prefix is present', async () => {
+      const service = createMockAnthropicService({
+        message: 'Discover command.',
+        tasks: [
+          {
+            action: 'Find TypeScript files',
+            type: TaskType.Discover,
+            params: { query: 'find ts files' },
+          },
+        ],
+      });
+      const spy = vi.spyOn(service, 'processWithTool');
+
+      render(
+        <Command
+          service={service}
+          command="do find ts files"
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<CommandState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+        />
+      );
+
+      await vi.waitFor(() => {
+        expect(spy).toHaveBeenCalledWith(
+          'find ts files\n\nmetadata:\n  fallback: discover',
+          'schedule'
+        );
+      });
+    });
+
+    it('is case-insensitive for "do" prefix', async () => {
+      const service = createMockAnthropicService({
+        message: 'Discover command.',
+        tasks: [],
+      });
+      const spy = vi.spyOn(service, 'processWithTool');
+
+      render(
+        <Command
+          service={service}
+          command="Do test"
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<CommandState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+        />
+      );
+
+      await vi.waitFor(() => {
+        expect(spy).toHaveBeenCalledWith(
+          'test\n\nmetadata:\n  fallback: discover',
+          'schedule'
+        );
+      });
+    });
+
+    it('passes command unchanged when no "do" prefix', async () => {
+      const service = createMockAnthropicService({
+        message: 'Schedule.',
+        tasks: [],
+      });
+      const spy = vi.spyOn(service, 'processWithTool');
+
+      render(
+        <Command
+          service={service}
+          command="test something"
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<CommandState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+        />
+      );
+
+      await vi.waitFor(() => {
+        expect(spy).toHaveBeenCalledWith('test something', 'schedule');
+      });
+    });
+
+    it('does not match "docker" as "do" prefix', async () => {
+      const service = createMockAnthropicService({
+        message: 'Schedule.',
+        tasks: [],
+      });
+      const spy = vi.spyOn(service, 'processWithTool');
+
+      render(
+        <Command
+          service={service}
+          command="docker ps"
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<CommandState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+        />
+      );
+
+      await vi.waitFor(() => {
+        expect(spy).toHaveBeenCalledWith('docker ps', 'schedule');
+      });
+    });
+
+    it('does not match "done" as "do" prefix', async () => {
+      const service = createMockAnthropicService({
+        message: 'Schedule.',
+        tasks: [],
+      });
+      const spy = vi.spyOn(service, 'processWithTool');
+
+      render(
+        <Command
+          service={service}
+          command="done with task"
+          status={ComponentStatus.Active}
+          requestHandlers={createRequestHandlers<CommandState>()}
+          lifecycleHandlers={createLifecycleHandlers()}
+          workflowHandlers={createWorkflowHandlers()}
+        />
+      );
+
+      await vi.waitFor(() => {
+        expect(spy).toHaveBeenCalledWith('done with task', 'schedule');
+      });
+    });
+  });
+
   describe('Execute routing', () => {
     it('routes Execute tasks correctly when all tasks are Execute type', async () => {
       const service = createMockAnthropicService({

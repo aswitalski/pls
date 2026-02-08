@@ -20,6 +20,7 @@ import { Command, CommandView } from './controllers/Command.js';
 import { Config, ConfigView } from './controllers/Config.js';
 import { Confirm, ConfirmView } from './controllers/Confirm.js';
 import { Debug } from './views/Debug.js';
+import { Discover, DiscoverView } from './controllers/Discover.js';
 import {
   Execute,
   ExecuteView,
@@ -291,6 +292,25 @@ export const ControllerComponent = memo(function ControllerComponent({
       );
     }
 
+    case ComponentName.Discover: {
+      const {
+        props: { query, action, service, upcoming },
+        status,
+      } = def;
+      return (
+        <Discover
+          query={query}
+          action={action}
+          service={service}
+          upcoming={upcoming}
+          requestHandlers={requestHandlers}
+          lifecycleHandlers={lifecycleHandlers}
+          workflowHandlers={workflowHandlers}
+          status={status}
+        />
+      );
+    }
+
     default:
       throw new Error(
         `Unknown managed component: ${(def as ManagedComponentDefinition).name}`
@@ -440,6 +460,26 @@ export const ViewComponent = memo(function ViewComponent({
       );
     }
 
+    case ComponentName.Discover: {
+      const {
+        props: { action, upcoming },
+        state,
+        status,
+      } = def;
+      return (
+        <DiscoverView
+          status={status}
+          action={action}
+          phase="done"
+          message={state.message}
+          command={state.command}
+          output={state.output}
+          error={state.error}
+          upcoming={upcoming}
+        />
+      );
+    }
+
     default:
       throw new Error(
         `Unknown managed component: ${(def as ManagedComponentDefinition).name}`
@@ -478,6 +518,7 @@ export const TimelineComponent = ({
     case ComponentName.Answer:
     case ComponentName.Introspect:
     case ComponentName.Learn:
+    case ComponentName.Discover:
       return <ViewComponent def={def as ManagedComponentDefinition} />;
 
     default:

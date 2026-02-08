@@ -28,6 +28,7 @@ Here's what I can help with:
   - Introspect - list available capabilities and skills
   - Configure - manage and configure system settings
   - Answer - respond to questions and provide information
+  - Discover - find and run the right command for a task
   - Execute - run shell commands and process operations
 ```
 
@@ -52,6 +53,25 @@ Here's what I'll do.
   - Copy photos to backup folder
   - Create zip archive
   - Upload to cloud storage
+```
+
+Use `pls do` to discover and run the right command for a task:
+
+```
+$ pls do find ts files
+
+Discover the command for finding TypeScript files.
+
+  - Find TypeScript files in current directory
+
+Shall I execute this plan?
+
+> Yes
+
+Find TypeScript files in current directory
+
+  Find TypeScript files.
+  $ find . -type f -name '*.ts' -not -path '*/node_modules/*'
 ```
 
 When `pls` needs clarification, it will present options to choose from:

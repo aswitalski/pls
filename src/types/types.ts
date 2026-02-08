@@ -25,6 +25,7 @@ export enum ComponentName {
   Execute = 'execute',
   Validate = 'validate',
   Learn = 'learn',
+  Discover = 'discover',
 }
 
 export enum TaskType {
@@ -40,6 +41,7 @@ export enum TaskType {
   Discard = 'discard',
   Group = 'group',
   Learn = 'learn',
+  Discover = 'discover',
 }
 
 export enum Origin {

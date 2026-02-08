@@ -16,6 +16,7 @@ import { ComponentName } from '../src/types/types.js';
 
 import type {
   CommandResult,
+  DiscoverResult,
   IntrospectResult,
   LLMService,
 } from '../src/services/anthropic.js';
@@ -52,6 +53,7 @@ export function createMockAnthropicService(
     capabilities?: Capability[];
     answer?: string;
     commands?: ExecuteCommand[];
+    command?: ExecuteCommand;
     debug?: ComponentDefinition[];
   } = {},
   error?: Error
@@ -60,7 +62,7 @@ export function createMockAnthropicService(
     processWithTool(
       _command: string,
       toolName: string
-    ): Promise<CommandResult | IntrospectResult> {
+    ): Promise<CommandResult | IntrospectResult | DiscoverResult> {
       if (error) {
         return Promise.reject(error);
       }
@@ -68,6 +70,13 @@ export function createMockAnthropicService(
         return Promise.resolve({
           message: result.message || '',
           capabilities: result.capabilities,
+          debug: result.debug,
+        });
+      }
+      if (toolName === 'discover' && result.command) {
+        return Promise.resolve({
+          message: result.message || '',
+          command: result.command,
           debug: result.debug,
         });
       }

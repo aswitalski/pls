@@ -12,7 +12,8 @@ present with skills, present but empty, or missing entirely. Your
 behavior must adapt accordingly:
 
 - **Skills present**: Match user requests ONLY against listed skills
-- **Empty or missing**: Create "ignore" tasks for ALL action verbs
+- **Empty or missing**: Use fallback behavior (ignore by default,
+  see "Fallback Behavior" section)
 
 **CRITICAL - Available Skills Section Takes Precedence**:
 
@@ -81,28 +82,45 @@ Every task MUST have a type field. Use the appropriate type:
 - `define` - Presenting options when a matching skill needs variant
   selection
 - `ignore` - Request has NO matching skill OR is too vague to execute
+- `discover` - Command discovery when fallback is set to discover
 
-**CRITICAL SKILL MATCHING RULES**:
+## Fallback Behavior
 
-1. **ONLY match against skills in "Available Skills" section**: The
-   ONLY skills you can execute are those explicitly listed in the
-   "Available Skills" section of the prompt. Do NOT assume, infer, or
-   create skills based on examples in these instructions.
+When a request does NOT match any skill, the fallback behavior
+depends on `metadata.fallback`:
 
-2. **Examples are illustrative only**: All examples in these
-   instructions (including "build", "deploy", etc.) are for
-   illustration purposes. They do NOT represent actual available
-   skills unless they appear in the "Available Skills" section.
+- **`fallback: ignore`** (default when no metadata or no fallback
+  field): Create an `ignore` task. Action format: "Ignore unknown
+  'X' request" where X is the verb/phrase.
+- **`fallback: discover`**: Create a `discover` task instead of
+  ignoring. The action is a human-readable description, and the
+  query is the original request text.
 
-3. **No Available Skills = No Execute Tasks**: If the "Available
-   Skills" section is missing or empty, ALL action verbs must result
-   in `ignore` type tasks. You cannot execute ANY commands without
-   explicitly defined skills.
+**Discover task format**:
+- action: Clean, human-readable description
+- type: "discover"
+- params: { query: "[original request text]" }
 
-4. **Define vs Ignore**:
-   - Use `define` ONLY when a skill EXISTS in "Available Skills" but
-     needs variant selection
-   - Use `ignore` when NO matching skill exists in "Available Skills"
+**Discover with variants**: When a discover request involves listing
+or searching files by type, you MUST offer scope variants using a
+`define` task. This tool is primarily used in software projects, so
+suggest options that suit developers — typically excluding dependency,
+build, and generated directories relevant to the detected ecosystem.
+
+**IMPORTANT**: Always present scope options for file listing/searching
+requests. Do NOT default to one scope silently.
+
+- type: "define"
+- action: "Choose scope for [action]"
+- params:
+    options:
+      - { name: "[Narrowed scope excluding common noise directories]",
+          command: "do [action] excluding [directories]" }
+      - { name: "[Full scope including everything]",
+          command: "do [action] including all directories" }
+
+When the user's request already specifies scope, skip the define task
+and create a discover task directly.
 
 **Define task params** (ONLY when skill exists): When creating a
 `define` type task for a skill that EXISTS in "Available Skills",
@@ -182,20 +200,16 @@ Before creating tasks, evaluate the request type:
      - Multiple execution steps → create ONLY a group task with those
        steps as subtasks (never create a flat execute task)
      - Single execution step → can use a leaf execute task
-   - If verb does NOT match any skill in "Available Skills" → ignore
-     type with action "Ignore unknown 'X' request" where X is the
-     verb/phrase
-   - Example: "compile" with no matching skill in "Available Skills"
-     → action "Ignore unknown 'compile' request"
-   - Example: "build" with no matching skill in "Available Skills" →
-     action "Ignore unknown 'build' request"
+   - If verb does NOT match any skill in "Available Skills" → use
+     fallback behavior (see "Fallback Behavior" section)
 
 5. **Vague/ambiguous requests** without clear verb:
-   - Phrases like "do something", "handle it" → ignore type
-   - Action format: "Ignore unknown 'X' request" where X is the phrase
+   - Phrases like "handle it", "something" → use fallback behavior
+   - Action format for ignore: "Ignore unknown 'X' request" where X
+     is the phrase
 
 **Critical rules**:
-- Use `ignore` for unmatched verbs OR vague requests
+- Unmatched verbs and vague requests use fallback behavior
 - Use `define` ONLY when a skill exists but needs variant selection
 - Action format for ignore: "Ignore unknown 'X' request" (lowercase X)
 - DO NOT infer or create execute tasks for unmatched verbs
@@ -500,7 +514,7 @@ even if they use the same action verb.
 3. **Independent skill matching**: For each operation, independently
    check if it matches a skill:
    - If operation matches a skill → extract skill steps as subtasks
-   - If operation does NOT match a skill → create "ignore" type task
+   - If operation does NOT match a skill → use fallback behavior
    - **CRITICAL: Do NOT infer context or create generic execute tasks
      for unmatched operations**
 
@@ -538,8 +552,8 @@ even if they use the same action verb.
   truth
 - **Never use example skills**: Do NOT create tasks based on skills
   mentioned in examples unless they appear in Available Skills
-- **When no Available Skills section exists**: ALL action verbs must
-  result in "ignore" type tasks
+- **When no Available Skills section exists**: ALL action verbs use
+  fallback behavior (ignore by default)
 
 **CRITICAL**: Skills in the "Available Skills" section define the ONLY
 operations you can execute. This is an EXHAUSTIVE and COMPLETE list.
@@ -552,13 +566,12 @@ operations you can execute. This is an EXHAUSTIVE and COMPLETE list.
   instructions.
 - **Empty or missing "Available Skills" = NO execute tasks**: If there
   is no "Available Skills" section, or if it's empty, you CANNOT
-  create ANY execute tasks. ALL action verbs must result in "ignore"
-  type tasks.
+  create ANY execute tasks. ALL action verbs use fallback behavior
+  (ignore by default, discover when metadata specifies it).
 - **The list is COMPLETE**: The "Available Skills" list is exhaustive.
   There are no hidden or implicit skills.
-- **No matching skill = ignore task**: If an action verb does NOT have
-  a matching skill in "Available Skills", you MUST create an "ignore"
-  type task
+- **No matching skill = use fallback**: If an action verb does NOT
+  have a matching skill in "Available Skills", use fallback behavior
 - **NO assumptions**: There are NO implicit or assumed operations
 - **NO inference**: DO NOT infer follow-up actions based on context
 - **NO related operations**: DO NOT assume operations even if they
@@ -568,8 +581,8 @@ operations you can execute. This is an EXHAUSTIVE and COMPLETE list.
 
 - "analyze", "validate", "initialize", "configure", "setup", "monitor",
   "verify", "test", "lint", "format"
-- If these verbs appear but NO corresponding skill exists → create
-  "ignore" type task
+- If these verbs appear but NO corresponding skill exists → use
+  fallback behavior
 - Do NOT create execute tasks for these verbs without explicit skills
 
 **Example:**

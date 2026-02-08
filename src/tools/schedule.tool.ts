@@ -32,7 +32,7 @@ export const scheduleTool: Tool = {
           type: {
             type: 'string',
             description:
-              'Type: "group" for parent tasks with subtasks. For leaf tasks: "configure", "execute", "answer", "introspect", "learn", "report", "define", "ignore"',
+              'Type: "group" for parent tasks with subtasks. For leaf tasks: "configure", "execute", "answer", "introspect", "learn", "report", "define", "ignore", "discover"',
           },
           params: {
             type: 'object',

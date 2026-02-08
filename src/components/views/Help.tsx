@@ -23,6 +23,7 @@ function Usage() {
         <Text color={Palette.Yellow}>{'<request>'}</Text>
       </Box>
       <Box flexDirection="column" marginLeft={2} marginTop={1}>
+        <Command cmd="do <action>" description="discover and run a command" />
         <Command cmd="learn <skill>" description="teach me a new skill" />
         <Command cmd="list skills" description="show available skills" />
         <Command cmd="help" description="show this help screen" />

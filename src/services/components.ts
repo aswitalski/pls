@@ -13,6 +13,8 @@ import {
   ConfigState,
   ConfirmDefinitionProps,
   ConfirmState,
+  DiscoverDefinitionProps,
+  DiscoverState,
   ExecuteDefinitionProps,
   ExecuteState,
   IntrospectDefinitionProps,
@@ -131,6 +133,13 @@ const InitialLearnState: LearnState = {
   availableSkills: [],
   pendingStepDescription: null,
   pendingExecutionType: null,
+};
+
+const InitialDiscoverState: DiscoverState = {
+  error: null,
+  message: null,
+  command: null,
+  output: null,
 };
 
 /**
@@ -311,3 +320,17 @@ export const createLearn = (
   status?: ComponentStatus
 ) =>
   createManagedComponent(ComponentName.Learn, props, InitialLearnState, status);
+
+/**
+ * Create a discover component that finds shell commands for natural language
+ */
+export const createDiscover = (
+  props: DiscoverDefinitionProps,
+  status?: ComponentStatus
+) =>
+  createManagedComponent(
+    ComponentName.Discover,
+    props,
+    InitialDiscoverState,
+    status
+  );

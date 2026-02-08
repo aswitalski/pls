@@ -20,6 +20,7 @@ export const TaskTypeSchema = z.enum([
   TaskType.Select,
   TaskType.Discard,
   TaskType.Group,
+  TaskType.Discover,
 ]);
 
 /**
@@ -111,5 +112,15 @@ export const CommandResultSchema = z.object({
 export const IntrospectResultSchema = z.object({
   message: z.string(),
   capabilities: z.array(CapabilitySchema),
+  debug: z.array(ComponentDefinitionSchema).optional(),
+});
+
+/**
+ * Zod schema for DiscoverResult type.
+ * Validates LLM responses from discover tool.
+ */
+export const DiscoverResultSchema = z.object({
+  message: z.string(),
+  command: ExecuteCommandSchema,
   debug: z.array(ComponentDefinitionSchema).optional(),
 });

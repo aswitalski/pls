@@ -17,6 +17,7 @@ import {
   createAnswer,
   createConfig,
   createConfirm,
+  createDiscover,
   createExecute,
   createFeedback,
   createIntrospect,
@@ -399,6 +400,8 @@ export function getRoutingCategory(task: ScheduledTask): string {
       return 'answer';
     case TaskType.Learn:
       return 'learn';
+    case TaskType.Discover:
+      return 'discover';
     default:
       return task.type;
   }
@@ -693,6 +696,30 @@ function routeLearnTasks(
 }
 
 /**
+ * Route Discover tasks - creates Discover component for command discovery
+ */
+function routeDiscoverTasks(
+  tasks: Task[],
+  context: RoutingContext,
+  upcoming: string[]
+): void {
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i];
+    const remainingTasks = tasks.slice(i + 1).map((t) => t.action);
+    const taskUpcoming = [...remainingTasks, ...upcoming];
+
+    context.workflowHandlers.addToQueue(
+      createDiscover({
+        query: (task.params?.query as string) || task.action,
+        action: task.action,
+        service: context.service,
+        upcoming: taskUpcoming,
+      })
+    );
+  }
+}
+
+/**
  * Registry mapping task types to their route handlers
  */
 const taskRouteHandlers: Partial<Record<TaskType, TaskRouteHandler>> = {
@@ -701,6 +728,7 @@ const taskRouteHandlers: Partial<Record<TaskType, TaskRouteHandler>> = {
   [TaskType.Config]: routeConfigTasks,
   [TaskType.Execute]: routeExecuteTasks,
   [TaskType.Learn]: routeLearnTasks,
+  [TaskType.Discover]: routeDiscoverTasks,
 };
 
 /**

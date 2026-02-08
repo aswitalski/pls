@@ -71,6 +71,7 @@ export const Colors = {
     Select: Palette.Cyan,
     Discard: Palette.DarkOrange,
     Group: Palette.Yellow,
+    Discover: Palette.Green,
   },
   Origin: {
     BuiltIn: Palette.Cyan,
@@ -133,6 +134,10 @@ const taskColors: Record<
   [TaskType.Learn]: {
     description: Colors.Label.Default,
     type: Palette.Green,
+  },
+  [TaskType.Discover]: {
+    description: Colors.Label.Default,
+    type: Colors.Type.Discover,
   },
 } as const;
 
@@ -253,6 +258,7 @@ const verboseTaskTypeLabels: Record<TaskType, string> = {
   [TaskType.Select]: 'select option',
   [TaskType.Discard]: 'discard option',
   [TaskType.Group]: 'group tasks',
+  [TaskType.Discover]: 'discover command',
 } as const;
 
 /**

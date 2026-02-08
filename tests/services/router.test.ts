@@ -362,6 +362,15 @@ describe('Task Router', () => {
       };
       expect(getRoutingCategory(task)).toBe('group');
     });
+
+    it('returns "discover" for Discover tasks', () => {
+      const task = {
+        action: 'Find TypeScript files',
+        type: TaskType.Discover,
+        config: [],
+      };
+      expect(getRoutingCategory(task)).toBe('discover');
+    });
   });
 
   describe('extractTaskGroups', () => {
@@ -456,6 +465,49 @@ describe('Task Router', () => {
       expect(groups[0].tasks[0].action).toBe('First');
       expect(groups[0].tasks[1].action).toBe('Second');
       expect(groups[0].tasks[2].action).toBe('Third');
+    });
+
+    it('groups consecutive Discover tasks together', () => {
+      const tasks = [
+        {
+          action: 'Find TypeScript files',
+          type: TaskType.Discover,
+          config: [],
+          params: { query: 'find ts files' },
+        },
+        {
+          action: 'Show disk usage',
+          type: TaskType.Discover,
+          config: [],
+          params: { query: 'show disk usage' },
+        },
+      ];
+
+      const groups = extractTaskGroups(tasks);
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].tasks).toHaveLength(2);
+      expect(groups[0].name).toBe('Find TypeScript files');
+    });
+
+    it('separates Discover tasks from other task types', () => {
+      const tasks = [
+        { action: 'Run tests', type: TaskType.Execute, config: [] },
+        {
+          action: 'Find log files',
+          type: TaskType.Discover,
+          config: [],
+          params: { query: 'find log files' },
+        },
+        { action: 'Explain Docker', type: TaskType.Answer, config: [] },
+      ];
+
+      const groups = extractTaskGroups(tasks);
+
+      expect(groups).toHaveLength(3);
+      expect(groups[0].tasks[0].type).toBe(TaskType.Execute);
+      expect(groups[1].tasks[0].type).toBe(TaskType.Discover);
+      expect(groups[2].tasks[0].type).toBe(TaskType.Answer);
     });
 
     it('returns empty array for empty input', () => {
@@ -1911,6 +1963,192 @@ describe('Task Router', () => {
       expect(props.message).toBe(
         'Missing input: specify which file to process.'
       );
+    });
+
+    it('routes to Discover component when task is Discover type', () => {
+      const tasks = [
+        {
+          action: 'Find TypeScript files',
+          type: TaskType.Discover,
+          config: [],
+          params: { query: 'find ts files' },
+        },
+      ];
+      const service = {} as LLMService;
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Discover command.',
+        service,
+        'do find ts files',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Get Schedule from first addToQueue call
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      expect(scheduleDef.name).toBe(ComponentName.Schedule);
+
+      // Simulate Schedule completing
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+
+      // Get Confirm from second addToQueue call
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(2);
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      expect(confirmDef.name).toBe(ComponentName.Confirm);
+
+      // Simulate user confirming
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Should complete active and pending, then add Discover to queue
+      expect(lifecycleHandlers.completeActiveAndPending).toHaveBeenCalledTimes(
+        1
+      );
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(3);
+
+      const discoverDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
+      expect(discoverDef.name).toBe(ComponentName.Discover);
+      if (discoverDef.name === ComponentName.Discover) {
+        const props = discoverDef.props;
+        expect(props.query).toBe('find ts files');
+        expect(props.action).toBe('Find TypeScript files');
+        expect(props.service).toBe(service);
+      }
+    });
+
+    it('creates separate Discover components for multiple Discover tasks', () => {
+      const tasks = [
+        {
+          action: 'Find TypeScript files',
+          type: TaskType.Discover,
+          config: [],
+          params: { query: 'find ts files' },
+        },
+        {
+          action: 'Show disk usage',
+          type: TaskType.Discover,
+          config: [],
+          params: { query: 'show disk usage' },
+        },
+      ];
+      const service = {} as LLMService;
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Discover commands.',
+        service,
+        'do find ts files and show disk usage',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Simulate Schedule + Confirm flow
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      // Schedule + Confirm + 2 Discover components
+      expect(workflowHandlers.addToQueue).toHaveBeenCalledTimes(4);
+
+      const discover1 = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
+      expect(discover1.name).toBe(ComponentName.Discover);
+      if (discover1.name === ComponentName.Discover) {
+        const props = discover1.props;
+        expect(props.query).toBe('find ts files');
+        expect(props.action).toBe('Find TypeScript files');
+        expect(props.upcoming).toEqual(['Show disk usage']);
+      }
+
+      const discover2 = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[3][0] as ComponentDefinition;
+      expect(discover2.name).toBe(ComponentName.Discover);
+      if (discover2.name === ComponentName.Discover) {
+        const props = discover2.props;
+        expect(props.query).toBe('show disk usage');
+        expect(props.action).toBe('Show disk usage');
+        expect(props.upcoming).toEqual([]);
+      }
+    });
+
+    it('uses action as query fallback when params.query is missing', () => {
+      const tasks = [
+        {
+          action: 'List running processes',
+          type: TaskType.Discover,
+          config: [],
+        },
+      ];
+      const service = {} as LLMService;
+      const lifecycleHandlers = createLifecycleHandlers();
+      const workflowHandlers = createWorkflowHandlers();
+      const requestHandlers = createRequestHandlers();
+
+      routeTasksWithConfirm(
+        tasks,
+        'Discover command.',
+        service,
+        'do list running processes',
+        lifecycleHandlers,
+        workflowHandlers,
+        requestHandlers,
+        false
+      );
+
+      // Simulate Schedule + Confirm flow
+      const scheduleDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as ComponentDefinition;
+      if (scheduleDef.name === ComponentName.Schedule) {
+        void scheduleDef.props.onSelectionConfirmed?.(tasks);
+      }
+      const confirmDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as ComponentDefinition;
+      if (confirmDef.name === ComponentName.Confirm) {
+        confirmDef.props.onConfirmed();
+      }
+
+      const discoverDef = (
+        workflowHandlers.addToQueue as ReturnType<typeof vi.fn>
+      ).mock.calls[2][0] as ComponentDefinition;
+      expect(discoverDef.name).toBe(ComponentName.Discover);
+      if (discoverDef.name === ComponentName.Discover) {
+        const props = discoverDef.props;
+        // Falls back to action when params.query is undefined
+        expect(props.query).toBe('List running processes');
+      }
     });
   });
 

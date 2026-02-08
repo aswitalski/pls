@@ -7,6 +7,7 @@ import {
 } from '../../types/components.js';
 import { Task, TaskType } from '../../types/types.js';
 
+import { formatTaskAsYaml } from '../../execution/processing.js';
 import { createSchedule } from '../../services/components.js';
 import { useInput } from '../../services/keyboard.js';
 import { formatErrorMessage } from '../../services/messages.js';
@@ -61,7 +62,15 @@ export function Command({
       const startTime = Date.now();
 
       try {
-        const result = await svc.processWithTool(command, 'schedule');
+        // Detect "do" prefix and pre-format as discover request
+        const doMatch = command.match(/^do\s+/i);
+        const query = doMatch
+          ? formatTaskAsYaml(command.slice(doMatch[0].length), {
+              fallback: 'discover',
+            })
+          : command;
+
+        const result = await svc.processWithTool(query, 'schedule');
 
         await ensureMinimumTime(startTime, MIN_PROCESSING_TIME);
 

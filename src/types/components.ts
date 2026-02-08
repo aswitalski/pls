@@ -338,6 +338,26 @@ export interface LearnState extends BaseState {
   pendingExecutionType: 'command' | 'reference' | null;
 }
 
+export interface DiscoverDefinitionProps {
+  query: string;
+  action: string;
+  service: LLMService;
+  upcoming?: string[];
+}
+
+export type DiscoverProps = ComponentProps<DiscoverDefinitionProps> & {
+  requestHandlers: RequestHandlers<DiscoverState>;
+  lifecycleHandlers: LifecycleHandlers<ComponentDefinition>;
+  workflowHandlers: WorkflowHandlers<ComponentDefinition>;
+};
+
+export interface DiscoverState extends BaseState {
+  error: string | null;
+  message: string | null;
+  command: ExecuteCommand | null;
+  output: string | null;
+}
+
 // Generic base definitions with shared properties
 
 // For components that render immediately (no lifecycle management)
@@ -433,6 +453,11 @@ type LearnDefinition = ManagedDefinition<
   LearnDefinitionProps,
   LearnState
 >;
+type DiscoverDefinition = ManagedDefinition<
+  ComponentName.Discover,
+  DiscoverDefinitionProps,
+  DiscoverState
+>;
 
 // Union of all simple component definitions
 export type SimpleComponentDefinition =
@@ -454,7 +479,8 @@ export type ManagedComponentDefinition =
   | AnswerDefinition
   | ExecuteDefinition
   | ValidateDefinition
-  | LearnDefinition;
+  | LearnDefinition
+  | DiscoverDefinition;
 
 // Discriminated union of all component definitions
 export type ComponentDefinition =

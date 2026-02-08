@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CommandResultSchema,
+  DiscoverResultSchema,
   ExecuteCommandSchema,
   ScheduledTaskSchema,
 } from '../../src/types/schemas.js';
@@ -98,6 +99,55 @@ describe('ScheduledTaskSchema', () => {
     };
 
     expect(ScheduledTaskSchema.safeParse(validNestedTask).success).toBe(true);
+  });
+});
+
+describe('DiscoverResultSchema', () => {
+  it('validates a complete discover result', () => {
+    const result = DiscoverResultSchema.safeParse({
+      message: 'Search for image files.',
+      command: {
+        description: 'Find image files in current directory',
+        command: "find . -type f -iname '*.jpg'",
+      },
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.message).toBe('Search for image files.');
+      expect(result.data.command.command).toBe("find . -type f -iname '*.jpg'");
+    }
+  });
+
+  it('rejects missing command field', () => {
+    const result = DiscoverResultSchema.safeParse({
+      message: 'Search for files.',
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing message field', () => {
+    const result = DiscoverResultSchema.safeParse({
+      command: {
+        description: 'Find files',
+        command: 'find . -type f',
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects command missing required subfields', () => {
+    const result = DiscoverResultSchema.safeParse({
+      message: 'Search for files.',
+      command: {
+        description: 'Find files',
+        // missing 'command' field
+      },
+    });
+
+    expect(result.success).toBe(false);
   });
 });
 
