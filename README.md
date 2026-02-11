@@ -190,6 +190,23 @@ Each skill file uses a simple markdown format:
 - **Steps**: What needs to happen, in order
 - **Execution**: The actual shell commands to run
 
+### Placeholders
+
+Execution sections support two kinds of placeholders:
+
+**Config placeholders** resolve from `~/.plsrc` at execution time:
+
+- `{x.y.z}` - Direct config lookup
+- `{x.VARIANT.z}` - `pls` matches the variant from user intent, then
+  looks up the resolved path in config
+
+**Runtime parameters** are extracted from the user's command at planning
+time:
+
+- `<PARAM>` - Required
+- `<PARAM=default>` - Uses default if not specified
+- `<PARAM?>` - Optional, omitted entirely if not mentioned
+
 ### Example
 
 Here's a skill for building a product from source:
@@ -222,8 +239,8 @@ package steps are MANDATORY.
 - [ Navigate To Project ]
 - ./configure && make deps
 - make test
-- make build
-- make package
+- make build -j <JOBS=4>
+- make package <FORMAT?>
 - ./scripts/deploy.sh
 ```
 
@@ -259,9 +276,9 @@ project:
 - cd {project.PRODUCT.path}
 ```
 
-The `{project.PRODUCT.path}` placeholder uses config values from `~/.plsrc`. The
-PRODUCT is matched from user intent (e.g., "build stable" resolves to
-`project.stable.path`).
+The PRODUCT in `{project.PRODUCT.path}` is matched from user intent (e.g.,
+"build stable" resolves to `project.stable.path`), then looked up in
+`~/.plsrc`.
 
 The Description tells `pls` when to skip optional steps. This lets you say:
 
@@ -289,15 +306,18 @@ $ pls just recompile experimental
 Now "experimental" resolves to `project.beta.path`. And when you're ready to ship:
 
 ```
-$ pls build and deploy main
+$ pls build and deploy main as tar
 
   - Navigate to the Stable directory
   - Install build dependencies
   - Run the test suite
   - Compile source code
-  - Package build artifacts
+  - Package as tarball
   - Deploy to server
 ```
+
+Here `<JOBS=4>` uses its default since no job count was specified, and
+"as tar" fills in `<FORMAT?>` for the package step.
 
 The same skill handles all cases based on your intent, something an alias or
 script can't do. Skills are fully dynamic: you can add new variants, change step
