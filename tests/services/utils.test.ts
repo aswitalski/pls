@@ -58,9 +58,10 @@ describe('Formatting memory', () => {
   });
 
   it('formats values at or above 1024 MB as GB', () => {
-    expect(formatMemory(1024)).toBe('1.0 GB');
-    expect(formatMemory(2048)).toBe('2.0 GB');
+    expect(formatMemory(1024)).toBe('1 GB');
+    expect(formatMemory(2048)).toBe('2 GB');
     expect(formatMemory(1536)).toBe('1.5 GB');
-    expect(formatMemory(4096)).toBe('4.0 GB');
+    expect(formatMemory(4096)).toBe('4 GB');
+    expect(formatMemory(1587)).toBe('1.55 GB');
   });
 });

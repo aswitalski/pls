@@ -39,7 +39,7 @@ export function formatDuration(ms: number): string {
 export function formatMemory(mb: number): string {
   if (mb >= 1024) {
     const gb = mb / 1024;
-    return `${gb.toFixed(1)} GB`;
+    return `${parseFloat(gb.toFixed(2))} GB`;
   }
   return `${mb} MB`;
 }

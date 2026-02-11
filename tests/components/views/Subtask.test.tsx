@@ -324,7 +324,7 @@ describe('SubtaskView component', () => {
       );
 
       const frame = lastFrame();
-      expect(frame).toContain('2.0 GB');
+      expect(frame).toContain('2 GB');
     });
 
     it('does not show memory in info debug mode', () => {
