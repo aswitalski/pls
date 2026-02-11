@@ -62,7 +62,9 @@ function TextInputStep({
 
   useInput(
     (input, key) => {
-      if (!validationFailed) return;
+      if (!validationFailed) {
+        return;
+      }
 
       if (key.return) {
         handleSubmit(inputValue);

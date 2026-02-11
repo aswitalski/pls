@@ -20,7 +20,9 @@ function getConfigValue(
   config: Config | Record<string, unknown> | null,
   key: string
 ): unknown {
-  if (!config) return undefined;
+  if (!config) {
+    return undefined;
+  }
 
   const parts = key.split('.');
   let value: unknown = config;

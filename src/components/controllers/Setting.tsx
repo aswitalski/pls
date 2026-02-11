@@ -14,7 +14,9 @@ function isSelectionStep(step: ConfigStep): step is SelectionConfigStep {
 }
 
 function normalizeTextValue(value: string | null | undefined): string {
-  if (value === null || value === undefined) return '';
+  if (value === null || value === undefined) {
+    return '';
+  }
   return value.replace(/\n/g, '').trim();
 }
 
@@ -68,7 +70,9 @@ export function Setting({
   };
 
   const handleSelectionNavigation = (key: Key) => {
-    if (!isSelectionStep(step)) return;
+    if (!isSelectionStep(step)) {
+      return;
+    }
 
     const len = step.options.length;
     if (key.tab || key.rightArrow) {
@@ -82,7 +86,9 @@ export function Setting({
 
   useInput(
     (_, key) => {
-      if (!isActive || !isSelectionStep(step)) return;
+      if (!isActive || !isSelectionStep(step)) {
+        return;
+      }
       handleSelectionNavigation(key);
     },
     { isActive: isActive && isSelectionStep(step) }

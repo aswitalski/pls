@@ -13,23 +13,41 @@ const globalShortcuts = new Map<string, KeyboardHandler>();
 function keyToPattern(key: Key): string | null {
   const modifiers: string[] = [];
 
-  if (key.ctrl) modifiers.push('ctrl');
-  if (key.meta) modifiers.push('meta');
-  if (key.shift) modifiers.push('shift');
+  if (key.ctrl) {
+    modifiers.push('ctrl');
+  }
+  if (key.meta) {
+    modifiers.push('meta');
+  }
+  if (key.shift) {
+    modifiers.push('shift');
+  }
 
   // Get the key name
   let keyName = '';
-  if (key.escape) keyName = 'escape';
-  else if (key.tab) keyName = 'tab';
-  else if (key.return) keyName = 'return';
-  else if (key.upArrow) keyName = 'up';
-  else if (key.downArrow) keyName = 'down';
-  else if (key.leftArrow) keyName = 'left';
-  else if (key.rightArrow) keyName = 'right';
-  else if (key.backspace) keyName = 'backspace';
-  else if (key.delete) keyName = 'delete';
+  if (key.escape) {
+    keyName = 'escape';
+  } else if (key.tab) {
+    keyName = 'tab';
+  } else if (key.return) {
+    keyName = 'return';
+  } else if (key.upArrow) {
+    keyName = 'up';
+  } else if (key.downArrow) {
+    keyName = 'down';
+  } else if (key.leftArrow) {
+    keyName = 'left';
+  } else if (key.rightArrow) {
+    keyName = 'right';
+  } else if (key.backspace) {
+    keyName = 'backspace';
+  } else if (key.delete) {
+    keyName = 'delete';
+  }
 
-  if (!keyName) return null;
+  if (!keyName) {
+    return null;
+  }
 
   return [...modifiers, keyName].join('+');
 }
@@ -55,7 +73,9 @@ export function registerGlobalShortcut(
  */
 export function isGlobalShortcut(key: Key): boolean {
   const pattern = keyToPattern(key);
-  if (!pattern) return false;
+  if (!pattern) {
+    return false;
+  }
 
   const handler = globalShortcuts.get(pattern.toLowerCase());
   if (handler) {

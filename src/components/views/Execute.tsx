@@ -34,8 +34,12 @@ function getUpcomingStatus(tasks: TaskData[]): UpcomingStatus {
       task.status === ExecutionStatus.Cancelled
   );
 
-  if (hasFailed) return ExecutionStatus.Failed;
-  if (hasCancelled) return ExecutionStatus.Aborted;
+  if (hasFailed) {
+    return ExecutionStatus.Failed;
+  }
+  if (hasCancelled) {
+    return ExecutionStatus.Aborted;
+  }
   return ExecutionStatus.Pending;
 }
 

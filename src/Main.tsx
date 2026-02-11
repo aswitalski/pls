@@ -32,7 +32,9 @@ import { Workflow } from './components/Workflow.js';
  * Check if command matches help variations (help, --help, -h)
  */
 function isHelpCommand(cmd: string | null): boolean {
-  if (!cmd) return false;
+  if (!cmd) {
+    return false;
+  }
   const normalized = cmd.toLowerCase().trim();
   return (
     normalized === 'help' || normalized === '--help' || normalized === '-h'

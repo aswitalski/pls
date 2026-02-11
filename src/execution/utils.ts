@@ -29,12 +29,16 @@ export function getCurrentTaskIndex(tasks: TaskData[]): number {
   const runningIndex = tasks.findIndex(
     (t) => t.status === ExecutionStatus.Running
   );
-  if (runningIndex !== -1) return runningIndex;
+  if (runningIndex !== -1) {
+    return runningIndex;
+  }
 
   const pendingIndex = tasks.findIndex(
     (t) => t.status === ExecutionStatus.Pending
   );
-  if (pendingIndex !== -1) return pendingIndex;
+  if (pendingIndex !== -1) {
+    return pendingIndex;
+  }
 
   return tasks.length;
 }

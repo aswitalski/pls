@@ -55,6 +55,8 @@ export default tseslint.config(
       // The rule crashes with "TypeError: typeParameters.params is not iterable"
       // when it encounters inline object types in function signatures
       '@typescript-eslint/unified-signatures': 'off',
+      // Require braces around all control flow statements
+      curly: ['error', 'all'],
     },
   },
   // Relaxed rules for test files

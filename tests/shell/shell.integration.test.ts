@@ -50,7 +50,9 @@ it('returns error result for non-zero exit code', async () => {
 it('calls output callback with stdout data', async () => {
   const chunks: string[] = [];
   const executor = new RealExecutor((data, stream) => {
-    if (stream === 'stdout') chunks.push(data);
+    if (stream === 'stdout') {
+      chunks.push(data);
+    }
   });
 
   const cmd: ExecuteCommand = {
@@ -66,7 +68,9 @@ it('calls output callback with stdout data', async () => {
 it('calls output callback with stderr data', async () => {
   const chunks: string[] = [];
   const executor = new RealExecutor((data, stream) => {
-    if (stream === 'stderr') chunks.push(data);
+    if (stream === 'stderr') {
+      chunks.push(data);
+    }
   });
 
   const cmd: ExecuteCommand = {
@@ -158,7 +162,9 @@ describe('PWD marker filtering', () => {
   it('does not include marker in output callback', async () => {
     const chunks: string[] = [];
     const executor = new RealExecutor((data, stream) => {
-      if (stream === 'stdout') chunks.push(data);
+      if (stream === 'stdout') {
+        chunks.push(data);
+      }
     });
 
     const cmd: ExecuteCommand = {
@@ -202,7 +208,9 @@ describe('PWD marker filtering', () => {
   it('filters marker from multi-line output', async () => {
     const chunks: string[] = [];
     const executor = new RealExecutor((data, stream) => {
-      if (stream === 'stdout') chunks.push(data);
+      if (stream === 'stdout') {
+        chunks.push(data);
+      }
     });
 
     const cmd: ExecuteCommand = {
@@ -445,7 +453,9 @@ describe('Output streaming buffer management', () => {
 
     const chunks: string[] = [];
     const executor = new RealExecutor((data, stream) => {
-      if (stream === 'stdout') chunks.push(data);
+      if (stream === 'stdout') {
+        chunks.push(data);
+      }
     });
 
     // Generate many small output chunks to trigger collapse
@@ -469,7 +479,9 @@ describe('Output streaming buffer management', () => {
 
     const chunks: string[] = [];
     const executor = new RealExecutor((data, stream) => {
-      if (stream === 'stderr') chunks.push(data);
+      if (stream === 'stderr') {
+        chunks.push(data);
+      }
     });
 
     // Generate many small stderr chunks to trigger collapse

@@ -32,7 +32,9 @@ export interface OutputDisplayConfig {
  * Split a line into chunks of maxWidth characters.
  */
 function splitIntoRows(line: string, maxWidth: number): string[] {
-  if (line.length <= maxWidth) return [line];
+  if (line.length <= maxWidth) {
+    return [line];
+  }
   const rows: string[] = [];
   for (let i = 0; i < line.length; i += maxWidth) {
     rows.push(line.slice(i, i + maxWidth));
@@ -84,7 +86,9 @@ export function chunksToRows(
   maxWidth: number = MAX_WIDTH,
   isFinished: boolean = true
 ): string[] {
-  if (chunks.length === 0) return [];
+  if (chunks.length === 0) {
+    return [];
+  }
 
   // Separate output and stdin chunks
   const outputChunks = chunks
@@ -175,10 +179,14 @@ export function computeDisplayConfig(
   status: ExecutionStatus,
   isFinished: boolean
 ): OutputDisplayConfig | null {
-  if (chunks.length === 0) return null;
+  if (chunks.length === 0) {
+    return null;
+  }
 
   const rows = chunksToRows(chunks, MAX_LINES, MAX_WIDTH, isFinished);
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return null;
+  }
 
   // Use yellow for failed status, otherwise gray (darker if finished)
   const baseColor = isFinished ? Palette.DarkGray : Palette.Gray;
@@ -190,7 +198,9 @@ export function computeDisplayConfig(
 export function Output({ chunks, status, isFinished }: OutputProps) {
   const config = computeDisplayConfig(chunks, status, isFinished ?? false);
 
-  if (!config) return null;
+  if (!config) {
+    return null;
+  }
 
   const { rows, color } = config;
 

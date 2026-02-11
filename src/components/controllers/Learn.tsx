@@ -235,7 +235,9 @@ export function Learn(props: LearnProps) {
   };
 
   const handleExecutionValueSubmit = (value: string) => {
-    if (!state.pendingStepDescription || !state.pendingExecutionType) return;
+    if (!state.pendingStepDescription || !state.pendingExecutionType) {
+      return;
+    }
 
     const trimmed = value.trim();
     if (!trimmed) {
@@ -268,7 +270,9 @@ export function Learn(props: LearnProps) {
   };
 
   const handleSkillReferenceSelection = (skillName: string) => {
-    if (!state.pendingStepDescription) return;
+    if (!state.pendingStepDescription) {
+      return;
+    }
 
     const newPair: LearnStepPair = {
       description: state.pendingStepDescription,
@@ -382,7 +386,9 @@ export function Learn(props: LearnProps) {
   // Keyboard input handling
   useInput(
     (_, key) => {
-      if (!isActive) return;
+      if (!isActive) {
+        return;
+      }
 
       if (key.escape) {
         handleAbort();

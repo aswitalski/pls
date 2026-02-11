@@ -109,7 +109,9 @@ export function Execute({
 
   // Update reducer with progress every second while task is running
   useEffect(() => {
-    if (!runningTask?.startTime || !isExecuting) return;
+    if (!runningTask?.startTime || !isExecuting) {
+      return;
+    }
 
     const taskStartTime = runningTask.startTime;
     const interval = setInterval(() => {
@@ -217,7 +219,9 @@ export function Execute({
 
         await ensureMinimumTime(startTime, MINIMUM_PROCESSING_TIME);
 
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
         // Add debug components to timeline if present
         if (result.debug?.length) {
@@ -357,7 +361,9 @@ export function Execute({
         }
       },
       onComplete: (elapsed, execOutput) => {
-        if (cancelledRef.current) return;
+        if (cancelledRef.current) {
+          return;
+        }
 
         // Track working directory
         if (execOutput.workdir) {
@@ -394,7 +400,9 @@ export function Execute({
         }
       },
       onError: (errorMsg, execOutput) => {
-        if (cancelledRef.current) return;
+        if (cancelledRef.current) {
+          return;
+        }
 
         // Track working directory
         if (execOutput.workdir) {

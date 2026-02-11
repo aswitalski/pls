@@ -67,8 +67,12 @@ function flattenInnerTasks(tasks: ScheduledTask[]): Task[] {
         action: task.action,
         type: task.type,
       };
-      if (task.params) leafTask.params = task.params;
-      if (task.config) leafTask.config = task.config;
+      if (task.params) {
+        leafTask.params = task.params;
+      }
+      if (task.config) {
+        leafTask.config = task.config;
+      }
       result.push(leafTask);
     }
     // Skip empty groups
@@ -105,8 +109,12 @@ export function flattenTasks(tasks: ScheduledTask[]): ScheduledTask[] {
         action: task.action,
         type: task.type,
       };
-      if (task.params) leafTask.params = task.params;
-      if (task.config) leafTask.config = task.config;
+      if (task.params) {
+        leafTask.params = task.params;
+      }
+      if (task.config) {
+        leafTask.config = task.config;
+      }
       result.push(leafTask);
     }
     // Skip empty groups (group with no subtasks)
@@ -143,8 +151,12 @@ export function getOperationName(tasks: Task[]): string {
   );
   const allAnswer = tasks.every((task) => task.type === TaskType.Answer);
 
-  if (allIntrospect) return 'introspection';
-  if (allAnswer) return 'answer';
+  if (allIntrospect) {
+    return 'introspection';
+  }
+  if (allAnswer) {
+    return 'answer';
+  }
   return 'execution';
 }
 
@@ -162,7 +174,9 @@ export function routeTasksWithConfirm<TState extends BaseState = BaseState>(
   requestHandlers: RequestHandlers<TState>,
   hasDefineTask: boolean = false
 ): void {
-  if (tasks.length === 0) return;
+  if (tasks.length === 0) {
+    return;
+  }
 
   // Check executable tasks (ignore/discard are shown but not executed)
   const executableTasks = tasks.filter(
@@ -380,10 +394,18 @@ export function getRoutingCategory(task: ScheduledTask): string {
     }
 
     // Single type groups use that type's category
-    if (hasConfig) return 'config';
-    if (hasIntrospect) return 'introspect';
-    if (hasExecute) return 'execute';
-    if (hasAnswer) return 'answer';
+    if (hasConfig) {
+      return 'config';
+    }
+    if (hasIntrospect) {
+      return 'introspect';
+    }
+    if (hasExecute) {
+      return 'execute';
+    }
+    if (hasAnswer) {
+      return 'answer';
+    }
     return 'group';
   }
 
@@ -551,11 +573,15 @@ function routeTasksAfterConfig(
   tasks: ScheduledTask[],
   context: RoutingContext
 ): void {
-  if (tasks.length === 0) return;
+  if (tasks.length === 0) {
+    return;
+  }
 
   // Extract logical task groups
   const groups = extractTaskGroups(tasks);
-  if (groups.length === 0) return;
+  if (groups.length === 0) {
+    return;
+  }
 
   // Route all groups in order
   routeAllGroups(groups, context);

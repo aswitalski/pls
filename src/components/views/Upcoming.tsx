@@ -41,7 +41,9 @@ export const Upcoming = ({
   items,
   status = ExecutionStatus.Pending,
 }: UpcomingProps) => {
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return null;
+  }
 
   const strikethrough = status !== ExecutionStatus.Pending;
 

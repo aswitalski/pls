@@ -26,7 +26,9 @@ export function err<E>(error: E): Result<never, E> {
  * Unwrap a result, throwing if it's an error
  */
 export function unwrap<T>(result: Result<T>): T {
-  if (result.ok) return result.value;
+  if (result.ok) {
+    return result.value;
+  }
   throw result.error;
 }
 
@@ -37,7 +39,9 @@ export function mapResult<T, U, E>(
   result: Result<T, E>,
   fn: (value: T) => U
 ): Result<U, E> {
-  if (result.ok) return ok(fn(result.value));
+  if (result.ok) {
+    return ok(fn(result.value));
+  }
   return result;
 }
 

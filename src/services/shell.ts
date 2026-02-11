@@ -196,7 +196,9 @@ export class OutputStreamer {
       this.emittedLength = limited.length;
     }
 
-    if (!this.callback) return;
+    if (!this.callback) {
+      return;
+    }
 
     const accumulated = this.chunks.join('');
     const markerIndex = accumulated.indexOf(PWD_MARKER);
@@ -369,8 +371,12 @@ export class RealExecutor implements Executor {
 
       const cleanup = () => {
         this.currentChild = undefined;
-        if (timeoutId) clearTimeout(timeoutId);
-        if (killTimeoutId) clearTimeout(killTimeoutId);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        if (killTimeoutId) {
+          clearTimeout(killTimeoutId);
+        }
         if (this.cancelKillTimeoutId) {
           clearTimeout(this.cancelKillTimeoutId);
           this.cancelKillTimeoutId = undefined;

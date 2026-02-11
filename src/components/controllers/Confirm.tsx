@@ -28,7 +28,9 @@ export function Confirm({
 
   useInput(
     (input, key) => {
-      if (!isActive) return;
+      if (!isActive) {
+        return;
+      }
 
       if (key.escape) {
         // Escape: highlight "No" and cancel

@@ -48,7 +48,9 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
   const moveActiveToPending = useCallback(() => {
     setCurrent((curr) => {
       const { active } = curr;
-      if (!active) return curr;
+      if (!active) {
+        return curr;
+      }
 
       // Move active to pending without marking as done
       const pendingComponent = { ...active, status: ComponentStatus.Pending };
@@ -60,7 +62,9 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
   const moveActiveToTimeline = useCallback(() => {
     setCurrent((curr) => {
       const { active, pending } = curr;
-      if (!active) return curr;
+      if (!active) {
+        return curr;
+      }
 
       // Mark as done and add to timeline
       const doneComponent = markAsDone(active);
@@ -89,7 +93,9 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
       onCompleted: <T extends BaseState>(finalState: T) => {
         setCurrent((curr) => {
           const { active, pending } = curr;
-          if (!active || !('state' in active)) return curr;
+          if (!active || !('state' in active)) {
+            return curr;
+          }
 
           // Save final state to definition
           const managed = active as ManagedComponentDefinition;
@@ -197,7 +203,9 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
   // Process active component - stateless components auto-move to timeline
   useEffect(() => {
     const { active, pending } = current;
-    if (!active) return;
+    if (!active) {
+      return;
+    }
 
     if (isSimple(active)) {
       // Simple components move directly to timeline
@@ -256,7 +264,9 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
   // Render component with handlers (used for both active and pending)
   const renderComponent = useCallback(
     (def: ComponentDefinition | null, status: ComponentStatus) => {
-      if (!def) return null;
+      if (!def) {
+        return null;
+      }
 
       // For simple components, render as-is
       if (isSimple(def)) {

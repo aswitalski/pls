@@ -126,7 +126,9 @@ export function Config<
   );
 
   useEffect(() => {
-    if (!isActive || !query || !service || initialSteps?.length) return;
+    if (!isActive || !query || !service || initialSteps?.length) {
+      return;
+    }
 
     resolveQueryToSteps(query, service)
       .then((result) => {
@@ -177,7 +179,9 @@ export function Config<
 
   useInput(
     (_, key) => {
-      if (!isActive || currentStep >= steps.length) return;
+      if (!isActive || currentStep >= steps.length) {
+        return;
+      }
       if (key.escape) {
         handleEscape();
       }
@@ -238,7 +242,9 @@ export function Config<
         const wasAborted = index === currentStep && !isActive;
         const shouldShow = isCompleted || isStepActive || wasAborted;
 
-        if (!shouldShow) return null;
+        if (!shouldShow) {
+          return null;
+        }
 
         const configKey = stepConfig.path || stepConfig.key;
 

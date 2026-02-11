@@ -21,7 +21,9 @@ export function StdinInput({ isActive, onSubmit }: StdinInputProps) {
     setValue('');
   };
 
-  if (!isActive) return null;
+  if (!isActive) {
+    return null;
+  }
 
   return (
     <Box marginTop={1} marginLeft={5}>

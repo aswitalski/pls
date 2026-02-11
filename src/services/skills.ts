@@ -410,7 +410,9 @@ export function configEntriesToYaml(entries: string[]): string {
 
   for (const entry of entries) {
     const colonIndex = entry.lastIndexOf(':');
-    if (colonIndex === -1) continue;
+    if (colonIndex === -1) {
+      continue;
+    }
 
     const path = entry.slice(0, colonIndex).trim();
     const type = entry.slice(colonIndex + 1).trim();

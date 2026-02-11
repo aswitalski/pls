@@ -125,7 +125,9 @@ function getUniqueLogFilePath(basePath: string): string {
  * Initialize the session log file if not already created
  */
 function initializeSessionLog(): boolean {
-  if (currentLogFile) return true;
+  if (currentLogFile) {
+    return true;
+  }
 
   try {
     const basePath = getLogFilePath();
@@ -146,7 +148,9 @@ function initializeSessionLog(): boolean {
  * Append content to the current session's log file
  */
 function appendToLog(content: string): void {
-  if (!initializeSessionLog() || !currentLogFile) return;
+  if (!initializeSessionLog() || !currentLogFile) {
+    return;
+  }
 
   try {
     fileSystem.appendFile(currentLogFile, content);

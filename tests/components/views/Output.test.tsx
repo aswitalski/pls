@@ -18,7 +18,9 @@ function createChunks(
   text: string,
   source: OutputSource = OutputSource.Stdout
 ): OutputChunk[] {
-  if (!text.trim()) return [];
+  if (!text.trim()) {
+    return [];
+  }
   return [{ text, timestamp: Date.now(), source }];
 }
 
