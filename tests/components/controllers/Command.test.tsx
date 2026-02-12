@@ -26,7 +26,7 @@ const mockService = createMockAnthropicService();
 
 describe('Command component error handling', () => {
   describe('Error display', () => {
-    it('displays error from state', () => {
+    it('does not render error inline (errors shown via Feedback)', () => {
       const { lastFrame } = render(
         <CommandView
           command="test command"
@@ -35,7 +35,7 @@ describe('Command component error handling', () => {
         />
       );
 
-      expect(lastFrame()).toContain('Error: Test error');
+      expect(lastFrame()).not.toContain('Error: Test error');
     });
   });
 

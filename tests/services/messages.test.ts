@@ -54,7 +54,7 @@ describe('formatErrorMessage', () => {
         '400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low"}}'
       );
       expect(formatErrorMessage(apiError)).toBe(
-        'Your credit balance is too low'
+        'Error 400. Your credit balance is too low'
       );
     });
 
@@ -87,6 +87,15 @@ describe('formatErrorMessage', () => {
       );
     });
 
+    it('formats invalid API key as friendly message', () => {
+      const apiError = new Error(
+        '401 {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}'
+      );
+      expect(formatErrorMessage(apiError)).toBe(
+        'Error 401. Invalid Anthropic API key.'
+      );
+    });
+
     it('returns default message for non-Error objects', () => {
       expect(formatErrorMessage('string error')).toBe('Unknown error occurred');
       expect(formatErrorMessage(null)).toBe('Unknown error occurred');
@@ -100,12 +109,21 @@ describe('formatErrorMessage', () => {
       saveDebugSetting(DebugLevel.Info);
     });
 
-    it('returns full error message including JSON', () => {
+    it('returns formatted error fields from API error', () => {
       const apiError = new Error(
-        '400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low"}}'
+        '401 {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"},"request_id":"req_abc123"}'
       );
       expect(formatErrorMessage(apiError)).toBe(
-        '400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low"}}'
+        'Error 401.\n\nType: authentication_error\nMessage: invalid x-api-key\nRequest id: req_abc123'
+      );
+    });
+
+    it('preserves raw invalid API key message', () => {
+      const apiError = new Error(
+        '401 {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}'
+      );
+      expect(formatErrorMessage(apiError)).toBe(
+        'Error 401.\n\nType: authentication_error\nMessage: invalid x-api-key'
       );
     });
 

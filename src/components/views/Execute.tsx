@@ -169,12 +169,6 @@ export const ExecuteView = ({
           <Text color={getTextColor(false)}>{completionMessage}</Text>
         </Box>
       )}
-
-      {error && (
-        <Box marginLeft={1}>
-          <Text>{error}</Text>
-        </Box>
-      )}
     </Box>
   );
 };
