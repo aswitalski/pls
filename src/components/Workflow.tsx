@@ -42,7 +42,7 @@ export const Workflow = ({ initialQueue, debug }: WorkflowProps) => {
     active: ComponentDefinition | null;
     pending: ComponentDefinition | null;
   }>({ active: null, pending: null });
-  const [queue, setQueue] = useState<ComponentDefinition[]>(initialQueue);
+  const [queue, setQueue] = useState(initialQueue);
 
   // Function to move active to pending (component just completed)
   const moveActiveToPending = useCallback(() => {

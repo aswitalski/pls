@@ -118,9 +118,9 @@ export function Config<
   } = props;
   const isActive = status === ComponentStatus.Active;
 
-  const [steps, setSteps] = useState<ConfigStep[]>(initialSteps || []);
+  const [steps, setSteps] = useState(initialSteps || []);
   const [resolving, setResolving] = useState(!initialSteps?.length && !!query);
-  const [currentStep, setCurrentStep] = useState<number>(0);
+  const [currentStep, setCurrentStep] = useState(0);
   const [values, setValues] = useState<Record<string, string>>(() =>
     initializeStepValues(initialSteps || [])
   );

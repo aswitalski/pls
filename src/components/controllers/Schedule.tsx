@@ -34,8 +34,7 @@ export function Schedule({
   const isActive = status === ComponentStatus.Active;
 
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
-  const [currentDefineGroupIndex, setCurrentDefineGroupIndex] =
-    useState<number>(0);
+  const [currentDefineGroupIndex, setCurrentDefineGroupIndex] = useState(0);
   const [completedSelections, setCompletedSelections] = useState<number[]>([]);
 
   // Find all Define tasks
