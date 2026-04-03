@@ -23,6 +23,7 @@ import {
   createMessage,
   createWelcome,
 } from './services/components.js';
+import { formatErrorMessage } from './services/messages.js';
 import { registerGlobalShortcut } from './services/keyboard.js';
 import { initializeLogger, setDebugLevel } from './services/logger.js';
 
@@ -104,12 +105,11 @@ export const Main = ({
         setService(newService);
       } catch (error) {
         // Service creation failed - show error and exit
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : 'Failed to initialize service';
         setInitialQueue([
-          createFeedback({ type: FeedbackType.Failed, message: errorMessage }),
+          createFeedback({
+            type: FeedbackType.Failed,
+            message: formatErrorMessage(error),
+          }),
         ]);
       }
     }
@@ -144,11 +144,7 @@ export const Main = ({
           setService(newService);
         } catch (error) {
           // Config save failed
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : 'Failed to save configuration';
-          throw new Error(errorMessage);
+          throw new Error(formatErrorMessage(error));
         }
       };
 

@@ -260,8 +260,8 @@ describe('Main component queue-based architecture', () => {
       await new Promise((resolve) => setTimeout(resolve, ShortWait));
 
       const output = lastFrame();
-      // Should show default error message
-      expect(output).toContain('Failed to initialize service');
+      // Should show default error message from formatErrorMessage
+      expect(output).toContain('Unknown error occurred');
 
       // Should exit with error code 1
       expect(exitSpy).toHaveBeenCalledWith(1);

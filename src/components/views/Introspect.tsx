@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 
 import { ComponentStatus } from '../../types/components.js';
 
-import { Colors, getTextColor } from '../../services/colors.js';
+import { getTextColor } from '../../services/colors.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -40,12 +40,6 @@ export const IntrospectView = ({
         <Box marginLeft={1}>
           <Text color={getTextColor(isActive)}>Listing capabilities. </Text>
           <Spinner />
-        </Box>
-      )}
-
-      {error && (
-        <Box marginTop={1} marginLeft={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
         </Box>
       )}
 

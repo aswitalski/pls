@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 
 import { ComponentStatus } from '../../types/components.js';
 
-import { Colors, getTextColor } from '../../services/colors.js';
+import { getTextColor } from '../../services/colors.js';
 import { getAnswerLoadingMessage } from '../../services/messages.js';
 import { ExecutionStatus } from '../../services/shell.js';
 
@@ -82,12 +82,6 @@ export const AnswerView = ({
       {showUpcoming && (
         <Box marginTop={lines && lines.length > 0 ? 1 : 0}>
           <Upcoming items={upcomingItems} status={upcomingStatus} />
-        </Box>
-      )}
-
-      {error && (
-        <Box marginTop={1} marginLeft={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
         </Box>
       )}
     </Box>

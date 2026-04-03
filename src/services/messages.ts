@@ -137,8 +137,17 @@ export const FeedbackMessages = {
 } as const;
 
 /**
+ * Formats a snake_case field name for display.
+ * Replaces underscores with spaces.
+ */
+function formatFieldName(key: string): string {
+  return key.replace(/_/g, ' ');
+}
+
+/**
  * Extracts a user-friendly error message from API errors.
- * In debug mode, returns the full error; otherwise, returns just the message.
+ * In normal mode, returns a single-line summary.
+ * In debug mode, returns all error fields in a readable format.
  *
  * Handles Anthropic API error format:
  * 400 {"type":"error","error":{"type":"...","message":"..."},"request_id":"..."}
@@ -147,26 +156,56 @@ export function formatErrorMessage(error: unknown): string {
   const rawMessage =
     error instanceof Error ? error.message : 'Unknown error occurred';
 
-  if (loadDebugSetting() !== DebugLevel.None) {
-    return rawMessage;
-  }
+  const isDebug = loadDebugSetting() !== DebugLevel.None;
 
   // Try to extract message from Anthropic API error format
   // Format: "400 {json...}" or just "{json...}"
-  const jsonMatch = rawMessage.match(/\{.*\}/s);
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0]) as {
-        error?: { message?: string };
-        message?: string;
-      };
-      const message = parsed.error?.message ?? parsed.message;
-      if (message) {
-        return message;
+  const jsonMatch = rawMessage.match(/(\d{3})?\s*(\{.*\})/s);
+  if (!jsonMatch) {
+    return rawMessage;
+  }
+
+  try {
+    const statusCode = jsonMatch[1] || '';
+    const parsed = JSON.parse(jsonMatch[2]) as Record<string, unknown>;
+    const errorObj = parsed.error as Record<string, unknown> | undefined;
+    const rawApiMessage = (errorObj?.message ?? parsed.message) as
+      | string
+      | undefined;
+    const message =
+      rawApiMessage === 'invalid x-api-key'
+        ? 'Invalid Anthropic API key.'
+        : rawApiMessage;
+
+    if (isDebug) {
+      // Debug mode: show all fields
+      const lines: string[] = [];
+      if (statusCode) {
+        lines.push(`Error ${statusCode}.`);
+        lines.push('');
       }
-    } catch {
-      // JSON parsing failed, return original message
+      if (errorObj && typeof errorObj === 'object') {
+        for (const [key, value] of Object.entries(errorObj)) {
+          if (typeof value === 'string') {
+            lines.push(`  - ${formatFieldName(key)}: ${value}`);
+          }
+        }
+      }
+      for (const [key, value] of Object.entries(parsed)) {
+        if (key !== 'type' && key !== 'error' && typeof value === 'string') {
+          lines.push(`  - ${formatFieldName(key)}: ${value}`);
+        }
+      }
+      return lines.length > 0 ? lines.join('\n') : rawMessage;
     }
+
+    // Normal mode: single line
+    if (message) {
+      const prefix = statusCode ? `Error ${statusCode}. ` : '';
+      return `${prefix}${message}`;
+    }
+  } catch {
+    // JSON parsing failed, return original message
   }
 
   return rawMessage;

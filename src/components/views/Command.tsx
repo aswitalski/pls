@@ -16,9 +16,8 @@ export interface CommandViewProps {
   status: ComponentStatus;
 }
 
-export const CommandView = ({ command, state, status }: CommandViewProps) => {
+export const CommandView = ({ command, status }: CommandViewProps) => {
   const isActive = status === ComponentStatus.Active;
-  const { error } = state;
 
   return (
     <Box alignSelf="flex-start" flexDirection="column">
@@ -29,12 +28,6 @@ export const CommandView = ({ command, state, status }: CommandViewProps) => {
           <Text color={Colors.Text.Active}>&gt; pls {command}</Text>
           <Text> </Text>
           <Spinner />
-        </Box>
-      )}
-
-      {error && (
-        <Box marginTop={1} marginLeft={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
         </Box>
       )}
     </Box>

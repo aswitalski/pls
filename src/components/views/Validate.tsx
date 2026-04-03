@@ -2,7 +2,7 @@ import { Box, Text } from 'ink';
 
 import { ComponentStatus } from '../../types/components.js';
 
-import { Colors, getTextColor } from '../../services/colors.js';
+import { getTextColor } from '../../services/colors.js';
 
 import { Spinner } from './Spinner.js';
 
@@ -45,12 +45,6 @@ export const ValidateView = ({
       {completionMessage && (
         <Box marginLeft={1}>
           <Text color={getTextColor(isActive)}>{completionMessage}</Text>
-        </Box>
-      )}
-
-      {error && (
-        <Box marginTop={1}>
-          <Text color={Colors.Status.Error}>Error: {error}</Text>
         </Box>
       )}
     </Box>
